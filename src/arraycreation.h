@@ -15,7 +15,7 @@ template<typename T> void create2D(const int dim1, const int dim2, T ***array);
 template<typename T> void create3D(const int dim1, const int dim2, const int dim3, T ****array);
 template<typename T> void create4D(const int dim1, const int dim2, const int dim3, int dim4, T *****array);
 template<typename T> void create5D(const int dim1, const int dim2, const int dim3, int dim4, int dim5,  T ******array);
-template<typename T> int createStateArray(int d, int D, int L, T *****array);
+template<typename T> void createStateArray(int d, int D, int L, T *****array);
 template<typename T> void delete2D(T ***array);
 template<typename T> void delete3D(T ****array);
 template<typename T> void delete4D(T *****array);
@@ -84,7 +84,7 @@ template<typename T> void create5D(const int dim1, const int dim2, const int dim
   }
 }
 
-template<typename T> int createStateArray(int d, int D, int L, T *****array){
+template<typename T> void createStateArray(int d, int D, int L, T *****array){
   int icrit, dimR, dimL, lD, rD;
   for(int i=0;i<L;i++){
     if(pow(d,i+1)>D){
@@ -114,18 +114,19 @@ template<typename T> int createStateArray(int d, int D, int L, T *****array){
     lD=locDimL(d,D,L,i,icrit);
     rD=locDimR(d,D,L,i,icrit);
     if(i>0){
-      (*array)[i][0][0]=(*array)[i-1][0][0]+d*lD*rD;
+      (*array)[i][0][0]=(*array)[i-1][0][0]+d*locDimL(d,D,L,i-1,icrit)*locDimR(d,D,L,i-1,icrit);
     }
     for(int si=0;si<d;si++){
       if(si>0){
 	(*array)[i][si][0]=(*array)[i][si-1][0]+lD*rD;
       }
-      for(int ai=1;ai<lD;ai++){
-	(*array)[i][si][ai]=(*array)[i][si][ai-1]+rD;
+      for(int ai=1;ai<rD;ai++){
+	(*array)[i][si][ai]=(*array)[i][si][ai-1]+lD;
       }
     }
   }
-  return 1;
+  cout<<****array+dimL<<"\t"<<(*array)[12][d-1][84]<<endl;
+  //return 1;
 }
 
 
@@ -153,6 +154,10 @@ template <typename T> void delete5D(T ******array){
   delete[] (*array)[0][0];
   delete[] (*array)[0];
   delete *array;
+}
+
+template <typename T> void deleteStateArray(T *****array){
+  delete4D(array);
 }
 
 int locDimL(int d, int D, int L, int i, int icrit){

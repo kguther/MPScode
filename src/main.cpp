@@ -41,8 +41,8 @@ int main(int *argc, char *argv[]){
   int lD, rD;
   int icrit=6;                     
   create5D(pars.L,pars.d,pars.d,pars.Dw,pars.Dw,&array);
-  createStateArray(pars.d,pars.D,pars.L,&state);
   create4D(pars.L,pars.D,pars.Dw,pars.D,&contr);
+  createStateArray(pars.d,pars.D,pars.L,&state);
   for(int i=0;i<pars.L;i++){
     for(int s=0;s<pars.d;s++){
       for(int sp=0;sp<pars.d;sp++){
@@ -62,7 +62,7 @@ int main(int *argc, char *argv[]){
   for(int i=0;i<pars.L;i++){
     lD=locDimL(pars.d,pars.D,pars.L,i,icrit);
     rD=locDimR(pars.d,pars.D,pars.L,i,icrit);
-    cout<<"Matrixdimension at "<<i<<"\t"<<lD<<"\t"<<rD<<endl;
+    //cout<<"Matrixdimension at "<<i<<"\t"<<lD<<"\t"<<rD<<endl;
     for(int s=0;s<pars.d;s++){
       for(int ai=0;ai<rD;ai++){
 	for(int aim=0;aim<lD;aim++){
@@ -79,7 +79,7 @@ int main(int *argc, char *argv[]){
   calcCtrFull(state,array,contr,-1,pars);
   cout<<contr[1][0][0][0]<<endl;
   delete4D(&contr);
-  delete4D(&state);
+  deleteStateArray(&state);
   delete5D(&array);
   return 0;
 }
