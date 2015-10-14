@@ -86,6 +86,7 @@ template<typename T> void create5D(const int dim1, const int dim2, const int dim
 
 template<typename T> void createStateArray(int d, int D, int L, T *****array){
   int icrit, dimR, dimL, lD, rD;
+  icrit=L/2;
   for(int i=0;i<L;i++){
     if(pow(d,i+1)>D){
       icrit=i;
@@ -103,7 +104,7 @@ template<typename T> void createStateArray(int d, int D, int L, T *****array){
   for(int i=0;i<L;i++){
     rD=locDimR(d,D,L,i,icrit);
     if(i>0){
-      (*array)[i][0]=(*array)[i-1][0]+d*rD;
+      (*array)[i][0]=(*array)[i-1][0]+d*locDimR(d,D,L,i-1,icrit);
     }
     for(int si=1;si<d;si++){
       (*array)[i][si]=(*array)[i][si-1]+rD;
@@ -125,7 +126,6 @@ template<typename T> void createStateArray(int d, int D, int L, T *****array){
       }
     }
   }
-  cout<<****array+dimL<<"\t"<<(*array)[12][d-1][84]<<endl;
   //return 1;
 }
 
