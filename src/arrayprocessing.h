@@ -1,9 +1,11 @@
 #ifndef ARRAYPROCESSING
-#define ARRAYPROCESSING 
+#define ARRAYPROCESSING
 
 #ifndef complex_type_plh
 #define complex_type_plh lapack_complex_double
 #endif
+
+#include <iostream>
 
 using namespace std;
 
