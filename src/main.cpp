@@ -8,10 +8,6 @@
 #include "arraycreation.h"
 #include "arrayprocessing.h"
 
-#ifndef complex_type_plh
-#define complex_type_plh lapack_complex_double
-#endif
-
 using namespace std;
 
 void testNormalization();
@@ -21,7 +17,7 @@ void testLR();
 //HUGE TESTING REALM (CURRENTLY: NORMALIZATION PROCEDURE)
 //-----------------------------------------------------------------//
 
-int main(int *argc, char *argv[]){
+int main(int argc, char *argv[]){
   testLR();
   return 0;
 }
@@ -32,7 +28,7 @@ int main(int *argc, char *argv[]){
 //-------------------------------------------------------------------------------------------//
 
 void testNormalization(){ //CORRECT RESULT: (-1/sqrt(2)) and sqrt(2) as matrix entries in (0) and (1) matrices for leftnormalize and unity for rightnormalize
-  complex_type_plh ****state;
+  lapack_complex_double ****state;
   parameters pars(2,100,2,5,10);
   int lD,rD;
   network system(pars);
@@ -61,8 +57,8 @@ void testNormalization(){ //CORRECT RESULT: (-1/sqrt(2)) and sqrt(2) as matrix e
   for(int i=L-1;i>0;i--){
     system.rightNormalizeState(i);
   }
-  complex_type_plh zone(1,0);
-  complex_type_plh *un=new complex_type_plh[4];
+  lapack_complex_double zone(1,0);
+  lapack_complex_double *un=new lapack_complex_double[4];
   un[0]=-1;
   un[1]=0;
   un[2]=0;
@@ -77,7 +73,7 @@ void testNormalization(){ //CORRECT RESULT: (-1/sqrt(2)) and sqrt(2) as matrix e
 }
 
 void testLR(){ //CORRECT RESULT: 4
-  complex_type_plh *****array, ****state, ****contr;
+  lapack_complex_double *****array, ****state, ****contr;
   parameters pars(2,100,20,5,10);
   network system(pars);
   array=system.networkH;

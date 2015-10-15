@@ -8,8 +8,8 @@ using namespace std; //BEWARE: FOR LAPACK ACCESS ALWAYS USE [0] AS SECOND INDEX 
 // generic C arrays. Use the corresponding delete function to free the memory when not needed anymore. 
 //-----------------------------------------------------------------------------------------------------------------//
 
-int locDimL(int d, int D, int L, int i, int icrit);
-int locDimR(int d, int D, int L, int i, int icrit);
+inline int locDimL(int d, int D, int L, int i, int icrit);
+inline int locDimR(int d, int D, int L, int i, int icrit);
 
 template<typename T> void create2D(const int dim1, const int dim2, T ***array);
 template<typename T> void create3D(const int dim1, const int dim2, const int dim3, T ****array);
@@ -160,7 +160,7 @@ template <typename T> void deleteStateArray(T *****array){
   delete4D(array);
 }
 
-int locDimL(int d, int D, int L, int i, int icrit){
+inline int locDimL(int d, int D, int L, int i, int icrit){
   if(i<=icrit){
     return pow(d,i);
   }
@@ -170,7 +170,7 @@ int locDimL(int d, int D, int L, int i, int icrit){
   return pow(d,L-i);
 }
 
-int locDimR(int d, int D, int L, int i, int icrit){
+inline int locDimR(int d, int D, int L, int i, int icrit){
   if(i<icrit){
     return pow(d,i+1);
   }
