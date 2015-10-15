@@ -12,13 +12,15 @@ using namespace std;
 
 void testNormalization();
 void testLR();
+void nancheck(network *n, int i);
+void testSolve();
 
 //-----------------------------------------------------------------//
 //HUGE TESTING REALM (CURRENTLY: NORMALIZATION PROCEDURE)
 //-----------------------------------------------------------------//
 
 int main(int argc, char *argv[]){
-  testLR();
+  testSolve();
   return 0;
 }
 
@@ -29,7 +31,7 @@ int main(int argc, char *argv[]){
 
 void testNormalization(){ //CORRECT RESULT: (-1/sqrt(2)) and sqrt(2) as matrix entries in (0) and (1) matrices for leftnormalize and unity for rightnormalize
   lapack_complex_double ****state;
-  parameters pars(2,100,2,5,10);
+  parameters pars(2,100,20,5,10);
   int lD,rD;
   network system(pars);
   state=system.networkState;
@@ -47,16 +49,25 @@ void testNormalization(){ //CORRECT RESULT: (-1/sqrt(2)) and sqrt(2) as matrix e
 	  }
 	}
       }
-      matrixprint(rD,lD,state[i][s][0]);
     }
   }
-  cout<<"NORMALIZING\n";
   int d=pars.d;
   int D=pars.D;
   int L=pars.L;
+  /*for(int i=L-1;i>0;i--){
+    system.rightNormalizeState(i);
+    }*/
+  system.normalizeFinal(1);
+  for(int i=0;i<(L-1);i++){
+    system.leftNormalizeState(i);
+    nancheck(&system,i);
+   }
+  system.normalizeFinal(0);
   for(int i=L-1;i>0;i--){
     system.rightNormalizeState(i);
+    nancheck(&system,i);
   }
+  system.normalizeFinal(1);
   lapack_complex_double zone(1,0);
   lapack_complex_double *un=new lapack_complex_double[4];
   un[0]=-1;
@@ -68,8 +79,9 @@ void testNormalization(){ //CORRECT RESULT: (-1/sqrt(2)) and sqrt(2) as matrix e
       matrixprint(system.locDimL(i),system.locDimR(i),state[i][si][0]);
     }
   }
-  cblas_zgemm(CblasColMajor,CblasNoTrans,CblasConjTrans,2,2,2,&zone,state[1][0][0],2,state[1][0][0],2,&zone,un,2);
+  cblas_zgemm(CblasColMajor,CblasNoTrans,CblasConjTrans,2,2,2,&zone,state[L-1][0][0],2,state[L-1][0][0],2,&zone,un,2);
   matrixprint(2,2,un);
+  cout<<cblas_dznrm2(d*system.locDimR(0),system.networkState[0][0][0],1)<<endl;
 }
 
 void testLR(){ //CORRECT RESULT: 4
@@ -122,4 +134,43 @@ void testLR(){ //CORRECT RESULT: 4
   system.calcCtrFull(contr,1);
   cout<<contr[pars.L-2][0][0][0]<<endl;
   delete4D(&contr);
+}
+
+void testSolve(){
+  int lD, rD;
+  lapack_complex_double ****state;
+  parameters pars(2,100,20,5,1);
+  network system(pars);
+  state=system.networkState;
+  for(int i=0;i<pars.L;i++){
+    lD=system.locDimL(i);
+    rD=system.locDimR(i);
+    for(int s=0;s<pars.d;s++){
+      for(int ai=0;ai<rD;ai++){
+	for(int aim=0;aim<lD;aim++){
+	  if(ai==aim){
+	    state[i][s][ai][aim]=1;
+	  }
+	  else{
+	    state[i][s][ai][aim]=0;
+	  }
+	}
+      }
+    }
   }
+  system.solve();
+}
+
+void nancheck(network *n, int i){               //Resolved
+  for(int si=0;si<(*n).d;si++){
+    for(int ai=0;ai<(*n).locDimR(i);ai++){
+      for(int aim=0;aim<(*n).locDimL(i);aim++){
+	if(isnan(real((*n).networkState[i][si][ai][aim]))){
+	  cout<<"NaN occured while normalizing site "<<i<<endl;
+	  exit(-1);
+	}
+      }
+    }
+  }
+}
+  

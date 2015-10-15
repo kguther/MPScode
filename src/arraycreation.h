@@ -179,7 +179,5 @@ inline int locDimR(int d, int D, int L, int i, int icrit){
   }
   return pow(d,L-i-1);
 }
-  
-  
 
 #endif
