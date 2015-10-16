@@ -20,7 +20,7 @@ void testSolve();
 //-----------------------------------------------------------------//
 
 int main(int argc, char *argv[]){
-  testSolve();
+  testLR();
   return 0;
 }
 
@@ -60,12 +60,12 @@ void testNormalization(){ //CORRECT RESULT: (-1/sqrt(2)) and sqrt(2) as matrix e
   system.normalizeFinal(1);
   for(int i=0;i<(L-1);i++){
     system.leftNormalizeState(i);
-    nancheck(&system,i);
+    //nancheck(&system,i);
    }
   system.normalizeFinal(0);
   for(int i=L-1;i>0;i--){
     system.rightNormalizeState(i);
-    nancheck(&system,i);
+    //nancheck(&system,i);
   }
   system.normalizeFinal(1);
   lapack_complex_double zone(1,0);
@@ -161,7 +161,7 @@ void testSolve(){
   system.solve();
 }
 
-void nancheck(network *n, int i){               //Resolved
+/*void nancheck(network *n, int i){               //Resolved
   for(int si=0;si<(*n).d;si++){
     for(int ai=0;ai<(*n).locDimR(i);ai++){
       for(int aim=0;aim<(*n).locDimL(i);aim++){
@@ -172,5 +172,5 @@ void nancheck(network *n, int i){               //Resolved
       }
     }
   }
-}
+  }*/
   
