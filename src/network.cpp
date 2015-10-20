@@ -3,18 +3,14 @@
 #include <iostream>
 #include <cblas.h>
 #include <arcomp.h>
-#include <arlnsmat.h>
-#include <arlscomp.h>
-namespace LPK{          //Horrible hack to prevent conflict with superLU (why does this even work?)
 #include <lapacke.h>
 #include <lapacke_utils.h>
-}
 #include "network.h"
 #include "arraycreation.h"
 #include "arrayprocessing.h"
+#include "siteoptimizer.h"
 
 using namespace std;
-using namespace LPK;
 
 //BEWARE: ALL MPS AND MPO NETWORK MATRICES ARE STORED WITH A CONTIGOUS COLUMN INDEX (i.e. transposed with respect to C standard, for better compatibility with LAPACK)
 
@@ -62,6 +58,7 @@ double network::solve(){
   create4D(L,D,Dw,D,&Rctr);                                                        //for the partial contractions Lctr and Rctr
   Lctr[0][0][0][0]=1;                                                              //initialization neccessary for iterative building of Lctr
   calcCtrFull(Rctr,1);                                                             //Preparing for the first sweep 
+  cout<<Rctr[0][0][0][1]<<endl;
   for(int nsweep=0;nsweep<N;nsweep++){
     for(int i=0;i<(L-1);i++){
       lambda=optimize(i);                                                          //Eigenvalue solver to actualize cstate
@@ -88,25 +85,21 @@ double network::solve(){
 // eigenvalue problem. 
 //---------------------------------------------------------------------------------------------------//
 
-arcomplex<double> network::optimize(int i){
+double network::optimize(int i){
   arcomplex<double> lambda;
   arcomplex<double> *plambda;
   plambda=&lambda;
   vector<int> irow;
   vector<int> pcol;
-  int nzel, nconv;
+  int nzel;
   int dimension=d*locDimR(i)*locDimL(i);
   vector<arcomplex<double> > H;
   buildMatrix(i,&irow, &pcol, &nzel, &H);
-  ARluNonSymMatrix<arcomplex<double> ,double> Hopt(dimension,nzel,&H[0],&irow[0],&pcol[0]);
-  ARluCompStdEig<double> OptProblem(1,Hopt,"SM",3,1e-8);
-  nconv=OptProblem.EigenValVectors(networkState[i][0][0],plambda);
-  if(nconv==0){
-    cout<<"Failed to converge in iterative eigensolver";
-    exit(-1);
-  }
+  cout<<"Found "<<nzel<<" nonzero elements in matrix H of dimension "<<dimension<<endl;
+  siteoptimizer ARPCKext(dimension,nzel,&H[0],&irow[0],&pcol[0]);
+  ARPCKext.solveEigen(plambda,networkState[i][0][0]);
   cout<<"Current energy: "<<real(lambda)<<endl;
-  return lambda;
+  return real(lambda);
 }
 
 void network::buildMatrix(int i, vector<int> *irow, vector<int> *pcol, int *nzel, vector<arcomplex<double> > *H){
@@ -114,7 +107,7 @@ void network::buildMatrix(int i, vector<int> *irow, vector<int> *pcol, int *nzel
   //std::vector is used because the number of nonzero elements is unknown (and can be quite large, to guess a maximum would require for allocation of memory of size O(d^2D^4) which quickly exceeds RAM)
   //Arguments are of type vector because internal use of vectors would free the allocated memory upon end of function - they can still be handed over to ARPACK++ classes via &irow[0] etc (yes, this works)
   int lDR,lDL,DwL,DwR,colIndexCounter;
-  double threshold=1e-50;  //Entries with absolute value below this are omitted, might be changed to a parameter later on, no neccessity now
+  double threshold=1e-30;  //Entries with absolute value below this are omitted, might be changed to a parameter later on, no neccessity now
   arcomplex<double> container;
   DwL=Dw;
   DwR=Dw;
@@ -174,14 +167,6 @@ void network::calcCtrIter(lapack_complex_double ****Pctr, const int direction, c
   }
   if((i==(L-2)) && (direction==1)){                                                  //as does b_L-1
     DwR=1;
-  }
-  icrit=L/2;
-  for(int iloop=0;iloop<=pars.L;iloop++){
-    if(D<pow(d,iloop+1)){
-      icrit=iloop;
-      break;
-    }
-    //TODO: Add exception throw
   }
   DR=locDimR(i+direction);
   DL=locDimL(i+direction);

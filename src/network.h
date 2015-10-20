@@ -14,9 +14,7 @@ class network{
   network(parameters inputpars);
   ~network();
   double solve();
-  lapack_complex_double ****Lctr;
-  lapack_complex_double ****Rctr;
-  arcomplex<double> optimize(int i);
+  double optimize(int i);
   int locDimR(int i);
   int locDimL(int i);
   int leftNormalizeState(int i);
@@ -33,6 +31,8 @@ class network{
   void buildMatrix(int i, vector<int> *irow, vector<int> *pcol, int *nzel, vector<arcomplex<double> > *H);
   parameters pars;
   int d,D,L,Dw,N,icrit;
+  lapack_complex_double ****Lctr;
+  lapack_complex_double ****Rctr;
 };
 
 #endif

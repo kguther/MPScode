@@ -133,20 +133,45 @@ void testLR(){ //CORRECT RESULT: 4
     }
   }
   system.calcCtrFull(contr,1);
-  cout<<contr[pars.L-2][0][0][0]<<endl;
+  cout<<contr[0][0][0][1]<<endl;
   delete4D(&contr);
 }
 
 void testSolve(){
-  int lD, rD;
   double eigVal;
-  lapack_complex_double ****state;
-  parameters pars(2,100,20,5,1);
+  lapack_complex_double *****array, ****state, ****contr;
+  parameters pars(2,100,20,5,10);
   network system(pars);
+  array=system.networkH;
   state=system.networkState;
+  int lD, rD;
+  int icrit=pars.L/2;
   for(int i=0;i<pars.L;i++){
-    lD=system.locDimL(i);
-    rD=system.locDimR(i);
+    if(pow(pars.d,i+1)>pars.D){
+      icrit=i;
+      break;
+    }
+  }
+  create4D(pars.L,pars.D,pars.Dw,pars.D,&contr);
+  for(int i=0;i<pars.L;i++){
+    for(int s=0;s<pars.d;s++){
+      for(int sp=0;sp<pars.d;sp++){
+	for(int bi=0;bi<pars.Dw;bi++){
+	  for(int bip=0;bip<pars.Dw;bip++){
+	    if(bi==bip){
+	      array[i][s][sp][bi][bip]=1;
+	    }
+	    else{
+	      array[i][s][sp][bi][bip]=0;
+	    }
+	  }
+	}
+      }
+    }
+  }
+  for(int i=0;i<pars.L;i++){
+    lD=locDimL(pars.d,pars.D,pars.L,i,icrit);
+    rD=locDimR(pars.d,pars.D,pars.L,i,icrit);
     for(int s=0;s<pars.d;s++){
       for(int ai=0;ai<rD;ai++){
 	for(int aim=0;aim<lD;aim++){
