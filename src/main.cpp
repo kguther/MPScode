@@ -14,13 +14,14 @@ void testNormalization();
 void testLR();
 void nancheck(network *n, int i);
 void testSolve();
+void testOptimize();
 
 //-----------------------------------------------------------------//
-//HUGE TESTING REALM (CURRENTLY: NORMALIZATION PROCEDURE)
+//HUGE TESTING REALM (CURRENTLY: SINGLE SITE OPTIMIZATION)
 //-----------------------------------------------------------------//
 
 int main(int argc, char *argv[]){
-  testLR();
+  testSolve();
   return 0;
 }
 
@@ -31,7 +32,7 @@ int main(int argc, char *argv[]){
 
 void testNormalization(){ //CORRECT RESULT: (-1/sqrt(2)) and sqrt(2) as matrix entries in (0) and (1) matrices for leftnormalize and unity for rightnormalize
   lapack_complex_double ****state;
-  parameters pars(2,100,20,5,10);
+  parameters pars(2,100,2,5,10);
   int lD,rD;
   network system(pars);
   state=system.networkState;
@@ -138,6 +139,7 @@ void testLR(){ //CORRECT RESULT: 4
 
 void testSolve(){
   int lD, rD;
+  double eigVal;
   lapack_complex_double ****state;
   parameters pars(2,100,20,5,1);
   network system(pars);
@@ -158,8 +160,11 @@ void testSolve(){
       }
     }
   }
-  system.solve();
+  eigVal=system.solve();
+  cout<<eigVal<<endl;
 }
+
+
 
 /*void nancheck(network *n, int i){               //Resolved
   for(int si=0;si<(*n).d;si++){

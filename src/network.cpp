@@ -1,15 +1,20 @@
 #include <cstdlib>
 #include <complex>
 #include <iostream>
+#include <cblas.h>
+#include <arcomp.h>
+#include <arlnsmat.h>
+#include <arlscomp.h>
+namespace LPK{          //Horrible hack to prevent conflict with superLU (why does this even work?)
 #include <lapacke.h>
 #include <lapacke_utils.h>
-#include <arcomp.h>
-#include <cblas.h>
+}
 #include "network.h"
 #include "arraycreation.h"
 #include "arrayprocessing.h"
 
 using namespace std;
+using namespace LPK;
 
 //BEWARE: ALL MPS AND MPO NETWORK MATRICES ARE STORED WITH A CONTIGOUS COLUMN INDEX (i.e. transposed with respect to C standard, for better compatibility with LAPACK)
 
@@ -47,10 +52,8 @@ network::~network(){
 //---------------------------------------------------------------------------------------------------//
 
 double network::solve(){
-  lapack_complex_double ****Lctr;                                                  //The partial contractions are no members of network to limit the memory usage of network objects (memory usage, not size)
-  lapack_complex_double ****Rctr;                                                  //This might be changed later on
   lapack_complex_double normalization;
-  int Dl=D;
+  arcomplex<double> lambda;
   for(int i=L-1;i>0;i--){
     rightNormalizeState(i);
   }
@@ -61,13 +64,13 @@ double network::solve(){
   calcCtrFull(Rctr,1);                                                             //Preparing for the first sweep 
   for(int nsweep=0;nsweep<N;nsweep++){
     for(int i=0;i<(L-1);i++){
-      //Eigenvalue solver to actualize cstate
+      lambda=optimize(i);                                                          //Eigenvalue solver to actualize cstate
       leftNormalizeState(i);
       calcCtrIter(Lctr,-1,i+1);
     }
     normalizeFinal(0);
     for(int i=L-1;i>0;i--){
-      //Eigenvalue solver to actualize cstate
+      lambda=optimize(i);
       rightNormalizeState(i);
       calcCtrIter(Rctr,1,i-1);
     }
@@ -76,7 +79,7 @@ double network::solve(){
   cout<<Lctr[1][0][0][0]<<endl;
   delete4D(&Lctr);                                                                 //Frees the memory previously allocated for partial contractions
   delete4D(&Rctr);
-  return 0;
+  return real(lambda);
 }
 
 
@@ -85,15 +88,28 @@ double network::solve(){
 // eigenvalue problem. 
 //---------------------------------------------------------------------------------------------------//
 
-double network::optimize(int i){
-  arcomplex<double> *M;
-  arcomplex<double> *lambda;
-  //ArluSymMatrix Hopt();
-  //ARluCompStdEig problem();
-  return 0;
+arcomplex<double> network::optimize(int i){
+  arcomplex<double> lambda;
+  arcomplex<double> *plambda;
+  plambda=&lambda;
+  vector<int> irow;
+  vector<int> pcol;
+  int nzel, nconv;
+  int dimension=d*locDimR(i)*locDimL(i);
+  vector<arcomplex<double> > H;
+  buildMatrix(i,&irow, &pcol, &nzel, &H);
+  ARluNonSymMatrix<arcomplex<double> ,double> Hopt(dimension,nzel,&H[0],&irow[0],&pcol[0]);
+  ARluCompStdEig<double> OptProblem(1,Hopt,"SM",3,1e-8);
+  nconv=OptProblem.EigenValVectors(networkState[i][0][0],plambda);
+  if(nconv==0){
+    cout<<"Failed to converge in iterative eigensolver";
+    exit(-1);
+  }
+  cout<<"Current energy: "<<real(lambda)<<endl;
+  return lambda;
 }
 
-void network::buildMatrix(int i, vector<int> *irow, vector<int> *pcol, int *nzel, vector<arcomplex<double> > *H, arcomplex<double> ****Lctr, arcomplex<double> ****Rctr){
+void network::buildMatrix(int i, vector<int> *irow, vector<int> *pcol, int *nzel, vector<arcomplex<double> > *H){
   //This function generates the sparsed matrix which represents the eigenvalue problem in CSC format. H contains the nonzero entries, irow the row indices and pcol the indices of column breaks in H
   //std::vector is used because the number of nonzero elements is unknown (and can be quite large, to guess a maximum would require for allocation of memory of size O(d^2D^4) which quickly exceeds RAM)
   //Arguments are of type vector because internal use of vectors would free the allocated memory upon end of function - they can still be handed over to ARPACK++ classes via &irow[0] etc (yes, this works)
@@ -108,6 +124,7 @@ void network::buildMatrix(int i, vector<int> *irow, vector<int> *pcol, int *nzel
   if(i==(L-1)){                                       
     DwR=1;
   }
+  cout<<"Calculating sparse matrix H"<<endl;
   lDR=locDimR(i);
   lDL=locDimL(i);
   (*pcol).push_back(0);
@@ -137,6 +154,7 @@ void network::buildMatrix(int i, vector<int> *irow, vector<int> *pcol, int *nzel
     }
   }
   (*nzel)=(*H).size();                                        //Number of nonzero elements is required for ARPACK++ classes
+  cout<<"Finished calculation of H"<<endl;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -151,16 +169,16 @@ void network::calcCtrIter(lapack_complex_double ****Pctr, const int direction, c
   DwL=Dw;
   DwR=Dw;
   lapack_complex_double ****innercontainer, ****outercontainer;                     //container arrays to significantly reduce computational effort by storing intermediate results
-  if((i==1) && (direction==-1)){                                             // b_-1  can only take one value
+  if((i==1) && (direction==-1)){                                                    // b_-1  can only take one value
     DwL=1;
   }
-  if((i==(L-2)) && (direction==1)){                                     //as does b_L-1
+  if((i==(L-2)) && (direction==1)){                                                  //as does b_L-1
     DwR=1;
   }
   icrit=L/2;
-  for(int i=0;i<=pars.L;i++){
-    if(D<pow(d,i+1)){
-      icrit=i;
+  for(int iloop=0;iloop<=pars.L;iloop++){
+    if(D<pow(d,iloop+1)){
+      icrit=iloop;
       break;
     }
     //TODO: Add exception throw
@@ -169,7 +187,7 @@ void network::calcCtrIter(lapack_complex_double ****Pctr, const int direction, c
   DL=locDimL(i+direction);
   create4D(d,DwL,DL,DR,&innercontainer);
   create4D(d,DwR,DR,DL,&outercontainer);
-  for(int sip=0;sip<d;sip++){                                                //horrible construct to efficiently compute the partial contraction, is parallelizable, needs to be parallelized (still huge computational effort) <-- potential for optimization
+  for(int sip=0;sip<d;sip++){                                                        //horrible construct to efficiently compute the partial contraction, is parallelizable, needs to be parallelized (still huge computational effort) <-- potential for optimization
     for(int bim=0;bim<DwL;bim++){
       for(int aim=0;aim<DL;aim++){
 	for(int aip=0;aip<DR;aip++){
