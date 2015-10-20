@@ -3,37 +3,41 @@
 #include <iostream>
 #include <cblas.h>
 #include <arcomp.h>
+#include <arscomp.h>
 #include <lapacke.h>
 #include <lapacke_utils.h>
 #include "network.h"
 #include "arraycreation.h"
 #include "arrayprocessing.h"
-#include "siteoptimizer.h"
+#include "optHMatrix.h"
 
 using namespace std;
 
 //BEWARE: ALL MPS AND MPO NETWORK MATRICES ARE STORED WITH A CONTIGOUS COLUMN INDEX (i.e. transposed with respect to C standard, for better compatibility with LAPACK)
 
+//NAMING CONVENTION: i is always the site index. ALWAYS.
+
 //---------------------------------------------------------------------------------------------------//
-// Main file containing the MPS ansatz solver itself
+// 'Main' file containing the MPS ansatz solver itself (this is not the actual main.cpp, just the
+// most important file)
 //---------------------------------------------------------------------------------------------------//
 
 network::network(parameters inputpars){
-  pars=inputpars;
+  pars=inputpars;                                                                 //TODO: Switch to initialization list (didnt work the first time here, dunno why)
   d=inputpars.d;
   D=inputpars.D;
   L=inputpars.L;
   Dw=inputpars.Dw;
   N=inputpars.N;
   icrit=L/2;                                                                      //In case chain is too short, this is the correct value (trust me)
-  for(int i=0;i<L;i++){
-    if(pow(d,i+1)>D){
-      icrit=i;
+  for(int j=0;j<L;j++){
+    if(pow(d,j+1)>D){
+      icrit=j;
       break;
     }
   }
-  create5D(L,d,d,Dw,Dw,&networkH);
-  createStateArray(d,D,L,&networkState);
+  create5D(L,d,d,Dw,Dw,&networkH);                                                //Allocation of Hamiltonian MPO - square matrices are used since no library matrix functions have to be applied
+  createStateArray(d,D,L,&networkState);                                          //Allocation of MPS - memory of the matrices has to be allocated exactly matching the dimension to use them with lapack
 }
 
 network::~network(){
@@ -58,7 +62,6 @@ double network::solve(){
   create4D(L,D,Dw,D,&Rctr);                                                        //for the partial contractions Lctr and Rctr
   Lctr[0][0][0][0]=1;                                                              //initialization neccessary for iterative building of Lctr
   calcCtrFull(Rctr,1);                                                             //Preparing for the first sweep 
-  cout<<Rctr[0][0][0][1]<<endl;
   for(int nsweep=0;nsweep<N;nsweep++){
     for(int i=0;i<(L-1);i++){
       lambda=optimize(i);                                                          //Eigenvalue solver to actualize cstate
@@ -73,7 +76,6 @@ double network::solve(){
     }
     normalizeFinal(1);
   }
-  cout<<Lctr[1][0][0][0]<<endl;
   delete4D(&Lctr);                                                                 //Frees the memory previously allocated for partial contractions
   delete4D(&Rctr);
   return real(lambda);
@@ -85,69 +87,21 @@ double network::solve(){
 // eigenvalue problem. 
 //---------------------------------------------------------------------------------------------------//
 
-double network::optimize(int i){
+double network::optimize(int const i){
   arcomplex<double> lambda;
   arcomplex<double> *plambda;
+  arcomplex<double> *currentM;
+  int nconv;
+  currentM=networkState[i][0][0];
+  optHMatrix HMat(Rctr[i][0][0],Lctr[i][0][0],networkH[i][0][0][0],pars,i);
   plambda=&lambda;
-  vector<int> irow;
-  vector<int> pcol;
-  int nzel;
-  int dimension=d*locDimR(i)*locDimL(i);
-  vector<arcomplex<double> > H;
-  buildMatrix(i,&irow, &pcol, &nzel, &H);
-  cout<<"Found "<<nzel<<" nonzero elements in matrix H of dimension "<<dimension<<endl;
-  siteoptimizer ARPCKext(dimension,nzel,&H[0],&irow[0],&pcol[0]);
-  ARPCKext.solveEigen(plambda,networkState[i][0][0]);
+  ARCompStdEig<double, optHMatrix> eigProblem(HMat.dim(),1,&HMat,&optHMatrix::MultMv,"SM",3,1e-5);  //SM ONLY FOR TESTING, SR IS REQUIRED IN THE ALGORITHM
+  nconv=eigProblem.EigenValVectors(currentM,plambda);
+  if(nconv!=1){
+    std::cout<<"Failed to converge in iterative eigensolver";
+  }
   cout<<"Current energy: "<<real(lambda)<<endl;
   return real(lambda);
-}
-
-void network::buildMatrix(int i, vector<int> *irow, vector<int> *pcol, int *nzel, vector<arcomplex<double> > *H){
-  //This function generates the sparsed matrix which represents the eigenvalue problem in CSC format. H contains the nonzero entries, irow the row indices and pcol the indices of column breaks in H
-  //std::vector is used because the number of nonzero elements is unknown (and can be quite large, to guess a maximum would require for allocation of memory of size O(d^2D^4) which quickly exceeds RAM)
-  //Arguments are of type vector because internal use of vectors would free the allocated memory upon end of function - they can still be handed over to ARPACK++ classes via &irow[0] etc (yes, this works)
-  int lDR,lDL,DwL,DwR,colIndexCounter;
-  double threshold=1e-30;  //Entries with absolute value below this are omitted, might be changed to a parameter later on, no neccessity now
-  arcomplex<double> container;
-  DwL=Dw;
-  DwR=Dw;
-  if(i==0){                                          
-    DwL=1;
-  }
-  if(i==(L-1)){                                       
-    DwR=1;
-  }
-  cout<<"Calculating sparse matrix H"<<endl;
-  lDR=locDimR(i);
-  lDL=locDimL(i);
-  (*pcol).push_back(0);
-  colIndexCounter=0;
-  for(int si=0;si<d;si++){
-    for(int ai=0;ai<lDR;ai++){
-      for(int aim=0;aim<lDL;aim++){
-	for(int sip=0;sip<d;sip++){
-	  for(int aip=0;aip<lDR;aip++){
-	    for(int aimp=0;aimp<lDL;aimp++){
-	      container=0;
-	      for(int bi=0;bi<DwR;bi++){
-		for(int bim=0;bim<DwL;bim++){
-		  container+=Lctr[i][aim][bim][aimp]*networkH[i][si][sip][bi][bim]*Rctr[i][ai][bi][aip];
-		}
-	      }
-	      if(abs(container)>threshold){
-		colIndexCounter++;                            //Counts to the next column break
-		(*H).push_back(container);                    //Adds the next nonzero element
-		(*irow).push_back(aimp+lDL*aip+lDL*lDR*sip);  //Stores the row index of the next nonzero element (current aimp,aip,sip)
-	      }
-	    }
-	  }
-	}
-	(*pcol).push_back(colIndexCounter);
-      }
-    }
-  }
-  (*nzel)=(*H).size();                                        //Number of nonzero elements is required for ARPACK++ classes
-  cout<<"Finished calculation of H"<<endl;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -161,6 +115,7 @@ void network::calcCtrIter(lapack_complex_double ****Pctr, const int direction, c
   int threshold=1e-50;
   DwL=Dw;
   DwR=Dw;
+  lapack_complex_double simpleContainer;
   lapack_complex_double ****innercontainer, ****outercontainer;                     //container arrays to significantly reduce computational effort by storing intermediate results
   if((i==1) && (direction==-1)){                                                    // b_-1  can only take one value
     DwL=1;
@@ -176,10 +131,11 @@ void network::calcCtrIter(lapack_complex_double ****Pctr, const int direction, c
     for(int bim=0;bim<DwL;bim++){
       for(int aim=0;aim<DL;aim++){
 	for(int aip=0;aip<DR;aip++){
-	  innercontainer[sip][bim][aim][aip]=0;
+	  simpleContainer=0;
 	  for(int aimp=0;aimp<DL;aimp++){
-	    innercontainer[sip][bim][aim][aip]+=Pctr[i+direction][aim][bim][aimp]*networkState[i+direction][sip][aip][aimp]; 
+	    simpleContainer+=Pctr[i+direction][aim][bim][aimp]*networkState[i+direction][sip][aip][aimp]; 
 	  }
+	  innercontainer[sip][bim][aim][aip]=simpleContainer;
 	}
       }
     }
@@ -189,14 +145,15 @@ void network::calcCtrIter(lapack_complex_double ****Pctr, const int direction, c
     for(int bi=0;bi<DwR;bi++){
       for(int aip=0;aip<DR;aip++){
 	for(int aim=0;aim<DL;aim++){
-	  outercontainer[si][bi][aip][aim]=0;
+	  simpleContainer=0;
 	  for(int sip=0;sip<d;sip++){
 	    for(int bim=0;bim<DwL;bim++){
 	      if(abs(networkH[i+direction][si][sip][bi][bim])>threshold){               //<- maybe use more sophisticated sparse format
-		outercontainer[si][bi][aip][aim]+=networkH[i+direction][si][sip][bi][bim]*innercontainer[sip][bim][aim][aip];
+	        simpleContainer+=networkH[i+direction][si][sip][bi][bim]*innercontainer[sip][bim][aim][aip];
 	      }
 	    }
 	  }
+	  outercontainer[si][bi][aip][aim]=simpleContainer;
 	}
       }
     }
@@ -206,21 +163,24 @@ void network::calcCtrIter(lapack_complex_double ****Pctr, const int direction, c
   for(int ai=0;ai<DR;ai++){
     for(int bi=0;bi<DwR;bi++){
       for(int aip=0;aip<DR;aip++){
-	Pctr[i][ai][bi][aip]=0;
+	simpleContainer=0;
 	for(int si=0;si<d;si++){
 	  for(int aim=0;aim<DL;aim++){
-	    Pctr[i][ai][bi][aip]+=conj(networkState[i+direction][si][ai][aim])*outercontainer[si][bi][aip][aim];
+	    simpleContainer+=conj(networkState[i+direction][si][ai][aim])*outercontainer[si][bi][aip][aim];
 	  }
 	}
+	Pctr[i][ai][bi][aip]=simpleContainer;
       }
     }
   }
   delete4D(&outercontainer);
 }
+
+//---------------------------------------------------------------------------------------------------//
   
 int network::calcCtrFull(lapack_complex_double ****Pctr, const int direction){
   int L=pars.L;
-  if(direction==1){
+  if(direction==1){                                                                //This is just some ordinary iterative computation of the partial contraction Pctr (P=R,L)
     Pctr[L-1][0][0][0]=lapack_make_complex_double(1,0);
     for(int i=L-2;i>=0;i--){
       calcCtrIter(Pctr,direction,i);
@@ -249,9 +209,9 @@ int network::calcCtrFull(lapack_complex_double ****Pctr, const int direction){
 // and no right-normalization of site 1, these are aquired via normalization of the whole state.
 //---------------------------------------------------------------------------------------------------//
 
-int network::leftNormalizeState(int i){
+int network::leftNormalizeState(int const i){
   lapack_int info;
-  int D1, D2, D3;
+  int D1, D2, D3;                                                                     //Yep, the local dimensions are just named D1, D2, D3 - the decomposition is of a d*D1xD2 matrix
   D1=locDimL(i);
   D2=locDimR(i);
   D3=locDimR(i+1);
@@ -267,23 +227,25 @@ int network::leftNormalizeState(int i){
   info=LAPACKE_zungqr(LAPACK_ROW_MAJOR,d*D1,D2,D2,networkState[i][0][0],D2,Qcontainer);//Only first D columns are used -> thin QR (below icrit, this is equivalent to a full QR)
   for(int si=0;si<d;si++){
     transp(D2,D1,networkState[i][si][0]);
-    cblas_ztrmm(CblasColMajor,CblasLeft,CblasUpper,CblasTrans,CblasNonUnit,D2,D3,&zone,Rcontainer,D2,networkState[i+1][si][0],D2); //REMARK: Use CblasTrans because Rcontainer is in row_major while networkState[i+1][si][0] is in column_major order - this is a normal matrix multiplication
+    cblas_ztrmm(CblasColMajor,CblasLeft,CblasUpper,CblasTrans,CblasNonUnit,D2,D3,&zone,Rcontainer,D2,networkState[i+1][si][0],D2); //REMARK: Use CblasTrans because Rcontainer is in row_major while networkState[i+1][si][0] is in column_major order - this is a normal matrix multiplication - here, R is packed into the matrices of the next site
   }                                                //POSSIBLE TESTS: TEST FOR Q*R
   delete[] Rcontainer;
   delete[] Qcontainer;
   return 0;  //TODO: Add exception throw
 }
 
-int network::rightNormalizeState(int i){
+//---------------------------------------------------------------------------------------------------//
+
+int network::rightNormalizeState(int const i){
   lapack_int info;
-  int D1,D2,D3;
+  int D1,D2,D3;                                                                         //This time, we decompose a D2xd*D1 matrix and multiply the D2xD2 matrix R with a D3xD2 matrix
   D1=locDimR(i);
   D2=locDimL(i);
   D3=locDimL(i-1);
   lapack_complex_double *Rcontainer, *Qcontainer;
   const lapack_complex_double zone=lapack_make_complex_double(1.0,0);
-  Qcontainer=new lapack_complex_double[d*D1];
-  Rcontainer=new lapack_complex_double[D2*D2];
+  Qcontainer=new lapack_complex_double[d*D1];                                            //Used for storage of lapack-internal matrices
+  Rcontainer=new lapack_complex_double[D2*D2];                                           //Used for storage of R from RQ decomposition
   info=LAPACKE_zgerqf(LAPACK_COL_MAJOR,D2,d*D1,networkState[i][0][0],D2,Qcontainer);     //Thats how zgerqf works: the last D2 columns contain the upper trigonal matrix R, to adress them, move D2 from the end
   lowerdiag(D2,D2,networkState[i][0][0]+D2*(d*D1-D2),Rcontainer);                        //lowerdiag does get an upper trigonal matrix in column major ordering, dont get confused
   info=LAPACKE_zungrq(LAPACK_COL_MAJOR,D2,d*D1,D2,networkState[i][0][0],D2,Qcontainer);
@@ -295,7 +257,9 @@ int network::rightNormalizeState(int i){
   return 0;  //TODO: Add exception throw
 }
 
-void network::normalizeFinal(int i){
+//---------------------------------------------------------------------------------------------------//
+
+void network::normalizeFinal(int const i){
   lapack_complex_double normalization;
   int site, lcD;
   if(i){
@@ -313,10 +277,13 @@ void network::normalizeFinal(int i){
 
 //---------------------------------------------------------------------------------------------------//
 // These functions only return the column/row dimension of the matrices of the i-th site
-// Simple, but essential
+// Simple, but essential. Using local matrix dimensions make lots of stuff easier.
+// NAMING CONVENTION: Any variable-name starting with l indicates a local dimension
+// NAMING CONVENTION: Any variable-name of a local dimension ending with R is a local row dimension,
+// any ending with L is a local column dimension
 //---------------------------------------------------------------------------------------------------//
 
-int network::locDimL(int i){
+int network::locDimL(int const i){
   if(i<=icrit){
     return pow(d,i);
   }
@@ -326,7 +293,9 @@ int network::locDimL(int i){
   return pow(d,L-i);
 }
 
-int network::locDimR(int i){
+//---------------------------------------------------------------------------------------------------//
+
+int network::locDimR(int const i){
   if(i<icrit){
     return pow(d,i+1);
   }

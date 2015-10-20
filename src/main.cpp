@@ -7,6 +7,7 @@
 #include "network.h"
 #include "arraycreation.h"
 #include "arrayprocessing.h"
+#include "optHMatrix.h"
 
 using namespace std;
 
@@ -14,14 +15,14 @@ void testNormalization();
 void testLR();
 void nancheck(network *n, int i);
 void testSolve();
-void testOptimize();
+void testMatrix();
 
 //-----------------------------------------------------------------//
 //HUGE TESTING REALM (CURRENTLY: SINGLE SITE OPTIMIZATION)
 //-----------------------------------------------------------------//
 
 int main(int argc, char *argv[]){
-  testSolve();
+  testLR();
   return 0;
 }
 
@@ -132,15 +133,15 @@ void testLR(){ //CORRECT RESULT: 4
       }
     }
   }
-  system.calcCtrFull(contr,1);
-  cout<<contr[0][0][0][1]<<endl;
+  system.calcCtrFull(contr,-1);
+  cout<<contr[1][0][0][0]<<endl;
   delete4D(&contr);
 }
 
 void testSolve(){
   double eigVal;
   lapack_complex_double *****array, ****state, ****contr;
-  parameters pars(2,100,20,5,10);
+  parameters pars(2,100,100,5,10);
   network system(pars);
   array=system.networkH;
   state=system.networkState;
@@ -189,18 +190,58 @@ void testSolve(){
   cout<<eigVal<<endl;
 }
 
-
-
-/*void nancheck(network *n, int i){               //Resolved
-  for(int si=0;si<(*n).d;si++){
-    for(int ai=0;ai<(*n).locDimR(i);ai++){
-      for(int aim=0;aim<(*n).locDimL(i);aim++){
-	if(isnan(real((*n).networkState[i][si][ai][aim]))){
-	  cout<<"NaN occured while normalizing site "<<i<<endl;
-	  exit(-1);
+void testMatrix(){
+  lapack_complex_double *****array, ****state, ****Rcontr, ****Lcontr;
+  lapack_complex_double Ldummy=lapack_make_complex_double(1.0,0.0);
+  parameters pars(2,100,20,5,10);
+  network system(pars);
+  array=system.networkH;
+  state=system.networkState;
+  int lD, rD;
+  int icrit=pars.L/2;
+  for(int i=0;i<pars.L;i++){
+    if(pow(pars.d,i+1)>pars.D){
+      icrit=i;
+      break;
+    }
+  }
+  create4D(pars.L,pars.D,pars.Dw,pars.D,&Lcontr);
+  create4D(pars.L,pars.D,pars.Dw,pars.D,&Rcontr);
+  for(int i=0;i<pars.L;i++){
+    for(int s=0;s<pars.d;s++){
+      for(int sp=0;sp<pars.d;sp++){
+	for(int bi=0;bi<pars.Dw;bi++){
+	  for(int bip=0;bip<pars.Dw;bip++){
+	    if(bi==bip){
+	      array[i][s][sp][bi][bip]=1;
+	    }
+	    else{
+	      array[i][s][sp][bi][bip]=0;
+	    }
+	  }
 	}
       }
     }
   }
-  }*/
+  for(int i=0;i<pars.L;i++){
+    lD=locDimL(pars.d,pars.D,pars.L,i,icrit);
+    rD=locDimR(pars.d,pars.D,pars.L,i,icrit);
+    for(int s=0;s<pars.d;s++){
+      for(int ai=0;ai<rD;ai++){
+	for(int aim=0;aim<lD;aim++){
+	  if(ai==aim){
+	    state[i][s][ai][aim]=1;
+	  }
+	  else{
+	    state[i][s][ai][aim]=0;
+	  }
+	}
+      }
+    }
+  }
+  Lcontr[0][0][0][0]=1;
+  system.calcCtrFull(Rcontr,1);
+  optHMatrix prb(Rcontr[0][0][0],&Ldummy,system.networkH[0][0][0][0],pars,0);
+  prb.MultMv(state[0][0][0],state[0][0][0]);
+}
   

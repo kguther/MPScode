@@ -14,12 +14,11 @@ class network{
   network(parameters inputpars);
   ~network();
   double solve();
-  double optimize(int i);
-  int locDimR(int i);
-  int locDimL(int i);
-  int leftNormalizeState(int i);
-  int rightNormalizeState(int i);
-  void normalizeFinal(int i);
+  int locDimR(int const i);
+  int locDimL(int const i);
+  int leftNormalizeState(int const i);
+  int rightNormalizeState(int const i);
+  void normalizeFinal(int const i);
   int calcCtrFull(lapack_complex_double ****Pctr, const int direction);//computes partial contractions for preparation of a sweep
   void calcCtrIter(lapack_complex_double ****Pctr, const int direction, const int position); //iteratively builds up the partial contraction during a sweep (for the side not initialized) start at position==(L-1) for R expression and position==0 for L expression
   lapack_complex_double ****networkState;
@@ -28,7 +27,7 @@ class network{
   network();
   network(network const &cpynet);
   network& operator=(network const &cpynet);
-  void buildMatrix(int i, vector<int> *irow, vector<int> *pcol, int *nzel, vector<arcomplex<double> > *H);
+  double optimize(int const i);
   parameters pars;
   int d,D,L,Dw,N,icrit;
   lapack_complex_double ****Lctr;
