@@ -30,7 +30,7 @@ network::network(parameters inputpars){
   Dw=inputpars.Dw;
   N=inputpars.N;
   icrit=L/2;                                                                      //In case chain is too short, this is the correct value (trust me)
-  for(int j=0;j<L;j++){
+  for(int j=0;j<L/2;j++){
     if(pow(d,j+1)>D){
       icrit=j;
       break;
@@ -53,32 +53,45 @@ network::~network(){
 
 double network::solve(){
   lapack_complex_double normalization;
-  arcomplex<double> lambda;
+  double lambda;
+  int errRet;
   for(int i=L-1;i>0;i--){
     rightNormalizeState(i);
   }
   normalizeFinal(1);
   create4D(L,D,Dw,D,&Lctr);                                                        //Allocates a 4D array of dimension LxDxDwxD which is contigous in the last index
   create4D(L,D,Dw,D,&Rctr);                                                        //for the partial contractions Lctr and Rctr
+  for(int i=0;i<L;i++){
+    for(int ai=0;ai<D;ai++){
+      for(int bi=0;bi<Dw;bi++){
+	for(int aip=0;aip<D;aip++){
+	  Lctr[i][ai][bi][aip]=0.0/0.0; //brutal check for invalid access to partial contractions (since they are allocated with potential overhead)
+	  Rctr[i][ai][bi][aip]=0.0/0.0;
+	}
+      }
+    }
+  }
   Lctr[0][0][0][0]=1;                                                              //initialization neccessary for iterative building of Lctr
   calcCtrFull(Rctr,1);                                                             //Preparing for the first sweep 
   for(int nsweep=0;nsweep<N;nsweep++){
+    cout<<"Starting rightsweep\n";
     for(int i=0;i<(L-1);i++){
-      lambda=optimize(i);                                                          //Eigenvalue solver to actualize cstate
+      errRet=optimize(i,&lambda);                                                  //Eigenvalue solver to actualize cstate
       leftNormalizeState(i);
-      calcCtrIter(Lctr,-1,i+1);
+      calcCtrIterLeft(Lctr,i+1);
     }
     normalizeFinal(0);
+    cout<<"Starting leftsweep\n";
     for(int i=L-1;i>0;i--){
-      lambda=optimize(i);
+      errRet=optimize(i,&lambda);
       rightNormalizeState(i);
-      calcCtrIter(Rctr,1,i-1);
+      calcCtrIterRight(Rctr,i-1);
     }
     normalizeFinal(1);
   }
   delete4D(&Lctr);                                                                 //Frees the memory previously allocated for partial contractions
   delete4D(&Rctr);
-  return real(lambda);
+  return lambda;
 }
 
 
@@ -87,21 +100,25 @@ double network::solve(){
 // eigenvalue problem. 
 //---------------------------------------------------------------------------------------------------//
 
-double network::optimize(int const i){
+int network::optimize(int const i, double *iolambda){
   arcomplex<double> lambda;
   arcomplex<double> *plambda;
   arcomplex<double> *currentM;
   int nconv;
-  currentM=networkState[i][0][0];
   optHMatrix HMat(Rctr[i][0][0],Lctr[i][0][0],networkH[i][0][0][0],pars,i);
   plambda=&lambda;
-  ARCompStdEig<double, optHMatrix> eigProblem(HMat.dim(),1,&HMat,&optHMatrix::MultMv,"SM",3,1e-5);  //SM ONLY FOR TESTING, SR IS REQUIRED IN THE ALGORITHM
+  currentM=networkState[i][0][0];
+  ARCompStdEig<double, optHMatrix> eigProblem(HMat.dim(),1,&HMat,&optHMatrix::MultMv,"SR",0,0,1000,currentM);
   nconv=eigProblem.EigenValVectors(currentM,plambda);
   if(nconv!=1){
-    std::cout<<"Failed to converge in iterative eigensolver";
+    std::cout<<"Failed to converge in iterative eigensolver\n";
+    return 1;
   }
-  cout<<"Current energy: "<<real(lambda)<<endl;
-  return real(lambda);
+  else{
+    cout<<"Current energy: "<<real(lambda)<<endl;
+    *iolambda=real(lambda);
+    return 0;
+  }
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -110,46 +127,43 @@ double network::optimize(int const i){
 // candidate for optimization
 //---------------------------------------------------------------------------------------------------//
 
-void network::calcCtrIter(lapack_complex_double ****Pctr, const int direction, const int i){ //direction==1 builds R expression, direction==-1 builds L expression
+void network::calcCtrIterLeft(lapack_complex_double ****Pctr, const int i){ //iteratively builds L expression
   int DR, DL, DwR, DwL;
-  int threshold=1e-50;
+  int threshold=1e-30;
   DwL=Dw;
   DwR=Dw;
   lapack_complex_double simpleContainer;
   lapack_complex_double ****innercontainer, ****outercontainer;                     //container arrays to significantly reduce computational effort by storing intermediate results
-  if((i==1) && (direction==-1)){                                                    // b_-1  can only take one value
+  if(i==1){                                                                         // b_-1  can only take one value
     DwL=1;
   }
-  if((i==(L-2)) && (direction==1)){                                                  //as does b_L-1
-    DwR=1;
-  }
-  DR=locDimR(i+direction);
-  DL=locDimL(i+direction);
+  DR=locDimR(i-1);
+  DL=locDimL(i-1);
   create4D(d,DwL,DL,DR,&innercontainer);
   create4D(d,DwR,DR,DL,&outercontainer);
-  for(int sip=0;sip<d;sip++){                                                        //horrible construct to efficiently compute the partial contraction, is parallelizable, needs to be parallelized (still huge computational effort) <-- potential for optimization
+  for(int sip=0;sip<d;sip++){                                                       //horrible construct to efficiently compute the partial contraction, is parallelizable, needs to be parallelized (still huge computational effort) <-- potential for optimization
     for(int bim=0;bim<DwL;bim++){
       for(int aim=0;aim<DL;aim++){
 	for(int aip=0;aip<DR;aip++){
 	  simpleContainer=0;
 	  for(int aimp=0;aimp<DL;aimp++){
-	    simpleContainer+=Pctr[i+direction][aim][bim][aimp]*networkState[i+direction][sip][aip][aimp]; 
+	    simpleContainer+=Pctr[i-1][aim][bim][aimp]*networkState[i-1][sip][aip][aimp]; 
 	  }
 	  innercontainer[sip][bim][aim][aip]=simpleContainer;
 	}
       }
     }
   }
-  cout<<"Completed calculation of inner container"<<endl;
-  for(int si=0;si<d;si++){ //calculation of outer container seems to be the computationally most effortive task (fortunately, it is easily optimized)
+  //cout<<"Completed calculation of inner container"<<endl;
+  for(int si=0;si<d;si++){
     for(int bi=0;bi<DwR;bi++){
       for(int aip=0;aip<DR;aip++){
 	for(int aim=0;aim<DL;aim++){
 	  simpleContainer=0;
 	  for(int sip=0;sip<d;sip++){
 	    for(int bim=0;bim<DwL;bim++){
-	      if(abs(networkH[i+direction][si][sip][bi][bim])>threshold){               //<- maybe use more sophisticated sparse format
-	        simpleContainer+=networkH[i+direction][si][sip][bi][bim]*innercontainer[sip][bim][aim][aip];
+	      if(abs(networkH[i-1][si][sip][bi][bim])>threshold){               //<- maybe use more sophisticated sparse format
+	        simpleContainer+=networkH[i-1][si][sip][bi][bim]*innercontainer[sip][bim][aim][aip];
 	      }
 	    }
 	  }
@@ -158,7 +172,7 @@ void network::calcCtrIter(lapack_complex_double ****Pctr, const int direction, c
       }
     }
   }
-  cout<<"Completed calculation of outer container"<<endl;
+  //cout<<"Completed calculation of outer container"<<endl;
   delete4D(&innercontainer);
   for(int ai=0;ai<DR;ai++){
     for(int bi=0;bi<DwR;bi++){
@@ -166,10 +180,75 @@ void network::calcCtrIter(lapack_complex_double ****Pctr, const int direction, c
 	simpleContainer=0;
 	for(int si=0;si<d;si++){
 	  for(int aim=0;aim<DL;aim++){
-	    simpleContainer+=conj(networkState[i+direction][si][ai][aim])*outercontainer[si][bi][aip][aim];
+	    simpleContainer+=conj(networkState[i-1][si][ai][aim])*outercontainer[si][bi][aip][aim];
 	  }
 	}
 	Pctr[i][ai][bi][aip]=simpleContainer;
+      }
+    }
+  }
+  delete4D(&outercontainer);
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void network::calcCtrIterRight(lapack_complex_double ****Pctr, const int i){ //iteratively builds R expression
+  int DR, DL, DwR, DwL;
+  int threshold=1e-30;
+  DwL=Dw;
+  DwR=Dw;
+  lapack_complex_double simpleContainer;
+  lapack_complex_double ****innercontainer, ****outercontainer;
+  if(i==L-1){                                                                       // b_L-1  can only take one value
+    DwR=1;
+  }
+  DR=locDimR(i+1);
+  DL=locDimL(i+1);
+  create4D(d,DwR,DR,DL,&innercontainer);
+  create4D(d,DwL,DL,DR,&outercontainer);
+  for(int sip=0;sip<d;sip++){                                                       
+    for(int bi=0;bi<DwR;bi++){
+      for(int ai=0;ai<DR;ai++){
+	for(int aimp=0;aimp<DL;aimp++){
+	  simpleContainer=0;
+	  for(int aip=0;aip<DR;aip++){
+	    simpleContainer+=Pctr[i+1][ai][bi][aip]*networkState[i+1][sip][aip][aimp]; 
+	  }
+	  innercontainer[sip][bi][ai][aimp]=simpleContainer;
+	}
+      }
+    }
+  }
+  //cout<<"Completed calculation of inner container"<<endl;
+  for(int si=0;si<d;si++){
+    for(int bim=0;bim<DwL;bim++){
+      for(int aimp=0;aimp<DL;aimp++){
+	for(int ai=0;ai<DR;ai++){
+	  simpleContainer=0;
+	  for(int sip=0;sip<d;sip++){
+	    for(int bi=0;bi<DwR;bi++){
+	      if(abs(networkH[i+1][si][sip][bi][bim])>threshold){ 
+	        simpleContainer+=networkH[i+1][si][sip][bi][bim]*innercontainer[sip][bi][ai][aimp];
+	      }
+	    }
+	  }
+	  outercontainer[si][bim][aimp][ai]=simpleContainer;
+	}
+      }
+    }
+  }
+  //cout<<"Completed calculation of outer container"<<endl;
+  delete4D(&innercontainer);
+  for(int aim=0;aim<DL;aim++){
+    for(int bim=0;bim<DwL;bim++){
+      for(int aimp=0;aimp<DL;aimp++){
+	simpleContainer=0;
+	for(int si=0;si<d;si++){
+	  for(int ai=0;ai<DR;ai++){
+	    simpleContainer+=conj(networkState[i+1][si][ai][aim])*outercontainer[si][bim][aimp][ai];
+	  }
+	}
+	Pctr[i][aim][bim][aimp]=simpleContainer;
       }
     }
   }
@@ -183,7 +262,7 @@ int network::calcCtrFull(lapack_complex_double ****Pctr, const int direction){
   if(direction==1){                                                                //This is just some ordinary iterative computation of the partial contraction Pctr (P=R,L)
     Pctr[L-1][0][0][0]=lapack_make_complex_double(1,0);
     for(int i=L-2;i>=0;i--){
-      calcCtrIter(Pctr,direction,i);
+      calcCtrIterRight(Pctr,i);
 	}
     return 0;
   }
@@ -191,11 +270,12 @@ int network::calcCtrFull(lapack_complex_double ****Pctr, const int direction){
     if(direction==-1){
       Pctr[0][0][0][0]=lapack_make_complex_double(1,0);
       for(int i=1;i<L;i++){
-	calcCtrIter(Pctr,direction,i);
+	calcCtrIterLeft(Pctr,i);
       }
       return 0;
     }
     else{
+      cout<<"CRITICAL ERROR: Invalid sweep direction identifier in calculation of partial contractions\n";
       return -1;
     }
   }
@@ -219,16 +299,21 @@ int network::leftNormalizeState(int const i){
   const lapack_complex_double zone=lapack_make_complex_double(1.0,0.0);
   Qcontainer=new lapack_complex_double[d*D1];
   Rcontainer=new lapack_complex_double[D2*D2];
+  /*cout<<"Normalizing\n";
+    matrixprint(d*D1,D2,networkState[i][0][0]);*/
   for(int si=0;si<d;si++){
     transp(D1,D2,networkState[i][si][0]);                                              //Enables use of LAPACK_ROW_MAJOR which is necessary here due to the applied storage scheme
   }
   info=LAPACKE_zgeqrf(LAPACK_ROW_MAJOR,d*D1,D2,networkState[i][0][0],D2,Qcontainer);   //Use thin QR decomposition
   upperdiag(D2,D2,networkState[i][0][0],Rcontainer);                               
   info=LAPACKE_zungqr(LAPACK_ROW_MAJOR,d*D1,D2,D2,networkState[i][0][0],D2,Qcontainer);//Only first D columns are used -> thin QR (below icrit, this is equivalent to a full QR)
+  /*cblas_ztrmm(CblasRowMajor,CblasRight,CblasUpper,CblasNoTrans,CblasNonUnit,d*D1,D2,&zone,Rcontainer,D2,networkState[i][0][0],D2);*/
   for(int si=0;si<d;si++){
     transp(D2,D1,networkState[i][si][0]);
     cblas_ztrmm(CblasColMajor,CblasLeft,CblasUpper,CblasTrans,CblasNonUnit,D2,D3,&zone,Rcontainer,D2,networkState[i+1][si][0],D2); //REMARK: Use CblasTrans because Rcontainer is in row_major while networkState[i+1][si][0] is in column_major order - this is a normal matrix multiplication - here, R is packed into the matrices of the next site
-  }                                                //POSSIBLE TESTS: TEST FOR Q*R
+  }                                                //POSSIBLE TESTS: TEST FOR Q*R - DONE: WORKS THE WAY INTENDED
+  /*matrixprint(d*D1,D2,networkState[i][0][0]);
+    cout<<"Testing finished\n";*/
   delete[] Rcontainer;
   delete[] Qcontainer;
   return 0;  //TODO: Add exception throw
@@ -246,12 +331,17 @@ int network::rightNormalizeState(int const i){
   const lapack_complex_double zone=lapack_make_complex_double(1.0,0);
   Qcontainer=new lapack_complex_double[d*D1];                                            //Used for storage of lapack-internal matrices
   Rcontainer=new lapack_complex_double[D2*D2];                                           //Used for storage of R from RQ decomposition
+  /*cout<<"Normalizing\n";
+    matrixprint(D2,d*D1,networkState[i][0][0]);*/
   info=LAPACKE_zgerqf(LAPACK_COL_MAJOR,D2,d*D1,networkState[i][0][0],D2,Qcontainer);     //Thats how zgerqf works: the last D2 columns contain the upper trigonal matrix R, to adress them, move D2 from the end
   lowerdiag(D2,D2,networkState[i][0][0]+D2*(d*D1-D2),Rcontainer);                        //lowerdiag does get an upper trigonal matrix in column major ordering, dont get confused
   info=LAPACKE_zungrq(LAPACK_COL_MAJOR,D2,d*D1,D2,networkState[i][0][0],D2,Qcontainer);
+  /*cblas_ztrmm(CblasColMajor,CblasLeft,CblasUpper,CblasNoTrans,CblasNonUnit,D2,d*D1,&zone,Rcontainer,D2,networkState[i][0][0],D2);
+    matrixprint(D2,d*D1,networkState[i][0][0]);
+    cout<<"Testing finished\n";*/
   for(int si=0;si<d;si++){
     cblas_ztrmm(CblasColMajor,CblasRight,CblasUpper,CblasNoTrans,CblasNonUnit,D3,D2,&zone,Rcontainer,D2,networkState[i-1][si][0],D3);
-  }                                                //POSSIBLE TESTS: TEST FOR R*Q
+  }                                                //POSSIBLE TESTS: TEST FOR R*Q - DONE: WORKS THE WAY INTENDED
   delete[] Rcontainer;
   delete[] Qcontainer;
   return 0;  //TODO: Add exception throw

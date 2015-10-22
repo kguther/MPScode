@@ -1,4 +1,5 @@
 #include <arcomp.h>
+#include <iostream>
 #include "parameters.h"
 #include "optHMatrix.h"
 
@@ -11,7 +12,8 @@ optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, arcomplex
   L(pars.L),
   Dw(pars.Dw)
 {
-  for(int j=0;j<L;j++){
+  icrit=L/2;
+  for(int j=0;j<L/2;j++){
     if(pow(d,j+1)>D){
       icrit=j;
       break;
@@ -48,6 +50,7 @@ optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, arcomplex
     }
   }
   dimension=d*lDL*lDR;
+  //std::cout<<lDL<<"x"<<lDR<<" -> "<<dimension<<std::endl;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -104,36 +107,4 @@ void optHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
   }
 }
 
-//---------------------------------------------------------------------------------------------------//
-// The following functions are indexing functions that return the number of elements between start
-// of a multidimensional array with corresponding dimension and entry with given indices
-//---------------------------------------------------------------------------------------------------//
 
-int optHMatrix::ctrIndex(int const ai, int const bi, int const aip){
-  return aip+bi*D+ai*Dw*D;
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-int optHMatrix::hIndex(int const si, int const sip, int const bi, int const bim){
-  return bim+Dw*bi+Dw*Dw*sip+Dw*Dw*d*si;
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-int optHMatrix::containerIndexInner(int const si, int const aim, int const ai, int const bi){
-  return bi+lDwR*ai+lDwR*lDR*aim+lDwR*lDR*lDL*si;
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-int optHMatrix::containerIndexOuter(int const si, int const bim, int const ai, int const aim){
-  return aim+ai*lDL+bim*lDL*lDR+si*lDwL*lDL*lDR;
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-int optHMatrix::vecIndex(int const si, int const ai, int const aim){
-  return aim+ai*lDL+si*lDL*lDR;
-}
-   
