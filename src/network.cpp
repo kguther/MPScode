@@ -61,16 +61,6 @@ double network::solve(){
   normalizeFinal(1);
   create4D(L,D,Dw,D,&Lctr);                                                        //Allocates a 4D array of dimension LxDxDwxD which is contigous in the last index
   create4D(L,D,Dw,D,&Rctr);                                                        //for the partial contractions Lctr and Rctr
-  for(int i=0;i<L;i++){
-    for(int ai=0;ai<D;ai++){
-      for(int bi=0;bi<Dw;bi++){
-	for(int aip=0;aip<D;aip++){
-	  Lctr[i][ai][bi][aip]=0.0/0.0; //brutal check for invalid access to partial contractions (since they are allocated with potential overhead)
-	  Rctr[i][ai][bi][aip]=0.0/0.0;
-	}
-      }
-    }
-  }
   Lctr[0][0][0][0]=1;                                                              //initialization neccessary for iterative building of Lctr
   calcCtrFull(Rctr,1);                                                             //Preparing for the first sweep 
   for(int nsweep=0;nsweep<N;nsweep++){
@@ -297,23 +287,18 @@ int network::leftNormalizeState(int const i){
   D3=locDimR(i+1);
   lapack_complex_double *Rcontainer, *Qcontainer;
   const lapack_complex_double zone=lapack_make_complex_double(1.0,0.0);
-  Qcontainer=new lapack_complex_double[d*D1];
+  Qcontainer=new lapack_complex_double[D2];
   Rcontainer=new lapack_complex_double[D2*D2];
-  /*cout<<"Normalizing\n";
-    matrixprint(d*D1,D2,networkState[i][0][0]);*/
   for(int si=0;si<d;si++){
-    transp(D1,D2,networkState[i][si][0]);                                              //Enables use of LAPACK_ROW_MAJOR which is necessary here due to the applied storage scheme
+    transp(D2,D1,networkState[i][si][0]);                                              //Enables use of LAPACK_ROW_MAJOR which is necessary here due to the applied storage scheme
   }
   info=LAPACKE_zgeqrf(LAPACK_ROW_MAJOR,d*D1,D2,networkState[i][0][0],D2,Qcontainer);   //Use thin QR decomposition
   upperdiag(D2,D2,networkState[i][0][0],Rcontainer);                               
   info=LAPACKE_zungqr(LAPACK_ROW_MAJOR,d*D1,D2,D2,networkState[i][0][0],D2,Qcontainer);//Only first D columns are used -> thin QR (below icrit, this is equivalent to a full QR)
-  /*cblas_ztrmm(CblasRowMajor,CblasRight,CblasUpper,CblasNoTrans,CblasNonUnit,d*D1,D2,&zone,Rcontainer,D2,networkState[i][0][0],D2);*/
   for(int si=0;si<d;si++){
-    transp(D2,D1,networkState[i][si][0]);
+    transp(D1,D2,networkState[i][si][0]);
     cblas_ztrmm(CblasColMajor,CblasLeft,CblasUpper,CblasTrans,CblasNonUnit,D2,D3,&zone,Rcontainer,D2,networkState[i+1][si][0],D2); //REMARK: Use CblasTrans because Rcontainer is in row_major while networkState[i+1][si][0] is in column_major order - this is a normal matrix multiplication - here, R is packed into the matrices of the next site
   }                                                //POSSIBLE TESTS: TEST FOR Q*R - DONE: WORKS THE WAY INTENDED
-  /*matrixprint(d*D1,D2,networkState[i][0][0]);
-    cout<<"Testing finished\n";*/
   delete[] Rcontainer;
   delete[] Qcontainer;
   return 0;  //TODO: Add exception throw
@@ -393,4 +378,48 @@ int network::locDimR(int const i){
     return D;
   }
   return pow(d,L-i-1);
+}
+
+//---------------------------------------------------------------------------------------------------//
+// These functions compute the normalization of the network to the left of some site i. This is for
+// testing purpose only since the correct algorithm ensures the results to be trivial
+//---------------------------------------------------------------------------------------------------//
+
+void network::leftNormalizationMatrixFull(){
+  lapack_complex_double ***psi;
+  create3D(L,D,D,&psi);
+  for(int i=0;i<L;i++){
+    for(int ai=0;ai<D;ai++){
+      for(int aip=0;aip<D;aip++){
+	psi[i][ai][aip]=0.0/0.0;
+      }
+    }
+  }
+  psi[0][0][0]=1;
+  cout<<"Printing Psi expressions\n";
+  for(int i=1;i<L;i++){
+    leftNormalizationMatrixIter(i,psi[0][0]);
+    matrixprint(D,D,psi[i][0]);
+  }
+  cout<<"That's it\n";
+  delete3D(&psi);
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void network::leftNormalizationMatrixIter(int i, lapack_complex_double *psi){
+  lapack_complex_double psiContainer;
+  for(int aim=0;aim<locDimL(i);aim++){
+    for(int aimp=0;aimp<locDimL(i);aimp++){
+      psiContainer=0;
+      for(int si=0;si<d;si++){
+	for(int aimm=0;aimm<locDimL(i-1);aimm++){
+	  for(int aimmp=0;aimmp<locDimL(i-1);aimmp++){
+	    psiContainer+=networkState[i-1][si][aim][aimm]*conj(networkState[i-1][si][aimp][aimm])*psi[(i-1)*D*D+aimm*D+aimmp];
+	  }
+	}
+      }
+      psi[i*D*D+aim*D+aimp]=psiContainer;
+    }
+  }	
 }

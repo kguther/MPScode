@@ -35,7 +35,7 @@ int main(int argc, char *argv[]){
 void testNormalization(){ //CORRECT RESULT: (-1/sqrt(2)) and sqrt(2) as matrix entries in (0) and (1) matrices for leftnormalize and unity for rightnormalize
   lapack_complex_double ****state;
   int dval=3;
-  parameters pars(dval,100,2,5,10);
+  parameters pars(dval,5,8,5,10);
   int lD,rD;
   network system(pars);
   state=system.networkState;
@@ -58,34 +58,43 @@ void testNormalization(){ //CORRECT RESULT: (-1/sqrt(2)) and sqrt(2) as matrix e
   int d=pars.d;
   int D=pars.D;
   int L=pars.L;
-  /*for(int i=L-1;i>0;i--){
+  int lDL=system.locDimL(2);
+  int lDR=system.locDimR(2);
+  for(int i=L-1;i>0;i--){
     system.rightNormalizeState(i);
-    }*/
+  }
   system.normalizeFinal(1);
   for(int i=0;i<(L-1);i++){
     system.leftNormalizeState(i);
-   }
-  system.normalizeFinal(0);
-  /*for(int i=L-1;i>0;i--){
-    system.rightNormalizeState(i);
-    }
-    system.normalizeFinal(1);*/
-  lapack_complex_double zone(1,0);
-  lapack_complex_double *un=new lapack_complex_double[9];
-  for(int i=0;i<dval*dval;i++){
-    un[i]=0;
   }
-  un[0]=-1;
-  un[4]=-1;
-  un[8]=-1;
+  system.normalizeFinal(0);
+  for(int i=L-1;i>0;i--){
+    system.rightNormalizeState(i);
+  }
+  system.normalizeFinal(1);
+  for(int i=0;i<(L-1);i++){
+    system.leftNormalizeState(i);
+  }
+  system.normalizeFinal(0);
+  lapack_complex_double *un=new lapack_complex_double[D*D];
+  system.leftNormalizationMatrixFull();
+  lapack_complex_double zone(1,0);
+  for(int i=0;i<D;i++){
+    for(int j=0;j<D;j++){
+      un[j+i*D]=(i==j)?-1:0;
+    }
+  }
   for(int i=0;i<L;i++){
     for(int si=0;si<d;si++){
-      matrixprint(system.locDimL(i),system.locDimR(i),state[i][si][0]);
+      //matrixprint(system.locDimL(i),system.locDimR(i),state[i][si][0]);
     }
   }
-  cblas_zgemm(CblasColMajor,CblasConjTrans,CblasNoTrans,dval,dval,dval,&zone,state[0][0][0],dval,state[0][0][0],dval,&zone,un,dval);
-  matrixprint(dval,dval,un);
-  cout<<cblas_dznrm2(d*system.locDimR(0),system.networkState[0][0][0],1)<<endl;
+  for(int si=0;si<d;si++){
+    transp(lDR,lDL,state[2][si][0]);
+  }
+  cblas_zgemm(CblasRowMajor,CblasConjTrans,CblasNoTrans,lDR,lDR,d*lDL,&zone,state[2][0][0],lDR,state[2][0][0],lDR,&zone,un,lDR);
+  matrixprint(D,D,un);
+  cout<<cblas_dznrm2(d*system.locDimL(L-1),system.networkState[L-1][0][0],1)<<endl;
 }
 
 void testLR(){ //CORRECT RESULT: 4
@@ -149,7 +158,7 @@ void testLR(){ //CORRECT RESULT: 4
 void testSolve(){
   double eigVal;
   lapack_complex_double *****array, ****state;
-  parameters pars(2,100,6,5,4);
+  parameters pars(2,10,10,5,4);
   network system(pars);
   array=system.networkH;
   state=system.networkState;
@@ -209,13 +218,13 @@ void testSolve(){
 	      if(bim==lDwL-1){
 		switch(bi){
 		case 1:
-		  array[i][s][sp][bi][bim]=delta(s,sp-1);
+		  array[i][s][sp][bi][bim]=0.5*delta(s,sp-1);
 		  break;
 		case 2:
-		  array[i][s][sp][bi][bim]=delta(s,sp+1);
+		  array[i][s][sp][bi][bim]=0.5*delta(s,sp+1);
 		  break;
 		case 3:
-		  array[i][s][sp][bi][bim]=4*(s-0.5)*delta(s,sp);
+		  array[i][s][sp][bi][bim]=2*(s-0.5)*delta(s,sp);
 		  break;
 		case 4:
 		  array[i][s][sp][bi][bim]=delta(s,sp);

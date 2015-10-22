@@ -19,6 +19,7 @@ class network{
   int leftNormalizeState(int const i);
   int rightNormalizeState(int const i);
   void normalizeFinal(int const i);
+  void leftNormalizationMatrixFull();
   int calcCtrFull(lapack_complex_double ****Pctr, const int direction);//computes partial contractions for preparation of a sweep
   lapack_complex_double ****networkState;
   lapack_complex_double *****networkH;
@@ -29,6 +30,7 @@ class network{
   int optimize(int const i, double *iolambda);
   void calcCtrIterLeft(lapack_complex_double ****Pctr, const int position); //iteratively builds up the partial contraction of the left side during a sweep
   void calcCtrIterRight(lapack_complex_double ****Pctr, const int position); //and this does the same for the right side (implementation with two methods is way faster than with one)
+  void leftNormalizationMatrixIter(int i, lapack_complex_double *psi);
   parameters pars;
   int d,D,L,Dw,N,icrit;
   lapack_complex_double ****Lctr;
