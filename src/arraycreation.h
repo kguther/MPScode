@@ -31,7 +31,8 @@ template<typename T> void create2D(const int dim1, const int dim2, T ***array){
 }
 
 template<typename T> void create3D(const int dim1, const int dim2, const int dim3, T ****array){
-  create2D(dim1,dim2,array);            // iteratively builds up the 3D array from a 2D array of pointers - create2D is called by reference, thus, the adress of ***array is handed over
+  //iteratively builds up the 3D array from a 2D array of pointers - create2D is called by reference, thus, the adress of ***array is handed over
+  create2D(dim1,dim2,array);
   (*array)[0][0]=new T[dim1*dim2*dim3];
   for(int i=0;i<dim1;i++){
     if(i>0){
@@ -123,6 +124,17 @@ template<typename T> void createStateArray(int d, int D, int L, T *****array){
       }
       for(int ai=1;ai<rD;ai++){
 	(*array)[i][si][ai]=(*array)[i][si][ai-1]+lD;
+      }
+    }
+  }
+  for(int i=0;i<L;i++){
+    lD=locDimL(d,D,L,i,icrit);
+    rD=locDimR(d,D,L,i,icrit);
+    for(int si=0;si<d;si++){
+      for(int ai=0;ai<rD;ai++){
+	for(int aim=0;aim<lD;aim++){
+	  (*array)[i][si][ai][aim]=0;
+	}
       }
     }
   }

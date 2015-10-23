@@ -6,9 +6,8 @@ class parameters;
 class parameters{
  public:
   parameters();
-  parameters(int din, int Din, int Lin, int Dwin, int Nin);
-  parameters(int din, int Din, int Lin, int Dwin, int Nin, int neigsin);
-  int D, L, N, d, Dw, neigs;
+  parameters(int din, int Din, int Lin, int Dwin, int Nin, int nEigsin=1, int nStagesin=3);
+  int D, L, nSweeps, d, Dw, nEigs, nStages;
 };
 
 #endif

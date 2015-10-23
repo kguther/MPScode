@@ -19,7 +19,8 @@ optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, arcomplex
       break;
     }
   }
-  lDwL=Dw;                                     //Lengthy initialization of local Matrix dimension
+  //Lengthy initialization of local Matrix dimension
+  lDwL=Dw;
   lDwR=Dw;
   if(i==0){
     lDwL=1;
@@ -49,8 +50,8 @@ optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, arcomplex
       lDR=pow(d,L-i-1);
     }
   }
+  //Dimension of H is obviously a necessary information for ARPACK++
   dimension=d*lDL*lDR;
-  //std::cout<<lDL<<"x"<<lDR<<" -> "<<dimension<<std::endl;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -92,6 +93,7 @@ void optHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
       }
     }
   }
+  delete[] innercontainer;
   for(int si=0;si<d;si++){
     for(int ai=0;ai<lDR;ai++){
       for(int aim=0;aim<lDL;aim++){
@@ -105,6 +107,7 @@ void optHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
       }
     }
   }
+  delete[] outercontainer;
 }
 
 
