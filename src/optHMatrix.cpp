@@ -2,6 +2,7 @@
 #include <iostream>
 #include "parameters.h"
 #include "optHMatrix.h"
+#include "tmpContainer.h"
 
 optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, arcomplex<double> *Hin, parameters pars, int i):
   Rctr(Rin),
@@ -52,6 +53,7 @@ optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, arcomplex
   }
   //Dimension of H is obviously a necessary information for ARPACK++
   dimension=d*lDL*lDR;
+  std::cout<<"Current eigenvalue problem Dimension: "<<dimension<<std::endl;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -60,10 +62,9 @@ optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, arcomplex
 //---------------------------------------------------------------------------------------------------//
 
 void optHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
-  arcomplex<double> *innercontainer;
-  arcomplex<double> *outercontainer;
-  innercontainer=new arcomplex<double>[lDR*lDwR*lDL*d];
-  outercontainer=new arcomplex<double>[lDR*lDwL*lDL*d];
+  tmpContainer innercontainer(d,lDL,lDR,lDwR);
+  tmpContainer outercontainer(d,lDwL,lDR,lDL);
+  double threshold=1e-20;
   arcomplex<double> simpleContainer;
   for(int sip=0;sip<d;sip++){
     for(int aimp=0;aimp<lDL;aimp++){
@@ -73,7 +74,7 @@ void optHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
 	  for(int aip=0;aip<lDR;aip++){
 	    simpleContainer+=Rctr[ctrIndex(ai,bi,aip)]*v[vecIndex(sip,aip,aimp)];
 	  }
-	  innercontainer[containerIndexInner(sip,aimp,ai,bi)]=simpleContainer;
+	  innercontainer.access(sip,aimp,ai,bi)=simpleContainer;
 	}
       }
     }
@@ -85,29 +86,27 @@ void optHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
 	  simpleContainer=0;
 	  for(int sip=0;sip<d;sip++){
 	    for(int bi=0;bi<lDwR;bi++){
-	      simpleContainer+=innercontainer[containerIndexInner(sip,aimp,ai,bi)]*H[hIndex(si,sip,bi,bim)];
+	      simpleContainer+=innercontainer.access(sip,aimp,ai,bi)*H[hIndex(si,sip,bi,bim)];
 	    }
 	  }
-	  outercontainer[containerIndexOuter(si,bim,ai,aimp)]=simpleContainer;
+	  outercontainer.access(si,bim,ai,aimp)=simpleContainer;
 	}
       }
     }
   }
-  delete[] innercontainer;
   for(int si=0;si<d;si++){
     for(int ai=0;ai<lDR;ai++){
       for(int aim=0;aim<lDL;aim++){
 	simpleContainer=0;
 	for(int bim=0;bim<lDwL;bim++){
 	  for(int aimp=0;aimp<lDL;aimp++){
-	    simpleContainer+=outercontainer[containerIndexOuter(si,bim,ai,aimp)]*Lctr[ctrIndex(aim,bim,aimp)];
+	    simpleContainer+=outercontainer.access(si,bim,ai,aimp)*Lctr[ctrIndex(aim,bim,aimp)];
 	  }
 	}
 	w[vecIndex(si,ai,aim)]=simpleContainer;
       }
     }
   }
-  delete[] outercontainer;
 }
 
 

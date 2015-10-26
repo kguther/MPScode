@@ -11,7 +11,7 @@ Qsystem::Qsystem(parameters inputpars){
 int Qsystem::getGroundState(){
   for(int iStage=0;iStage<pars.nStages;iStage++){
     TensorNetwork.setParameterNSweeps(stageNSweeps(iStage));
-    TensorNetwork.setParameterD(stageD(iStage));
+    TensorNetwork.setParameterD(pars.D);//stageD(iStage));
     E0=TensorNetwork.solve();
   }
   return 0;

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <time.h>
 #include <iomanip>
 #include <complex>
 #include <cstdlib>
@@ -25,7 +26,7 @@ int delta(int i, int j);
 //-----------------------------------------------------------------//
 
 int main(int argc, char *argv[]){
-  testSolve();
+  testMatrix();
   return 0;
 }
 
@@ -37,7 +38,7 @@ int main(int argc, char *argv[]){
 void testSolve(){
   double eigVal;
   lapack_complex_double *****array, ****state;
-  parameters pars(2,50,100,5,4);
+  parameters pars(2,100,4,5,4);
   Qsystem sys(pars);
   array=sys.TensorNetwork.networkH;
   int lD, rD, lDwR, lDwL, Dw;
@@ -119,10 +120,10 @@ void testSolve(){
   cout<<"Obtained grounds state energy as: "<<setprecision(21)<<eigVal<<endl;
 }
 
-/*void testMatrix(){
+void testMatrix(){
   lapack_complex_double *****array, ****state, ****Rcontr, ****Lcontr;
   lapack_complex_double Ldummy=lapack_make_complex_double(1.0,0.0);
-  parameters pars(2,32,6,5,10);
+  parameters pars(2,200,20,5,10);
   network system(pars);
   array=system.networkH;
   state=system.networkState;
@@ -168,21 +169,17 @@ void testSolve(){
       }
     }
   }
+  clock_t curtime;
   system.calcCtrFull(Lcontr,-1);
   system.calcCtrFull(Rcontr,1);
-  cout<<Rcontr[1][0][0][0]<<endl;
-  for(int ai=0;ai<2;ai++){
-    for(int bi=0;bi<5;bi++){
-      for(int aip=0;aip<2;aip++){
-	cout<<Lcontr[1][ai][bi][aip]<<endl;
-      }
-    }
-  }
   matrixprint(1,pars.d*pars.d,state[0][0][0]);
-  optHMatrix prb(Rcontr[1][0][0],Lcontr[1][0][0],system.networkH[0][0][0][0],pars,0);
-  prb.MultMv(state[0][0][0],state[0][0][0]);
+  optHMatrix prb(Rcontr[10][0][0],Lcontr[10][0][0],system.networkH[10][0][0][0],pars,10);
+  curtime=clock();
+  prb.MultMv(state[10][0][0],state[10][0][0]);
+  curtime=clock()-curtime;
+  cout<<"Matrix mutliplication took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
   matrixprint(1,pars.d*pars.d,state[0][0][0]);
-}*/
+}
 
 int delta(int i, int j){
   if(i==j){
