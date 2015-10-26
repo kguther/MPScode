@@ -6,7 +6,7 @@ SUPERLU_INCLUDE=-I /usr/include/superlu
 SUPERLU_LIB=/usr/lib/libsuperlu.a
 APCK_LIB=/usr/lib/libarpack.a /usr/lib/libarpack++.a
 CFLAGS=-Wall -g
-OBJECTS=main.o parameters.o network.o arrayprocessing.o optHMatrix.o Qsystem.o
+OBJECTS=main.o parameters.o network.o arrayprocessing.o Qsystem.o optHMatrix.o
 NAME=MPScode
 
 all: $(OBJECTS)

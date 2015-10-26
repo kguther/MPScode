@@ -214,17 +214,14 @@ void network::calcCtrIterLeft(lapack_complex_double ****Pctr, const int i){ //it
   sourcePctr=Pctr[i-1][0][0];
   targetPctr=Pctr[i][0][0];
   //container arrays to significantly reduce computational effort by storing intermediate results
-  //lapack_complex_double ****innercontainer, ****outercontainer;
   if(i==1){
     // b_-1  can only take one value
     DwL=1;
   }
   DR=locDimR(i-1);
   DL=locDimL(i-1);
-  tmpContainer innercontainer(d,DwL,DL,DR);
-  tmpContainer outercontainer(d,DwR,DR,DL);
-  //  create4D(d,DwL,DL,DR,&innercontainer);
-  //  create4D(d,DwR,DR,DL,&outercontainer);
+  tmpContainer<lapack_complex_double> innercontainer(d,DwL,DL,DR);
+  tmpContainer<lapack_complex_double> outercontainer(d,DwR,DR,DL);
   //horrible construct to efficiently compute the partial contraction, is parallelizable, needs to be parallelized (still huge computational effort) <-- potential for optimization
   for(int sip=0;sip<d;sip++){
     for(int bim=0;bim<DwL;bim++){
@@ -234,7 +231,6 @@ void network::calcCtrIterLeft(lapack_complex_double ****Pctr, const int i){ //it
 	  for(int aimp=0;aimp<DL;aimp++){
 	    simpleContainer+=sourcePctr[pctrIndex(aim,bim,aimp)]*networkState[i-1][sip][aip][aimp]; 
 	  }
-	  //innercontainer[sip][bim][aim][aip]=simpleContainer;
 	  innercontainer.access(sip,bim,aim,aip)=simpleContainer;
 	}
       }
@@ -248,24 +244,22 @@ void network::calcCtrIterLeft(lapack_complex_double ****Pctr, const int i){ //it
 	  simpleContainer=0;
 	  for(int sip=0;sip<d;sip++){
 	    for(int bim=0;bim<DwL;bim++){
-	      simpleContainer+=networkH[i-1][si][sip][bi][bim]*innercontainer.access(sip,bim,aim,aip);//[sip][bim][aim][aip];
+	      simpleContainer+=networkH[i-1][si][sip][bi][bim]*innercontainer.access(sip,bim,aim,aip);
 	    }
 	  }
-	  //outercontainer[si][bi][aip][aim]=simpleContainer;
 	  outercontainer.access(si,bi,aip,aim)=simpleContainer;
 	}
       }
     }
   }
   cout<<"Completed calculation of outer container"<<endl;
-//delete4D(&innercontainer);
   for(int ai=0;ai<DR;ai++){
     for(int bi=0;bi<DwR;bi++){
       for(int aip=0;aip<DR;aip++){
 	simpleContainer=0;
 	for(int si=0;si<d;si++){
 	  for(int aim=0;aim<DL;aim++){
-	    simpleContainer+=conj(networkState[i-1][si][ai][aim])*outercontainer.access(si,bi,aip,aim);//[si][bi][aip][aim];
+	    simpleContainer+=conj(networkState[i-1][si][ai][aim])*outercontainer.access(si,bi,aip,aim);
 	  }
 	}
 	targetPctr[pctrIndex(ai,bi,aip)]=simpleContainer;
@@ -273,7 +267,6 @@ void network::calcCtrIterLeft(lapack_complex_double ****Pctr, const int i){ //it
     }
   }
   cout<<"Completed calculation of partial contraction"<<endl;
-//delete4D(&outercontainer);
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -287,17 +280,14 @@ void network::calcCtrIterRight(lapack_complex_double ****Pctr, const int i){ //i
   lapack_complex_double *sourcePctr, *targetPctr;
   sourcePctr=Pctr[i+1][0][0];
   targetPctr=Pctr[i][0][0];
-  //  lapack_complex_double ****innercontainer, ****outercontainer;
   if(i==L-1){
     // b_L-1  can only take one value
     DwR=1;
   }
   DR=locDimR(i+1);
   DL=locDimL(i+1);
-  tmpContainer innercontainer(d,DwR,DR,DL);
-  //create4D(d,DwR,DR,DL,&innercontainer);
-  tmpContainer outercontainer(d,DwL,DL,DR);
-  //create4D(d,DwL,DL,DR,&outercontainer);
+  tmpContainer<lapack_complex_double> innercontainer(d,DwR,DR,DL);
+  tmpContainer<lapack_complex_double> outercontainer(d,DwL,DL,DR);
   for(int sip=0;sip<d;sip++){                                                       
     for(int bi=0;bi<DwR;bi++){
       for(int ai=0;ai<DR;ai++){
@@ -306,7 +296,6 @@ void network::calcCtrIterRight(lapack_complex_double ****Pctr, const int i){ //i
 	  for(int aip=0;aip<DR;aip++){
 	    simpleContainer+=sourcePctr[pctrIndex(ai,bi,aip)]*networkState[i+1][sip][aip][aimp]; 
 	  }
-	  //innercontainer[sip][bi][ai][aimp]=simpleContainer;
 	  innercontainer.access(sip,bi,ai,aimp)=simpleContainer;
 	}
       }
@@ -321,11 +310,10 @@ void network::calcCtrIterRight(lapack_complex_double ****Pctr, const int i){ //i
 	  for(int sip=0;sip<d;sip++){
 	    for(int bi=0;bi<DwR;bi++){
 	      if(abs(networkH[i+1][si][sip][bi][bim])>threshold){ 
-	        simpleContainer+=networkH[i+1][si][sip][bi][bim]*innercontainer.access(sip,bi,ai,aimp);//[sip][bi][ai][aimp];
+	        simpleContainer+=networkH[i+1][si][sip][bi][bim]*innercontainer.access(sip,bi,ai,aimp);
 	      }
 	    }
 	  }
-	  //outercontainer[si][bim][aimp][ai]=simpleContainer;
 	  outercontainer.access(si,bim,aimp,ai)=simpleContainer;
 	}
       }
@@ -339,7 +327,7 @@ void network::calcCtrIterRight(lapack_complex_double ****Pctr, const int i){ //i
 	simpleContainer=0;
 	for(int si=0;si<d;si++){
 	  for(int ai=0;ai<DR;ai++){
-	    simpleContainer+=conj(networkState[i+1][si][ai][aim])*outercontainer.access(si,bim,aimp,ai);//[si][bim][aimp][ai];
+	    simpleContainer+=conj(networkState[i+1][si][ai][aim])*outercontainer.access(si,bim,aimp,ai);
 	  }
 	}
 	targetPctr[pctrIndex(aim,bim,aimp)]=simpleContainer;
@@ -347,7 +335,6 @@ void network::calcCtrIterRight(lapack_complex_double ****Pctr, const int i){ //i
     }
   }
   cout<<"Completed calculation of partial contraction"<<endl;
-  // delete4D(&outercontainer);
 }
 
 //---------------------------------------------------------------------------------------------------//

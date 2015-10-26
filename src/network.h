@@ -6,6 +6,7 @@
 #include <lapacke.h>
 #include <arcomp.h>
 #include "parameters.h"
+#include "mpo.h"
 
 using namespace std;
 
@@ -21,6 +22,7 @@ class network{
   void leftNormalizationMatrixFull();
   int calcCtrFull(lapack_complex_double ****Pctr, const int direction);
   lapack_complex_double ****networkState;
+  //lapack_complex_double *****networkH;
   lapack_complex_double *****networkH;
   lapack_complex_double ****Lctr;
   lapack_complex_double ****Rctr;

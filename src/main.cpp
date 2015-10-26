@@ -170,8 +170,11 @@ void testMatrix(){
     }
   }
   clock_t curtime;
+  curtime=clock();
   system.calcCtrFull(Lcontr,-1);
   system.calcCtrFull(Rcontr,1);
+  curtime=clock()-curtime;
+  cout<<"Partial contraction took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
   matrixprint(1,pars.d*pars.d,state[0][0][0]);
   optHMatrix prb(Rcontr[10][0][0],Lcontr[10][0][0],system.networkH[10][0][0][0],pars,10);
   curtime=clock();
