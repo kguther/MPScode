@@ -40,7 +40,6 @@ void testSolve(){
   lapack_complex_double *****array, ****state;
   parameters pars(2,100,4,5,4);
   Qsystem sys(pars);
-  array=sys.TensorNetwork.networkH;
   int lD, rD, lDwR, lDwL, Dw;
   Dw=pars.Dw;
   for(int i=0;i<pars.L;i++){
@@ -64,49 +63,49 @@ void testSolve(){
 	      if(i!=0){
 		switch(bim){
 		case 4:
-		  array[i][s][sp][bi][bim]=0;
+		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=0;
 		  break;
 		case 0:
-		  array[i][s][sp][bi][bim]=delta(s,sp);
+		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=delta(s,sp);
 		  break;
 		case 1:
-		  array[i][s][sp][bi][bim]=delta(s,sp+1);
+		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=delta(s,sp+1);
 		  break;
 		case 2:
-		  array[i][s][sp][bi][bim]=delta(s,sp-1);
+		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=delta(s,sp-1);
 		  break;
 		case 3:
-		  array[i][s][sp][bi][bim]=2*(s-0.5)*delta(s,sp);
+		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=2*(s-0.5)*delta(s,sp);
 		  break;
 		default:
-		  array[i][s][sp][bi][bim]=0;
+		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=0;
 		}
 	      }
 	      else{
-		array[i][s][sp][bi][bim]=0;
+	        sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=0;
 	      }
 	    }
 	    else{
 	      if(bim==lDwL-1){
 		switch(bi){
 		case 1:
-		  array[i][s][sp][bi][bim]=0.5*delta(s,sp-1);
+		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=0.5*delta(s,sp-1);
 		  break;
 		case 2:
-		  array[i][s][sp][bi][bim]=0.5*delta(s,sp+1);
+		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=0.5*delta(s,sp+1);
 		  break;
 		case 3:
-		  array[i][s][sp][bi][bim]=2*(s-0.5)*delta(s,sp);
+		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=2*(s-0.5)*delta(s,sp);
 		  break;
 		case 4:
-		  array[i][s][sp][bi][bim]=delta(s,sp);
+		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=delta(s,sp);
 		  break;
 		default:
-		  array[i][s][sp][bi][bim]=0;
+		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=0;
 		}
 	      }
 	      else{
-		array[i][s][sp][bi][bim]=0;
+	        sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=0;
 	      }
 	    }
 	  }
@@ -121,11 +120,10 @@ void testSolve(){
 }
 
 void testMatrix(){
-  lapack_complex_double *****array, ****state, ****Rcontr, ****Lcontr;
+  lapack_complex_double *****array, ****state, *RTerm, *LTerm, *HTerm;
   lapack_complex_double Ldummy=lapack_make_complex_double(1.0,0.0);
   parameters pars(2,200,20,5,10);
   network system(pars);
-  array=system.networkH;
   state=system.networkState;
   int lD, rD;
   int icrit=pars.L/2;
@@ -135,18 +133,16 @@ void testMatrix(){
       break;
     }
   }
-  create4D(pars.L,pars.D,pars.Dw,pars.D,&Lcontr);
-  create4D(pars.L,pars.D,pars.Dw,pars.D,&Rcontr);
   for(int i=0;i<pars.L;i++){
     for(int s=0;s<pars.d;s++){
       for(int sp=0;sp<pars.d;sp++){
 	for(int bi=0;bi<pars.Dw;bi++){
 	  for(int bip=0;bip<pars.Dw;bip++){
 	    if(bi==bip){
-	      array[i][s][sp][bi][bip]=1;
+	      system.networkH.global_access(i,s,sp,bi,bip)=1;
 	    }
 	    else{
-	      array[i][s][sp][bi][bip]=0;
+	      system.networkH.global_access(i,s,sp,bi,bip)=0;
 	    }
 	  }
 	}
@@ -171,12 +167,15 @@ void testMatrix(){
   }
   clock_t curtime;
   curtime=clock();
-  system.calcCtrFull(Lcontr,-1);
-  system.calcCtrFull(Rcontr,1);
+  system.calcCtrFull(-1);
+  system.calcCtrFull(1);
   curtime=clock()-curtime;
   cout<<"Partial contraction took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
   matrixprint(1,pars.d*pars.d,state[0][0][0]);
-  optHMatrix prb(Rcontr[10][0][0],Lcontr[10][0][0],system.networkH[10][0][0][0],pars,10);
+  system.Lctr.subContractionStart(10,&LTerm);
+  system.Rctr.subContractionStart(10,&RTerm);
+  system.networkH.subMatrixStart(10,&HTerm);
+  optHMatrix prb(RTerm,LTerm,HTerm,pars,10);
   curtime=clock();
   prb.MultMv(state[10][0][0],state[10][0][0]);
   curtime=clock()-curtime;

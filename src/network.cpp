@@ -11,6 +11,8 @@
 #include "arrayprocessing.h"
 #include "optHMatrix.h"
 #include "tmpContainer.h"
+#include "pContraction.h"
+#include "mpo.h"
 
 using namespace std;
 
@@ -30,7 +32,6 @@ using namespace std;
 network::network(){
   //Empty networks dont do much, use the generate function to fill them - this allows for separation of declaration and assignment
   //Set all internal pointers to NULL to allow for destruction of an empty network
-  create5D(1,1,1,1,1,&networkH);
   createStateArray(1,1,1,&networkState);
 }
 network::network(parameters inputpars){
@@ -38,7 +39,6 @@ network::network(parameters inputpars){
 }
 
 network::~network(){
-  delete5D(&networkH);
   deleteStateArray(&networkState);
 }
 
@@ -47,7 +47,6 @@ network::~network(){
 //---------------------------------------------------------------------------------------------------//
 
 void network::generate(parameters inputpars){
-  delete5D(&networkH);
   deleteStateArray(&networkState);
   initialize(inputpars);
 }
@@ -68,7 +67,7 @@ void network::initialize(parameters inputpars){
     }
   }
   //Allocation of Hamiltonian MPO - square matrices are used since no library matrix functions have to be applied - this allows for faster access
-  create5D(L,d,d,Dw,Dw,&networkH);
+  networkH.initialize(d,Dw,L);
   //Allocation of MPS - memory of the matrices has to be allocated exactly matching the dimension to use them with lapack
   createStateArray(d,D,L,&networkState);
   for(int i=0;i<pars.L;i++){
@@ -87,6 +86,8 @@ void network::initialize(parameters inputpars){
       }
     }
   }
+  Lctr.initialize(L,D,Dw);
+  Rctr.initialize(L,D,Dw);
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -123,6 +124,8 @@ int network::setParameterD(int Dnew){
       break;
     }
   }
+  Lctr.initialize(L,D,Dw);
+  Rctr.initialize(L,D,Dw);
   return 0;
 }
 
@@ -136,22 +139,22 @@ double network::solve(){  //IMPORTANT TODO: ENHANCE STARTING POINT -> HUGE SPEED
   lapack_complex_double normalization;
   double lambda;
   int errRet;
+  Lctr.initialize(L,D,Dw);
+  Rctr.initialize(L,D,Dw);
   for(int i=L-1;i>0;i--){
     rightNormalizeState(i);
   }
   normalizeFinal(1);
   //Allocate a 4D array of dimension LxDxDwxD which is contigous in the last index for the partial contractions Lctr and Rctr
-  create4D(L,D,Dw,D,&Lctr);                                                      
-  create4D(L,D,Dw,D,&Rctr);
-  Lctr[0][0][0][0]=1;
-  calcCtrFull(Rctr,1);
+  Lctr.global_access(0,0,0,0)=1;
+  calcCtrFull(1);
   for(int iSweep=0;iSweep<nSweeps;iSweep++){
     cout<<"Starting rightsweep\n";
     for(int i=0;i<(L-1);i++){
       cout<<"Optimizing site matrix\n";
       errRet=optimize(i,&lambda); 
       leftNormalizeState(i);
-      calcCtrIterLeft(Lctr,i+1);
+      calcCtrIterLeft(i+1);
     }
     normalizeFinal(0);
     cout<<"Starting leftsweep\n";
@@ -159,14 +162,14 @@ double network::solve(){  //IMPORTANT TODO: ENHANCE STARTING POINT -> HUGE SPEED
       cout<<"Optimizing site matrix\n";      
       errRet=optimize(i,&lambda);
       rightNormalizeState(i);
-      calcCtrIterRight(Rctr,i-1);
+      calcCtrIterRight(i-1);
     }
     normalizeFinal(1);
   }
   //Free the memory previously allocated for partial contractions
-  delete4D(&Lctr);
-  delete4D(&Rctr);
-  cout<<"Determined groun state energy of: "<<lambda<<" using parameters: D="<<D<<" nSweeps="<<nSweeps<<endl;
+  //delete4D(&Lctr);
+  //delete4D(&Rctr);
+  cout<<"Determined ground state energy of: "<<lambda<<" using parameters: D="<<D<<" nSweeps="<<nSweeps<<endl;
   return lambda;
 }
 
@@ -180,8 +183,12 @@ int network::optimize(int const i, double *iolambda){
   arcomplex<double> lambda;
   arcomplex<double> *plambda;
   arcomplex<double> *currentM;
+  arcomplex<double> *RTerm, *LTerm, *HTerm;
+  Lctr.subContractionStart(i,&LTerm);
+  Rctr.subContractionStart(i,&RTerm);
+  networkH.subMatrixStart(i,&HTerm);
   int nconv;
-  optHMatrix HMat(Rctr[i][0][0],Lctr[i][0][0],networkH[i][0][0][0],pars,i);
+  optHMatrix HMat(RTerm,LTerm,HTerm,pars,i);
   plambda=&lambda;
   currentM=networkState[i][0][0];
   ARCompStdEig<double, optHMatrix> eigProblem(HMat.dim(),1,&HMat,&optHMatrix::MultMv,"SR",0,1e-8,400,currentM);
@@ -204,15 +211,15 @@ int network::optimize(int const i, double *iolambda){
 // candidate for optimization
 //---------------------------------------------------------------------------------------------------//
 
-void network::calcCtrIterLeft(lapack_complex_double ****Pctr, const int i){ //iteratively builds L expression
+void network::calcCtrIterLeft(const int i){ //iteratively builds L expression
   int DR, DL, DwR, DwL;
   int threshold=1e-30;
   DwL=Dw;
   DwR=Dw;
   lapack_complex_double simpleContainer;
   lapack_complex_double *sourcePctr, *targetPctr;
-  sourcePctr=Pctr[i-1][0][0];
-  targetPctr=Pctr[i][0][0];
+  Lctr.subContractionStart(i-1,&sourcePctr);
+  Lctr.subContractionStart(i,&targetPctr);
   //container arrays to significantly reduce computational effort by storing intermediate results
   if(i==1){
     // b_-1  can only take one value
@@ -244,7 +251,7 @@ void network::calcCtrIterLeft(lapack_complex_double ****Pctr, const int i){ //it
 	  simpleContainer=0;
 	  for(int sip=0;sip<d;sip++){
 	    for(int bim=0;bim<DwL;bim++){
-	      simpleContainer+=networkH[i-1][si][sip][bi][bim]*innercontainer.access(sip,bim,aim,aip);
+	      simpleContainer+=networkH.global_access(i-1,si,sip,bi,bim)*innercontainer.access(sip,bim,aim,aip);
 	    }
 	  }
 	  outercontainer.access(si,bi,aip,aim)=simpleContainer;
@@ -271,15 +278,15 @@ void network::calcCtrIterLeft(lapack_complex_double ****Pctr, const int i){ //it
 
 //---------------------------------------------------------------------------------------------------//
 
-void network::calcCtrIterRight(lapack_complex_double ****Pctr, const int i){ //iteratively builds R expression
+void network::calcCtrIterRight(const int i){ //iteratively builds R expression
   int DR, DL, DwR, DwL;
   int threshold=1e-30;
   DwL=Dw;
   DwR=Dw;
   lapack_complex_double simpleContainer;
   lapack_complex_double *sourcePctr, *targetPctr;
-  sourcePctr=Pctr[i+1][0][0];
-  targetPctr=Pctr[i][0][0];
+  Rctr.subContractionStart(i+1,&sourcePctr);
+  Rctr.subContractionStart(i,&targetPctr);
   if(i==L-1){
     // b_L-1  can only take one value
     DwR=1;
@@ -309,9 +316,7 @@ void network::calcCtrIterRight(lapack_complex_double ****Pctr, const int i){ //i
 	  simpleContainer=0;
 	  for(int sip=0;sip<d;sip++){
 	    for(int bi=0;bi<DwR;bi++){
-	      if(abs(networkH[i+1][si][sip][bi][bim])>threshold){ 
-	        simpleContainer+=networkH[i+1][si][sip][bi][bim]*innercontainer.access(sip,bi,ai,aimp);
-	      }
+	      simpleContainer+=networkH.global_access(i+1,si,sip,bi,bim)*innercontainer.access(sip,bi,ai,aimp);
 	    }
 	  }
 	  outercontainer.access(si,bim,aimp,ai)=simpleContainer;
@@ -339,21 +344,21 @@ void network::calcCtrIterRight(lapack_complex_double ****Pctr, const int i){ //i
 
 //---------------------------------------------------------------------------------------------------//
   
-int network::calcCtrFull(lapack_complex_double ****Pctr, const int direction){
+int network::calcCtrFull(const int direction){
   int L=pars.L;
   //This is just some ordinary iterative computation of the partial contraction Pctr (P=R,L)
   if(direction==1){
-    Pctr[L-1][0][0][0]=lapack_make_complex_double(1,0);
+    Rctr.global_access(L-1,0,0,0)=lapack_make_complex_double(1,0);
     for(int i=L-2;i>=0;i--){
-      calcCtrIterRight(Pctr,i);
+      calcCtrIterRight(i);
 	}
     return 0;
   }
   else{
     if(direction==-1){
-      Pctr[0][0][0][0]=lapack_make_complex_double(1,0);
+      Lctr.global_access(0,0,0,0)=lapack_make_complex_double(1,0);
       for(int i=1;i<L;i++){
-	calcCtrIterLeft(Pctr,i);
+	calcCtrIterLeft(i);
       }
       return 0;
     }
