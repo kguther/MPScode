@@ -6,7 +6,7 @@
 class siteoptimizer{
  public:
   siteoptimizer(int dimensionin, int nzelin, arcomplex<double> *Hin, int *irowin, int *pcolin);
-  void solveEigen(arcomplex<double> *plambda, arcomplex<double> *currentM);
+  int solveEigen(arcomplex<double> *plambda, arcomplex<double> *currentM);
  private:
   int *irow;
   int *pcol;

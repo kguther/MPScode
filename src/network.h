@@ -28,7 +28,7 @@ class network{
   network(network const &cpynet);//Copying and assigning networks is better avoided because it would work in a quite unintuitive way (the content of the array structures had to be copied, but the member itself must not be copied) and would be computationally quite expensive - but might be useful if one wanted to genuinely increase D during run (also: add a delete function for manual deletion)
   network& operator=(network const &cpynet);//Use the generate function instead, assignment is dangerous for networks with different parameters 
   void initialize(parameters pars);
-  int optimize(int const i, double *iolambda);
+  int optimize(int const i, double &iolambda);
   int locDimR(int const i);
   int locDimL(int const i);
   int leftNormalizeState(int const i);

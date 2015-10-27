@@ -1,17 +1,21 @@
 #include <cstdlib>
 #include <complex>
+#include <vector>
 #include <iostream>
+#include <iomanip>
 #include <cblas.h>
 #include <arcomp.h>
 #include <arscomp.h>
 #include <lapacke.h>
 #include <lapacke_utils.h>
+#include <time.h>
 #include "network.h"
 #include "arraycreation.h"
 #include "arrayprocessing.h"
 #include "optHMatrix.h"
 #include "tmpContainer.h"
 #include "pContraction.h"
+#include "siteoptimizer.h"
 #include "mpo.h"
 
 using namespace std;
@@ -139,6 +143,8 @@ double network::solve(){  //IMPORTANT TODO: ENHANCE STARTING POINT -> HUGE SPEED
   lapack_complex_double normalization;
   double lambda;
   int errRet;
+  clock_t curtime;
+  curtime=clock();
   Lctr.initialize(L,D,Dw);
   Rctr.initialize(L,D,Dw);
   for(int i=L-1;i>0;i--){
@@ -152,7 +158,10 @@ double network::solve(){  //IMPORTANT TODO: ENHANCE STARTING POINT -> HUGE SPEED
     cout<<"Starting rightsweep\n";
     for(int i=0;i<(L-1);i++){
       cout<<"Optimizing site matrix\n";
-      errRet=optimize(i,&lambda); 
+      curtime=clock();
+      errRet=optimize(i,lambda); 
+      curtime=clock()-curtime;
+      cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
       leftNormalizeState(i);
       calcCtrIterLeft(i+1);
     }
@@ -160,7 +169,10 @@ double network::solve(){  //IMPORTANT TODO: ENHANCE STARTING POINT -> HUGE SPEED
     cout<<"Starting leftsweep\n";
     for(int i=L-1;i>0;i--){
       cout<<"Optimizing site matrix\n";      
-      errRet=optimize(i,&lambda);
+      curtime=clock();
+      errRet=optimize(i,lambda); 
+      curtime=clock()-curtime;
+      cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
       rightNormalizeState(i);
       calcCtrIterRight(i-1);
     }
@@ -179,7 +191,7 @@ double network::solve(){  //IMPORTANT TODO: ENHANCE STARTING POINT -> HUGE SPEED
 // eigenvalue problem. 
 //---------------------------------------------------------------------------------------------------//
 
-int network::optimize(int const i, double *iolambda){
+int network::optimize(int const i, double &iolambda){
   arcomplex<double> lambda;
   arcomplex<double> *plambda;
   arcomplex<double> *currentM;
@@ -187,20 +199,20 @@ int network::optimize(int const i, double *iolambda){
   Lctr.subContractionStart(i,&LTerm);
   Rctr.subContractionStart(i,&RTerm);
   networkH.subMatrixStart(i,&HTerm);
-  int nconv;
   optHMatrix HMat(RTerm,LTerm,HTerm,pars,i);
   plambda=&lambda;
   currentM=networkState[i][0][0];
-  ARCompStdEig<double, optHMatrix> eigProblem(HMat.dim(),1,&HMat,&optHMatrix::MultMv,"SR",0,1e-8,400,currentM);
+  ARCompStdEig<double, optHMatrix> eigProblem(HMat.dim(),1,&HMat,&optHMatrix::MultMv,"SR",0,1e-3,400,currentM);
   //One should avoid to hit the maximum number of iterations since this can lead into a suboptimal site matrix, increasing the current energy (although usually not by a lot)
+  int nconv;
   nconv=eigProblem.EigenValVectors(currentM,plambda);
   if(nconv!=1){
     std::cout<<"Failed to converge in iterative eigensolver\n";
     return 1;
   }
   else{
-    cout<<"Current energy: "<<real(lambda)<<endl;
-    *iolambda=real(lambda);
+    cout<<setprecision(21)<<"Current energy: "<<real(lambda)<<endl;
+    iolambda=real(lambda);
     return 0;
   }
 }
@@ -238,7 +250,7 @@ void network::calcCtrIterLeft(const int i){ //iteratively builds L expression
 	  for(int aimp=0;aimp<DL;aimp++){
 	    simpleContainer+=sourcePctr[pctrIndex(aim,bim,aimp)]*networkState[i-1][sip][aip][aimp]; 
 	  }
-	  innercontainer.access(sip,bim,aim,aip)=simpleContainer;
+	  innercontainer.global_access(sip,bim,aim,aip)=simpleContainer;
 	}
       }
     }
@@ -251,10 +263,10 @@ void network::calcCtrIterLeft(const int i){ //iteratively builds L expression
 	  simpleContainer=0;
 	  for(int sip=0;sip<d;sip++){
 	    for(int bim=0;bim<DwL;bim++){
-	      simpleContainer+=networkH.global_access(i-1,si,sip,bi,bim)*innercontainer.access(sip,bim,aim,aip);
+	      simpleContainer+=networkH.global_access(i-1,si,sip,bi,bim)*innercontainer.global_access(sip,bim,aim,aip);
 	    }
 	  }
-	  outercontainer.access(si,bi,aip,aim)=simpleContainer;
+	  outercontainer.global_access(si,bi,aip,aim)=simpleContainer;
 	}
       }
     }
@@ -266,7 +278,7 @@ void network::calcCtrIterLeft(const int i){ //iteratively builds L expression
 	simpleContainer=0;
 	for(int si=0;si<d;si++){
 	  for(int aim=0;aim<DL;aim++){
-	    simpleContainer+=conj(networkState[i-1][si][ai][aim])*outercontainer.access(si,bi,aip,aim);
+	    simpleContainer+=conj(networkState[i-1][si][ai][aim])*outercontainer.global_access(si,bi,aip,aim);
 	  }
 	}
 	targetPctr[pctrIndex(ai,bi,aip)]=simpleContainer;
@@ -303,7 +315,7 @@ void network::calcCtrIterRight(const int i){ //iteratively builds R expression
 	  for(int aip=0;aip<DR;aip++){
 	    simpleContainer+=sourcePctr[pctrIndex(ai,bi,aip)]*networkState[i+1][sip][aip][aimp]; 
 	  }
-	  innercontainer.access(sip,bi,ai,aimp)=simpleContainer;
+	  innercontainer.global_access(sip,bi,ai,aimp)=simpleContainer;
 	}
       }
     }
@@ -316,10 +328,10 @@ void network::calcCtrIterRight(const int i){ //iteratively builds R expression
 	  simpleContainer=0;
 	  for(int sip=0;sip<d;sip++){
 	    for(int bi=0;bi<DwR;bi++){
-	      simpleContainer+=networkH.global_access(i+1,si,sip,bi,bim)*innercontainer.access(sip,bi,ai,aimp);
+	      simpleContainer+=networkH.global_access(i+1,si,sip,bi,bim)*innercontainer.global_access(sip,bi,ai,aimp);
 	    }
 	  }
-	  outercontainer.access(si,bim,aimp,ai)=simpleContainer;
+	  outercontainer.global_access(si,bim,aimp,ai)=simpleContainer;
 	}
       }
     }
@@ -332,7 +344,7 @@ void network::calcCtrIterRight(const int i){ //iteratively builds R expression
 	simpleContainer=0;
 	for(int si=0;si<d;si++){
 	  for(int ai=0;ai<DR;ai++){
-	    simpleContainer+=conj(networkState[i+1][si][ai][aim])*outercontainer.access(si,bim,aimp,ai);
+	    simpleContainer+=conj(networkState[i+1][si][ai][aim])*outercontainer.global_access(si,bim,aimp,ai);
 	  }
 	}
 	targetPctr[pctrIndex(aim,bim,aimp)]=simpleContainer;
@@ -484,6 +496,8 @@ int network::locDimR(int const i){
   }
   return pow(d,L-i-1);
 }
+
+
 
 //---------------------------------------------------------------------------------------------------//
 // These functions compute the normalization of the network to the left of some site i. This is for

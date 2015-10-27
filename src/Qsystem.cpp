@@ -18,14 +18,18 @@ int Qsystem::getGroundState(){
 }
 
 int Qsystem::stageD(int nStage){
-  int D0=(pars.D>50)?pars.D/10:5;
-  return D0+nStage*(pars.D-D0)/(pars.nStages-1);
+  if(pars.nStages>1){
+    int D0=(pars.D>10)?pars.D/2:5;
+    return D0+nStage*(pars.D-D0)/(pars.nStages-1);
+  }
+  else{
+    return pars.D;
+  }
 }
 
 int Qsystem::stageNSweeps(int nStage){
-  int nSweeps0=2;
-  if(pars.nSweeps>2){
-    return nSweeps0+nStage*(pars.nSweeps-nSweeps0)/(pars.nStages-1);
+  if(nStage==(pars.nStages-1)){
+    return pars.nSweeps;
   }
   else{
     return 2;

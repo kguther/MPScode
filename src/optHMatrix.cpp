@@ -64,6 +64,7 @@ optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, arcomplex
 void optHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
   tmpContainer<arcomplex<double> > innercontainer(d,lDL,lDR,lDwR);
   tmpContainer<arcomplex<double> > outercontainer(d,lDwL,lDR,lDL);
+  int nNzero;
   double threshold=1e-20;
   arcomplex<double> simpleContainer;
   for(int sip=0;sip<d;sip++){
@@ -74,7 +75,7 @@ void optHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
 	  for(int aip=0;aip<lDR;aip++){
 	    simpleContainer+=Rctr[ctrIndex(ai,bi,aip)]*v[vecIndex(sip,aip,aimp)];
 	  }
-	  innercontainer.access(sip,aimp,ai,bi)=simpleContainer;
+	  innercontainer.global_access(sip,aimp,ai,bi)=simpleContainer;
 	}
       }
     }
@@ -86,10 +87,10 @@ void optHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
 	  simpleContainer=0;
 	  for(int sip=0;sip<d;sip++){
 	    for(int bi=0;bi<lDwR;bi++){
-	      simpleContainer+=innercontainer.access(sip,aimp,ai,bi)*H[hIndex(si,sip,bi,bim)];
+	      simpleContainer+=innercontainer.global_access(sip,aimp,ai,bi)*H[hIndex(si,sip,bi,bim)];
 	    }
 	  }
-	  outercontainer.access(si,bim,ai,aimp)=simpleContainer;
+	  outercontainer.global_access(si,bim,ai,aimp)=simpleContainer;
 	}
       }
     }
@@ -100,7 +101,7 @@ void optHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
 	simpleContainer=0;
 	for(int bim=0;bim<lDwL;bim++){
 	  for(int aimp=0;aimp<lDL;aimp++){
-	    simpleContainer+=outercontainer.access(si,bim,ai,aimp)*Lctr[ctrIndex(aim,bim,aimp)];
+	    simpleContainer+=outercontainer.global_access(si,bim,ai,aimp)*Lctr[ctrIndex(aim,bim,aimp)];
 	  }
 	}
 	w[vecIndex(si,ai,aim)]=simpleContainer;

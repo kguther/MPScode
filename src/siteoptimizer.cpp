@@ -17,12 +17,14 @@ siteoptimizer::siteoptimizer(int dimensionin, int nzelin, arcomplex<double> *Hin
 // eigenvalue problem. 
 //---------------------------------------------------------------------------------------------------//
 
-void siteoptimizer::solveEigen(arcomplex<double> *plambda, arcomplex<double> *currentM){
+int siteoptimizer::solveEigen(arcomplex<double> *plambda, arcomplex<double> *currentM){
   int nconv;
   ARluNonSymMatrix<arcomplex<double> ,double> Hopt(dimension,nzel,H,irow,pcol);
-  ARluCompStdEig<double> OptProblem(1,Hopt,"SM",3,1e-8);
+  ARluCompStdEig<double> OptProblem(1,Hopt,"SR",3,1e-8);
   nconv=OptProblem.EigenValVectors(currentM,plambda);
   if(nconv==0){
     std::cout<<"Failed to converge in iterative eigensolver";
+    return 1;
   }
+  return 0;
 }
