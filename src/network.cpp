@@ -104,10 +104,12 @@ void network::setParameterNSweeps(int Nnew){
 }
 
 int network::setParameterD(int Dnew){
+  //Decreasing D is neither required nor reasonable in any context
   if(Dnew<D){
     return -1;
   }
   lapack_complex_double ****newNetworkState;
+  //Copy the content of the current state into the larger array (which is initialized with zero)
   createStateArray(d,Dnew,L,&newNetworkState);
   for(int i=0;i<L;i++){
     for(int si=0;si<d;si++){
@@ -118,8 +120,10 @@ int network::setParameterD(int Dnew){
       }
     }
   }
+  //Replace the current state
   deleteStateArray(&networkState);
   networkState=newNetworkState;
+  //Adapt D
   D=Dnew;
   pars.D=Dnew;
   for(int j=0;j<L/2;j++){
@@ -128,6 +132,7 @@ int network::setParameterD(int Dnew){
       break;
     }
   }
+  //Adapt L and R expression
   Lctr.initialize(L,D,Dw);
   Rctr.initialize(L,D,Dw);
   return 0;
@@ -153,10 +158,12 @@ double network::solve(){  //IMPORTANT TODO: ENHANCE STARTING POINT -> HUGE SPEED
   normalizeFinal(1);
   //Allocate a 4D array of dimension LxDxDwxD which is contigous in the last index for the partial contractions Lctr and Rctr
   Lctr.global_access(0,0,0,0)=1;
+  //In preparation of the first sweep, generate full contraction to the right (first sweeps starts at site 0)
   calcCtrFull(1);
   for(int iSweep=0;iSweep<nSweeps;iSweep++){
     cout<<"Starting rightsweep\n";
     for(int i=0;i<(L-1);i++){
+      //Step of leftsweep
       cout<<"Optimizing site matrix\n";
       curtime=clock();
       errRet=optimize(i,lambda); 
@@ -168,6 +175,7 @@ double network::solve(){  //IMPORTANT TODO: ENHANCE STARTING POINT -> HUGE SPEED
     normalizeFinal(0);
     cout<<"Starting leftsweep\n";
     for(int i=L-1;i>0;i--){
+      //Step of rightsweep
       cout<<"Optimizing site matrix\n";      
       curtime=clock();
       errRet=optimize(i,lambda); 
@@ -179,8 +187,6 @@ double network::solve(){  //IMPORTANT TODO: ENHANCE STARTING POINT -> HUGE SPEED
     normalizeFinal(1);
   }
   //Free the memory previously allocated for partial contractions
-  //delete4D(&Lctr);
-  //delete4D(&Rctr);
   cout<<"Determined ground state energy of: "<<lambda<<" using parameters: D="<<D<<" nSweeps="<<nSweeps<<endl;
   return lambda;
 }
@@ -230,9 +236,9 @@ void network::calcCtrIterLeft(const int i){ //iteratively builds L expression
   DwR=Dw;
   lapack_complex_double simpleContainer;
   lapack_complex_double *sourcePctr, *targetPctr;
+  //container arrays to significantly reduce computational effort by storing intermediate results
   Lctr.subContractionStart(i-1,&sourcePctr);
   Lctr.subContractionStart(i,&targetPctr);
-  //container arrays to significantly reduce computational effort by storing intermediate results
   if(i==1){
     // b_-1  can only take one value
     DwL=1;
@@ -337,7 +343,6 @@ void network::calcCtrIterRight(const int i){ //iteratively builds R expression
     }
   }
   cout<<"Completed calculation of outer container"<<endl;
-  //delete4D(&innercontainer);
   for(int aim=0;aim<DL;aim++){
     for(int bim=0;bim<DwL;bim++){
       for(int aimp=0;aimp<DL;aimp++){
@@ -437,9 +442,6 @@ int network::rightNormalizeState(int const i){
   //lowerdiag does get an upper trigonal matrix in column major ordering, dont get confused
   lowerdiag(D2,D2,networkState[i][0][0]+D2*(d*D1-D2),Rcontainer);
   info=LAPACKE_zungrq(LAPACK_COL_MAJOR,D2,d*D1,D2,networkState[i][0][0],D2,Qcontainer);
-  /*cblas_ztrmm(CblasColMajor,CblasLeft,CblasUpper,CblasNoTrans,CblasNonUnit,D2,d*D1,&zone,Rcontainer,D2,networkState[i][0][0],D2);
-    matrixprint(D2,d*D1,networkState[i][0][0]);
-    cout<<"Testing finished\n";*/
   for(int si=0;si<d;si++){
     cblas_ztrmm(CblasColMajor,CblasRight,CblasUpper,CblasNoTrans,CblasNonUnit,D3,D2,&zone,Rcontainer,D2,networkState[i-1][si][0],D3);
   }                                                //POSSIBLE TESTS: TEST FOR R*Q - DONE: WORKS THE WAY INTENDED

@@ -109,5 +109,3 @@ void optHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
     }
   }
 }
-
-

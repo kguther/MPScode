@@ -9,6 +9,10 @@
 #include "mpo.h"
 #include "pContraction.h"
 
+//---------------------------------------------------------------------------------------------------//
+// The network class contains all information required for a run of the simulation, that is, the whole
+//---------------------------------------------------------------------------------------------------//
+
 class network{
  public:
   network();
