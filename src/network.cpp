@@ -35,7 +35,6 @@ using namespace std;
 
 network::network(){
   //Empty networks dont do much, use the generate function to fill them - this allows for separation of declaration and assignment
-  //Set all internal pointers to NULL to allow for destruction of an empty network
   createStateArray(1,1,1,&networkState);
 }
 network::network(parameters inputpars){
@@ -56,7 +55,7 @@ void network::generate(parameters inputpars){
 }
 
 void network::initialize(parameters inputpars){
-  int lDR, lDL;
+  int lDR, lDL, ld;
   pars=inputpars;
   d=inputpars.d;
   D=inputpars.D;
@@ -72,12 +71,13 @@ void network::initialize(parameters inputpars){
   }
   //Allocation of Hamiltonian MPO - square matrices are used since no library matrix functions have to be applied - this allows for faster access
   networkH.initialize(d,Dw,L);
-  //Allocation of MPS - memory of the matrices has to be allocated exactly matching the dimension to use them with lapack
+  //Allocation of MPS - memory of the matrices has to be allocated exactly matching the dimension to use them with lapack and cblas+
   createStateArray(d,D,L,&networkState);
   for(int i=0;i<pars.L;i++){
     lDL=locDimL(i);
     lDR=locDimR(i);
-    for(int s=0;s<pars.d;s++){
+    ld=locd(i);
+    for(int s=0;s<ld;s++){
       for(int ai=0;ai<lDR;ai++){
 	for(int aim=0;aim<lDL;aim++){
 	  if(ai==aim){
@@ -112,7 +112,7 @@ int network::setParameterD(int Dnew){
   //Copy the content of the current state into the larger array (which is initialized with zero)
   createStateArray(d,Dnew,L,&newNetworkState);
   for(int i=0;i<L;i++){
-    for(int si=0;si<d;si++){
+    for(int si=0;si<locd(i);si++){
       for(int ai=0;ai<locDimR(i);ai++){
 	for(int aim=0;aim<locDimL(i);aim++){
 	  newNetworkState[i][si][ai][aim]=networkState[i][si][ai][aim];
@@ -127,7 +127,7 @@ int network::setParameterD(int Dnew){
   D=Dnew;
   pars.D=Dnew;
   for(int j=0;j<L/2;j++){
-    if(pow(d,j+1)>D){
+    if(locDMax(j+1)>D){
       icrit=j;
       break;
     }
@@ -198,18 +198,23 @@ double network::solve(){  //IMPORTANT TODO: ENHANCE STARTING POINT -> HUGE SPEED
 //---------------------------------------------------------------------------------------------------//
 
 int network::optimize(int const i, double &iolambda){
+  //Invokes ARPACK++ to solve the eigenvalue problem
   arcomplex<double> lambda;
   arcomplex<double> *plambda;
   arcomplex<double> *currentM;
   arcomplex<double> *RTerm, *LTerm, *HTerm;
+  //Get the current partial contractions and site matrix of the Hamiltonian
   Lctr.subContractionStart(i,&LTerm);
   Rctr.subContractionStart(i,&RTerm);
   networkH.subMatrixStart(i,&HTerm);
+  //Generate matrix which is to be passed to ARPACK++
   optHMatrix HMat(RTerm,LTerm,HTerm,pars,i);
   plambda=&lambda;
+  //Using the current site matrix as a starting point allows for much faster convergence as it has already been optimized in previous sweeps (except for the first sweep, this is where a good starting point has to be guessed
   currentM=networkState[i][0][0];
-  ARCompStdEig<double, optHMatrix> eigProblem(HMat.dim(),1,&HMat,&optHMatrix::MultMv,"SR",0,1e-3,400,currentM);
+  ARCompStdEig<double, optHMatrix> eigProblem(HMat.dim(),1,&HMat,&optHMatrix::MultMv,"SR",0,1e-4,400,currentM);
   //One should avoid to hit the maximum number of iterations since this can lead into a suboptimal site matrix, increasing the current energy (although usually not by a lot)
+  //So far it seems that the eigensolver either converges quite fast or not at all (i.e. very slow, such that the maximum number of iterations is hit) depending strongly on the tolerance
   int nconv;
   nconv=eigProblem.EigenValVectors(currentM,plambda);
   if(nconv!=1){
@@ -230,7 +235,7 @@ int network::optimize(int const i, double &iolambda){
 //---------------------------------------------------------------------------------------------------//
 
 void network::calcCtrIterLeft(const int i){ //iteratively builds L expression
-  int DR, DL, DwR, DwL;
+  int DR, DL, DwR, DwL, ld;
   int threshold=1e-30;
   DwL=Dw;
   DwR=Dw;
@@ -245,10 +250,11 @@ void network::calcCtrIterLeft(const int i){ //iteratively builds L expression
   }
   DR=locDimR(i-1);
   DL=locDimL(i-1);
-  tmpContainer<lapack_complex_double> innercontainer(d,DwL,DL,DR);
-  tmpContainer<lapack_complex_double> outercontainer(d,DwR,DR,DL);
+  ld=locd(i-1);
+  tmpContainer<lapack_complex_double> innercontainer(ld,DwL,DL,DR);
+  tmpContainer<lapack_complex_double> outercontainer(ld,DwR,DR,DL);
   //horrible construct to efficiently compute the partial contraction, is parallelizable, needs to be parallelized (still huge computational effort) <-- potential for optimization
-  for(int sip=0;sip<d;sip++){
+  for(int sip=0;sip<ld;sip++){
     for(int bim=0;bim<DwL;bim++){
       for(int aim=0;aim<DL;aim++){
 	for(int aip=0;aip<DR;aip++){
@@ -262,12 +268,12 @@ void network::calcCtrIterLeft(const int i){ //iteratively builds L expression
     }
   }
   cout<<"Completed calculation of inner container"<<endl;
-  for(int si=0;si<d;si++){
+  for(int si=0;si<ld;si++){
     for(int bi=0;bi<DwR;bi++){
       for(int aip=0;aip<DR;aip++){
 	for(int aim=0;aim<DL;aim++){
 	  simpleContainer=0;
-	  for(int sip=0;sip<d;sip++){
+	  for(int sip=0;sip<ld;sip++){
 	    for(int bim=0;bim<DwL;bim++){
 	      simpleContainer+=networkH.global_access(i-1,si,sip,bi,bim)*innercontainer.global_access(sip,bim,aim,aip);
 	    }
@@ -282,7 +288,7 @@ void network::calcCtrIterLeft(const int i){ //iteratively builds L expression
     for(int bi=0;bi<DwR;bi++){
       for(int aip=0;aip<DR;aip++){
 	simpleContainer=0;
-	for(int si=0;si<d;si++){
+	for(int si=0;si<ld;si++){
 	  for(int aim=0;aim<DL;aim++){
 	    simpleContainer+=conj(networkState[i-1][si][ai][aim])*outercontainer.global_access(si,bi,aip,aim);
 	  }
@@ -297,7 +303,7 @@ void network::calcCtrIterLeft(const int i){ //iteratively builds L expression
 //---------------------------------------------------------------------------------------------------//
 
 void network::calcCtrIterRight(const int i){ //iteratively builds R expression
-  int DR, DL, DwR, DwL;
+  int DR, DL, DwR, DwL, ld;
   int threshold=1e-30;
   DwL=Dw;
   DwR=Dw;
@@ -311,9 +317,10 @@ void network::calcCtrIterRight(const int i){ //iteratively builds R expression
   }
   DR=locDimR(i+1);
   DL=locDimL(i+1);
-  tmpContainer<lapack_complex_double> innercontainer(d,DwR,DR,DL);
-  tmpContainer<lapack_complex_double> outercontainer(d,DwL,DL,DR);
-  for(int sip=0;sip<d;sip++){                                                       
+  ld=locd(i+1);
+  tmpContainer<lapack_complex_double> innercontainer(ld,DwR,DR,DL);
+  tmpContainer<lapack_complex_double> outercontainer(ld,DwL,DL,DR);
+  for(int sip=0;sip<ld;sip++){                                                       
     for(int bi=0;bi<DwR;bi++){
       for(int ai=0;ai<DR;ai++){
 	for(int aimp=0;aimp<DL;aimp++){
@@ -327,7 +334,7 @@ void network::calcCtrIterRight(const int i){ //iteratively builds R expression
     }
   }
   cout<<"Completed calculation of inner container"<<endl;
-  for(int si=0;si<d;si++){
+  for(int si=0;si<ld;si++){
     for(int bim=0;bim<DwL;bim++){
       for(int aimp=0;aimp<DL;aimp++){
 	for(int ai=0;ai<DR;ai++){
@@ -347,7 +354,7 @@ void network::calcCtrIterRight(const int i){ //iteratively builds R expression
     for(int bim=0;bim<DwL;bim++){
       for(int aimp=0;aimp<DL;aimp++){
 	simpleContainer=0;
-	for(int si=0;si<d;si++){
+	for(int si=0;si<ld;si++){
 	  for(int ai=0;ai<DR;ai++){
 	    simpleContainer+=conj(networkState[i+1][si][ai][aim])*outercontainer.global_access(si,bim,aimp,ai);
 	  }
@@ -362,6 +369,7 @@ void network::calcCtrIterRight(const int i){ //iteratively builds R expression
 //---------------------------------------------------------------------------------------------------//
   
 int network::calcCtrFull(const int direction){
+  //Full calculation of the contraction is only required once: before the first sweep
   int L=pars.L;
   //This is just some ordinary iterative computation of the partial contraction Pctr (P=R,L)
   if(direction==1){
@@ -396,25 +404,26 @@ int network::calcCtrFull(const int direction){
 
 int network::leftNormalizeState(int const i){
   lapack_int info;
-  int D1, D2, D3;
+  int D1, D2, D3, ld;
   //Yep, the local dimensions are just named D1, D2, D3 - the decomposition is of a d*D1xD2 matrix
   D1=locDimL(i);
   D2=locDimR(i);
   D3=locDimR(i+1);
+  ld=locd(i);
   lapack_complex_double *Rcontainer, *Qcontainer;
   const lapack_complex_double zone=lapack_make_complex_double(1.0,0.0);
   Qcontainer=new lapack_complex_double[D2];//Used for storage of lapack-internal matrices
   Rcontainer=new lapack_complex_double[D2*D2];//Used for storage of R from RQ decomposition
   //Enable use of LAPACK_ROW_MAJOR which is necessary here due to the applied storage scheme
-  for(int si=0;si<d;si++){
+  for(int si=0;si<ld;si++){
     transp(D2,D1,networkState[i][si][0]);
   }
   //Use thin QR decomposition
-  info=LAPACKE_zgeqrf(LAPACK_ROW_MAJOR,d*D1,D2,networkState[i][0][0],D2,Qcontainer);
+  info=LAPACKE_zgeqrf(LAPACK_ROW_MAJOR,ld*D1,D2,networkState[i][0][0],D2,Qcontainer);
   upperdiag(D2,D2,networkState[i][0][0],Rcontainer);                               
   //Only first D2 columns are used -> thin QR (below icrit, this is equivalent to a full QR)
-  info=LAPACKE_zungqr(LAPACK_ROW_MAJOR,d*D1,D2,D2,networkState[i][0][0],D2,Qcontainer);
-  for(int si=0;si<d;si++){
+  info=LAPACKE_zungqr(LAPACK_ROW_MAJOR,ld*D1,D2,D2,networkState[i][0][0],D2,Qcontainer);
+  for(int si=0;si<ld;si++){
     transp(D1,D2,networkState[i][si][0]);
     cblas_ztrmm(CblasColMajor,CblasLeft,CblasUpper,CblasTrans,CblasNonUnit,D2,D3,&zone,Rcontainer,D2,networkState[i+1][si][0],D2); 
     //REMARK: Use CblasTrans because Rcontainer is in row_major while networkState[i+1][si][0] is in column_major order - this is a normal matrix multiplication - here, R is packed into the matrices of the next site
@@ -429,20 +438,21 @@ int network::leftNormalizeState(int const i){
 int network::rightNormalizeState(int const i){
   lapack_int info;
   //This time, we decompose a D2xd*D1 matrix and multiply the D2xD2 matrix R with a D3xD2 matrix
-  int D1,D2,D3;
+  int D1,D2,D3,ld;
   D1=locDimR(i);
   D2=locDimL(i);
   D3=locDimL(i-1);
+  ld=locd(i);
   lapack_complex_double *Rcontainer, *Qcontainer;
   const lapack_complex_double zone=lapack_make_complex_double(1.0,0);
-  Qcontainer=new lapack_complex_double[d*D1];
+  Qcontainer=new lapack_complex_double[ld*D1];
   Rcontainer=new lapack_complex_double[D2*D2];
   //Thats how zgerqf works: the last D2 columns contain the upper trigonal matrix R, to adress them, move D2 from the end
-  info=LAPACKE_zgerqf(LAPACK_COL_MAJOR,D2,d*D1,networkState[i][0][0],D2,Qcontainer);
+  info=LAPACKE_zgerqf(LAPACK_COL_MAJOR,D2,ld*D1,networkState[i][0][0],D2,Qcontainer);
   //lowerdiag does get an upper trigonal matrix in column major ordering, dont get confused
-  lowerdiag(D2,D2,networkState[i][0][0]+D2*(d*D1-D2),Rcontainer);
-  info=LAPACKE_zungrq(LAPACK_COL_MAJOR,D2,d*D1,D2,networkState[i][0][0],D2,Qcontainer);
-  for(int si=0;si<d;si++){
+  lowerdiag(D2,D2,networkState[i][0][0]+D2*(ld*D1-D2),Rcontainer);
+  info=LAPACKE_zungrq(LAPACK_COL_MAJOR,D2,ld*D1,D2,networkState[i][0][0],D2,Qcontainer);
+  for(int si=0;si<ld;si++){
     cblas_ztrmm(CblasColMajor,CblasRight,CblasUpper,CblasNoTrans,CblasNonUnit,D3,D2,&zone,Rcontainer,D2,networkState[i-1][si][0],D3);
   }                                                //POSSIBLE TESTS: TEST FOR R*Q - DONE: WORKS THE WAY INTENDED
   delete[] Rcontainer;
@@ -454,7 +464,7 @@ int network::rightNormalizeState(int const i){
 
 void network::normalizeFinal(int const i){
   lapack_complex_double normalization;
-  int site, lcD;
+  int site, lcD,ld;
   if(i){
     site=0;
     lcD=locDimR(0);
@@ -463,10 +473,11 @@ void network::normalizeFinal(int const i){
     site=L-1;
     lcD=locDimL(L-1);
   }
+  ld=locd(site);
   //Normalize last matrices to maintain normalization of state
-  normalization=cblas_dznrm2(d*lcD,networkState[site][0][0],1);
+  normalization=cblas_dznrm2(ld*lcD,networkState[site][0][0],1);
   normalization=1.0/normalization;
-  cblas_zscal(d*lcD,&normalization,networkState[site][0][0],1);
+  cblas_zscal(ld*lcD,&normalization,networkState[site][0][0],1);
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -479,27 +490,40 @@ void network::normalizeFinal(int const i){
 
 int network::locDimL(int const i){
   if(i<=icrit){
-    return pow(d,i);
+    return locDMax(i);
   }
   if(i<=L-icrit-1){
     return D;
   }
-  return pow(d,L-i);
+  return locDMax(L-i);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
 int network::locDimR(int const i){
   if(i<icrit){
-    return pow(d,i+1);
+    return locDMax(i+1);
   }
   if(i<=L-icrit-2){
     return D;
   }
-  return pow(d,L-i-1);
+  return locDMax(L-i-1);
 }
 
+//---------------------------------------------------------------------------------------------------//
+// These are placeholder functions to allow for the dimension of the on-site Hilbert space to be
+// site dependent. This allows for the implementation of wire networks. Currently, they are just
+// returning a fixed dimension.
+//---------------------------------------------------------------------------------------------------//
 
+int network::locd(int const i){
+  return d;
+}
+
+//This is slightly unfortunate nomenclature since locDMax does not return the higher dimension of site i in the exact representation but that of site i-1 if i<L/2. Else, it is that of L-i.
+int network::locDMax(int const i){
+  return pow(d,i);
+}
 
 //---------------------------------------------------------------------------------------------------//
 // These functions compute the normalization of the network to the left of some site i. This is for

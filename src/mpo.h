@@ -1,6 +1,8 @@
 #ifndef MPO_OPERATOR
 #define MPO_OPERATOR
 
+//REMARK: The MPO container consists only of same-sized arrays, even if d is site dependent. In this case, the maximal d has to be used as an input parameter. This creates some unused memory between matrices, but speeds up access to single matrices (which is what we want to do). This works because no matrix operations using external libraries have to be applied to H
+
 template<typename T>
 class mpo{
  public:

@@ -10,6 +10,7 @@ Qsystem::Qsystem(parameters inputpars){
 
 int Qsystem::getGroundState(){
   for(int iStage=0;iStage<pars.nStages;iStage++){
+    //Start with low D to find a initial state, then increase D over the course of simulation
     TensorNetwork.setParameterNSweeps(stageNSweeps(iStage));
     TensorNetwork.setParameterD(stageD(iStage));
     E0=TensorNetwork.solve();
@@ -28,6 +29,7 @@ int Qsystem::stageD(int nStage){
 }
 
 int Qsystem::stageNSweeps(int nStage){
+  //Also, use only a few sweeps in the warmup phase
   if(nStage==(pars.nStages-1)){
     return pars.nSweeps;
   }

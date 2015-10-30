@@ -6,6 +6,7 @@
 #include <cblas.h>
 #include <lapacke.h>
 #include <lapacke_utils.h>
+#include <math.h>
 #include "network.h"
 #include "arraycreation.h"
 #include "arrayprocessing.h"
@@ -26,7 +27,7 @@ int delta(int i, int j);
 //-----------------------------------------------------------------//
 
 int main(int argc, char *argv[]){
-  testMatrix();
+  testSolve();
   return 0;
 }
 
@@ -37,8 +38,9 @@ int main(int argc, char *argv[]){
 
 void testSolve(){
   double eigVal;
+  double const mEl=1;
   lapack_complex_double *****array, ****state;
-  parameters pars(2,100,10,5,4,1,2);
+  parameters pars(2,100,4,5,4,1,2);
   Qsystem sys(pars);
   int lD, rD, lDwR, lDwL, Dw;
   Dw=pars.Dw;
@@ -69,13 +71,13 @@ void testSolve(){
 		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=delta(s,sp);
 		  break;
 		case 1:
-		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=delta(s,sp+1);
+		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=mEl*delta(s,sp+1);
 		  break;
 		case 2:
-		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=delta(s,sp-1);
+		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=mEl*delta(s,sp-1);
 		  break;
 		case 3:
-		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=2*(s-0.5)*delta(s,sp);
+		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=(s-0.5)*delta(s,sp);
 		  break;
 		default:
 		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=0;
@@ -89,13 +91,13 @@ void testSolve(){
 	      if(bim==lDwL-1){
 		switch(bi){
 		case 1:
-		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=0.5*delta(s,sp-1);
+		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=0.5*mEl*delta(s,sp-1);
 		  break;
 		case 2:
-		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=0.5*delta(s,sp+1);
+		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=0.5*mEl*delta(s,sp+1);
 		  break;
 		case 3:
-		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=2*(s-0.5)*delta(s,sp);
+		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=(s-0.5)*delta(s,sp);
 		  break;
 		case 4:
 		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=delta(s,sp);
@@ -119,7 +121,7 @@ void testSolve(){
   cout<<"Obtained grounds state energy as: "<<setprecision(21)<<eigVal<<endl;
 }
 
-void testMatrix(){
+/*void testMatrix(){
   lapack_complex_double *****array, ****state, *RTerm, *LTerm, *HTerm;
   lapack_complex_double Ldummy=lapack_make_complex_double(1.0,0.0);
   parameters pars(2,200,20,5,10);
@@ -181,7 +183,7 @@ void testMatrix(){
   curtime=clock()-curtime;
   cout<<"Matrix mutliplication took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
   matrixprint(1,pars.d*pars.d,state[0][0][0]);
-}
+  }*/
 
 int delta(int i, int j){
   if(i==j){

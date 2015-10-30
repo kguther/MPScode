@@ -1,6 +1,10 @@
 #include <arcomp.h>
 #include "parameters.h"
 
+//---------------------------------------------------------------------------------------------------//
+// This class is used as an interface to provide the matrix-vector product for ARPACK++
+//---------------------------------------------------------------------------------------------------//
+
 class optHMatrix{
  public:
   optHMatrix(arcomplex<double> *R, arcomplex<double> *L, arcomplex<double> *Hin, parameters pars, int i);

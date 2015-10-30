@@ -5,11 +5,15 @@
 #include "parameters.h"
 #include "network.h"
 
+//---------------------------------------------------------------------------------------------------//
+// This class is used to execute the simulation with its main task being the adaption of bond
+// dimension D over the course of the run. Also, this is where measurements are going to be implemented.
+//---------------------------------------------------------------------------------------------------//
+
 class Qsystem{
  public:
   Qsystem(parameters pars);
   network TensorNetwork;
-  lapack_complex_double *****MPO;
   double E0;
   int getGroundState();
  private:
