@@ -5,7 +5,7 @@
 Qsystem::Qsystem(parameters inputpars){
   pars=inputpars;
   parameters initialpars(pars.d,stageD(0),pars.L,pars.Dw,stageNSweeps(0),pars.nEigs,pars.nStages);
-  TensorNetwork.generate(initialpars);
+  TensorNetwork.initialize(initialpars);
 }
 
 //---------------------------------------------------------------------------------------------------//
