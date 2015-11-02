@@ -8,6 +8,8 @@ Qsystem::Qsystem(parameters inputpars){
   TensorNetwork.generate(initialpars);
 }
 
+//---------------------------------------------------------------------------------------------------//
+
 int Qsystem::getGroundState(){
   for(int iStage=0;iStage<pars.nStages;iStage++){
     //Start with low D to find a initial state, then increase D over the course of simulation
@@ -18,6 +20,8 @@ int Qsystem::getGroundState(){
   return 0;
 }
 
+//---------------------------------------------------------------------------------------------------//
+
 int Qsystem::stageD(int nStage){
   if(pars.nStages>1){
     int D0=(pars.D>10)?pars.D/2:5;
@@ -27,6 +31,8 @@ int Qsystem::stageD(int nStage){
     return pars.D;
   }
 }
+
+//---------------------------------------------------------------------------------------------------//
 
 int Qsystem::stageNSweeps(int nStage){
   //Also, use only a few sweeps in the warmup phase

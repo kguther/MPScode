@@ -37,9 +37,14 @@ network::network(){
   //Empty networks dont do much, use the generate function to fill them - this allows for separation of declaration and assignment
   createStateArray(1,1,1,&networkState);
 }
+
+//---------------------------------------------------------------------------------------------------//
+
 network::network(parameters inputpars){
   initialize(inputpars);
 }
+
+//---------------------------------------------------------------------------------------------------//
 
 network::~network(){
   deleteStateArray(&networkState);
@@ -54,6 +59,8 @@ void network::generate(parameters inputpars){
   initialize(inputpars);
 }
 
+//---------------------------------------------------------------------------------------------------//
+
 void network::initialize(parameters inputpars){
   int lDR, lDL, ld;
   pars=inputpars;
@@ -62,13 +69,7 @@ void network::initialize(parameters inputpars){
   L=inputpars.L;
   Dw=inputpars.Dw;
   nSweeps=inputpars.nSweeps;
-  icrit=L/2;//In case chain is too short, this is the correct value (trust me)
-  for(int j=0;j<L/2;j++){
-    if(pow(d,j+1)>D){
-      icrit=j;
-      break;
-    }
-  }
+  getIcrit();
   //Allocation of Hamiltonian MPO - square matrices are used since no library matrix functions have to be applied - this allows for faster access
   networkH.initialize(d,Dw,L);
   //Allocation of MPS - memory of the matrices has to be allocated exactly matching the dimension to use them with lapack and cblas+
@@ -95,13 +96,28 @@ void network::initialize(parameters inputpars){
 }
 
 //---------------------------------------------------------------------------------------------------//
+
+void network::getIcrit(){
+  icrit=L/2;//In case chain is too short, this is the correct value (trust me)
+  for(int j=0;j<L/2;j++){
+    if(locDMax(j)>D){
+      icrit=j;
+      break;
+    }
+  }
+}
+
+//---------------------------------------------------------------------------------------------------//
 // These functions can be employed to alter the algorithm parameters N and D during lifetime of a 
-// network object. This allows for iteratively increasing of D.
+// network object. This allows for iteratively increasing of D. They completely take care of all required
+// updated within the network, but they should be needed only a few times.
 //---------------------------------------------------------------------------------------------------//
 
 void network::setParameterNSweeps(int Nnew){
   nSweeps=Nnew;
 }
+
+//---------------------------------------------------------------------------------------------------//
 
 int network::setParameterD(int Dnew){
   //Decreasing D is neither required nor reasonable in any context
@@ -126,12 +142,7 @@ int network::setParameterD(int Dnew){
   //Adapt D
   D=Dnew;
   pars.D=Dnew;
-  for(int j=0;j<L/2;j++){
-    if(locDMax(j+1)>D){
-      icrit=j;
-      break;
-    }
-  }
+  getIcrit();
   //Adapt L and R expression
   Lctr.initialize(L,D,Dw);
   Rctr.initialize(L,D,Dw);
@@ -490,24 +501,24 @@ void network::normalizeFinal(int const i){
 
 int network::locDimL(int const i){
   if(i<=icrit){
-    return locDMax(i);
+    return locDMax(i-1);
   }
   if(i<=L-icrit-1){
     return D;
   }
-  return locDMax(L-i);
+  return locDMax(i);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
 int network::locDimR(int const i){
   if(i<icrit){
-    return locDMax(i+1);
+    return locDMax(i);
   }
   if(i<=L-icrit-2){
     return D;
   }
-  return locDMax(L-i-1);
+  return locDMax(i+1);
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -520,14 +531,16 @@ int network::locd(int const i){
   return d;
 }
 
-//This is slightly unfortunate nomenclature since locDMax does not return the higher dimension of site i in the exact representation but that of site i-1 if i<L/2. Else, it is that of L-i.
 int network::locDMax(int const i){
-  return pow(d,i);
+  if(i<=L/2){
+    return pow(d,i+1);
+  }
+  return pow(d,L-i);
 }
 
 //---------------------------------------------------------------------------------------------------//
 // These functions compute the normalization of the network to the left of some site i. This is for
-// testing purpose only since the correct algorithm ensures the results to be trivial
+// testing purpose only since the correct algorithm ensures the results to be trivial.
 //---------------------------------------------------------------------------------------------------//
 
 void network::leftNormalizationMatrixFull(){

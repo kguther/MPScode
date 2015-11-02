@@ -16,8 +16,6 @@
 using namespace std;
 
 void testNormalization();
-void testLR();
-void nancheck(network *n, int i);
 void testSolve();
 void testMatrix();
 int delta(int i, int j);
@@ -40,7 +38,7 @@ void testSolve(){
   double eigVal;
   double const mEl=1;
   lapack_complex_double *****array, ****state;
-  parameters pars(2,100,4,5,4,1,2);
+  parameters pars(2,100,20,5,4,1,2);
   Qsystem sys(pars);
   int lD, rD, lDwR, lDwL, Dw;
   Dw=pars.Dw;

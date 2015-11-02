@@ -15,6 +15,8 @@ void upperdiag(int const dim1, int const dim2, lapack_complex_double *arrayin, l
   }
 }
 
+//---------------------------------------------------------------------------------------------------//
+
 void lowerdiag(int const dim1, int const dim2, lapack_complex_double *arrayin, lapack_complex_double *arrayout){ 
   //for lapack postprocessing: extracts the lower triangular part of some matrix arrayin, pastes it into arrayout and fills up arrayout with zeros
   for(int i=0;i<dim1;i++){
@@ -29,6 +31,8 @@ void lowerdiag(int const dim1, int const dim2, lapack_complex_double *arrayin, l
   }
 }
 
+//---------------------------------------------------------------------------------------------------//
+
 void arraycpy(int const dim1, int const dim2, lapack_complex_double *arraysource, lapack_complex_double *arraytarget){
   for(int i=0;i<dim1;i++){
     for(int j=0;j<dim2;j++){
@@ -36,6 +40,8 @@ void arraycpy(int const dim1, int const dim2, lapack_complex_double *arraysource
     }
   }
 }
+
+//---------------------------------------------------------------------------------------------------//
 
 void matrixprint(int const n, int const m, lapack_complex_double *array){
   //The second argument is always the contigous index
@@ -47,6 +53,8 @@ for(int i=0;i<n;i++){
   }
  cout<<"END OF MATRIX\n";
 }
+
+//---------------------------------------------------------------------------------------------------//
 
 void transp(int const dim1, int const dim2, lapack_complex_double *array){                                                
   //This switches from contigous column index to contigous row index and vice versa - quite effortive, try to avoid usage

@@ -34,6 +34,7 @@ class network{
   network& operator=(network const &cpynet);//Use the generate function instead, assignment is dangerous for networks with different parameters 
   //most of these methods are auxiliary functions
   void initialize(parameters pars);
+  void getIcrit();
   int pctrIndex(int ai, int bi, int aip){return aip+bi*D+ai*D*Dw;}
   int optimize(int const i, double &iolambda);
   int locDimR(int const i);

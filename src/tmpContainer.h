@@ -1,6 +1,11 @@
 #ifndef TMP_CONTAINER
 #define TMP_CONTAINER
 
+//---------------------------------------------------------------------------------------------------//
+// Basic class for container arrays. It offers a contigous one-dimensional array with a 4D access
+// function, i.e. access looks like a 4D array is adressed.
+//---------------------------------------------------------------------------------------------------//
+
 template<typename T>
 class tmpContainer{
  public:

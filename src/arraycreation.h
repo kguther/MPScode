@@ -6,6 +6,7 @@ using namespace std; //BEWARE: FOR LAPACK ACCESS ALWAYS USE [0] AS SECOND INDEX 
 // This file contains template functions to dynamically allocate C arrays with 2 to 5 dimensions. The generated
 // arrays are contigous, can be accessed like normal, i.e. static C arrays and have all other properties of
 // generic C arrays. Use the corresponding delete function to free the memory when not needed anymore. 
+// Save for the stateArray functions, none of them is used directly anymore.
 //-----------------------------------------------------------------------------------------------------------------//
 
 int locDimL(int d, int D, int L, int i, int icrit);
@@ -22,6 +23,8 @@ template<typename T> void delete4D(T *****array);
 template<typename T> void delete5D(T ******array);
 template<typename T> void deleteStateArray(T *****array);
 
+//---------------------------------------------------------------------------------------------------//
+
 template<typename T> void create2D(const int dim1, const int dim2, T ***array){
   (*array)=new T*[dim1];
   (*array)[0]=new T[dim1*dim2];
@@ -29,6 +32,8 @@ template<typename T> void create2D(const int dim1, const int dim2, T ***array){
     (*array)[i]=(*array)[i-1]+dim2;
   }
 }
+
+//---------------------------------------------------------------------------------------------------//
 
 template<typename T> void create3D(const int dim1, const int dim2, const int dim3, T ****array){
   //iteratively builds up the 3D array from a 2D array of pointers - create2D is called by reference, thus, the adress of ***array is handed over
@@ -43,6 +48,8 @@ template<typename T> void create3D(const int dim1, const int dim2, const int dim
     }
   }
 }
+
+//---------------------------------------------------------------------------------------------------//
 
 template<typename T> void create4D(const int dim1, const int dim2, const int dim3, const int dim4, T *****array){
   create3D(dim1,dim2,dim3,array);
@@ -61,6 +68,8 @@ template<typename T> void create4D(const int dim1, const int dim2, const int dim
     }
   }
 }
+
+//---------------------------------------------------------------------------------------------------//
 
 template<typename T> void create5D(const int dim1, const int dim2, const int dim3, const int dim4, const int dim5, T ******array){
   create4D(dim1,dim2,dim3,dim4,array);
@@ -84,6 +93,8 @@ template<typename T> void create5D(const int dim1, const int dim2, const int dim
     }
   }
 }
+
+//---------------------------------------------------------------------------------------------------//
 
 template<typename T> void createStateArray(int d, int D, int L, T *****array){
   int icrit, dimR, dimL, lD, rD;
@@ -141,6 +152,7 @@ template<typename T> void createStateArray(int d, int D, int L, T *****array){
   //return 1;
 }
 
+//---------------------------------------------------------------------------------------------------//
 
 template<typename T> void delete2D(T ***array){
   delete[] (*array)[0];
@@ -171,6 +183,8 @@ template <typename T> void delete5D(T ******array){
 template <typename T> void deleteStateArray(T *****array){
   delete4D(array);
 }
+
+//---------------------------------------------------------------------------------------------------//
 
 inline int locDimL(int d, int D, int L, int i, int icrit){
   if(i<=icrit){
