@@ -37,10 +37,9 @@ int main(int argc, char *argv[]){
 void testSolve(){
   double eigVal;
   double const mEl=1;
-  lapack_complex_double *****array, ****state;
   parameters pars(2,100,20,5,4,1,2);
   Qsystem sys(pars);
-  int lD, rD, lDwR, lDwL, Dw;
+  int lDwR, lDwL, Dw;
   Dw=pars.Dw;
   for(int i=0;i<pars.L;i++){
     if(i==0){
