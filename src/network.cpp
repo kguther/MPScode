@@ -142,8 +142,8 @@ double network::solve(){  //IMPORTANT TODO: ENHANCE STARTING POINT -> HUGE SPEED
       errRet=optimize(i,lambda); 
       curtime=clock()-curtime;
       cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
-      networkState.rightNormalizeState(i);
-      //rightEnrichment(i);
+      //networkState.rightNormalizeState(i);
+      rightEnrichment(i);
       calcCtrIterRight(i-1);
     }
     networkState.normalizeFinal(1);
@@ -336,7 +336,9 @@ int network::calcCtrFull(int const direction){
 }
 
 //---------------------------------------------------------------------------------------------------//
-// The implementation of the enrichment is very ugly.
+// The implementation of the enrichment is very ugly and might still contain severe bugs which
+// are irrelevant to the current testing system (Heisenberg chain). It does however, improve convergence
+// speed and avoids local minima (at least thats what I expect).
 //---------------------------------------------------------------------------------------------------//
 
 void network::leftEnrichment(int const i){
@@ -348,13 +350,14 @@ void network::leftEnrichment(int const i){
   getLocalDimensions(i);
   lDRR=networkState.locDimR(i+1);
   ldp=locd(i+1);
-  int MNumCols=lDR*(1+lDwR);
+  int MNumCols=lDR*(1+lDwL);
   int MNumRows=ld*lDL;
   int maxDim=(MNumRows>MNumCols)?MNumRows:MNumCols;
   //Allocate the memory needed for the output of ZUNGBR which is more than the original matrix - also prevents segfault when copying (size of target is given for the same reason)
   Mnew=new lapack_complex_double[maxDim*maxDim];
   Bnew=new lapack_complex_double[ldp*lDRR*MNumCols];
   pExpression=new lapack_complex_double[MNumRows*lDR*lDwR];
+  getPExpressionLeft(i,pExpression);
   for(int si=0;si<ld;++si){
     for(int ai=0;ai<lDR;++ai){
       for(int aim=0;aim<lDL;++aim){
@@ -366,10 +369,7 @@ void network::leftEnrichment(int const i){
 	Bnew[ai+air*MNumCols+si*lDRR*MNumCols]=networkState.global_access(i+1,si,air,ai);
       }
     }
-  }
-  //Add zeros and P-Expression to Mnew and Bnew
-  getPExpressionLeft(i,pExpression);
-  for(int si=0;si<ld;++si){
+    //Add zeros and P-Expression to Mnew and Bnew
     for(int ai=lDR;ai<MNumCols;++ai){
       for(int aim=0;aim<lDL;++aim){
 	Mnew[aim+si*lDL+ai*MNumRows]=alpha*pExpression[aim+si*lDL+(ai-lDR)*MNumRows];
@@ -429,16 +429,17 @@ void network::rightEnrichment(int const i){
   lapack_complex_double *Anew;
   lapack_complex_double *pExpression;
   int lDLL, ldm;
-  double alpha=0;
+  double alpha=1e-4;
   getLocalDimensions(i);
   lDLL=networkState.locDimL(i-1);
   ldm=locd(i-1);
   int MNumCols=ld*lDR;
-  int MNumRows=lDL*(1+lDwL);
+  int MNumRows=lDL*(1+0*lDwL);
   int maxDim=(MNumRows>MNumCols)?MNumRows:MNumCols;
   Mnew=new lapack_complex_double[maxDim*maxDim];
   Anew=new lapack_complex_double[ldm*lDLL*MNumRows];
   pExpression=new lapack_complex_double[ld*lDR*lDL*lDwL];
+  getPExpressionRight(i,pExpression);
   for(int si=0;si<ld;++si){
     for(int ai=0;ai<lDR;++ai){
       for(int aim=0;aim<lDL;++aim){
@@ -450,13 +451,10 @@ void network::rightEnrichment(int const i){
 	Anew[aimm+aim*ld*lDLL+si*lDLL]=networkState.global_access(i-1,si,aim,aimm);
       }
     }
-  }
-  //Add zeros and P-Expression to Mnew and Bnew
-  getPExpressionRight(i,pExpression);
-  for(int si=0;si<ld;++si){
+    //Add zeros and P-Expression to Mnew and Bnew
     for(int ai=0;ai<lDR;++ai){
       for(int aim=lDL;aim<MNumRows;++aim){
-	Mnew[aim+ai*MNumRows+si*lDR*MNumRows]=alpha*pExpression[aim+si*lDR*MNumRows+(ai-lDR)*MNumRows];
+	Mnew[aim+ai*MNumRows+si*lDR*MNumRows]=alpha*pExpression[aim-lDL+si*lDR*MNumRows+ai*MNumRows];
       }
     }
     for(int aim=lDL;aim<MNumRows;++aim){
@@ -470,6 +468,11 @@ void network::rightEnrichment(int const i){
   int containerDim=(MNumRows>MNumCols)?MNumCols:MNumRows;
   double *diags=new double[containerDim];
   lapack_complex_double *Mnewcpy=new lapack_complex_double[maxDim*maxDim];
+  char uplo=(MNumRows>=MNumCols)?'U':'L';
+  lapack_int info;
+  double *offdiags=new double[containerDim-1];
+  lapack_complex_double *QContainer=new lapack_complex_double[containerDim];
+  lapack_complex_double *PContainer=new lapack_complex_double[containerDim];
   lapackSVD(MNumCols,MNumRows,Mnew,Mnewcpy,diags);
   //Mnewcpy -> A, S*Mnew->Multiply to B
   //Postprocessing: Truncate S to lDR eigenvalues, U to dimension ld*lDL x lDR (from ld*lDL x ld*lDL) if neccessary
@@ -482,22 +485,33 @@ void network::rightEnrichment(int const i){
   delete[] diags;
   //From here, Mnew is to be treated as a MNumRows x lDL matrix
   //Postprocessing: A=U, B=S*V*Bnew
-  lapack_complex_double *AStart;
+  lapack_complex_double *AStart=new lapack_complex_double[lDLL*MNumRows];
   lapack_complex_double *networkA;
   lapack_complex_double zone=1.0;
   lapack_complex_double zzero=0.0;
   //Multiply S*V into the expanded A (AStart) to create the normal-sized A (networkA, direct access to the networkState mps)
   for(int si=0;si<ld;++si){
     networkState.subMatrixStart(networkA,i-1,si);
-    AStart=Anew+si*lDLL*MNumRows;
+    for(int mi=0;mi<MNumRows;++mi){
+      for(int aimm=0;aimm<lDLL;++aimm){
+	AStart[aimm+mi*lDLL]=Anew[aimm+si*lDLL+mi*ld*lDLL];
+      }
+    }
     cblas_zgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,lDLL,lDL,MNumRows,&zone,AStart,lDLL,Mnew,MNumRows,&zzero,networkA,lDLL);
   }
+  delete[] AStart;
   delete[] Mnew;
   delete[] Anew;
   for(int si=0;si<ld;++si){
     for(int ai=0;ai<lDR;++ai){
       for(int aim=0;aim<lDL;++aim){
+	//Problem appears when lDR==lDL (truncation)
 	networkState.global_access(i,si,ai,aim)=Mnewcpy[aim+si*lDR*MNumCols+ai*MNumCols];
+	if(networkState.global_access(i,si,ai,aim)!=networkState.global_access(i,si,ai,aim)){
+	  cout<<"Error accesing Mnewcpy at dimensions "<<lDLL<<"<-"<<lDL<<"x"<<lDR<<endl;
+	  cout<<"Indices: "<<si<<"\t"<<ai<<"\t"<<aim<<endl;
+	  exit(-1);
+	}
       }
     }
   }

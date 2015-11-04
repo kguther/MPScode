@@ -79,7 +79,12 @@ void lapackSVD(int MNumCols, int MNumRows, lapack_complex_double *Mnew, lapack_c
   lapack_complex_double *QContainer=new lapack_complex_double[MNumRows*MNumRows];
   lapack_complex_double *PContainer=new lapack_complex_double[MNumCols*MNumCols];
   info=LAPACKE_zgebrd(LAPACK_COL_MAJOR,MNumRows,MNumCols,Mnew,MNumRows,diags,offdiags,QContainer,PContainer);
-  arraycpy(maxDim,maxDim,Mnew,Mnewcpy);
+  //Okay, this is really nasty: Mnewcpy has to have a leading dimension of MNumCols, although it is (at input) of size MNumRows x MNumCols. zungbr does resize it, but it does not change the leading dimension -> manually take care of the correct leading dimension of the input matrix
+  for(int mi=0;mi<MNumCols;++mi){
+    for(int mip=0;mip<MNumRows;++mip){
+      Mnewcpy[mip+mi*MNumCols]=Mnew[mip+mi*MNumRows];
+    }
+  }
   //I do not really know what ZUNGBR does with the uninitialized entries which have to be allocated since the matrices in the SVD can be larger than the original one - take CARE
   info=LAPACKE_zungbr(LAPACK_COL_MAJOR,'Q',MNumRows,MNumRows,MNumCols,Mnew,MNumRows,QContainer);
   info=LAPACKE_zungbr(LAPACK_COL_MAJOR,'P',MNumCols,MNumCols,MNumRows,Mnewcpy,MNumCols,PContainer);
