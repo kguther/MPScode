@@ -142,7 +142,6 @@ double network::solve(){  //IMPORTANT TODO: ENHANCE STARTING POINT -> HUGE SPEED
       errRet=optimize(i,lambda); 
       curtime=clock()-curtime;
       cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
-      //networkState.rightNormalizeState(i);
       rightEnrichment(i);
       calcCtrIterRight(i-1);
     }
@@ -359,6 +358,7 @@ void network::leftEnrichment(int const i){
   pExpression=new lapack_complex_double[MNumRows*lDR*lDwR];
   getPExpressionLeft(i,pExpression);
   for(int si=0;si<ld;++si){
+    //Copy A and B while rearranging to allow for expansion
     for(int ai=0;ai<lDR;++ai){
       for(int aim=0;aim<lDL;++aim){
 	Mnew[aim+si*lDL+ai*MNumRows]=networkState.global_access(i,si,ai,aim);
@@ -440,6 +440,7 @@ void network::rightEnrichment(int const i){
   Anew=new lapack_complex_double[ldm*lDLL*MNumRows];
   pExpression=new lapack_complex_double[ld*lDR*lDL*lDwL];
   getPExpressionRight(i,pExpression);
+  //Copy A and B while rearranging to allow for expansion
   for(int si=0;si<ld;++si){
     for(int ai=0;ai<lDR;++ai){
       for(int aim=0;aim<lDL;++aim){
@@ -518,6 +519,8 @@ void network::rightEnrichment(int const i){
   delete[] Mnewcpy;
 }
 
+//---------------------------------------------------------------------------------------------------//
+// Auxiliary functions to determine the heuristic expansion term for the enrichment step.
 //---------------------------------------------------------------------------------------------------//
 
 void network::getPExpressionLeft(int const i, lapack_complex_double *pExpr){
