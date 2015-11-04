@@ -25,8 +25,6 @@ class network{
   void setParameterNSweeps(int Nnew);
   int setParameterD(int Dnew);
   int calcCtrFull(int const direction);
-  void leftEnrichment(int const i);
-  void rightEnrichment(int const i);
   //MPO needs to be initialized externally
   mpo<lapack_complex_double> networkH;
   //This one is only for consistency checks
@@ -39,12 +37,17 @@ class network{
   int optimize(int const i, double &iolambda);
   int locd(int const i);
   int locDMax(int const i);
-  void normalizeFinal(int const i);
-  void calcCtrIterLeft(const int position); //iteratively builds up the partial contraction of the left side during a sweep
-  void calcCtrIterRight(const int position); //and this does the same for the right side (implementation with two methods is way faster than with one)
+  void leftEnrichment(int const i);
+  void rightEnrichment(int const i);
+  void calcCtrIterLeft(int const position); //iteratively builds up the partial contraction of the left side during a sweep
+  void calcCtrIterRight(int const position); //and this does the same for the right side (implementation with two methods is way faster than with one)
+  void getPExpressionLeft(int const i, lapack_complex_double *pExpr);
+  void getPExpressionRight(int const i, lapack_complex_double *pExpr);
+  void getLocalDimensions(int const i);
   mps networkState;
   parameters pars;
   int d,D,L,Dw,nSweeps,icrit;
+  int lDL, lDR, ld, lDwR, lDwL;
   pContraction<lapack_complex_double> Lctr;
   pContraction<lapack_complex_double> Rctr;
   //This one is only for consistency checks

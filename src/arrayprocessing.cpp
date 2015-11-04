@@ -67,3 +67,24 @@ void transp(int const dim1, int const dim2, lapack_complex_double *array){
   }
   delete[] tmp;
 }
+
+//---------------------------------------------------------------------------------------------------//
+
+void lapackSVD(int MNumCols, int MNumRows, lapack_complex_double *Mnew, lapack_complex_double *Mnewcpy, double *diags){
+  int containerDim=(MNumRows>MNumCols)?MNumCols:MNumRows;
+  char uplo=(MNumRows>=MNumCols)?'U':'L';
+  int maxDim=(MNumRows>MNumCols)?MNumRows:MNumCols;
+  lapack_int info;
+  double *offdiags=new double[containerDim-1];
+  lapack_complex_double *QContainer=new lapack_complex_double[MNumRows*MNumRows];
+  lapack_complex_double *PContainer=new lapack_complex_double[MNumCols*MNumCols];
+  info=LAPACKE_zgebrd(LAPACK_COL_MAJOR,MNumRows,MNumCols,Mnew,MNumRows,diags,offdiags,QContainer,PContainer);
+  arraycpy(maxDim,maxDim,Mnew,Mnewcpy);
+  //I do not really know what ZUNGBR does with the uninitialized entries which have to be allocated since the matrices in the SVD can be larger than the original one - take CARE
+  info=LAPACKE_zungbr(LAPACK_COL_MAJOR,'Q',MNumRows,MNumRows,MNumCols,Mnew,MNumRows,QContainer);
+  info=LAPACKE_zungbr(LAPACK_COL_MAJOR,'P',MNumCols,MNumCols,MNumRows,Mnewcpy,MNumCols,PContainer);
+  delete[] QContainer;
+  delete[] PContainer;
+  info=LAPACKE_zbdsqr(LAPACK_COL_MAJOR,uplo,containerDim,MNumCols,MNumRows,0,diags,offdiags,Mnewcpy,MNumCols,Mnew,MNumRows,0,1);
+  delete[] offdiags;
+}

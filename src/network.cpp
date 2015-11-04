@@ -7,6 +7,7 @@
 #include <arscomp.h>
 #include <time.h>
 #include <lapacke.h>
+#include <cblas.h>
 #include "network.h"
 #include "arraycreation.h"
 #include "arrayprocessing.h"
@@ -89,6 +90,16 @@ int network::setParameterD(int Dnew){
 }
 
 //---------------------------------------------------------------------------------------------------//
+
+void network::getLocalDimensions(int const i){
+  lDL=networkState.locDimL(i);
+  lDR=networkState.locDimR(i);
+  ld=locd(i);
+  lDwR=networkH.locDimR(i);
+  lDwL=networkH.locDimL(i);
+}
+
+//---------------------------------------------------------------------------------------------------//
 // This is the main solver, using the networkState as initial and final state and networkH as MPO
 // representation of the Hamiltonian. Computed are eigenstate (initial state is overwritten) and 
 // corresponding eigenvalue (output).
@@ -119,7 +130,7 @@ double network::solve(){  //IMPORTANT TODO: ENHANCE STARTING POINT -> HUGE SPEED
       errRet=optimize(i,lambda); 
       curtime=clock()-curtime;
       cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
-      networkState.leftNormalizeState(i);
+      leftEnrichment(i);
       calcCtrIterLeft(i+1);
     }
     networkState.normalizeFinal(0);
@@ -132,6 +143,7 @@ double network::solve(){  //IMPORTANT TODO: ENHANCE STARTING POINT -> HUGE SPEED
       curtime=clock()-curtime;
       cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
       networkState.rightNormalizeState(i);
+      //rightEnrichment(i);
       calcCtrIterRight(i-1);
     }
     networkState.normalizeFinal(1);
@@ -183,31 +195,22 @@ int network::optimize(int const i, double &iolambda){
 // candidate for optimization
 //---------------------------------------------------------------------------------------------------//
 
-void network::calcCtrIterLeft(const int i){ //iteratively builds L expression
-  int DR, DL, DwR, DwL, ld;
-  DwL=Dw;
-  DwR=Dw;
+void network::calcCtrIterLeft(int const i){ //iteratively builds L expression
   lapack_complex_double simpleContainer;
   lapack_complex_double *sourcePctr, *targetPctr;
   //container arrays to significantly reduce computational effort by storing intermediate results
   Lctr.subContractionStart(sourcePctr,i-1);
   Lctr.subContractionStart(targetPctr,i);
-  if(i==1){
-    // b_-1  can only take one value
-    DwL=1;
-  }
-  DR=networkState.locDimR(i-1);
-  DL=networkState.locDimL(i-1);
-  ld=locd(i-1);
-  tmpContainer<lapack_complex_double> innercontainer(ld,DwL,DL,DR);
-  tmpContainer<lapack_complex_double> outercontainer(ld,DwR,DR,DL);
+  getLocalDimensions(i-1);
+  tmpContainer<lapack_complex_double> innercontainer(ld,lDwL,lDL,lDR);
+  tmpContainer<lapack_complex_double> outercontainer(ld,lDwR,lDR,lDL);
   //horrible construct to efficiently compute the partial contraction, is parallelizable, needs to be parallelized (still huge computational effort) <-- potential for optimization
   for(int sip=0;sip<ld;sip++){
-    for(int bim=0;bim<DwL;bim++){
-      for(int aim=0;aim<DL;aim++){
-	for(int aip=0;aip<DR;aip++){
+    for(int bim=0;bim<lDwL;bim++){
+      for(int aim=0;aim<lDL;aim++){
+	for(int aip=0;aip<lDR;aip++){
 	  simpleContainer=0;
-	  for(int aimp=0;aimp<DL;aimp++){
+	  for(int aimp=0;aimp<lDL;aimp++){
 	    simpleContainer+=sourcePctr[pctrIndex(aim,bim,aimp)]*networkState.global_access(i-1,sip,aip,aimp);
 	  }
 	  innercontainer.global_access(sip,bim,aim,aip)=simpleContainer;
@@ -217,12 +220,12 @@ void network::calcCtrIterLeft(const int i){ //iteratively builds L expression
   }
   cout<<"Completed calculation of inner container"<<endl;
   for(int si=0;si<ld;si++){
-    for(int bi=0;bi<DwR;bi++){
-      for(int aip=0;aip<DR;aip++){
-	for(int aim=0;aim<DL;aim++){
+    for(int bi=0;bi<lDwR;bi++){
+      for(int aip=0;aip<lDR;aip++){
+	for(int aim=0;aim<lDL;aim++){
 	  simpleContainer=0;
 	  for(int sip=0;sip<ld;sip++){
-	    for(int bim=0;bim<DwL;bim++){
+	    for(int bim=0;bim<lDwL;bim++){
 	      simpleContainer+=networkH.global_access(i-1,si,sip,bi,bim)*innercontainer.global_access(sip,bim,aim,aip);
 	    }
 	  }
@@ -232,12 +235,12 @@ void network::calcCtrIterLeft(const int i){ //iteratively builds L expression
     }
   }
   cout<<"Completed calculation of outer container"<<endl;
-  for(int ai=0;ai<DR;ai++){
-    for(int bi=0;bi<DwR;bi++){
-      for(int aip=0;aip<DR;aip++){
+  for(int ai=0;ai<lDR;ai++){
+    for(int bi=0;bi<lDwR;bi++){
+      for(int aip=0;aip<lDR;aip++){
 	simpleContainer=0;
 	for(int si=0;si<ld;si++){
-	  for(int aim=0;aim<DL;aim++){
+	  for(int aim=0;aim<lDL;aim++){
 	    simpleContainer+=conj(networkState.global_access(i-1,si,ai,aim))*outercontainer.global_access(si,bi,aip,aim);
 	  }
 	}
@@ -250,29 +253,20 @@ void network::calcCtrIterLeft(const int i){ //iteratively builds L expression
 
 //---------------------------------------------------------------------------------------------------//
 
-void network::calcCtrIterRight(const int i){ //iteratively builds R expression
-  int DR, DL, DwR, DwL, ld;
-  DwL=Dw;
-  DwR=Dw;
+void network::calcCtrIterRight(int const i){ //iteratively builds R expression
   lapack_complex_double simpleContainer;
   lapack_complex_double *sourcePctr, *targetPctr;
   Rctr.subContractionStart(sourcePctr,i+1);
   Rctr.subContractionStart(targetPctr,i);
-  if(i==L-1){
-    // b_L-1  can only take one value
-    DwR=1;
-  }
-  DR=networkState.locDimR(i+1);
-  DL=networkState.locDimL(i+1);
-  ld=locd(i+1);
-  tmpContainer<lapack_complex_double> innercontainer(ld,DwR,DR,DL);
-  tmpContainer<lapack_complex_double> outercontainer(ld,DwL,DL,DR);
+  getLocalDimensions(i+1);
+  tmpContainer<lapack_complex_double> innercontainer(ld,lDwR,lDR,lDL);
+  tmpContainer<lapack_complex_double> outercontainer(ld,lDwL,lDL,lDR);
   for(int sip=0;sip<ld;sip++){                                                       
-    for(int bi=0;bi<DwR;bi++){
-      for(int ai=0;ai<DR;ai++){
-	for(int aimp=0;aimp<DL;aimp++){
+    for(int bi=0;bi<lDwR;bi++){
+      for(int ai=0;ai<lDR;ai++){
+	for(int aimp=0;aimp<lDL;aimp++){
 	  simpleContainer=0;
-	  for(int aip=0;aip<DR;aip++){
+	  for(int aip=0;aip<lDR;aip++){
 	    simpleContainer+=sourcePctr[pctrIndex(ai,bi,aip)]*networkState.global_access(i+1,sip,aip,aimp); 
 	  }
 	  innercontainer.global_access(sip,bi,ai,aimp)=simpleContainer;
@@ -282,12 +276,12 @@ void network::calcCtrIterRight(const int i){ //iteratively builds R expression
   }
   cout<<"Completed calculation of inner container"<<endl;
   for(int si=0;si<ld;si++){
-    for(int bim=0;bim<DwL;bim++){
-      for(int aimp=0;aimp<DL;aimp++){
-	for(int ai=0;ai<DR;ai++){
+    for(int bim=0;bim<lDwL;bim++){
+      for(int aimp=0;aimp<lDL;aimp++){
+	for(int ai=0;ai<lDR;ai++){
 	  simpleContainer=0;
-	  for(int sip=0;sip<d;sip++){
-	    for(int bi=0;bi<DwR;bi++){
+	  for(int sip=0;sip<ld;sip++){
+	    for(int bi=0;bi<lDwR;bi++){
 	      simpleContainer+=networkH.global_access(i+1,si,sip,bi,bim)*innercontainer.global_access(sip,bi,ai,aimp);
 	    }
 	  }
@@ -297,12 +291,12 @@ void network::calcCtrIterRight(const int i){ //iteratively builds R expression
     }
   }
   cout<<"Completed calculation of outer container"<<endl;
-  for(int aim=0;aim<DL;aim++){
-    for(int bim=0;bim<DwL;bim++){
-      for(int aimp=0;aimp<DL;aimp++){
+  for(int aim=0;aim<lDL;aim++){
+    for(int bim=0;bim<lDwL;bim++){
+      for(int aimp=0;aimp<lDL;aimp++){
 	simpleContainer=0;
 	for(int si=0;si<ld;si++){
-	  for(int ai=0;ai<DR;ai++){
+	  for(int ai=0;ai<lDR;ai++){
 	    simpleContainer+=conj(networkState.global_access(i+1,si,ai,aim))*outercontainer.global_access(si,bim,aimp,ai);
 	  }
 	}
@@ -342,28 +336,31 @@ int network::calcCtrFull(int const direction){
 }
 
 //---------------------------------------------------------------------------------------------------//
+// The implementation of the enrichment is very ugly.
+//---------------------------------------------------------------------------------------------------//
 
 void network::leftEnrichment(int const i){
   lapack_complex_double *Mnew;
   lapack_complex_double *Bnew;
-  int lDR,lDL, lDRR, ld, ldp, lDwR, lDwL;
-  lDR=networkState.locDimR(i);
-  lDL=networkState.locDimL(i);
+  lapack_complex_double *pExpression;
+  int lDRR, ldp;
+  double alpha=1e-4;
+  getLocalDimensions(i);
   lDRR=networkState.locDimR(i+1);
-  ld=locd(i);
   ldp=locd(i+1);
-  lDwR=networkH.locDimR(i);
-  lDwL=networkH.locDimL(i);
   int MNumCols=lDR*(1+lDwR);
   int MNumRows=ld*lDL;
-  Mnew=new lapack_complex_double[MNumRows*MNumCols];
+  int maxDim=(MNumRows>MNumCols)?MNumRows:MNumCols;
+  //Allocate the memory needed for the output of ZUNGBR which is more than the original matrix - also prevents segfault when copying (size of target is given for the same reason)
+  Mnew=new lapack_complex_double[maxDim*maxDim];
   Bnew=new lapack_complex_double[ldp*lDRR*MNumCols];
+  pExpression=new lapack_complex_double[MNumRows*lDR*lDwR];
   for(int si=0;si<ld;++si){
     for(int ai=0;ai<lDR;++ai){
       for(int aim=0;aim<lDL;++aim){
 	Mnew[aim+si*lDL+ai*MNumRows]=networkState.global_access(i,si,ai,aim);
       }
-    }      
+    }
     for(int air=0;air<lDRR;++air){
       for(int ai=0;ai<lDR;++ai){
 	Bnew[ai+air*MNumCols+si*lDRR*MNumCols]=networkState.global_access(i+1,si,air,ai);
@@ -371,48 +368,214 @@ void network::leftEnrichment(int const i){
     }
   }
   //Add zeros and P-Expression to Mnew and Bnew
-  //Singular Value Decomposition of Mnew=U*S*V
-  int containerDim=(MNumRows>MNumCols)?MNumCols:MNumRows;
-  char uplo=(MNumRows>=MNumCols)?'U':'L';
-  lapack_int info;
-  double *diags=new double[containerDim];
-  double *offdiags=new double[containerDim-1];
-  lapack_complex_double *QContainer=new lapack_complex_double[lDL*lDL*ld*ld];
-  lapack_complex_double *PContainer=new lapack_complex_double[MNumCols*MNumCols];
-  lapack_complex_double *Mnewcpy=new lapack_complex_double[MNumCols*MNumCols];
-  info=LAPACKE_zgebrd(LAPACK_COL_MAJOR,MNumRows,MNumCols,Mnew,MNumRows,diags,offdiags,QContainer,PContainer);
-  arraycpy(MNumCols,MNumCols,Mnew,Mnewcpy);
-  info=LAPACKE_zungbr(LAPACK_COL_MAJOR,'Q',MNumRows,MNumRows,MNumCols,Mnew,MNumRows,QContainer);
-  info=LAPACKE_zungbr(LAPACK_COL_MAJOR,'P',MNumCols,MNumCols,MNumRows,Mnewcpy,MNumRows,PContainer);
-  info=LAPACKE_zbdsqr(LAPACK_COL_MAJOR,uplo,containerDim,MNumCols,MNumRows,0,diags,offdiags,Mnewcpy,MNumCols,Mnew,MNumRows,0,1);
-  //Mnewcpy -> A, S*Mnew->Multiply to B
-  for(int mi=0;mi<MNumCols;++mi){
-    for(int ai=0;ai<lDR;++ai){
-      Mnew[ai+lDR*mi]*=diags[ai];
-    }
-  }
-  //From here, Mnew is to be treated as a lDR x MNumCols matrix
-  //Postprocessing: Truncate S to lDR eigenvalues, U to dimension ld*lDL x lDR (from ld*lDL x ld*lDL): the latter is a bit tricky because it is only necessary for i>icrit, might be achieved within lapack
-  lapack_complex_double *AStart;
-  lapack_complex_double *BStart;
-  networkState.subMatrixStart(AStart,i);
-  networkState.subMatrixStart(BStart,i+1);
-  //Postprocessing: A=U, B=S*V*Bnew (use the networkState subMatrixStart for getting B)
-  for(si=0;si<ld;++si){
-    for(int ai=0;ai<lDR;++ai){
+  getPExpressionLeft(i,pExpression);
+  for(int si=0;si<ld;++si){
+    for(int ai=lDR;ai<MNumCols;++ai){
       for(int aim=0;aim<lDL;++aim){
-	networkState.global_access(i,si,ai,aim)=Mnewcpy[aim+si*lDL+ai*MNumRows];
+	Mnew[aim+si*lDL+ai*MNumRows]=alpha*pExpression[aim+si*lDL+(ai-lDR)*MNumRows];
+      }
+    }
+    for(int air=0;air<lDRR;++air){
+      for(int ai=lDR;ai<MNumCols;++ai){
+	Bnew[ai+air*MNumCols+si*lDRR*MNumCols]=0;
       }
     }
   }
+  delete[] pExpression;
+  //Singular Value Decomposition of Mnew=U*S*V
+  int containerDim=(MNumRows>MNumCols)?MNumCols:MNumRows;
+  double *diags=new double[containerDim];
+  lapack_complex_double *QContainer=new lapack_complex_double[MNumRows*MNumRows];
+  lapack_complex_double *PContainer=new lapack_complex_double[MNumCols*MNumCols];
+  lapack_complex_double *Mnewcpy=new lapack_complex_double[maxDim*maxDim];
+  lapackSVD(MNumCols,MNumRows,Mnew,Mnewcpy,diags);
+  //Mnewcpy -> A, S*Mnew->Multiply to B
+  //Postprocessing: Truncate S to lDR eigenvalues, U to dimension ld*lDL x lDR (from ld*lDL x ld*lDL) if neccessary
+  //Truncation is carried out implicitly by only adressing part of the matrix
+  for(int mi=0;mi<MNumCols;++mi){
+    for(int ai=0;ai<lDR;++ai){
+      Mnewcpy[ai+lDR*mi]*=diags[ai];
+    }
+  }
   delete[] diags;
+  //From here, Mnewcpy is to be treated as a lDR x MNumCols matrix
+  //Postprocessing: A=U, B=S*V*Bnew
+  lapack_complex_double *BStart;
+  lapack_complex_double *networkB;
+  lapack_complex_double zone=1.0;
+  lapack_complex_double zzero=0.0;
+  //Multiply S*V into the expanded B (Bnew) to create the normal-sized B (Bstart, direct access to the networkState mps)
+  for(int si=0;si<ld;++si){
+    networkState.subMatrixStart(networkB,i+1,si);
+    BStart=Bnew+si*lDRR*MNumCols;
+    cblas_zgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,lDR,lDRR,MNumCols,&zone,Mnewcpy,lDR,BStart,MNumCols,&zzero,networkB,lDR);
+  }
   delete[] Mnewcpy;
-  delete[] QContainer;
-  delete[] PContainer;
-  delete[] Mnew;
   delete[] Bnew;
+  for(int si=0;si<ld;++si){
+    for(int ai=0;ai<lDR;++ai){
+      for(int aim=0;aim<lDL;++aim){
+	networkState.global_access(i,si,ai,aim)=Mnew[aim+si*lDL+ai*MNumRows];
+      }
+    }
+  }
+  delete[] Mnew;
 }
 
+//---------------------------------------------------------------------------------------------------//
+
+void network::rightEnrichment(int const i){
+  lapack_complex_double *Mnew;
+  lapack_complex_double *Anew;
+  lapack_complex_double *pExpression;
+  int lDLL, ldm;
+  double alpha=0;
+  getLocalDimensions(i);
+  lDLL=networkState.locDimL(i-1);
+  ldm=locd(i-1);
+  int MNumCols=ld*lDR;
+  int MNumRows=lDL*(1+lDwL);
+  int maxDim=(MNumRows>MNumCols)?MNumRows:MNumCols;
+  Mnew=new lapack_complex_double[maxDim*maxDim];
+  Anew=new lapack_complex_double[ldm*lDLL*MNumRows];
+  pExpression=new lapack_complex_double[ld*lDR*lDL*lDwL];
+  for(int si=0;si<ld;++si){
+    for(int ai=0;ai<lDR;++ai){
+      for(int aim=0;aim<lDL;++aim){
+	Mnew[aim+ai*MNumRows+si*lDR*MNumRows]=networkState.global_access(i,si,ai,aim);
+      }
+    }
+    for(int aim=0;aim<lDL;++aim){
+      for(int aimm=0;aimm<lDLL;++aimm){
+	Anew[aimm+aim*ld*lDLL+si*lDLL]=networkState.global_access(i-1,si,aim,aimm);
+      }
+    }
+  }
+  //Add zeros and P-Expression to Mnew and Bnew
+  getPExpressionRight(i,pExpression);
+  for(int si=0;si<ld;++si){
+    for(int ai=0;ai<lDR;++ai){
+      for(int aim=lDL;aim<MNumRows;++aim){
+	Mnew[aim+ai*MNumRows+si*lDR*MNumRows]=alpha*pExpression[aim+si*lDR*MNumRows+(ai-lDR)*MNumRows];
+      }
+    }
+    for(int aim=lDL;aim<MNumRows;++aim){
+      for(int aimm=0;aimm<lDLL;++aimm){
+        Anew[aimm+aim*ld*lDLL+si*lDLL]=0;
+      }
+    }
+  }
+  delete[] pExpression;
+  //Singular Value Decomposition of Mnew=U*S*V
+  int containerDim=(MNumRows>MNumCols)?MNumCols:MNumRows;
+  double *diags=new double[containerDim];
+  lapack_complex_double *Mnewcpy=new lapack_complex_double[maxDim*maxDim];
+  lapackSVD(MNumCols,MNumRows,Mnew,Mnewcpy,diags);
+  //Mnewcpy -> A, S*Mnew->Multiply to B
+  //Postprocessing: Truncate S to lDR eigenvalues, U to dimension ld*lDL x lDR (from ld*lDL x ld*lDL) if neccessary
+  //Truncation is carried out implicitly by only adressing part of the matrix
+  for(int aim=0;aim<lDL;++aim){
+    for(int mi=0;mi<MNumRows;++mi){
+      Mnew[mi+aim*MNumRows]*=diags[aim];
+    }
+  }
+  delete[] diags;
+  //From here, Mnew is to be treated as a MNumRows x lDL matrix
+  //Postprocessing: A=U, B=S*V*Bnew
+  lapack_complex_double *AStart;
+  lapack_complex_double *networkA;
+  lapack_complex_double zone=1.0;
+  lapack_complex_double zzero=0.0;
+  //Multiply S*V into the expanded A (AStart) to create the normal-sized A (networkA, direct access to the networkState mps)
+  for(int si=0;si<ld;++si){
+    networkState.subMatrixStart(networkA,i-1,si);
+    AStart=Anew+si*lDLL*MNumRows;
+    cblas_zgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,lDLL,lDL,MNumRows,&zone,AStart,lDLL,Mnew,MNumRows,&zzero,networkA,lDLL);
+  }
+  delete[] Mnew;
+  delete[] Anew;
+  for(int si=0;si<ld;++si){
+    for(int ai=0;ai<lDR;++ai){
+      for(int aim=0;aim<lDL;++aim){
+	networkState.global_access(i,si,ai,aim)=Mnewcpy[aim+si*lDR*MNumCols+ai*MNumCols];
+      }
+    }
+  }
+  delete[] Mnewcpy;
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void network::getPExpressionLeft(int const i, lapack_complex_double *pExpr){
+  lapack_complex_double simpleContainer;
+  getLocalDimensions(i);
+  tmpContainer<lapack_complex_double> innerContainer(ld,lDL,lDR,lDwL);
+  for(int si=0;si<ld;++si){
+    for(int aim=0;aim<lDL;++aim){
+      for(int ai=0;ai<lDR;++ai){
+	for(int bim=0;bim<lDwL;++bim){
+	  simpleContainer=0;
+	  for(int aimp=0;aimp<lDL;++aimp){
+	    simpleContainer+=Lctr.global_access(i,aim,bim,aimp)*networkState.global_access(i,si,ai,aim);
+	  }
+	  innerContainer.global_access(si,aim,ai,bim)=simpleContainer;
+	}
+      }
+    }
+  }
+  for(int si=0;si<ld;++si){
+    for(int ai=0;ai<lDR;++ai){
+      for(int bi=0;bi<lDwR;++bi){
+	for(int aim=0;aim<lDL;++aim){
+	  //BEWARE: IM UNSURE WHETHER bi OR ai IS THE OUTERMOST INDEX - FORGET IT, ITS bi
+	  simpleContainer=0;
+	  for(int sip=0;sip<ld;++sip){
+	    for(int bim=0;bim<lDwL;++bim){
+	      simpleContainer+=networkH.global_access(i,si,sip,bi,bim)*innerContainer.global_access(sip,aim,ai,bim);
+	    }
+	  }
+	  pExpr[aim+lDL*si+bi*lDL*d*lDR+ai*lDL*d]=simpleContainer;    
+	}
+      }
+    }
+  }
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void network::getPExpressionRight(int const i, lapack_complex_double *pExpr){
+  lapack_complex_double simpleContainer;
+  getLocalDimensions(i);
+  tmpContainer<lapack_complex_double> innerContainer(ld,lDL,lDR,lDwR);
+  for(int si=0;si<ld;++si){
+    for(int aim=0;aim<lDL;++aim){
+      for(int ai=0;ai<lDR;++ai){
+	for(int bi=0;bi<lDwR;++bi){
+	  simpleContainer=0;
+	  for(int aip=0;aip<lDR;++aip){
+	    simpleContainer+=Rctr.global_access(i,ai,bi,aip)*networkState.global_access(i,si,ai,aim);
+	  }
+	  innerContainer.global_access(si,aim,ai,bi)=simpleContainer;
+	}
+      }
+    }
+  }
+  for(int si=0;si<ld;++si){
+    for(int ai=0;ai<lDR;++ai){
+      for(int bim=0;bim<lDwL;++bim){
+	for(int aim=0;aim<lDL;++aim){
+	  simpleContainer=0;
+	  for(int sip=0;sip<ld;++sip){
+	    for(int bi=0;bi<lDwR;++bi){
+	      simpleContainer+=networkH.global_access(i,si,sip,bi,bim)*innerContainer.global_access(sip,aim,ai,bi);
+	    }
+	  }
+	  pExpr[aim+bim*lDL+ai*lDL*lDwR+si*lDL*lDwR*lDR]=simpleContainer;
+	}
+      }
+    }
+  }
+}
 
 //---------------------------------------------------------------------------------------------------//
 // These are placeholder functions to allow for the dimension of the on-site Hilbert space to be
@@ -423,6 +586,8 @@ void network::leftEnrichment(int const i){
 int network::locd(int const i){
   return d;
 }
+
+//---------------------------------------------------------------------------------------------------//
 
 int network::locDMax(int const i){
   if(i<=L/2){
