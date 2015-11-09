@@ -6,10 +6,10 @@
 #include "mps.h"
 #include "baseMeasurement.h"
 
-class mpoMeasurement: public baseMeasurement{
+class globalMeasurement: public baseMeasurement{
  public:
-  mpoMeasurement();
-  mpoMeasurement(mpo<lapack_complex_double> *MPOperator, mps *MPState);
+  globalMeasurement();
+  globalMeasurement(mpo<lapack_complex_double> *MPOperator, mps *MPState);
   double measureFull();
 };
 

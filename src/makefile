@@ -6,7 +6,7 @@ SUPERLU_INCLUDE=-I /usr/include/superlu
 SUPERLU_LIB=/usr/lib/libsuperlu.a
 APCK_LIB=/usr/lib/libarpack.a /usr/lib/libarpack++.a
 CFLAGS=-Wall -O3
-OBJECTS=main.o parameters.o network.o arrayprocessing.o Qsystem.o optHMatrix.o mps.o mpoMeasurement.o baseMeasurement.o iterativeMeasurement.o
+OBJECTS=main.o parameters.o network.o arrayprocessing.o Qsystem.o optHMatrix.o mps.o globalMeasurement.o baseMeasurement.o iterativeMeasurement.o
 TEMPLATES=arraycreation.h mpo.h pContraction.h
 NAME=MPScode
 

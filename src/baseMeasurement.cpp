@@ -9,6 +9,8 @@
 baseMeasurement::baseMeasurement(){
 }
 
+//---------------------------------------------------------------------------------------------------//
+
 baseMeasurement::baseMeasurement(mpo<lapack_complex_double> *MPOperatorIn, mps *MPStateIn):
   MPOperator(MPOperatorIn),
   MPState(MPStateIn)
@@ -16,12 +18,15 @@ baseMeasurement::baseMeasurement(mpo<lapack_complex_double> *MPOperatorIn, mps *
   initializeBase(MPOperatorIn,MPStateIn);
 }
 
+//---------------------------------------------------------------------------------------------------//
+
 void baseMeasurement::initializeBase(mpo<lapack_complex_double> *MPOperatorIn, mps *MPStateIn){
   Dw=(*MPOperator).maxDim();
   D=(*MPState).maxDim();
   Rctr.initialize((*MPOperator).length(),(*MPState).maxDim(),(*MPOperator).maxDim());
 }
-  
+
+//---------------------------------------------------------------------------------------------------//  
 
 void baseMeasurement::getLocalDimensions(int const i){
   lDL=(*MPState).locDimL(i);
@@ -30,6 +35,8 @@ void baseMeasurement::getLocalDimensions(int const i){
   lDwR=(*MPOperator).locDimR(i);
   lDwL=(*MPOperator).locDimL(i);
 }
+
+//---------------------------------------------------------------------------------------------------//
 
 void baseMeasurement::calcCtrIterRightBase(int const i, lapack_complex_double *targetPctr){
   lapack_complex_double simpleContainer;

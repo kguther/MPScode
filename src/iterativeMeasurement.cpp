@@ -9,6 +9,8 @@
 iterativeMeasurement::iterativeMeasurement(){
 }
 
+//---------------------------------------------------------------------------------------------------//
+
 void iterativeMeasurement::initialize(mpo<lapack_complex_double> *MPOperatorIn, mps *MPStateIn){
   MPOperator=MPOperatorIn;
   MPState=MPStateIn;
@@ -75,11 +77,15 @@ void iterativeMeasurement::calcCtrIterLeft(int const i){
   std::cout<<"Completed calculation of partial contraction"<<std::endl;
 }
 
+//---------------------------------------------------------------------------------------------------//
+
 void iterativeMeasurement::calcCtrIterRight(int const i){
   lapack_complex_double *target;
   Rctr.subContractionStart(target,i);
   calcCtrIterRightBase(i,target);
 }
+
+//---------------------------------------------------------------------------------------------------//
 
 int iterativeMeasurement::calcCtrFull(int const direction){
   //Full calculation of the contraction is only required once: before the first sweep

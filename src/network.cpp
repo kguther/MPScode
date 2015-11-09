@@ -15,7 +15,7 @@
 #include "siteoptimizer.h"
 #include "mpo.h"
 #include "mps.h"
-#include "mpoMeasurement.h"
+#include "globalMeasurement.h"
 #include "iterativeMeasurement.h"
 
 //BEWARE: ALL MPS AND MPO NETWORK MATRICES ARE STORED WITH A CONTIGOUS COLUMN INDEX (i.e. transposed with respect to C standard, for better compatibility with LAPACK)
@@ -363,7 +363,6 @@ void network::rightEnrichment(int const i){
   for(int si=0;si<ld;++si){
     for(int ai=0;ai<lDR;++ai){
       for(int aim=0;aim<lDL;++aim){
-	//Problem appears when lDR==lDL (truncation)
 	networkState.global_access(i,si,ai,aim)=Mnewcpy[aim+si*lDR*MNumCols+ai*MNumCols];
       }
     }
@@ -497,7 +496,7 @@ void network::calcHSqrExpectationValue(double &ioHsqr){
 //---------------------------------------------------------------------------------------------------//
 
 int network::measure(mpo<lapack_complex_double> *MPOperator, double &lambda){
-  mpoMeasurement currentMeasurement(MPOperator,&networkState);
+  globalMeasurement currentMeasurement(MPOperator,&networkState);
   lambda=currentMeasurement.measureFull();
   return 0;
 }
