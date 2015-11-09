@@ -53,6 +53,7 @@ void network::initialize(parameters inputpars){
   D=inputpars.D;
   L=inputpars.L;
   Dw=inputpars.Dw;
+  devAccuracy=inputpars.acc;
   nSweeps=inputpars.nSweeps;
   //Allocation of Hamiltonian MPO - square matrices are used since no library matrix functions have to be applied - this allows for faster access
   networkH.initialize(d,Dw,L);
@@ -60,6 +61,7 @@ void network::initialize(parameters inputpars){
   networkState.generate(d,D,L);
   Lctr.initialize(L,D,Dw);
   Rctr.initialize(L,D,Dw);
+  alpha=1e-2;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -70,6 +72,12 @@ void network::initialize(parameters inputpars){
 
 void network::setParameterNSweeps(int Nnew){
   nSweeps=Nnew;
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void network::setParameterAlpha(double alphanew){
+  alpha=alphanew;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -105,10 +113,9 @@ void network::getLocalDimensions(int const i){
 // corresponding eigenvalue (output).
 //---------------------------------------------------------------------------------------------------//
 
-double network::solve(){  //IMPORTANT TODO: ENHANCE STARTING POINT -> HUGE SPEEDUP
-  lapack_complex_double normalization;
-  double lambda;
+int network::solve(double &lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT -> HUGE SPEEDUP
   int errRet;
+  double convergenceQuality;
   clock_t curtime;
   curtime=clock();
   Lctr.initialize(L,D,Dw);
@@ -130,6 +137,7 @@ double network::solve(){  //IMPORTANT TODO: ENHANCE STARTING POINT -> HUGE SPEED
       errRet=optimize(i,lambda); 
       curtime=clock()-curtime;
       cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
+      //networkState.leftNormalizeState(i);
       leftEnrichment(i);
       calcCtrIterLeft(i+1);
     }
@@ -139,16 +147,25 @@ double network::solve(){  //IMPORTANT TODO: ENHANCE STARTING POINT -> HUGE SPEED
       //Step of rightsweep
       cout<<"Optimizing site matrix\n";      
       curtime=clock();
-      errRet=optimize(i,lambda); 
+      errRet=optimize(i,lambda);
       curtime=clock()-curtime;
       cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
+      //networkState.rightNormalizeState(i);
       rightEnrichment(i);
       calcCtrIterRight(i-1);
     }
     networkState.normalizeFinal(1);
+    calcCtrIterRight(-1);
+    convergenceQuality=convergenceCheck();
+    alpha*=.1;
   }
-  cout<<"Determined ground state energy of: "<<lambda<<" using parameters: D="<<D<<" nSweeps="<<nSweeps<<endl;
-  return lambda;
+  cout<<"Quality of convergence: "<<convergenceQuality<<"\tRequired accuracy: "<<devAccuracy<<endl;
+  if(convergenceQuality<devAccuracy){
+    return 0;
+  }
+  else{
+    return 1;
+  }
 }
 
 
@@ -182,8 +199,8 @@ int network::optimize(int const i, double &iolambda){
     return 1;
   }
   else{
-    cout<<setprecision(21)<<"Current energy: "<<real(lambda)<<endl;
     iolambda=real(lambda);
+    cout<<setprecision(21)<<"Current energy: "<<real(lambda)<<endl;
     return 0;
   }
 }
@@ -252,12 +269,25 @@ void network::calcCtrIterLeft(int const i){ //iteratively builds L expression
 
 //---------------------------------------------------------------------------------------------------//
 
-void network::calcCtrIterRight(int const i){ //iteratively builds R expression
+void network::calcCtrIterRight(int const i){
+  calcMeasureCtrIterRight(i,networkH,&expectationValue);
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void network::calcMeasureCtrIterRight(int const i, mpo<lapack_complex_double> &MPOperator, lapack_complex_double *completeCtr){ //iteratively builds R expression
   lapack_complex_double simpleContainer;
   lapack_complex_double *sourcePctr, *targetPctr;
   Rctr.subContractionStart(sourcePctr,i+1);
-  Rctr.subContractionStart(targetPctr,i);
+  if(i==-1){
+    targetPctr=completeCtr;
+  }
+  else{
+    Rctr.subContractionStart(targetPctr,i);
+  }
   getLocalDimensions(i+1);
+  lDwL=MPOperator.locDimL(i+1);
+  lDwR=MPOperator.locDimR(i+1);
   tmpContainer<lapack_complex_double> innercontainer(ld,lDwR,lDR,lDL);
   tmpContainer<lapack_complex_double> outercontainer(ld,lDwL,lDL,lDR);
   for(int sip=0;sip<ld;sip++){                                                       
@@ -281,7 +311,7 @@ void network::calcCtrIterRight(int const i){ //iteratively builds R expression
 	  simpleContainer=0;
 	  for(int sip=0;sip<ld;sip++){
 	    for(int bi=0;bi<lDwR;bi++){
-	      simpleContainer+=networkH.global_access(i+1,si,sip,bi,bim)*innercontainer.global_access(sip,bi,ai,aimp);
+	      simpleContainer+=MPOperator.global_access(i+1,si,sip,bi,bim)*innercontainer.global_access(sip,bi,ai,aimp);
 	    }
 	  }
 	  outercontainer.global_access(si,bim,aimp,ai)=simpleContainer;
@@ -311,7 +341,6 @@ void network::calcCtrIterRight(int const i){ //iteratively builds R expression
 int network::calcCtrFull(int const direction){
   //Full calculation of the contraction is only required once: before the first sweep
   //This is just some ordinary iterative computation of the partial contraction Pctr (P=R,L)
-  lapack_complex_double *initialCtr;
   if(direction==1){
     Rctr.global_access(L-1,0,0,0)=lapack_make_complex_double(1.0,0.0);
     for(int i=L-2;i>=0;i--){
@@ -345,14 +374,13 @@ void network::leftEnrichment(int const i){
   lapack_complex_double *Bnew;
   lapack_complex_double *pExpression;
   int lDRR, ldp;
-  double alpha=1e-4;
   getLocalDimensions(i);
   lDRR=networkState.locDimR(i+1);
   ldp=locd(i+1);
   int MNumCols=lDR*(1+lDwL);
   int MNumRows=ld*lDL;
   int maxDim=(MNumRows>MNumCols)?MNumRows:MNumCols;
-  //Allocate the memory needed for the output of ZUNGBR which is more than the original matrix - also prevents segfault when copying (size of target is given for the same reason)
+  //Allocate the memory needed for the output of ZUNGBR which is more than the original matrix - also prevents possible segfault when copying (size of target is given for the same reason)
   Mnew=new lapack_complex_double[maxDim*maxDim];
   Bnew=new lapack_complex_double[ldp*lDRR*MNumCols];
   pExpression=new lapack_complex_double[MNumRows*lDR*lDwR];
@@ -385,8 +413,6 @@ void network::leftEnrichment(int const i){
   //Singular Value Decomposition of Mnew=U*S*V
   int containerDim=(MNumRows>MNumCols)?MNumCols:MNumRows;
   double *diags=new double[containerDim];
-  lapack_complex_double *QContainer=new lapack_complex_double[MNumRows*MNumRows];
-  lapack_complex_double *PContainer=new lapack_complex_double[MNumCols*MNumCols];
   lapack_complex_double *Mnewcpy=new lapack_complex_double[maxDim*maxDim];
   lapackSVD(MNumCols,MNumRows,Mnew,Mnewcpy,diags);
   //Mnewcpy -> A, S*Mnew->Multiply to B
@@ -429,12 +455,11 @@ void network::rightEnrichment(int const i){
   lapack_complex_double *Anew;
   lapack_complex_double *pExpression;
   int lDLL, ldm;
-  double alpha=1e-4;
   getLocalDimensions(i);
   lDLL=networkState.locDimL(i-1);
   ldm=locd(i-1);
   int MNumCols=ld*lDR;
-  int MNumRows=lDL*(1+0*lDwL);
+  int MNumRows=lDL*(1+lDwL);
   int maxDim=(MNumRows>MNumCols)?MNumRows:MNumCols;
   Mnew=new lapack_complex_double[maxDim*maxDim];
   Anew=new lapack_complex_double[ldm*lDLL*MNumRows];
@@ -455,7 +480,7 @@ void network::rightEnrichment(int const i){
     //Add zeros and P-Expression to Mnew and Bnew
     for(int ai=0;ai<lDR;++ai){
       for(int aim=lDL;aim<MNumRows;++aim){
-	Mnew[aim+ai*MNumRows+si*lDR*MNumRows]=alpha*pExpression[aim-lDL+si*lDR*MNumRows+ai*MNumRows];
+	Mnew[aim+ai*MNumRows+si*lDR*MNumRows]=alpha*pExpression[aim-lDL+si*lDR*lDwL*lDL+ai*lDwL*lDL];
       }
     }
     for(int aim=lDL;aim<MNumRows;++aim){
@@ -469,11 +494,6 @@ void network::rightEnrichment(int const i){
   int containerDim=(MNumRows>MNumCols)?MNumCols:MNumRows;
   double *diags=new double[containerDim];
   lapack_complex_double *Mnewcpy=new lapack_complex_double[maxDim*maxDim];
-  char uplo=(MNumRows>=MNumCols)?'U':'L';
-  lapack_int info;
-  double *offdiags=new double[containerDim-1];
-  lapack_complex_double *QContainer=new lapack_complex_double[containerDim];
-  lapack_complex_double *PContainer=new lapack_complex_double[containerDim];
   lapackSVD(MNumCols,MNumRows,Mnew,Mnewcpy,diags);
   //Mnewcpy -> A, S*Mnew->Multiply to B
   //Postprocessing: Truncate S to lDR eigenvalues, U to dimension ld*lDL x lDR (from ld*lDL x ld*lDL) if neccessary
@@ -508,11 +528,6 @@ void network::rightEnrichment(int const i){
       for(int aim=0;aim<lDL;++aim){
 	//Problem appears when lDR==lDL (truncation)
 	networkState.global_access(i,si,ai,aim)=Mnewcpy[aim+si*lDR*MNumCols+ai*MNumCols];
-	if(networkState.global_access(i,si,ai,aim)!=networkState.global_access(i,si,ai,aim)){
-	  cout<<"Error accesing Mnewcpy at dimensions "<<lDLL<<"<-"<<lDL<<"x"<<lDR<<endl;
-	  cout<<"Indices: "<<si<<"\t"<<ai<<"\t"<<aim<<endl;
-	  exit(-1);
-	}
       }
     }
   }
@@ -533,7 +548,7 @@ void network::getPExpressionLeft(int const i, lapack_complex_double *pExpr){
 	for(int bim=0;bim<lDwL;++bim){
 	  simpleContainer=0;
 	  for(int aimp=0;aimp<lDL;++aimp){
-	    simpleContainer+=Lctr.global_access(i,aim,bim,aimp)*networkState.global_access(i,si,ai,aim);
+	    simpleContainer+=Lctr.global_access(i,aim,bim,aimp)*networkState.global_access(i,si,ai,aimp);
 	  }
 	  innerContainer.global_access(si,aim,ai,bim)=simpleContainer;
 	}
@@ -570,7 +585,7 @@ void network::getPExpressionRight(int const i, lapack_complex_double *pExpr){
 	for(int bi=0;bi<lDwR;++bi){
 	  simpleContainer=0;
 	  for(int aip=0;aip<lDR;++aip){
-	    simpleContainer+=Rctr.global_access(i,ai,bi,aip)*networkState.global_access(i,si,ai,aim);
+	    simpleContainer+=Rctr.global_access(i,ai,bi,aip)*networkState.global_access(i,si,aip,aim);
 	  }
 	  innerContainer.global_access(si,aim,ai,bi)=simpleContainer;
 	}
@@ -587,12 +602,124 @@ void network::getPExpressionRight(int const i, lapack_complex_double *pExpr){
 	      simpleContainer+=networkH.global_access(i,si,sip,bi,bim)*innerContainer.global_access(sip,aim,ai,bi);
 	    }
 	  }
-	  pExpr[aim+bim*lDL+ai*lDL*lDwR+si*lDL*lDwR*lDR]=simpleContainer;
+	  pExpr[aim*lDwL+bim+ai*lDL*lDwL+si*lDL*lDwL*lDR]=simpleContainer;
 	}
       }
     }
   }
 }
+
+//---------------------------------------------------------------------------------------------------//
+
+double network::convergenceCheck(){
+  double stdDeviation;
+  double meanEnergy;
+  double meanSqrEnergy;
+  meanEnergy=pow(real(expectationValue),2);
+  calcHSqrExpectationValue(meanSqrEnergy);
+  stdDeviation=meanSqrEnergy-meanEnergy;
+  cout<<"Current quality of convergence: "<<stdDeviation<<endl;
+  return stdDeviation;
+}
+
+void network::calcHSqrExpectationValue(double &ioHsqr){
+  dynamicContainer<lapack_complex_double> currentP;
+  dynamic5DContainer<lapack_complex_double> innerContainer;
+  dynamic5DContainer<lapack_complex_double> middleContainer;
+  dynamic5DContainer<lapack_complex_double> outerContainer;
+  lapack_complex_double simpleContainer;
+  currentP.generate(1,1,1,1);
+  currentP.global_access(0,0,0,0)=1;
+  cout<<"Starting evaluation of convergence quality\n";
+  for(int i=0;i<L;i++){
+    getLocalDimensions(i);
+    innerContainer.generate(ld,lDwL,lDwL,lDR,lDL);
+    for(int sipp=0;sipp<ld;++sipp){
+      for(int bimp=0;bimp<lDwL;++bimp){
+	for(int bim=0;bim<lDwL;++bim){
+	  for(int aip=0;aip<lDR;++aip){
+	    for(int aim=0;aim<lDL;++aim){
+	      simpleContainer=0;
+	      for(int aimp=0;aimp<lDL;++aimp){
+		simpleContainer+=networkState.global_access(i,sipp,aip,aimp)*currentP.global_access(bim,bimp,aim,aimp);
+	      }
+	      innerContainer.global_access(sipp,bim,bimp,aip,aim)=simpleContainer;
+	    }
+	  }
+	}
+      }
+    }
+    middleContainer.generate(ld,lDwR,lDwL,lDR,lDL);
+    for(int sip=0;sip<ld;++sip){
+      for(int bim=0;bim<lDwL;++bim){
+	for(int bip=0;bip<lDwR;++bip){
+	  for(int aip=0;aip<lDR;++aip){
+	    for(int aim=0;aim<lDL;++aim){
+	      simpleContainer=0;
+	      for(int sipp=0;sipp<ld;++sipp){
+		for(int bimp=0;bimp<lDwL;++bimp){
+		  simpleContainer+=innerContainer.global_access(sipp,bim,bimp,aip,aim)*networkH.global_access(i,sip,sipp,bip,bimp);
+		}
+	      }
+	      middleContainer.global_access(sip,bip,bim,aip,aim)=simpleContainer;
+	    }
+	  }
+	}
+      }
+    }
+    outerContainer.generate(ld,lDwR,lDwR,lDR,lDL);
+    for(int si=0;si<ld;++si){
+      for(int bi=0;bi<lDwR;++bi){
+	for(int bip=0;bip<lDwR;++bip){
+	  for(int aip=0;aip<lDR;++aip){
+	    for(int aim=0;aim<lDL;++aim){
+	      simpleContainer=0;
+	      for(int sip=0;sip<ld;++sip){
+		for(int bim=0;bim<lDwL;++bim){
+		  simpleContainer+=middleContainer.global_access(sip,bip,bim,aip,aim)*networkH.global_access(i,si,sip,bi,bim);
+		}
+	      }
+	      outerContainer.global_access(si,bi,bip,aip,aim)=simpleContainer;
+	    }
+	  }
+	}
+      }
+    }
+    currentP.generate(lDwR,lDwR,lDR,lDR);
+    for(int bi=0;bi<lDwR;++bi){
+      for(int bip=0;bip<lDwR;++bip){
+	for(int ai=0;ai<lDR;++ai){
+	  for(int aip=0;aip<lDR;++aip){
+	    simpleContainer=0;
+	    for(int si=0;si<ld;++si){
+	      for(int aim=0;aim<lDL;aim++){
+		simpleContainer+=outerContainer.global_access(si,bi,bip,aip,aim)*conj(networkState.global_access(i,si,ai,aim));
+	      }
+	    }
+	    currentP.global_access(bi,bip,ai,aip)=simpleContainer;
+	  }
+	}
+      }
+    }
+  }
+  ioHsqr=real(currentP.global_access(0,0,0,0));
+}
+
+//---------------------------------------------------------------------------------------------------//
+// Interface function to compute the expectation value of some operator in MPO representation. 
+// Basically does the same thing as calcHSqrExpectationValue, but in a more general way and by 
+// accessing the partial contraction method.
+//---------------------------------------------------------------------------------------------------//
+
+int network::measure(mpo<lapack_complex_double> MPOperator, lapack_complex_double *lambda){
+    Rctr.global_access(L-1,0,0,0)=lapack_make_complex_double(1.0,0.0);
+    for(int i=L-2;i>=-1;i--){
+      calcMeasureCtrIterRight(i,MPOperator,lambda);
+	}
+    return 0;
+}
+  
+
 
 //---------------------------------------------------------------------------------------------------//
 // These are placeholder functions to allow for the dimension of the on-site Hilbert space to be
