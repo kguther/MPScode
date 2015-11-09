@@ -67,12 +67,12 @@ void optHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
   int nNzero;
   arcomplex<double> simpleContainer;
   //Similar to the calculation of partial contractions, we use optimal bracketing to reuse any intermediate results. This greatly reduces the computational effort and is much faster than storing H in a sparse format and using the internal ARPACK++ matrix classes
-  for(int sip=0;sip<d;sip++){
-    for(int aimp=0;aimp<lDL;aimp++){
-      for(int ai=0;ai<lDR;ai++){
-	for(int bi=0;bi<lDwR;bi++){
+  for(int sip=0;sip<d;++sip){
+    for(int aimp=0;aimp<lDL;++aimp){
+      for(int ai=0;ai<lDR;++ai){
+	for(int bi=0;bi<lDwR;++bi){
 	  simpleContainer=0;
-	  for(int aip=0;aip<lDR;aip++){
+	  for(int aip=0;aip<lDR;++aip){
 	    simpleContainer+=Rctr[ctrIndex(ai,bi,aip)]*v[vecIndex(sip,aip,aimp)];
 	  }
 	  innercontainer.global_access(sip,aimp,ai,bi)=simpleContainer;
@@ -80,13 +80,13 @@ void optHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
       }
     }
   }
-  for(int si=0;si<d;si++){
-    for(int ai=0;ai<lDR;ai++){
-      for(int bim=0;bim<lDwL;bim++){
-	for(int aimp=0;aimp<lDL;aimp++){
+  for(int si=0;si<d;++si){
+    for(int ai=0;ai<lDR;++ai){
+      for(int bim=0;bim<lDwL;++bim){
+	for(int aimp=0;aimp<lDL;++aimp){
 	  simpleContainer=0;
-	  for(int sip=0;sip<d;sip++){
-	    for(int bi=0;bi<lDwR;bi++){
+	  for(int sip=0;sip<d;++sip){
+	    for(int bi=0;bi<lDwR;++bi){
 	      simpleContainer+=innercontainer.global_access(sip,aimp,ai,bi)*H[hIndex(si,sip,bi,bim)];
 	    }
 	  }
@@ -95,12 +95,12 @@ void optHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
       }
     }
   }
-  for(int si=0;si<d;si++){
-    for(int ai=0;ai<lDR;ai++){
-      for(int aim=0;aim<lDL;aim++){
+  for(int si=0;si<d;++si){
+    for(int ai=0;ai<lDR;++ai){
+      for(int aim=0;aim<lDL;++aim){
 	simpleContainer=0;
-	for(int bim=0;bim<lDwL;bim++){
-	  for(int aimp=0;aimp<lDL;aimp++){
+	for(int bim=0;bim<lDwL;++bim){
+	  for(int aimp=0;aimp<lDL;++aimp){
 	    simpleContainer+=outercontainer.global_access(si,bim,ai,aimp)*Lctr[ctrIndex(aim,bim,aimp)];
 	  }
 	}

@@ -37,17 +37,17 @@ void mps::initialize(int din, int Din, int Lin){
   createStateArray(d,D,L,&state_array_access_structure);
   getIcrit();
   int lDL, lDR;
-  for(int i=0;i<L;i++){
+  for(int i=0;i<L;++i){
     lDL=locDimL(i);
     lDR=locDimR(i);
-    for(int s=0;s<d;s++){
-      for(int ai=0;ai<lDR;ai++){
-	for(int aim=0;aim<lDL;aim++){
+    for(int si=0;si<d;++si){
+      for(int ai=0;ai<lDR;++ai){
+	for(int aim=0;aim<lDL;++aim){
 	  if(ai==aim){
-	    state_array_access_structure[i][s][ai][aim]=1;
+	    state_array_access_structure[i][si][ai][aim]=1;
 	  }
 	  else{
-	    state_array_access_structure[i][s][ai][aim]=0;
+	    state_array_access_structure[i][si][ai][aim]=0;
 	  }
 	}
       }
@@ -64,10 +64,10 @@ int mps::setParameterD(int Dnew){
   lapack_complex_double ****newNetworkState;
   //Copy the content of the current state into the larger array (which is initialized with zero)
   createStateArray(d,Dnew,L,&newNetworkState);
-  for(int i=0;i<L;i++){
-    for(int si=0;si<d;si++){
-      for(int ai=0;ai<locDimR(i);ai++){
-	for(int aim=0;aim<locDimL(i);aim++){
+  for(int i=0;i<L;++i){
+    for(int si=0;si<d;++si){
+      for(int ai=0;ai<locDimR(i);++ai){
+	for(int aim=0;aim<locDimL(i);++aim){
 	  newNetworkState[i][si][ai][aim]=state_array_access_structure[i][si][ai][aim];
 	}
       }
@@ -85,7 +85,7 @@ int mps::setParameterD(int Dnew){
 
 void mps::getIcrit(){
   icrit=L/2;//In case chain is too short, this is the correct value (trust me)
-  for(int j=0;j<L/2;j++){
+  for(int j=0;j<L/2;++j){
     if(locDMax(j)>D){
       icrit=j;
       break;
@@ -116,7 +116,7 @@ int mps::leftNormalizeState(int const i){
   Qcontainer=new lapack_complex_double[D2];//Used for storage of lapack-internal matrices
   Rcontainer=new lapack_complex_double[D2*D2];//Used for storage of R from RQ decomposition
   //Enable use of LAPACK_ROW_MAJOR which is necessary here due to the applied storage scheme
-  for(int si=0;si<ld;si++){
+  for(int si=0;si<ld;++si){
     transp(D2,D1,state_array_access_structure[i][si][0]);
   }
   //Use thin QR decomposition
@@ -124,7 +124,7 @@ int mps::leftNormalizeState(int const i){
   upperdiag(D2,D2,state_array_access_structure[i][0][0],Rcontainer);                               
   //Only first D2 columns are used -> thin QR (below icrit, this is equivalent to a full QR)
   info=LAPACKE_zungqr(LAPACK_ROW_MAJOR,ld*D1,D2,D2,state_array_access_structure[i][0][0],D2,Qcontainer);
-  for(int si=0;si<ld;si++){
+  for(int si=0;si<ld;++si){
     transp(D1,D2,state_array_access_structure[i][si][0]);
     cblas_ztrmm(CblasColMajor,CblasLeft,CblasUpper,CblasTrans,CblasNonUnit,D2,D3,&zone,Rcontainer,D2,state_array_access_structure[i+1][si][0],D2); 
     //REMARK: Use CblasTrans because Rcontainer is in row_major while state_array_access_structure[i+1][si][0] is in column_major order - this is a normal matrix multiplication - here, R is packed into the matrices of the next site
@@ -153,7 +153,7 @@ int mps::rightNormalizeState(int const i){
   //lowerdiag does get an upper trigonal matrix in column major ordering, dont get confused
   lowerdiag(D2,D2,state_array_access_structure[i][0][0]+D2*(ld*D1-D2),Rcontainer);
   info=LAPACKE_zungrq(LAPACK_COL_MAJOR,D2,ld*D1,D2,state_array_access_structure[i][0][0],D2,Qcontainer);
-  for(int si=0;si<ld;si++){
+  for(int si=0;si<ld;++si){
     cblas_ztrmm(CblasColMajor,CblasRight,CblasUpper,CblasNoTrans,CblasNonUnit,D3,D2,&zone,Rcontainer,D2,state_array_access_structure[i-1][si][0],D3);
   }                                                //POSSIBLE TESTS: TEST FOR R*Q - DONE: WORKS THE WAY INTENDED
   delete[] Rcontainer;

@@ -17,7 +17,7 @@ int Qsystem::getGroundState(){
   double alphaInitial=1e-2;
   int converged;
   simTime=clock();
-  for(int iStage=0;iStage<pars.nStages;iStage++){
+  for(int iStage=0;iStage<pars.nStages;++iStage){
     //Start with low D to find a initial state, then increase D over the course of simulation
     TensorNetwork.setParameterNSweeps(stageNSweeps(iStage));
     TensorNetwork.setParameterD(stageD(iStage));

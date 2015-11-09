@@ -120,7 +120,7 @@ int network::solve(double &lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
   curtime=clock();
   Lctr.initialize(L,D,Dw);
   Rctr.initialize(L,D,Dw);
-  for(int i=L-1;i>0;i--){
+  for(int i=L-1;i>0;--i){
     networkState.rightNormalizeState(i);
   }
   networkState.normalizeFinal(1);
@@ -128,9 +128,9 @@ int network::solve(double &lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
   Lctr.global_access(0,0,0,0)=1;
   //In preparation of the first sweep, generate full contraction to the right (first sweeps starts at site 0)
   calcCtrFull(1);
-  for(int iSweep=0;iSweep<nSweeps;iSweep++){
+  for(int iSweep=0;iSweep<nSweeps;++iSweep){
     cout<<"Starting rightsweep\n";
-    for(int i=0;i<(L-1);i++){
+    for(int i=0;i<(L-1);++i){
       //Step of leftsweep
       cout<<"Optimizing site matrix\n";
       curtime=clock();
@@ -143,7 +143,7 @@ int network::solve(double &lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
     }
     networkState.normalizeFinal(0);
     cout<<"Starting leftsweep\n";
-    for(int i=L-1;i>0;i--){
+    for(int i=L-1;i>0;--i){
       //Step of rightsweep
       cout<<"Optimizing site matrix\n";      
       curtime=clock();
@@ -221,12 +221,12 @@ void network::calcCtrIterLeft(int const i){ //iteratively builds L expression
   tmpContainer<lapack_complex_double> innercontainer(ld,lDwL,lDL,lDR);
   tmpContainer<lapack_complex_double> outercontainer(ld,lDwR,lDR,lDL);
   //horrible construct to efficiently compute the partial contraction, is parallelizable, needs to be parallelized (still huge computational effort) <-- potential for optimization
-  for(int sip=0;sip<ld;sip++){
-    for(int bim=0;bim<lDwL;bim++){
-      for(int aim=0;aim<lDL;aim++){
-	for(int aip=0;aip<lDR;aip++){
+  for(int sip=0;sip<ld;++sip){
+    for(int bim=0;bim<lDwL;++bim){
+      for(int aim=0;aim<lDL;++aim){
+	for(int aip=0;aip<lDR;++aip){
 	  simpleContainer=0;
-	  for(int aimp=0;aimp<lDL;aimp++){
+	  for(int aimp=0;aimp<lDL;++aimp){
 	    simpleContainer+=sourcePctr[pctrIndex(aim,bim,aimp)]*networkState.global_access(i-1,sip,aip,aimp);
 	  }
 	  innercontainer.global_access(sip,bim,aim,aip)=simpleContainer;
@@ -235,13 +235,13 @@ void network::calcCtrIterLeft(int const i){ //iteratively builds L expression
     }
   }
   cout<<"Completed calculation of inner container"<<endl;
-  for(int si=0;si<ld;si++){
-    for(int bi=0;bi<lDwR;bi++){
-      for(int aip=0;aip<lDR;aip++){
-	for(int aim=0;aim<lDL;aim++){
+  for(int si=0;si<ld;++si){
+    for(int bi=0;bi<lDwR;++bi){
+      for(int aip=0;aip<lDR;++aip){
+	for(int aim=0;aim<lDL;++aim){
 	  simpleContainer=0;
-	  for(int sip=0;sip<ld;sip++){
-	    for(int bim=0;bim<lDwL;bim++){
+	  for(int sip=0;sip<ld;++sip){
+	    for(int bim=0;bim<lDwL;++bim){
 	      simpleContainer+=networkH.global_access(i-1,si,sip,bi,bim)*innercontainer.global_access(sip,bim,aim,aip);
 	    }
 	  }
@@ -251,12 +251,12 @@ void network::calcCtrIterLeft(int const i){ //iteratively builds L expression
     }
   }
   cout<<"Completed calculation of outer container"<<endl;
-  for(int ai=0;ai<lDR;ai++){
-    for(int bi=0;bi<lDwR;bi++){
-      for(int aip=0;aip<lDR;aip++){
+  for(int ai=0;ai<lDR;++ai){
+    for(int bi=0;bi<lDwR;++bi){
+      for(int aip=0;aip<lDR;++aip){
 	simpleContainer=0;
-	for(int si=0;si<ld;si++){
-	  for(int aim=0;aim<lDL;aim++){
+	for(int si=0;si<ld;++si){
+	  for(int aim=0;aim<lDL;++aim){
 	    simpleContainer+=conj(networkState.global_access(i-1,si,ai,aim))*outercontainer.global_access(si,bi,aip,aim);
 	  }
 	}
@@ -290,12 +290,12 @@ void network::calcMeasureCtrIterRight(int const i, mpo<lapack_complex_double> &M
   lDwR=MPOperator.locDimR(i+1);
   tmpContainer<lapack_complex_double> innercontainer(ld,lDwR,lDR,lDL);
   tmpContainer<lapack_complex_double> outercontainer(ld,lDwL,lDL,lDR);
-  for(int sip=0;sip<ld;sip++){                                                       
-    for(int bi=0;bi<lDwR;bi++){
-      for(int ai=0;ai<lDR;ai++){
-	for(int aimp=0;aimp<lDL;aimp++){
+  for(int sip=0;sip<ld;++sip){                                                       
+    for(int bi=0;bi<lDwR;++bi){
+      for(int ai=0;ai<lDR;++ai){
+	for(int aimp=0;aimp<lDL;++aimp){
 	  simpleContainer=0;
-	  for(int aip=0;aip<lDR;aip++){
+	  for(int aip=0;aip<lDR;++aip){
 	    simpleContainer+=sourcePctr[pctrIndex(ai,bi,aip)]*networkState.global_access(i+1,sip,aip,aimp); 
 	  }
 	  innercontainer.global_access(sip,bi,ai,aimp)=simpleContainer;
@@ -304,13 +304,13 @@ void network::calcMeasureCtrIterRight(int const i, mpo<lapack_complex_double> &M
     }
   }
   cout<<"Completed calculation of inner container"<<endl;
-  for(int si=0;si<ld;si++){
-    for(int bim=0;bim<lDwL;bim++){
-      for(int aimp=0;aimp<lDL;aimp++){
-	for(int ai=0;ai<lDR;ai++){
+  for(int si=0;si<ld;++si){
+    for(int bim=0;bim<lDwL;++bim){
+      for(int aimp=0;aimp<lDL;++aimp){
+	for(int ai=0;ai<lDR;++ai){
 	  simpleContainer=0;
-	  for(int sip=0;sip<ld;sip++){
-	    for(int bi=0;bi<lDwR;bi++){
+	  for(int sip=0;sip<ld;++sip){
+	    for(int bi=0;bi<lDwR;++bi){
 	      simpleContainer+=MPOperator.global_access(i+1,si,sip,bi,bim)*innercontainer.global_access(sip,bi,ai,aimp);
 	    }
 	  }
@@ -320,12 +320,12 @@ void network::calcMeasureCtrIterRight(int const i, mpo<lapack_complex_double> &M
     }
   }
   cout<<"Completed calculation of outer container"<<endl;
-  for(int aim=0;aim<lDL;aim++){
-    for(int bim=0;bim<lDwL;bim++){
-      for(int aimp=0;aimp<lDL;aimp++){
+  for(int aim=0;aim<lDL;++aim){
+    for(int bim=0;bim<lDwL;++bim){
+      for(int aimp=0;aimp<lDL;++aimp){
 	simpleContainer=0;
-	for(int si=0;si<ld;si++){
-	  for(int ai=0;ai<lDR;ai++){
+	for(int si=0;si<ld;++si){
+	  for(int ai=0;ai<lDR;++ai){
 	    simpleContainer+=conj(networkState.global_access(i+1,si,ai,aim))*outercontainer.global_access(si,bim,aimp,ai);
 	  }
 	}
@@ -343,7 +343,7 @@ int network::calcCtrFull(int const direction){
   //This is just some ordinary iterative computation of the partial contraction Pctr (P=R,L)
   if(direction==1){
     Rctr.global_access(L-1,0,0,0)=lapack_make_complex_double(1.0,0.0);
-    for(int i=L-2;i>=0;i--){
+    for(int i=L-2;i>=0;--i){
       calcCtrIterRight(i);
 	}
     return 0;
@@ -351,7 +351,7 @@ int network::calcCtrFull(int const direction){
   else{
     if(direction==-1){
       Lctr.global_access(0,0,0,0)=lapack_make_complex_double(1.0,0.0);
-      for(int i=1;i<L;i++){
+      for(int i=1;i<L;++i){
 	calcCtrIterLeft(i);
       }
       return 0;
@@ -631,7 +631,7 @@ void network::calcHSqrExpectationValue(double &ioHsqr){
   currentP.generate(1,1,1,1);
   currentP.global_access(0,0,0,0)=1;
   cout<<"Starting evaluation of convergence quality\n";
-  for(int i=0;i<L;i++){
+  for(int i=0;i<L;++i){
     getLocalDimensions(i);
     innerContainer.generate(ld,lDwL,lDwL,lDR,lDL);
     for(int sipp=0;sipp<ld;++sipp){
@@ -692,7 +692,7 @@ void network::calcHSqrExpectationValue(double &ioHsqr){
 	  for(int aip=0;aip<lDR;++aip){
 	    simpleContainer=0;
 	    for(int si=0;si<ld;++si){
-	      for(int aim=0;aim<lDL;aim++){
+	      for(int aim=0;aim<lDL;++aim){
 		simpleContainer+=outerContainer.global_access(si,bi,bip,aip,aim)*conj(networkState.global_access(i,si,ai,aim));
 	      }
 	    }
@@ -713,7 +713,7 @@ void network::calcHSqrExpectationValue(double &ioHsqr){
 
 int network::measure(mpo<lapack_complex_double> MPOperator, lapack_complex_double *lambda){
     Rctr.global_access(L-1,0,0,0)=lapack_make_complex_double(1.0,0.0);
-    for(int i=L-2;i>=-1;i--){
+    for(int i=L-2;i>=-1;--i){
       calcMeasureCtrIterRight(i,MPOperator,lambda);
 	}
     return 0;
@@ -748,16 +748,16 @@ int network::locDMax(int const i){
 void network::leftNormalizationMatrixFull(){
   lapack_complex_double ***psi;
   create3D(L,D,D,&psi);
-  for(int i=0;i<L;i++){
-    for(int ai=0;ai<D;ai++){
-      for(int aip=0;aip<D;aip++){
+  for(int i=0;i<L;++i){
+    for(int ai=0;ai<D;++ai){
+      for(int aip=0;aip<D;++aip){
 	psi[i][ai][aip]=0.0/0.0;
       }
     }
   }
   psi[0][0][0]=1;
   cout<<"Printing Psi expressions\n";
-  for(int i=1;i<L;i++){
+  for(int i=1;i<L;++i){
     leftNormalizationMatrixIter(i,psi[0][0]);
     matrixprint(D,D,psi[i][0]);
   }
@@ -769,10 +769,10 @@ void network::leftNormalizationMatrixFull(){
 
 void network::leftNormalizationMatrixIter(int i, lapack_complex_double *psi){
   lapack_complex_double psiContainer;
-  for(int aim=0;aim<networkState.locDimL(i);aim++){
-    for(int aimp=0;aimp<networkState.locDimL(i);aimp++){
+  for(int aim=0;aim<networkState.locDimL(i);++aim){
+    for(int aimp=0;aimp<networkState.locDimL(i);++aimp){
       psiContainer=0;
-      for(int si=0;si<d;si++){
+      for(int si=0;si<d;++si){
 	for(int aimm=0;aimm<networkState.locDimL(i-1);aimm++){
 	  for(int aimmp=0;aimmp<networkState.locDimL(i-1);aimmp++){
 	    psiContainer+=networkState.global_access(i-1,si,aim,aimm)*conj(networkState.global_access(i-1,si,aimp,aimm))*psi[(i-1)*D*D+aimm*D+aimmp];
