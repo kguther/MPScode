@@ -20,6 +20,7 @@ class mps{
   int locDimL(int const i);
   int locd(int const i);
   int locDMax(int const i);
+  int maxDim() const {return D;}
  private:
   int d,D,L,icrit;
   lapack_complex_double ****state_array_access_structure;

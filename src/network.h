@@ -8,6 +8,7 @@
 #include "mpo.h"
 #include "pContraction.h"
 #include "mps.h"
+#include "iterativeMeasurement.h"
 
 //---------------------------------------------------------------------------------------------------//
 // The network class contains all information required for a run of the simulation, that is, the whole
@@ -20,12 +21,11 @@ class network{
   network();
   network(parameters inputpars);
   int solve(double &lambda);
-  int measure(mpo<lapack_complex_double> MPOperator, lapack_complex_double *expValue);
+  int measure(mpo<lapack_complex_double> *MPOperator, double &expValue);
   void initialize(parameters inputpars);
   void setParameterNSweeps(int Nnew);
   void setParameterAlpha(double alphanew);
   int setParameterD(int Dnew);
-  int calcCtrFull(int const direction);
   //MPO needs to be initialized externally
   mpo<lapack_complex_double> networkH;
   //This one is only for consistency checks
@@ -40,19 +40,15 @@ class network{
   int lDL, lDR, ld, lDwR, lDwL;
   double alpha;
   double devAccuracy;
-  pContraction<lapack_complex_double> Lctr;
-  pContraction<lapack_complex_double> Rctr;
+  iterativeMeasurement pCtr;
   lapack_complex_double expectationValue;
   int pctrIndex(int const ai, int const bi, int const aip){return aip+bi*D+ai*D*Dw;}
-  int optimize(int const i, double &iolambda);
+  int optimize(int const i, int const maxIter, double &iolambda);
   int locd(int const i);
   int locDMax(int const i);
   double convergenceCheck();
   void leftEnrichment(int const i);
   void rightEnrichment(int const i);
-  void calcCtrIterLeft(int const i); //iteratively builds up the partial contraction of the left side during a sweep
-  void calcCtrIterRight(int const i);
-  void calcMeasureCtrIterRight(int const position, mpo<lapack_complex_double> &MPOperator, lapack_complex_double *completeCtr); //and this does the same for the right side (implementation with two methods is way faster than with one)
   void calcHSqrExpectationValue(double &ioHsqr);
   void getPExpressionLeft(int const i, lapack_complex_double *pExpr);
   void getPExpressionRight(int const i, lapack_complex_double *pExpr);

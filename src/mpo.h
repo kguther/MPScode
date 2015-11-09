@@ -12,6 +12,8 @@ class mpo{
   T& global_access(int const i, int const si, int const sip, int const bi, int const bip){return Qoperator[bip+bi*Dw+sip*Dw*Dw+si*Dw*Dw*d+i*Dw*Dw*d*d];}
   int locDimL(int const i);
   int locDimR(int const i);
+  int maxDim() const{return Dw;}
+  int length() const{return L;}
   T& sparse_access(int const si, int const sip, int const bi, int const n){return Qoperator[bimIndex[n+bi*Dw+sip*Dw*Dw+si*Dw*Dw*d]+bi*Dw+si*Dw*Dw+sip*Dw*Dw*d];}
   int sparse_nNzero(int const si, int const sip, int const bi){return nNzero[bi+sip*Dw+si*Dw*d];}
   void subMatrixStart(T *&pStart, int const i, int const si=0, int const sip=0);
@@ -36,8 +38,8 @@ mpo<T>::mpo(int const din, int const Dwin, int const Lin){
 template<typename T>
 mpo<T>::~mpo(){
   delete[] Qoperator;
-  delete[] nNzero;
-  delete[] bimIndex;
+  //delete[] nNzero;
+  //delete[] bimIndex;
 }
 
 template<typename T>
@@ -46,8 +48,8 @@ void mpo<T>::initialize(int const din, int const Dwin, int const Lin){
   Dw=Dwin; 
   L=Lin;
   Qoperator=new T[Lin*d*Dw*d*Dw];
-  nNzero=new int[Dw*d*d];
-  bimIndex=new int[Dw*Dw*d*d];
+  //nNzero=new int[Dw*d*d];
+  //bimIndex=new int[Dw*Dw*d*d];
 }
 
 template<typename T>
