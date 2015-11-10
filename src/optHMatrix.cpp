@@ -4,12 +4,12 @@
 #include "optHMatrix.h"
 #include "tmpContainer.h"
 
-optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, arcomplex<double> *Hin, parameters pars, int i):
+optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, arcomplex<double> *Hin, problemParameters pars, int Din,int i):
   Rctr(Rin),
   Lctr(Lin),
   H(Hin),
   d(pars.d),
-  D(pars.D),
+  D(Din),
   L(pars.L),
   Dw(pars.Dw)
 {

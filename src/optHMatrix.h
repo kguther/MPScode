@@ -7,7 +7,7 @@
 
 class optHMatrix{
  public:
-  optHMatrix(arcomplex<double> *R, arcomplex<double> *L, arcomplex<double> *Hin, parameters pars, int i);
+  optHMatrix(arcomplex<double> *R, arcomplex<double> *L, arcomplex<double> *Hin, problemParameters pars, int Din, int i);
   void MultMv(arcomplex<double> *v, arcomplex<double> *w);
   int dim() const {return dimension;}
  private:

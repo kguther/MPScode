@@ -37,27 +37,25 @@ network::network(){
 
 //---------------------------------------------------------------------------------------------------//
 
-network::network(parameters inputpars){
-  initialize(inputpars);
+network::network(problemParameters inputpars, simulationParameters inputsimPars){
+  initialize(inputpars,inputsimPars);
 }
 
 //---------------------------------------------------------------------------------------------------//
 // Auxiliary methods for construction and initialization of network objects
 //---------------------------------------------------------------------------------------------------//
 
-void network::initialize(parameters inputpars){
+void network::initialize(problemParameters inputpars, simulationParameters inputsimPars){
   pars=inputpars;
   d=inputpars.d;
-  D=inputpars.D;
+  D=inputsimPars.D;
   L=inputpars.L;
   Dw=inputpars.Dw;
-  devAccuracy=inputpars.acc;
-  nSweeps=inputpars.nSweeps;
+  simPars=inputsimPars;
   //Allocation of Hamiltonian MPO - square matrices are used since no library matrix functions have to be applied - this allows for faster access
   networkH.initialize(d,Dw,L);
   //Allocation of MPS - memory of the matrices has to be allocated exactly matching the dimension to use them with lapack and cblas
   networkState.generate(d,D,L);
-  alpha=1e-2;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -66,14 +64,14 @@ void network::initialize(parameters inputpars){
 // updated within the network, but they should be needed only a few times.
 //---------------------------------------------------------------------------------------------------//
 
-void network::setParameterNSweeps(int Nnew){
-  nSweeps=Nnew;
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-void network::setParameterAlpha(double alphanew){
-  alpha=alphanew;
+int network::setSimParameters(simulationParameters newPars){
+  int info;
+  simPars=newPars;
+  info=setParameterD(simPars.D);
+  if(info){
+    return -1;
+  }
+  return 0;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -86,7 +84,7 @@ int network::setParameterD(int Dnew){
   networkState.setParameterD(Dnew);
   //Adapt D
   D=Dnew;
-  pars.D=Dnew;
+  simPars.D=Dnew;
   //Adapt L and R expression
   return 0;
 }
@@ -111,6 +109,7 @@ int network::solve(double &lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
   int errRet;
   int maxIter=400;
   double convergenceQuality;
+  double tol=simPars.tolInitial;
   clock_t curtime;
   curtime=clock();
   pCtr.initialize(&networkH,&networkState);
@@ -122,13 +121,13 @@ int network::solve(double &lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
   pCtr.Lctr.global_access(0,0,0,0)=1;
   //In preparation of the first sweep, generate full contraction to the right (first sweeps starts at site 0)
   pCtr.calcCtrFull(1);
-  for(int iSweep=0;iSweep<nSweeps;++iSweep){
+  for(int iSweep=0;iSweep<simPars.nSweeps;++iSweep){
     std::cout<<"Starting rightsweep\n";
     for(int i=0;i<(L-1);++i){
       //Step of leftsweep
       std::cout<<"Optimizing site matrix\n";
       curtime=clock();
-      errRet=optimize(i,maxIter,lambda); 
+      errRet=optimize(i,maxIter,tol,lambda); 
       curtime=clock()-curtime;
       std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
       //networkState.leftNormalizeState(i);
@@ -141,7 +140,7 @@ int network::solve(double &lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
       //Step of rightsweep
       std::cout<<"Optimizing site matrix\n";      
       curtime=clock();
-      errRet=optimize(i,maxIter,lambda);
+      errRet=optimize(i,maxIter,tol,lambda);
       curtime=clock()-curtime;
       std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
       //networkState.rightNormalizeState(i);
@@ -151,10 +150,13 @@ int network::solve(double &lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
     networkState.normalizeFinal(1);
     pCtr.calcCtrIterRightBase(-1,&expectationValue);
     convergenceQuality=convergenceCheck();
-    alpha*=.1;
+    (simPars.alpha)*=.1;
+    if(tol>simPars.tolMin){
+      tol*=.1;
+    }
   }
-  std::cout<<"Quality of convergence: "<<convergenceQuality<<"\tRequired accuracy: "<<devAccuracy<<std::endl;
-  if(convergenceQuality<devAccuracy){
+  std::cout<<"Quality of convergence: "<<convergenceQuality<<"\tRequired accuracy: "<<simPars.devAccuracy<<std::endl;
+  if(convergenceQuality<simPars.devAccuracy){
     return 0;
   }
   else{
@@ -168,7 +170,7 @@ int network::solve(double &lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
 // eigenvalue problem. 
 //---------------------------------------------------------------------------------------------------//
 
-int network::optimize(int const i, int const maxIter, double &iolambda){
+int network::optimize(int const i, int const maxIter, double const tol, double &iolambda){
   //Invokes ARPACK++ to solve the eigenvalue problem
   arcomplex<double> lambda;
   arcomplex<double> *plambda;
@@ -179,17 +181,17 @@ int network::optimize(int const i, int const maxIter, double &iolambda){
   pCtr.Rctr.subContractionStart(RTerm,i);
   networkH.subMatrixStart(HTerm,i);
   //Generate matrix which is to be passed to ARPACK++
-  optHMatrix HMat(RTerm,LTerm,HTerm,pars,i);
+  optHMatrix HMat(RTerm,LTerm,HTerm,pars,D,i);
   plambda=&lambda;
   //Using the current site matrix as a starting point allows for much faster convergence as it has already been optimized in previous sweeps (except for the first sweep, this is where a good starting point has to be guessed
   networkState.subMatrixStart(currentM,i);
-  ARCompStdEig<double, optHMatrix> eigProblem(HMat.dim(),1,&HMat,&optHMatrix::MultMv,"SR",0,1e-4,maxIter,currentM);
+  ARCompStdEig<double, optHMatrix> eigProblem(HMat.dim(),1,&HMat,&optHMatrix::MultMv,"SR",0,tol,maxIter,currentM);
   //One should avoid to hit the maximum number of iterations since this can lead into a suboptimal site matrix, increasing the current energy (although usually not by a lot)
   //So far it seems that the eigensolver either converges quite fast or not at all (i.e. very slow, such that the maximum number of iterations is hit) depending strongly on the tolerance
   int nconv;
   nconv=eigProblem.EigenValVectors(currentM,plambda);
   if(nconv!=1){
-    std::cout<<"Failed to converge in iterative eigensolver\n";
+    std::cout<<"Failed to converge in iterative eigensolver, number of Iterations taken: "<<maxIter<<" With tolerance "<<tol<<std::endl;
     return 1;
   }
   else{
@@ -237,7 +239,7 @@ void network::leftEnrichment(int const i){
     //Add zeros and P-Expression to Mnew and Bnew
     for(int ai=lDR;ai<MNumCols;++ai){
       for(int aim=0;aim<lDL;++aim){
-	Mnew[aim+si*lDL+ai*MNumRows]=alpha*pExpression[aim+si*lDL+(ai-lDR)*MNumRows];
+	Mnew[aim+si*lDL+ai*MNumRows]=simPars.alpha*pExpression[aim+si*lDL+(ai-lDR)*MNumRows];
       }
     }
     for(int air=0;air<lDRR;++air){
@@ -317,7 +319,7 @@ void network::rightEnrichment(int const i){
     //Add zeros and P-Expression to Mnew and Bnew
     for(int ai=0;ai<lDR;++ai){
       for(int aim=lDL;aim<MNumRows;++aim){
-	Mnew[aim+ai*MNumRows+si*lDR*MNumRows]=alpha*pExpression[aim-lDL+si*lDR*lDwL*lDL+ai*lDwL*lDL];
+	Mnew[aim+ai*MNumRows+si*lDR*MNumRows]=simPars.alpha*pExpression[aim-lDL+si*lDR*lDwL*lDL+ai*lDwL*lDL];
       }
     }
     for(int aim=lDL;aim<MNumRows;++aim){

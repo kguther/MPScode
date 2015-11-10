@@ -37,8 +37,9 @@ int main(int argc, char *argv[]){
 void testSolve(){
   double eigVal;
   double const mEl=1;
-  parameters pars(2,100,20,5,4,1,2,1e-4);
-  Qsystem sys(pars);
+  problemParameters pars(2,100,5);
+  simulationParameters simPars(100,4,2,1e-2,1e-8,1e-8,1e-4);
+  Qsystem sys(pars,simPars);
   int lDwR, lDwL, Dw;
   Dw=pars.Dw;
   for(int i=0;i<pars.L;i++){

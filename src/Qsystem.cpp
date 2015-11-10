@@ -4,24 +4,32 @@
 #include "network.h"
 #include "parameters.h"
 
-Qsystem::Qsystem(parameters inputpars){
+Qsystem::Qsystem(problemParameters inputpars, simulationParameters inputsimPars){
   pars=inputpars;
-  parameters initialpars(pars.d,stageD(0),pars.L,pars.Dw,stageNSweeps(0),pars.nEigs,pars.nStages,pars.acc);
-  TensorNetwork.initialize(initialpars);
+  simPars=inputsimPars;
+  DMax=simPars.D;
+  nSweepsMax=simPars.nSweeps;
+  tolInitialMax=simPars.tolInitial;
+  simPars.D=stageD(0);
+  simPars.nSweeps=stageNSweeps(0);
+  simPars.tolInitial=stageTolInitial(0);
+  TensorNetwork.initialize(pars,simPars);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
 int Qsystem::getGroundState(){
   clock_t simTime;
-  double alphaInitial=1e-2;
   int converged;
   simTime=clock();
-  for(int iStage=0;iStage<pars.nStages;++iStage){
+  for(int iStage=0;iStage<simPars.nStages;++iStage){
     //Start with low D to find a initial state, then increase D over the course of simulation
-    TensorNetwork.setParameterNSweeps(stageNSweeps(iStage));
-    TensorNetwork.setParameterD(stageD(iStage));
-    TensorNetwork.setParameterAlpha(alphaInitial);
+    if(iStage!=0){
+      simPars.D=stageD(iStage);
+      simPars.nSweeps=stageNSweeps(iStage);
+      simPars.tolInitial=stageTolInitial(iStage);
+      TensorNetwork.setSimParameters(simPars);
+    }
     converged=TensorNetwork.solve(E0);
     if(converged==0){
       std::cout<<"SIMULATION CONVERGED\n";
@@ -35,24 +43,27 @@ int Qsystem::getGroundState(){
 
 //---------------------------------------------------------------------------------------------------//
 
-int Qsystem::stageD(int nStage){
-  if(pars.nStages>1){
-    int D0=(pars.D>10)?pars.D/4:5;
-    return D0+nStage*(pars.D-D0)/(pars.nStages-1);
+int Qsystem::stageD(int const nStage){
+  if(simPars.nStages>1){
+    int D0=(DMax>10)?DMax/4:5;
+    return D0+nStage*(DMax-D0)/(simPars.nStages-1);
   }
-  else{
-    return pars.D;
-  }
+  return DMax;
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-int Qsystem::stageNSweeps(int nStage){
+int Qsystem::stageNSweeps(int const nStage){
   //Also, use only a few sweeps in the warmup phase
-  if(nStage==(pars.nStages-1)){
-    return pars.nSweeps;
+  if(nStage==(simPars.nStages-1)){
+    return nSweepsMax;
   }
-  else{
-    return 2;
+  return 2;
+}
+
+double Qsystem::stageTolInitial(int const nStage){
+  if(nStage==(simPars.nStages-1)){
+    return tolInitialMax;
   }
+  return 1e-2;
 }

@@ -12,14 +12,18 @@
 
 class Qsystem{
  public:
-  Qsystem(parameters pars);
+  Qsystem(problemParameters pars, simulationParameters simPars);
   network TensorNetwork;
   double E0;
   int getGroundState();
  private:
-  parameters pars;
-  int stageD(int nStage);
-  int stageNSweeps(int nStage);
+  problemParameters pars;
+  simulationParameters simPars;
+  int DMax, nSweepsMax;
+  double tolInitialMax;
+  int stageD(int const nStage);
+  int stageNSweeps(int const nStage);
+  double stageTolInitial(int const nStage);
 };
 
 #endif

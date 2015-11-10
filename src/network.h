@@ -19,12 +19,11 @@
 class network{
  public:
   network();
-  network(parameters inputpars);
+  network(problemParameters inputpars, simulationParameters inputsimPars);
   int solve(double &lambda);
   int measure(mpo<lapack_complex_double> *MPOperator, double &expValue);
-  void initialize(parameters inputpars);
-  void setParameterNSweeps(int Nnew);
-  void setParameterAlpha(double alphanew);
+  void initialize(problemParameters inputpars, simulationParameters inputSimPars);
+  int setSimParameters(simulationParameters newPars);
   int setParameterD(int Dnew);
   //MPO needs to be initialized externally
   mpo<lapack_complex_double> networkH;
@@ -35,15 +34,14 @@ class network{
   network& operator=(network const &cpynet);//Use the generate function instead, assignment is dangerous for networks with different parameters 
   //most of these methods are auxiliary functions
   mps networkState;
-  parameters pars;
-  int d,D,L,Dw,nSweeps,icrit;
+  problemParameters pars;
+  simulationParameters simPars;
+  int d,D,L,Dw,icrit;
   int lDL, lDR, ld, lDwR, lDwL;
-  double alpha;
-  double devAccuracy;
   iterativeMeasurement pCtr;
   lapack_complex_double expectationValue;
   int pctrIndex(int const ai, int const bi, int const aip){return aip+bi*D+ai*D*Dw;}
-  int optimize(int const i, int const maxIter, double &iolambda);
+  int optimize(int const i, int const maxIter, double const tol, double &iolambda);
   int locd(int const i);
   int locDMax(int const i);
   double convergenceCheck();
