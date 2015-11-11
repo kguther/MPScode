@@ -1,5 +1,6 @@
 #include <time.h>
 #include <iostream>
+#include <math.h>
 #include "Qsystem.h"
 #include "network.h"
 #include "parameters.h"
@@ -58,12 +59,13 @@ int Qsystem::stageNSweeps(int const nStage){
   if(nStage==(simPars.nStages-1)){
     return nSweepsMax;
   }
-  return 2;
+  return 1;
 }
 
 double Qsystem::stageTolInitial(int const nStage){
   if(nStage==(simPars.nStages-1)){
     return tolInitialMax;
   }
-  return 1e-2;
+  double warmupTol=1e-2;
+  return warmupTol*pow(tolInitialMax/warmupTol,static_cast<float>(nStage)/(simPars.nStages-1));
 }

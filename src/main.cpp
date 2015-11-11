@@ -21,7 +21,7 @@ void testMatrix();
 int delta(int i, int j);
 
 //-----------------------------------------------------------------//
-//HUGE TESTING REALM (CURRENTLY: SINGLE SITE OPTIMIZATION)
+//HUGE TESTING REALM (CURRENTLY: OVERALL PERFORMANCE)
 //-----------------------------------------------------------------//
 
 int main(int argc, char *argv[]){
@@ -38,7 +38,7 @@ void testSolve(){
   double eigVal;
   double const mEl=1;
   problemParameters pars(2,100,5);
-  simulationParameters simPars(100,4,2,1e-2,1e-8,1e-8,1e-4);
+  simulationParameters simPars(200,4,3,1e-4,1e-8,1e-6,1e-4);
   Qsystem sys(pars,simPars);
   int lDwR, lDwL, Dw;
   Dw=pars.Dw;
@@ -113,7 +113,6 @@ void testSolve(){
       }
     }
   }
-  //eigVal=sys.solve();
   sys.getGroundState();
   eigVal=sys.E0;
   cout<<"Obtained grounds state energy as: "<<setprecision(21)<<eigVal<<endl;

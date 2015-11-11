@@ -107,7 +107,7 @@ void network::getLocalDimensions(int const i){
 
 int network::solve(double &lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT -> HUGE SPEEDUP
   int errRet;
-  int maxIter=400;
+  int maxIter=5000;
   double convergenceQuality;
   double tol=simPars.tolInitial;
   clock_t curtime;
@@ -150,18 +150,16 @@ int network::solve(double &lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
     networkState.normalizeFinal(1);
     pCtr.calcCtrIterRightBase(-1,&expectationValue);
     convergenceQuality=convergenceCheck();
+    if(convergenceQuality<simPars.devAccuracy){
+      return 0;
+    }
     (simPars.alpha)*=.1;
     if(tol>simPars.tolMin){
-      tol*=.1;
+      tol*=pow(simPars.tolMin/simPars.tolInitial,1.0/simPars.nSweeps);
     }
   }
   std::cout<<"Quality of convergence: "<<convergenceQuality<<"\tRequired accuracy: "<<simPars.devAccuracy<<std::endl;
-  if(convergenceQuality<simPars.devAccuracy){
-    return 0;
-  }
-  else{
-    return 1;
-  }
+  return 1;
 }
 
 

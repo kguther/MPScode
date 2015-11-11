@@ -8,6 +8,8 @@ class problemParameters{
   int L, d, Dw, nEigs;
 };
 
+//---------------------------------------------------------------------------------------------------//
+
 class simulationParameters{
  public:
  simulationParameters(int Din=100, int Nin=4, int nStagesin=2, double admixture=1e-2 ,double accin=1e-8, double tolMinin=1e-8, double tolInitialin=1e-4): D(Din), nSweeps(Nin), nStages(nStagesin),devAccuracy(accin),tolMin(tolMinin),tolInitial(tolInitialin), alpha(admixture){}
