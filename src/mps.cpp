@@ -13,6 +13,7 @@ mps::mps(){
 
 mps::mps(int din, int Din, int Lin){
   initialize(din,Din,Lin);
+  createInitialState();
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -23,9 +24,30 @@ mps::~mps(){
 
 //---------------------------------------------------------------------------------------------------//
 
+void mps::mpsCpy(mps &source){
+  deleteStateArray(&state_array_access_structure);
+  initialize(source.siteDim(),source.maxDim(),source.length());
+  int lDL, lDR;
+  for(int i=0;i<L;++i){
+    lDL=locDimL(i);
+    lDR=locDimR(i);
+    for(int si=0;si<d;++si){
+      for(int ai=0;ai<lDR;++ai){
+	for(int aim=0;aim<lDL;++aim){
+	  state_array_access_structure[i][si][ai][aim]=source.global_access(i,si,ai,aim);
+	}
+      }
+    }
+  }
+}
+
+
+//---------------------------------------------------------------------------------------------------//
+
 void mps::generate(int din, int Din, int Lin){
   deleteStateArray(&state_array_access_structure);
   initialize(din,Din,Lin);
+  createInitialState();
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -36,7 +58,10 @@ void mps::initialize(int din, int Din, int Lin){
   L=Lin;
   createStateArray(d,D,L,&state_array_access_structure);
   getIcrit();
-  int lDL, lDR;
+}
+
+void mps::createInitialState(){
+    int lDL, lDR;
   for(int i=0;i<L;++i){
     lDL=locDimL(i);
     lDR=locDimR(i);
@@ -64,10 +89,13 @@ int mps::setParameterD(int Dnew){
   lapack_complex_double ****newNetworkState;
   //Copy the content of the current state into the larger array (which is initialized with zero)
   createStateArray(d,Dnew,L,&newNetworkState);
+  int lDL, lDR;
   for(int i=0;i<L;++i){
+    lDL=locDimL(i);
+    lDR=locDimR(i);
     for(int si=0;si<d;++si){
-      for(int ai=0;ai<locDimR(i);++ai){
-	for(int aim=0;aim<locDimL(i);++aim){
+      for(int ai=0;ai<lDR;++ai){
+	for(int aim=0;aim<lDL;++aim){
 	  newNetworkState[i][si][ai][aim]=state_array_access_structure[i][si][ai][aim];
 	}
       }

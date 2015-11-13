@@ -12,11 +12,11 @@
 #include "arraycreation.h"
 #include "arrayprocessing.h"
 #include "optHMatrix.h"
-#include "siteoptimizer.h"
 #include "mpo.h"
 #include "mps.h"
 #include "globalMeasurement.h"
 #include "iterativeMeasurement.h"
+#include "overlap.h"
 
 //BEWARE: ALL MPS AND MPO NETWORK MATRICES ARE STORED WITH A CONTIGOUS COLUMN INDEX (i.e. transposed with respect to C standard, for better compatibility with LAPACK)
 
@@ -42,6 +42,12 @@ network::network(problemParameters inputpars, simulationParameters inputsimPars)
 }
 
 //---------------------------------------------------------------------------------------------------//
+
+network::~network(){
+  delete[] orthoStates;
+}
+
+//---------------------------------------------------------------------------------------------------//
 // Auxiliary methods for construction and initialization of network objects
 //---------------------------------------------------------------------------------------------------//
 
@@ -56,11 +62,36 @@ void network::initialize(problemParameters inputpars, simulationParameters input
   networkH.initialize(d,Dw,L);
   //Allocation of MPS - memory of the matrices has to be allocated exactly matching the dimension to use them with lapack and cblas
   networkState.generate(d,D,L);
+  //All states have to be stored, for reusability in later solve() with other simulation parameters
+  orthoStates=new mps[pars.nEigs];
+  //Somewhat unelegant way to handle loading of the stored states in the first solve()
+  for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
+    orthoStates[iEigen].mpsCpy(networkState);
+  }
+  nCurrentEigen=0;
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+int network::gotoNextEigen(){
+  //rather self-explanatory
+  if(nCurrentEigen==(pars.nEigs-1)){
+    return 1;
+  }
+  orthoStates[nCurrentEigen].mpsCpy(networkState);
+  ++nCurrentEigen;
+  return 0;
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void network::loadNetworkState(mps &source){
+  networkState.mpsCpy(source);
 }
 
 //---------------------------------------------------------------------------------------------------//
 // These functions can be employed to alter the algorithm parameters N and D during lifetime of a 
-// network object. This allows for iteratively increasing of D. They completely take care of all required
+// network object. This allows for iteratively increasing D. They completely take care of all required
 // updated within the network, but they should be needed only a few times.
 //---------------------------------------------------------------------------------------------------//
 
@@ -82,10 +113,13 @@ int network::setParameterD(int Dnew){
     return -1;
   }
   networkState.setParameterD(Dnew);
+  //All stored states have to be brought into the correct form for compatibility with current D
+  for(int iEigen=0;iEigen<(pars.nEigs);++iEigen){
+    orthoStates[iEigen].setParameterD(Dnew);
+  }
   //Adapt D
   D=Dnew;
   simPars.D=Dnew;
-  //Adapt L and R expression
   return 0;
 }
 
@@ -106,12 +140,12 @@ void network::getLocalDimensions(int const i){
 //---------------------------------------------------------------------------------------------------//
 
 int network::solve(double &lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT -> HUGE SPEEDUP
-  int errRet;
   int maxIter=5000;
+  int nConverged[pars.nEigs];
   double convergenceQuality;
-  double tol=simPars.tolInitial;
-  clock_t curtime;
-  curtime=clock();
+  double alpha;
+  double tol;
+  alpha=simPars.alpha;
   pCtr.initialize(&networkH,&networkState);
   for(int i=L-1;i>0;--i){
     networkState.rightNormalizeState(i);
@@ -121,45 +155,66 @@ int network::solve(double &lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
   pCtr.Lctr.global_access(0,0,0,0)=1;
   //In preparation of the first sweep, generate full contraction to the right (first sweeps starts at site 0)
   pCtr.calcCtrFull(1);
-  for(int iSweep=0;iSweep<simPars.nSweeps;++iSweep){
-    std::cout<<"Starting rightsweep\n";
-    for(int i=0;i<(L-1);++i){
-      //Step of leftsweep
-      std::cout<<"Optimizing site matrix\n";
-      curtime=clock();
-      errRet=optimize(i,maxIter,tol,lambda); 
-      curtime=clock()-curtime;
-      std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
-      //networkState.leftNormalizeState(i);
-      leftEnrichment(i);
-      pCtr.calcCtrIterLeft(i+1);
+  for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
+    nConverged[iEigen]=1;
+    loadNetworkState(orthoStates[iEigen]);
+    alpha=simPars.alpha;
+    tol=simPars.tolInitial;
+    for(int iSweep=0;iSweep<simPars.nSweeps;++iSweep){
+      sweep(maxIter,tol,alpha,lambda);
+      pCtr.calcCtrIterRightBase(-1,&expectationValue);
+      convergenceQuality=convergenceCheck();
+      if(convergenceQuality<simPars.devAccuracy){
+	nConverged[iEigen]=0;
+	break;
+      }
+      alpha*=.1;
+      if(tol>simPars.tolMin){
+	tol*=pow(simPars.tolMin/simPars.tolInitial,1.0/simPars.nSweeps);
+      }
     }
-    networkState.normalizeFinal(0);
-    std::cout<<"Starting leftsweep\n";
-    for(int i=L-1;i>0;--i){
-      //Step of rightsweep
-      std::cout<<"Optimizing site matrix\n";      
-      curtime=clock();
-      errRet=optimize(i,maxIter,tol,lambda);
-      curtime=clock()-curtime;
-      std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
-      //networkState.rightNormalizeState(i);
-      rightEnrichment(i);
-      pCtr.calcCtrIterRight(i-1);
-    }
-    networkState.normalizeFinal(1);
-    pCtr.calcCtrIterRightBase(-1,&expectationValue);
-    convergenceQuality=convergenceCheck();
-    if(convergenceQuality<simPars.devAccuracy){
-      return 0;
-    }
-    (simPars.alpha)*=.1;
-    if(tol>simPars.tolMin){
-      tol*=pow(simPars.tolMin/simPars.tolInitial,1.0/simPars.nSweeps);
+    std::cout<<"Quality of convergence: "<<convergenceQuality<<"\tRequired accuracy: "<<simPars.devAccuracy<<std::endl;
+    gotoNextEigen();
+  }
+  for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
+    if(nConverged[iEigen]){
+      return 1;
     }
   }
-  std::cout<<"Quality of convergence: "<<convergenceQuality<<"\tRequired accuracy: "<<simPars.devAccuracy<<std::endl;
-  return 1;
+  return 0;
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void network::sweep(double const maxIter, double const tol, double const alpha, double &lambda){
+  clock_t curtime;
+  int errRet;
+  std::cout<<"Starting rightsweep\n";
+  for(int i=0;i<(L-1);++i){
+    //Step of leftsweep
+    std::cout<<"Optimizing site matrix\n";
+    curtime=clock();
+    errRet=optimize(i,maxIter,tol,lambda); 
+    curtime=clock()-curtime;
+    std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
+    //networkState.leftNormalizeState(i);
+    leftEnrichment(alpha,i);
+    pCtr.calcCtrIterLeft(i+1);
+  }
+  networkState.normalizeFinal(0);
+  std::cout<<"Starting leftsweep\n";
+  for(int i=L-1;i>0;--i){
+    //Step of rightsweep
+    std::cout<<"Optimizing site matrix\n";      
+    curtime=clock();
+    errRet=optimize(i,maxIter,tol,lambda);
+    curtime=clock()-curtime;
+    std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
+    //networkState.rightNormalizeState(i);
+    rightEnrichment(alpha,i);
+    pCtr.calcCtrIterRight(i-1);
+  }
+  networkState.normalizeFinal(1);
 }
 
 
@@ -206,7 +261,7 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
 // minima till now).
 //---------------------------------------------------------------------------------------------------//
 
-void network::leftEnrichment(int const i){
+void network::leftEnrichment(double const alpha, int const i){
   lapack_complex_double *Mnew;
   lapack_complex_double *Bnew;
   lapack_complex_double *pExpression;
@@ -237,7 +292,7 @@ void network::leftEnrichment(int const i){
     //Add zeros and P-Expression to Mnew and Bnew
     for(int ai=lDR;ai<MNumCols;++ai){
       for(int aim=0;aim<lDL;++aim){
-	Mnew[aim+si*lDL+ai*MNumRows]=simPars.alpha*pExpression[aim+si*lDL+(ai-lDR)*MNumRows];
+	Mnew[aim+si*lDL+ai*MNumRows]=alpha*pExpression[aim+si*lDL+(ai-lDR)*MNumRows];
       }
     }
     for(int air=0;air<lDRR;++air){
@@ -287,7 +342,7 @@ void network::leftEnrichment(int const i){
 
 //---------------------------------------------------------------------------------------------------//
 
-void network::rightEnrichment(int const i){
+void network::rightEnrichment(double const alpha, int const i){
   lapack_complex_double *Mnew;
   lapack_complex_double *Anew;
   lapack_complex_double *pExpression;
@@ -317,7 +372,7 @@ void network::rightEnrichment(int const i){
     //Add zeros and P-Expression to Mnew and Bnew
     for(int ai=0;ai<lDR;++ai){
       for(int aim=lDL;aim<MNumRows;++aim){
-	Mnew[aim+ai*MNumRows+si*lDR*MNumRows]=simPars.alpha*pExpression[aim-lDL+si*lDR*lDwL*lDL+ai*lDwL*lDL];
+	Mnew[aim+ai*MNumRows+si*lDR*MNumRows]=alpha*pExpression[aim-lDL+si*lDR*lDwL*lDL+ai*lDwL*lDL];
       }
     }
     for(int aim=lDL;aim<MNumRows;++aim){
@@ -342,12 +397,12 @@ void network::rightEnrichment(int const i){
   }
   delete[] diags;
   //From here, Mnew is to be treated as a MNumRows x lDL matrix
-  //Postprocessing: A=U, B=S*V*Bnew
+  //Postprocessing: A=Anew*U*S, B=U
   lapack_complex_double *AStart=new lapack_complex_double[lDLL*MNumRows];
   lapack_complex_double *networkA;
   lapack_complex_double zone=1.0;
   lapack_complex_double zzero=0.0;
-  //Multiply S*V into the expanded A (AStart) to create the normal-sized A (networkA, direct access to the networkState mps)
+  //Multiply U*S into the expanded A (AStart) to create the normal-sized A (networkA, direct access to the networkState mps)
   for(int si=0;si<ld;++si){
     networkState.subMatrixStart(networkA,i-1,si);
     for(int mi=0;mi<MNumRows;++mi){
@@ -360,6 +415,7 @@ void network::rightEnrichment(int const i){
   delete[] AStart;
   delete[] Mnew;
   delete[] Anew;
+  //Store the remaining U into B
   for(int si=0;si<ld;++si){
     for(int ai=0;ai<lDR;++ai){
       for(int aim=0;aim<lDL;++aim){

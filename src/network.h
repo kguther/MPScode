@@ -9,6 +9,7 @@
 #include "pContraction.h"
 #include "mps.h"
 #include "iterativeMeasurement.h"
+#include "overlap.h"
 
 //---------------------------------------------------------------------------------------------------//
 // The network class contains all information required for a run of the simulation, that is, the whole
@@ -20,9 +21,12 @@ class network{
  public:
   network();
   network(problemParameters inputpars, simulationParameters inputsimPars);
+  ~network();
   int solve(double &lambda);
   int measure(mpo<lapack_complex_double> *MPOperator, double &expValue);
   void initialize(problemParameters inputpars, simulationParameters inputSimPars);
+  void loadNetworkState(mps &source);
+  int gotoNextEigen();
   int setSimParameters(simulationParameters newPars);
   int setParameterD(int Dnew);
   //MPO needs to be initialized externally
@@ -34,10 +38,12 @@ class network{
   network& operator=(network const &cpynet);//Use the generate function instead, assignment is dangerous for networks with different parameters 
   //most of these methods are auxiliary functions
   mps networkState;
+  mps *orthoStates;
   problemParameters pars;
   simulationParameters simPars;
   int d,D,L,Dw,icrit;
   int lDL, lDR, ld, lDwR, lDwL;
+  int nCurrentEigen;
   iterativeMeasurement pCtr;
   lapack_complex_double expectationValue;
   int pctrIndex(int const ai, int const bi, int const aip){return aip+bi*D+ai*D*Dw;}
@@ -45,8 +51,9 @@ class network{
   int locd(int const i);
   int locDMax(int const i);
   double convergenceCheck();
-  void leftEnrichment(int const i);
-  void rightEnrichment(int const i);
+  void sweep(double const maxIter, double const tol, double const alpha ,double &lambda);
+  void leftEnrichment(double const alpha, int const i);
+  void rightEnrichment(double const alpha, int const i);
   void calcHSqrExpectationValue(double &ioHsqr);
   void getPExpressionLeft(int const i, lapack_complex_double *pExpr);
   void getPExpressionRight(int const i, lapack_complex_double *pExpr);
