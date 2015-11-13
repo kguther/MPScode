@@ -14,7 +14,7 @@ class overlap{
   lapack_complex_double& Lctr_access(int const i, int const aim, int const aimp){return Lctr[aimp+aim*D+i*D*D];}
   lapack_complex_double& Rctr_access(int const i, int const ai, int const aip){return Rctr[aip+ai*D+i*D*D];}
  private:
-  int L, int D, int d;
+  int L, D, d;
   mps *psi;
   mps *phi;
   lapack_complex_double *Lctr;
