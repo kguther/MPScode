@@ -5,60 +5,25 @@
 #include "arrayprocessing.h"
 #include "arraycreation.h"
 
-mps::mps(){
-  createStateArray(1,1,1,&state_array_access_structure);
+mps::mps():stateArray()
+{
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-mps::mps(int din, int Din, int Lin){
-  initialize(din,Din,Lin);
+mps::mps(int const din, int const Din, int const Lin){
+  stateArray::initialize(din,Din,Lin);
   createInitialState();
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-mps::~mps(){
-  deleteStateArray(&state_array_access_structure);
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-void mps::mpsCpy(mps &source){
-  deleteStateArray(&state_array_access_structure);
-  initialize(source.siteDim(),source.maxDim(),source.length());
-  int lDL, lDR;
-  for(int i=0;i<L;++i){
-    lDL=locDimL(i);
-    lDR=locDimR(i);
-    for(int si=0;si<d;++si){
-      for(int ai=0;ai<lDR;++ai){
-	for(int aim=0;aim<lDL;++aim){
-	  state_array_access_structure[i][si][ai][aim]=source.global_access(i,si,ai,aim);
-	}
-      }
-    }
-  }
-}
-
-
-//---------------------------------------------------------------------------------------------------//
-
-void mps::generate(int din, int Din, int Lin){
-  deleteStateArray(&state_array_access_structure);
-  initialize(din,Din,Lin);
+void mps::generate(int const din, int const Din, int const Lin){
+  stateArray::generate(din,Din,Lin);
   createInitialState();
 }
 
 //---------------------------------------------------------------------------------------------------//
-
-void mps::initialize(int din, int Din, int Lin){
-  d=din;
-  D=Din;
-  L=Lin;
-  createStateArray(d,D,L,&state_array_access_structure);
-  getIcrit();
-}
 
 void mps::createInitialState(){
     int lDL, lDR;
@@ -81,55 +46,12 @@ void mps::createInitialState(){
 }
 
 //---------------------------------------------------------------------------------------------------//
-
-int mps::setParameterD(int Dnew){
-  if(Dnew<D){
-    return -1;
-  }
-  lapack_complex_double ****newNetworkState;
-  //Copy the content of the current state into the larger array (which is initialized with zero)
-  createStateArray(d,Dnew,L,&newNetworkState);
-  int lDL, lDR;
-  for(int i=0;i<L;++i){
-    lDL=locDimL(i);
-    lDR=locDimR(i);
-    for(int si=0;si<d;++si){
-      for(int ai=0;ai<lDR;++ai){
-	for(int aim=0;aim<lDL;++aim){
-	  newNetworkState[i][si][ai][aim]=state_array_access_structure[i][si][ai][aim];
-	}
-      }
-    }
-  }
-  //Replace the current state
-  deleteStateArray(&state_array_access_structure);
-  state_array_access_structure=newNetworkState;
-  D=Dnew;
-  getIcrit();
-  return 0;
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-void mps::getIcrit(){
-  icrit=L/2;//In case chain is too short, this is the correct value (trust me)
-  for(int j=0;j<L/2;++j){
-    if(locDMax(j)>D){
-      icrit=j;
-      break;
-    }
-  }
-}
-
-//---------------------------------------------------------------------------------------------------//
 // The following functions are left/right normalizing the matrices of a site after 
 // optimization and multiplying the remainder to the matrices of the site to the left/right
 // The first two are for truncated sites, the latter two for critical sites, i.e. the site at
 // which the truncation is made first. Note that there is no left-normalization of site L-1 
 // and no right-normalization of site 1, these are aquired via normalization of the whole state.
 //---------------------------------------------------------------------------------------------------//
-
-//NEXT STEP: ADD SUBSPACE EXPANSION FOR BETTER CONVERGENCE
 
 int mps::leftNormalizeState(int const i){
   lapack_int info;
@@ -207,54 +129,4 @@ void mps::normalizeFinal(int const i){
   normalization=cblas_dznrm2(ld*lcD,state_array_access_structure[site][0][0],1);
   normalization=1.0/normalization;
   cblas_zscal(ld*lcD,&normalization,state_array_access_structure[site][0][0],1);
-}
-
-
-//---------------------------------------------------------------------------------------------------//
-// These functions only return the column/row dimension of the matrices of the i-th site
-// Simple, but essential. Using local matrix dimensions make lots of stuff easier.
-// NAMING CONVENTION: Any variable-name starting with l indicates a local dimension
-// NAMING CONVENTION: Any variable-name of a local dimension ending with R is a local row dimension,
-// any ending with L is a local column dimension
-//---------------------------------------------------------------------------------------------------//
-
-int mps::locDimL(int const i){
-  if(i<=icrit){
-    return locDMax(i-1);
-  }
-  if(i<=L-icrit-1){
-    return D;
-  }
-  return locDMax(i);
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-int mps::locDimR(int const i){
-  if(i<icrit){
-    return locDMax(i);
-  }
-  if(i<=L-icrit-2){
-    return D;
-  }
-  return locDMax(i+1);
-}
-
-//---------------------------------------------------------------------------------------------------//
-// These are placeholder functions to allow for the dimension of the on-site Hilbert space to be
-// site dependent. This allows for the implementation of wire networks. Currently, they are just
-// returning a fixed dimension.
-//---------------------------------------------------------------------------------------------------//
-
-int mps::locd(int const i){
-  return d;
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-int mps::locDMax(int const i){
-  if(i<=L/2){
-    return pow(d,i+1);
-  }
-  return pow(d,L-i);
 }
