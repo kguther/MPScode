@@ -19,6 +19,10 @@ class tmpContainer{
   void initializeContainer(int Lin, int D1in, int D2in, int D3in){L=Lin; D1=D1in; D2=D2in; D3=D3in; container=new T[Lin*D1in*D2in*D3in];}
 };
 
+//---------------------------------------------------------------------------------------------------//
+// Some more obscure containers which might be useful in some context.
+//---------------------------------------------------------------------------------------------------//
+
 template<typename T>
 class dynamicContainer: public tmpContainer<T>{
  public: 

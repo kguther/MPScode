@@ -6,8 +6,15 @@
 #include "mps.h"
 #include "pContraction.h"
 
+//---------------------------------------------------------------------------------------------------//
+// The baseMeasurement class is the parent class for the measurements used in the network class. 
+// It contains a partial right-side contraction and an iterate function which adds one site to the 
+// partial contraction from the left. It can not be directly accessed, only via the child classes.
+//---------------------------------------------------------------------------------------------------//
+
 class baseMeasurement{
  public: 
+  //Result of iteration is stored in target
   void calcCtrIterRightBase(int const i, lapack_complex_double *target);
   pContraction<lapack_complex_double> Rctr;
  protected:

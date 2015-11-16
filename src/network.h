@@ -39,6 +39,7 @@ class network{
   //most of these methods are auxiliary functions
   mps networkState;
   mps *orthoStates;
+  overlap *scalarProducts;
   problemParameters pars;
   simulationParameters simPars;
   int d,D,L,Dw,icrit;

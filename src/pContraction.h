@@ -5,8 +5,7 @@
 
 //---------------------------------------------------------------------------------------------------//
 // Class for storage of partial contractions of the network. Basically, this is a 4D container with
-// the additional functionality of access to the partial contractions up to a specific site but
-// without a direct access function (contrary to temporary containers).
+// the additional functionality of access to the partial contractions up to a specific site.
 //---------------------------------------------------------------------------------------------------//
 
 template<typename T>

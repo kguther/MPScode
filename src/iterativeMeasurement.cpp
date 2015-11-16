@@ -26,10 +26,10 @@ void iterativeMeasurement::initialize(mpo<lapack_complex_double> *MPOperatorIn, 
 void iterativeMeasurement::calcCtrIterLeft(int const i){
   lapack_complex_double simpleContainer;
   lapack_complex_double *sourcePctr, *targetPctr;
-  //container arrays to significantly reduce computational effort by storing intermediate results
   Lctr.subContractionStart(sourcePctr,i-1);
   Lctr.subContractionStart(targetPctr,i);
   getLocalDimensions(i-1);
+  //container arrays to significantly reduce computational effort by storing intermediate results
   tmpContainer<lapack_complex_double> innercontainer(ld,lDwL,lDL,lDR);
   tmpContainer<lapack_complex_double> outercontainer(ld,lDwR,lDR,lDL);
   //horrible construct to efficiently compute the partial contraction, is parallelizable, needs to be parallelized (still huge computational effort) <-- potential for optimization

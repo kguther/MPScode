@@ -2,15 +2,21 @@
 #include "overlap.h"
 #include "tmpContainer.h"
 
+//---------------------------------------------------------------------------------------------------//
+
 overlap::overlap(){
   Lctr=0;
   Rctr=0;
 }
 
+//---------------------------------------------------------------------------------------------------//
+
 overlap::~overlap(){
   delete[] Lctr;
   delete[] Rctr;
 }
+
+//---------------------------------------------------------------------------------------------------//
 
 void overlap::loadMPS(mps *psiIn, mps *phiIn){
   phi=phiIn;
@@ -24,13 +30,19 @@ void overlap::loadMPS(mps *psiIn, mps *phiIn){
   Rctr[(L-1)*D*D]=1;
 }
 
+//---------------------------------------------------------------------------------------------------//
+
 void overlap::subContractionStartLeft(lapack_complex_double *&pStart, int const i){
   pStart=Lctr+i*D*D;
 }
 
+//---------------------------------------------------------------------------------------------------//
+
 void overlap::subContractionStartRight(lapack_complex_double *&pStart, int const i){
   pStart=Rctr+i*D*D;
 }
+
+//---------------------------------------------------------------------------------------------------//
 
 void overlap::calcCtrIterLeft(int const i){
   int lDR, lDL, ld;
@@ -72,6 +84,8 @@ void overlap::calcCtrIterLeft(int const i){
   }
 }
 
+//---------------------------------------------------------------------------------------------------//
+
 void overlap::calcCtrIterRight(int const i){
   int lDR, lDL, ld;
   lDL=(*phi).locDimL(i);
@@ -81,13 +95,13 @@ void overlap::calcCtrIterRight(int const i){
   lapack_complex_double simpleContainer;
   lapack_complex_double *source, *target;
   if(i<(L-1)){
-    subContractionStartLeft(source,i+1);
+    subContractionStartRight(source,i+1);
   }
   else{
     lapack_complex_double zone=1.0;
     source=&zone;
   }
-  subContractionStartLeft(target,i);
+  subContractionStartRight(target,i);
   for(int si=0;si<ld;++si){
     for(int ai=0;ai<lDR;++ai){
       for(int aimp=0;aimp<lDL;++aimp){

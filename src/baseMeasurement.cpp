@@ -6,6 +6,10 @@
 #include "tmpContainer.h"
 #include "pContraction.h"
 
+//---------------------------------------------------------------------------------------------------//
+// Constructor and initialize() function for the baseMeasurement class.
+//---------------------------------------------------------------------------------------------------//
+
 baseMeasurement::baseMeasurement(){
 }
 
@@ -27,6 +31,8 @@ void baseMeasurement::initializeBase(mpo<lapack_complex_double> *MPOperatorIn, m
 }
 
 //---------------------------------------------------------------------------------------------------//  
+// This does the same as the getLocalDimensions of the network
+//---------------------------------------------------------------------------------------------------//
 
 void baseMeasurement::getLocalDimensions(int const i){
   lDL=(*MPState).locDimL(i);
@@ -36,6 +42,10 @@ void baseMeasurement::getLocalDimensions(int const i){
   lDwL=(*MPOperator).locDimL(i);
 }
 
+//---------------------------------------------------------------------------------------------------//
+// Here we compute the partial contraction of the network consisting of the mps and the mpo from
+// the right up to site i from that up to site i+1. The result is stored in the targetPctr array,
+// which will usually be the next subcontraction of Rctr.
 //---------------------------------------------------------------------------------------------------//
 
 void baseMeasurement::calcCtrIterRightBase(int const i, lapack_complex_double *targetPctr){

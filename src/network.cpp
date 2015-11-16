@@ -22,6 +22,8 @@
 
 //NAMING CONVENTION: i is always the site index. ALWAYS.
 
+//TODO: MAKE USE OF RETURN VALUES WHERE INTENDED.
+
 //---------------------------------------------------------------------------------------------------//
 // 'Main' file containing the MPS ansatz solver itself (this is not the actual main.cpp, just the
 // most important file)
@@ -45,6 +47,7 @@ network::network(problemParameters inputpars, simulationParameters inputsimPars)
 
 network::~network(){
   delete[] orthoStates;
+  delete[] scalarProducts;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -68,6 +71,8 @@ void network::initialize(problemParameters inputpars, simulationParameters input
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
     orthoStates[iEigen].mpsCpy(networkState);
   }
+  //Note that it is perfectly fine to allocate memory of size 0. It still has to be deleted.
+  scalarProducts=new overlap[((pars.nEigs-1)*pars.nEigs)/2];
   nCurrentEigen=0;
 }
 
@@ -80,6 +85,7 @@ int network::gotoNextEigen(){
   }
   orthoStates[nCurrentEigen].mpsCpy(networkState);
   ++nCurrentEigen;
+  loadNetworkState(orthoStates[nCurrentEigen]);
   return 0;
 }
 
@@ -157,11 +163,11 @@ int network::solve(double &lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
   pCtr.calcCtrFull(1);
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
     nConverged[iEigen]=1;
-    loadNetworkState(orthoStates[iEigen]);
     alpha=simPars.alpha;
     tol=simPars.tolInitial;
     for(int iSweep=0;iSweep<simPars.nSweeps;++iSweep){
       sweep(maxIter,tol,alpha,lambda);
+      //In calcCtrIterRightBase, the second argument has to be a pointer, because it usually is an array. No call-by-reference here.
       pCtr.calcCtrIterRightBase(-1,&expectationValue);
       convergenceQuality=convergenceCheck();
       if(convergenceQuality<simPars.devAccuracy){
@@ -306,6 +312,7 @@ void network::leftEnrichment(double const alpha, int const i){
   int containerDim=(MNumRows>MNumCols)?MNumCols:MNumRows;
   double *diags=new double[containerDim];
   lapack_complex_double *Mnewcpy=new lapack_complex_double[maxDim*maxDim];
+  //POSSIBLE IMPROVEMENT: USE LAPACK DRIVER ROUTINE INSTEAD OF COMPUTATIONAL ROUTINES
   lapackSVD(MNumCols,MNumRows,Mnew,Mnewcpy,diags);
   //Mnewcpy -> A, S*Mnew->Multiply to B
   //Postprocessing: Truncate S to lDR eigenvalues, U to dimension ld*lDL x lDR (from ld*lDL x ld*lDL) if neccessary
