@@ -26,8 +26,8 @@ void overlap::loadMPS(mps *psiIn, mps *phiIn){
   d=(*psiIn).siteDim();
   Lctr=new lapack_complex_double[L*D*D];
   Rctr=new lapack_complex_double[L*D*D];
-  Lctr[0]=1;
-  Rctr[(L-1)*D*D]=1;
+  F.generate(d,D,L);
+  getF();
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -124,6 +124,80 @@ void overlap::calcCtrIterRight(int const i){
       target[pCtrLocalIndex(aimp,aim)]=simpleContainer;
     }
   }
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void overlap::updateF(int const i){
+  int lDR, lDL, ld;
+  lDL=(*phi).locDimL(i);
+  lDR=(*phi).locDimR(i);
+  ld=(*phi).locd(i);
+  tmpContainer<lapack_complex_double> innerContainer(1,ld,lDR,lDL);
+  lapack_complex_double simpleContainer;
+  lapack_complex_double zone=1.0;
+  lapack_complex_double *leftPart, *rightPart;
+  if(i>0){
+    subContractionStartLeft(leftPart,i-1);
+  }
+  else{
+    leftPart=&zone;
+  }
+  if(i<L-1){
+    subContractionStartRight(rightPart,i+1);
+  }
+  else{
+    rightPart=&zone;
+  }
+  for(int si=0;si<ld;++si){
+    for(int aip=0;aip<lDR;++aip){
+      for(int aim=0;aim<lDL;++aim){
+	simpleContainer=0;
+	for(int aimp=0;aimp<lDL;++aimp){
+	  simpleContainer+=0;//leftPart[pCtrLocalIndex(aimp,aim)]*(*phi).global_access(i,si,aimp,aip);
+	}
+	innerContainer.global_access(0,si,aip,aim)=simpleContainer;
+      }
+    }
+  }
+  for(int si=0;si<ld;++si){
+    for(int ai=0;ai<lDR;++ai){
+      for(int aim=0;aim<lDL;++aim){
+	simpleContainer=0;
+	for(int aip=0;aip<lDR;++aip){
+	  simpleContainer+=innerContainer.global_access(0,si,aip,aim)*rightPart[pCtrLocalIndex(aip,ai)];
+	}
+	F.global_access(i,si,ai,aim)=simpleContainer;
+      }
+    }
+  }
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void overlap::getF(){
+  for(int i=1;i<L;++i){
+    calcCtrIterLeft(i);
+  }
+  updateF(L-1);
+  for(int i=L-2;i>=0;--i){
+    calcCtrIterRight(i);
+    updateF(i);
+  }
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void overlap::stepLeft(int const i){
+  calcCtrIterRight(i+1);
+  updateF(i);
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void overlap::stepRight(int const i){
+  calcCtrIterLeft(i-1);
+  updateF(i);
 }
 
 

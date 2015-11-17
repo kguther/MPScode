@@ -59,6 +59,8 @@ class network{
   void getPExpressionLeft(int const i, lapack_complex_double *pExpr);
   void getPExpressionRight(int const i, lapack_complex_double *pExpr);
   void getLocalDimensions(int const i);
+  void updateScalarProducts(int const i, int const direction);
+  void getGramMatrix(lapack_complex_double *gram, int const i);
   //This one is only for consistency checks
   void leftNormalizationMatrixIter(int i, lapack_complex_double *psi);
 };
