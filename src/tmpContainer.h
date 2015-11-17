@@ -20,7 +20,7 @@ class tmpContainer{
 };
 
 //---------------------------------------------------------------------------------------------------//
-// Some more obscure containers which might be useful in some context.
+// Some more obscure containers which might be useful someday.
 //---------------------------------------------------------------------------------------------------//
 
 template<typename T>

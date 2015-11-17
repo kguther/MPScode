@@ -9,6 +9,7 @@
 #include "pContraction.h"
 #include "mps.h"
 #include "iterativeMeasurement.h"
+#include "projector.h"
 #include "overlap.h"
 
 //---------------------------------------------------------------------------------------------------//
@@ -38,13 +39,11 @@ class network{
   network& operator=(network const &cpynet);//Use the generate function instead, assignment is dangerous for networks with different parameters 
   //most of these methods are auxiliary functions
   mps networkState;
-  mps *orthoStates;
-  overlap *scalarProducts;
+  projector excitedStateP;
   problemParameters pars;
   simulationParameters simPars;
   int d,D,L,Dw,icrit;
   int lDL, lDR, ld, lDwR, lDwL;
-  int nCurrentEigen;
   iterativeMeasurement pCtr;
   lapack_complex_double expectationValue;
   int pctrIndex(int const ai, int const bi, int const aip){return aip+bi*D+ai*D*Dw;}
@@ -59,8 +58,6 @@ class network{
   void getPExpressionLeft(int const i, lapack_complex_double *pExpr);
   void getPExpressionRight(int const i, lapack_complex_double *pExpr);
   void getLocalDimensions(int const i);
-  void updateScalarProducts(int const i, int const direction);
-  void getGramMatrix(lapack_complex_double *gram, int const i);
   //This one is only for consistency checks
   void leftNormalizationMatrixIter(int i, lapack_complex_double *psi);
 };

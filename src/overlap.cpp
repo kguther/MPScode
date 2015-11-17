@@ -189,15 +189,20 @@ void overlap::getF(){
 //---------------------------------------------------------------------------------------------------//
 
 void overlap::stepLeft(int const i){
-  calcCtrIterRight(i+1);
-  updateF(i);
+  //i is the source site of the step, i.e. site i-1 is updated
+  if(i<(L-1)){
+    calcCtrIterRight(i);
+  }
+  updateF(i-1);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
 void overlap::stepRight(int const i){
-  calcCtrIterLeft(i-1);
-  updateF(i);
+  if(i>0){
+    calcCtrIterLeft(i);
+  }
+  updateF(i+1);
 }
 
 

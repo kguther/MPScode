@@ -4,14 +4,16 @@
 #include "optHMatrix.h"
 #include "tmpContainer.h"
 
-optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, arcomplex<double> *Hin, problemParameters pars, int Din,int i):
+optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, arcomplex<double> *Hin, problemParameters pars, int Din, int i, projector *excitedStateP):
   Rctr(Rin),
   Lctr(Lin),
   H(Hin),
   d(pars.d),
   D(Din),
   L(pars.L),
-  Dw(pars.Dw)
+  Dw(pars.Dw),
+  currentSite(i),
+  P(excitedStateP)
 {
   icrit=L/2;
   for(int j=0;j<L/2;j++){
@@ -66,6 +68,9 @@ void optHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
   tmpContainer<arcomplex<double> > outercontainer(d,lDwL,lDR,lDL);
   int nNzero;
   arcomplex<double> simpleContainer;
+  if((*P).nCurrentEigen>0){
+    (*P).project(currentSite,v);
+  }
   //Similar to the calculation of partial contractions, we use optimal bracketing to reuse any intermediate results. This greatly reduces the computational effort and is much faster than storing H in a sparse format and using the internal ARPACK++ matrix classes
   for(int sip=0;sip<d;++sip){
     for(int aimp=0;aimp<lDL;++aimp){
@@ -107,5 +112,8 @@ void optHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
 	w[vecIndex(si,ai,aim)]=simpleContainer;
       }
     }
+  }
+  if((*P).nCurrentEigen>0){
+    (*P).project(currentSite,w);
   }
 }

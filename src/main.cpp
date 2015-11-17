@@ -37,7 +37,7 @@ int main(int argc, char *argv[]){
 void testSolve(){
   double eigVal;
   double const mEl=1;
-  problemParameters pars(2,4,5,2);
+  problemParameters pars(2,9,5,2);
   simulationParameters simPars(100,4,3,1e-4,1e-4,1e-6,1e-4);
   Qsystem sys(pars,simPars);
   int lDwR, lDwL, Dw;

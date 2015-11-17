@@ -15,7 +15,7 @@
 #include "mps.h"
 #include "globalMeasurement.h"
 #include "iterativeMeasurement.h"
-#include "overlap.h"
+#include "projector.h"
 
 //BEWARE: ALL MPS AND MPO NETWORK MATRICES ARE STORED WITH A CONTIGOUS COLUMN INDEX (i.e. transposed with respect to C standard, for better compatibility with LAPACK)
 
@@ -45,8 +45,6 @@ network::network(problemParameters inputpars, simulationParameters inputsimPars)
 //---------------------------------------------------------------------------------------------------//
 
 network::~network(){
-  delete[] orthoStates;
-  delete[] scalarProducts;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -65,27 +63,12 @@ void network::initialize(problemParameters inputpars, simulationParameters input
   //Allocation of MPS - memory of the matrices has to be allocated exactly matching the dimension to use them with lapack and cblas
   networkState.generate(d,D,L);
   //All states have to be stored, for reusability in later solve() with other simulation parameters
-  orthoStates=new mps[pars.nEigs];
+  excitedStateP.initialize(pars.nEigs);
   //Somewhat unelegant way to handle loading of the stored states in the first solve()
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
-    orthoStates[iEigen].mpsCpy(networkState);
+    excitedStateP.orthoStates[iEigen].mpsCpy(networkState);
   }
   //Note that it is perfectly fine to allocate memory of size 0. It still has to be deleted.
-  scalarProducts=new overlap[((pars.nEigs-1)*pars.nEigs)/2];
-  nCurrentEigen=0;
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-int network::gotoNextEigen(){
-  //rather self-explanatory
-  if(nCurrentEigen==(pars.nEigs-1)){
-    return 1;
-  }
-  orthoStates[nCurrentEigen].mpsCpy(networkState);
-  ++nCurrentEigen;
-  loadNetworkState(orthoStates[nCurrentEigen]);
-  return 0;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -119,9 +102,7 @@ int network::setParameterD(int Dnew){
   }
   networkState.setParameterD(Dnew);
   //All stored states have to be brought into the correct form for compatibility with current D
-  for(int iEigen=0;iEigen<(pars.nEigs);++iEigen){
-    orthoStates[iEigen].setParameterD(Dnew);
-  }
+  excitedStateP.setParameterD(Dnew);
   //Adapt D
   D=Dnew;
   simPars.D=Dnew;
@@ -161,15 +142,15 @@ int network::solve(double &lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
   pCtr.Lctr.global_access(0,0,0,0)=1;
   //In preparation of the first sweep, generate full contraction to the right (first sweeps starts at site 0)
   pCtr.calcCtrFull(1);
+  excitedStateP.nCurrentEigen=0;
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
     nConverged[iEigen]=1;
     alpha=simPars.alpha;
     tol=simPars.tolInitial;
-    offset=(iEigen*(iEigen-1))/2;
-    for(int k=0;k<iEigen;++k){
-      scalarProducts[k+offset].loadMPS(&orthoStates[k],&networkState);
-    }
+    //load all pairings with the current state and previous ones into the scalar products
+    excitedStateP.loadScalarProducts(&networkState,iEigen);
     for(int iSweep=0;iSweep<simPars.nSweeps;++iSweep){
+      //actual sweep is executed here
       sweep(maxIter,tol,alpha,lambda);
       //In calcCtrIterRightBase, the second argument has to be a pointer, because it usually is an array. No call-by-reference here.
       pCtr.calcCtrIterRightBase(-1,&expectationValue);
@@ -206,7 +187,8 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
     curtime=clock();
     errRet=optimize(i,maxIter,tol,lambda);
     curtime=clock()-curtime;
-    //updateScalarProducts(i,1);
+    //Here, the scalar products with lower lying states are updated
+    excitedStateP.updateScalarProducts(i,1);
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
     //networkState.leftNormalizeState(i);
     leftEnrichment(alpha,i);
@@ -220,7 +202,8 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
     curtime=clock();
     errRet=optimize(i,maxIter,tol,lambda);
     curtime=clock()-curtime;
-    //updateScalarProducts(i,-1);
+    //same as above for the scalar products with lower lying states
+    excitedStateP.updateScalarProducts(i,-1);
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
     //networkState.rightNormalizeState(i);
     rightEnrichment(alpha,i);
@@ -241,15 +224,13 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
   arcomplex<double> *plambda;
   arcomplex<double> *currentM;
   arcomplex<double> *RTerm, *LTerm, *HTerm;
-  arcomplex<double> *gram;
-  gram=new arcomplex<double>[nCurrentEigen*nCurrentEigen];
-  getGramMatrix(gram,i);
+  //Get the projector onto the space orthogonal to any lower lying states
   //Get the current partial contractions and site matrix of the Hamiltonian
   pCtr.Lctr.subContractionStart(LTerm,i);
   pCtr.Rctr.subContractionStart(RTerm,i);
   networkH.subMatrixStart(HTerm,i);
   //Generate matrix which is to be passed to ARPACK++
-  optHMatrix HMat(RTerm,LTerm,HTerm,pars,D,i);
+  optHMatrix HMat(RTerm,LTerm,HTerm,pars,D,i,&excitedStateP);
   plambda=&lambda;
   //Using the current site matrix as a starting point allows for much faster convergence as it has already been optimized in previous sweeps (except for the first sweep, this is where a good starting point has to be guessed
   networkState.subMatrixStart(currentM,i);
@@ -258,7 +239,6 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
   //So far it seems that the eigensolver either converges quite fast or not at all (i.e. very slow, such that the maximum number of iterations is hit) depending strongly on the tolerance
   int nconv;
   nconv=eigProblem.EigenValVectors(currentM,plambda);
-  delete[] gram;
   if(nconv!=1){
     std::cout<<"Failed to converge in iterative eigensolver, number of Iterations taken: "<<maxIter<<" With tolerance "<<tol<<std::endl;
     return 1;
@@ -269,7 +249,6 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
     return 0;
   }
 }
-
 
 //---------------------------------------------------------------------------------------------------//
 // These functions compute the standard deviation of Energy. This is used to determine the quality
@@ -321,46 +300,17 @@ void network::calcHSqrExpectationValue(double &ioHsqr){
 // These functions are required for computing excited states.
 //---------------------------------------------------------------------------------------------------//
 
-void network::updateScalarProducts(int const i, int const direction){
-  if(nCurrentEigen>0){
-    int const offset=(nCurrentEigen*(nCurrentEigen-1))/2;
-    for(int k=0;k<nCurrentEigen;++k){
-      if(direction){
-	scalarProducts[k+offset].stepRight(i);
-      }
-      else{
-	scalarProducts[k+offset].stepLeft(i);
-      }
-    }
-  }
-}
 
-//---------------------------------------------------------------------------------------------------//
-
-void network::getGramMatrix(lapack_complex_double *gram, int const i){
-  //Input has to be a nCurrentEigen x nCurrentEigen array
-  if(nCurrentEigen>0){
-    int const offset=(nCurrentEigen*(nCurrentEigen-1))/2;
-    getLocalDimensions(i);
-    lapack_complex_double simpleContainer;
-    lapack_complex_double *matrixContainer, *Fki, *Fkpi;
-    lapack_complex_double zone=1.0;
-    lapack_complex_double zzero=0.0;
-    matrixContainer=new lapack_complex_double[ld*lDR*ld*lDR];
-    for(int k=0;k<nCurrentEigen;++k){
-      scalarProducts[k+offset].F.subMatrixStart(Fki,i);
-      for(int kp=0;kp<nCurrentEigen;++kp){
-	scalarProducts[kp+offset].F.subMatrixStart(Fkpi,i);
-	cblas_zgemm(CblasColMajor,CblasConjTrans,CblasNoTrans,ld*lDR,ld*lDR,lDL,&zone,Fki,lDL,Fkpi,lDL,&zzero,matrixContainer,ld*lDR);
-	simpleContainer=0;
-	for(int mi=0;mi<ld*lDR;++mi){
-	  simpleContainer+=matrixContainer[mi+ld*lDR*mi];
-	}
-	gram[kp+nCurrentEigen*k]=simpleContainer;
-      }
-    }
-    delete[] matrixContainer;
+int network::gotoNextEigen(){
+  //rather self-explanatory
+  if(excitedStateP.nCurrentEigen==(pars.nEigs-1)){
+    return 1;
   }
+  //Each state is calculated using independent initial states, i.e. the converged ground state is not used as initial guess for the excited state since the projective method used for finding the excited states would map this initial state to zero
+  excitedStateP.orthoStates[excitedStateP.nCurrentEigen].mpsCpy(networkState);
+  ++(excitedStateP.nCurrentEigen);
+  loadNetworkState(excitedStateP.orthoStates[excitedStateP.nCurrentEigen]);
+  return 0;
 }
 
 //---------------------------------------------------------------------------------------------------//
