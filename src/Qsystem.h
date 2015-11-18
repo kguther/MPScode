@@ -13,8 +13,9 @@
 class Qsystem{
  public:
   Qsystem(problemParameters pars, simulationParameters simPars);
+  ~Qsystem();
   network TensorNetwork;
-  double E0;
+  double *E0;
   int getGroundState();
  private:
   problemParameters pars;

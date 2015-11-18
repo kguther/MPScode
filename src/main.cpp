@@ -21,7 +21,7 @@ void testMatrix();
 int delta(int i, int j);
 
 //-----------------------------------------------------------------//
-//HUGE TESTING REALM (CURRENTLY: OVERALL PERFORMANCE)
+//HUGE TESTING REALM (CURRENTLY: EXCITED STATES)
 //-----------------------------------------------------------------//
 
 int main(int argc, char *argv[]){
@@ -37,7 +37,8 @@ int main(int argc, char *argv[]){
 void testSolve(){
   double eigVal;
   double const mEl=1;
-  problemParameters pars(2,9,5,2);
+  int nEigens=2;
+  problemParameters pars(2,4,5,nEigens);
   simulationParameters simPars(100,4,3,1e-4,1e-4,1e-6,1e-4);
   Qsystem sys(pars,simPars);
   int lDwR, lDwL, Dw;
@@ -114,8 +115,10 @@ void testSolve(){
     }
   }
   sys.getGroundState();
-  eigVal=sys.E0;
-  cout<<"Obtained grounds state energy as: "<<setprecision(21)<<eigVal<<endl;
+  cout<<setprecision(21);
+  for(int mi=0;mi<nEigens;++mi){
+    cout<<"Obtained energy of state "<<mi<<" as: "<<sys.E0[mi]<<endl;
+  }
 }
 
 /*void testMatrix(){

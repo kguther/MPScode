@@ -33,6 +33,7 @@
 //---------------------------------------------------------------------------------------------------//
 
 network::network(){
+  nConverged=0;
   //Empty networks dont do much, use the generate function to fill them - this allows for separation of declaration and assignment
 }
 
@@ -45,6 +46,7 @@ network::network(problemParameters inputpars, simulationParameters inputsimPars)
 //---------------------------------------------------------------------------------------------------//
 
 network::~network(){
+  delete[] nConverged;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -58,6 +60,10 @@ void network::initialize(problemParameters inputpars, simulationParameters input
   L=inputpars.L;
   Dw=inputpars.Dw;
   simPars=inputsimPars;
+  nConverged=new int[pars.nEigs];
+  for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
+    nConverged[iEigen]=1;
+  }
   //Allocation of Hamiltonian MPO - square matrices are used since no library matrix functions have to be applied - this allows for faster access
   networkH.initialize(d,Dw,L);
   //Allocation of MPS - memory of the matrices has to be allocated exactly matching the dimension to use them with lapack and cblas
@@ -125,10 +131,10 @@ void network::getLocalDimensions(int const i){
 // corresponding eigenvalue (output).
 //---------------------------------------------------------------------------------------------------//
 
-int network::solve(double &lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT -> HUGE SPEEDUP
+int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT -> HUGE SPEEDUP
   int maxIter=5000;
-  int nConverged[pars.nEigs];
   int offset;
+  int stepRet;
   double convergenceQuality;
   double alpha;
   double tol;
@@ -144,28 +150,38 @@ int network::solve(double &lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
   pCtr.calcCtrFull(1);
   excitedStateP.nCurrentEigen=0;
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
-    nConverged[iEigen]=1;
     alpha=simPars.alpha;
     tol=simPars.tolInitial;
+    offset=(iEigen*(iEigen-1))/2;
     //load all pairings with the current state and previous ones into the scalar products
     excitedStateP.loadScalarProducts(&networkState,iEigen);
     for(int iSweep=0;iSweep<simPars.nSweeps;++iSweep){
+      if(!nConverged[iEigen]){
+	break;
+      }
       //actual sweep is executed here
-      sweep(maxIter,tol,alpha,lambda);
+      sweep(maxIter,tol,alpha,lambda[iEigen]);
       //In calcCtrIterRightBase, the second argument has to be a pointer, because it usually is an array. No call-by-reference here.
       pCtr.calcCtrIterRightBase(-1,&expectationValue);
+      //Compute full scalar product - although not required, it is nice to know and requires very little computational effort
+      excitedStateP.updateScalarProducts(0,-1);
       convergenceQuality=convergenceCheck();
       if(convergenceQuality<simPars.devAccuracy){
 	nConverged[iEigen]=0;
-	break;
       }
       alpha*=.1;
       if(tol>simPars.tolMin){
 	tol*=pow(simPars.tolMin/simPars.tolInitial,1.0/simPars.nSweeps);
       }
+      std::cout<<"Quality of convergence: "<<convergenceQuality<<"\tRequired accuracy: "<<simPars.devAccuracy<<std::endl;
+      for(int prev=0;prev<iEigen;++prev){
+	std::cout<<"Overlap with state "<<prev<<" is: "<<excitedStateP.scalarProducts[prev+offset].fullOverlap()<<std::endl;
+      }
     }
-    std::cout<<"Quality of convergence: "<<convergenceQuality<<"\tRequired accuracy: "<<simPars.devAccuracy<<std::endl;
-    gotoNextEigen();
+    stepRet=gotoNextEigen();
+    if(!stepRet){
+      std::cout<<"LOADED STATES. PREPARED COMPUTATION OF NEXT EIGENSTATE"<<std::endl;
+    }
   }
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
     if(nConverged[iEigen]){
@@ -230,10 +246,12 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
   pCtr.Rctr.subContractionStart(RTerm,i);
   networkH.subMatrixStart(HTerm,i);
   //Generate matrix which is to be passed to ARPACK++
+  excitedStateP.getProjector(i);
   optHMatrix HMat(RTerm,LTerm,HTerm,pars,D,i,&excitedStateP);
   plambda=&lambda;
   //Using the current site matrix as a starting point allows for much faster convergence as it has already been optimized in previous sweeps (except for the first sweep, this is where a good starting point has to be guessed
   networkState.subMatrixStart(currentM,i);
+  //Note that the types given do and have to match the ones in the projector class if more than one eigenvalue is computed
   ARCompStdEig<double, optHMatrix> eigProblem(HMat.dim(),1,&HMat,&optHMatrix::MultMv,"SR",0,tol,maxIter,currentM);
   //One should avoid to hit the maximum number of iterations since this can lead into a suboptimal site matrix, increasing the current energy (although usually not by a lot)
   //So far it seems that the eigensolver either converges quite fast or not at all (i.e. very slow, such that the maximum number of iterations is hit) depending strongly on the tolerance

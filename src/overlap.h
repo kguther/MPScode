@@ -20,6 +20,7 @@ class overlap{
   //Updates are done with respect to phi, i.e. psi is expected to be constant
   void loadMPS(mps *psi, mps *phi);
   stateArray F;
+  lapack_complex_double fullOverlap();
   void stepLeft(int const i);
   void stepRight(int const i);
  private:

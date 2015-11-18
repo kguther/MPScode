@@ -15,6 +15,13 @@ Qsystem::Qsystem(problemParameters inputpars, simulationParameters inputsimPars)
   simPars.nSweeps=stageNSweeps(0);
   simPars.tolInitial=stageTolInitial(0);
   TensorNetwork.initialize(pars,simPars);
+  E0=new double[pars.nEigs];
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+Qsystem::~Qsystem(){
+  delete[] E0;
 }
 
 //---------------------------------------------------------------------------------------------------//

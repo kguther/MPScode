@@ -1,21 +1,25 @@
 #include <cblas.h>
 #include <lapacke.h>
 #include <float.h>
+#include <iostream>
 #include "projector.h"
 #include "siteArray.h"
 #include "mps.h"
 #include "overlap.h"
+#include "arrayprocessing.h"
 
 projector::projector(){
   orthoStates=0;
   scalarProducts=0;
   nCurrentEigen=0;
+  projectionMatrix=0;
 }
 
 //---------------------------------------------------------------------------------------------------//
 
 projector::~projector(){
   delete[] orthoStates;
+  delete[] projectionMatrix;
   delete[] scalarProducts;
 }
 
@@ -77,76 +81,102 @@ void projector::getLocalDimensions(int const i){
 // for the current site before using project to ensure the auxiliary matrix is set.
 //---------------------------------------------------------------------------------------------------//
 
-void projector::project(int const i, void *vec){
-  lapack_complex_double *trContainer;
-  lapack_complex_double *G;
-  lapack_complex_double *vecContainer;
-  lapack_complex_double simpleContainer;
-  lapack_complex_double zone=1.0;
-  lapack_complex_double zzero=0.0;
-  getLocalDimensions(currentSite);
-  trContainer=new lapack_complex_double[ld*lDR*ld*lDR];
-  vecContainer=new lapack_complex_double[ld*lDR*lDL];
-  for(int mi=0;mi<ld*lDR*lDL;++mi){
-    vecContainer[mi]=0;
-  }
-  for(int mu=0;mu<nRelevantEigens;++mu){
-    auxiliaryMatrix.subMatrixStart(G,mu);
-    cblas_zgemm(CblasColMajor,CblasConjTrans,CblasNoTrans,ld*lDR,ld*lDR,lDL,&zone,G,lDL,vec,lDL,&zzero,trContainer,ld*lDR);
-    simpleContainer=0;
-    for(int mi=0;mi<ld*lDR;++mi){
-      simpleContainer+=trContainer[mi+ld*lDR*mi];
+void projector::project(int const i, lapack_complex_double *vec){
+  //vec is required to be of dimension lDL x ld*lDR
+  if(nCurrentEigen>0){
+    lapack_complex_double *trContainer;
+    lapack_complex_double *G;
+    lapack_complex_double *vecContainer;
+    lapack_complex_double simpleContainer;
+    lapack_complex_double zone=1.0;
+    lapack_complex_double zzero=0.0;
+    lapack_complex_double zmone=-1.0;
+    getLocalDimensions(i);
+    vecContainer=new lapack_complex_double[ld*lDR*lDL];
+    arraycpy(lDL,ld*lDR,vec,vecContainer);
+    cblas_zgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,lDL,ld*lDR,lDL,&zmone,projectionMatrix,lDL,vecContainer,lDL,&zone,vec,lDL);
+    /*trContainer=new lapack_complex_double[ld*lDR*ld*lDR];
+    for(int mi=0;mi<ld*lDR*lDL;++mi){
+      vecContainer[mi]=0;
     }
-    simpleContainer*=-1.0;
-    cblas_zaxpy(ld*lDR*lDL,&simpleContainer,G,1,vecContainer,1);
+    for(int mu=0;mu<nRelevantEigens;++mu){
+      auxiliaryMatrix.subMatrixStart(G,mu);
+      cblas_zgemm(CblasColMajor,CblasConjTrans,CblasNoTrans,ld*lDR,ld*lDR,lDL,&zone,G,lDL,vec,lDL,&zzero,trContainer,ld*lDR);
+      simpleContainer=0;
+      for(int mi=0;mi<ld*lDR;++mi){
+	simpleContainer+=trContainer[mi+ld*lDR*mi];
+      }
+      simpleContainer*=-1.0;
+      cblas_zaxpy(ld*lDR*lDL,&simpleContainer,G,1,vecContainer,1);
+    }
+    for(int mi=0;mi<ld*lDR*lDL;++mi){
+      vec[mi]+=vecContainer[mi];
+    }
+    delete[] trContainer;*/
+    delete[] vecContainer;
   }
-  for(int mi=0;mi<ld*lDR*lDL;++mi){
-    vec[mi]+=vecContainer[mi];
-  }
-  delete[] vecContainer;
-  delete[] trContainer;
 }
 
 //---------------------------------------------------------------------------------------------------//
 
 void projector::getProjector(int const i){
+  //Only apply getProjector on the site next (in direction of sweep) to the last updated
   //The gram matrix is used in constructing the projector onto the space orthogonal to the lower lying states (if any). This allows for computation of excited states.
-  lapack_complex_double *gram;
-  gram=new lapack_complex_double[nCurrentEigen*nCurrentEigen];
-  getGramMatrix(gram,i);
-  lapack_int nGramEigens;
-  lapack_int *suppZ;
-  lapack_complex_double *gramEigenvecs;
-  double *gramEigens;
-  gramEigenvecs=new lapack_complex_double[nCurrentEigen*nCurrentEigen];
-  suppZ=new lapack_int[2*nCurrentEigen];
-  gramEigens=new double[nCurrentEigen];
-  LAPACKE_zheevr(LAPACK_COL_MAJOR,'V','A','U',nCurrentEigen,gram,nCurrentEigen,0.0,0.0,0,0,1e-5,&nGramEigens,gramEigens,gramEigenvecs,nCurrentEigen,suppZ);
-  int const minRelevantEigens=LDBL_EPSILON*nCurrentEigen*gramEigens[nGramEigens-1];
-  nRelevantEigens=0;
-  for(int iEigen=0;iEigen<nGramEigens;++iEigen){
-    if(gramEigens[iEigen]>minRelevantEigens){
-      ++nRelevantEigens;
+  if(nCurrentEigen>0){
+    lapack_complex_double *gram;
+    gram=new lapack_complex_double[nCurrentEigen*nCurrentEigen];
+    getGramMatrix(gram,i);
+    lapack_int nGramEigens;
+    lapack_int *suppZ;
+    lapack_complex_double *gramEigenvecs;
+    double *gramEigens;
+    gramEigenvecs=new lapack_complex_double[nCurrentEigen*nCurrentEigen];
+    suppZ=new lapack_int[2*nCurrentEigen];
+    gramEigens=new double[nCurrentEigen];
+    LAPACKE_zheevr(LAPACK_COL_MAJOR,'V','A','U',nCurrentEigen,gram,nCurrentEigen,0.0,0.0,0,0,1e-5,&nGramEigens,gramEigens,gramEigenvecs,nCurrentEigen,suppZ);
+    int const minRelevantEigens=LDBL_EPSILON*nCurrentEigen*gramEigens[nGramEigens-1];
+    nRelevantEigens=0;
+    for(int iEigen=0;iEigen<nGramEigens;++iEigen){
+      if(gramEigens[iEigen]>minRelevantEigens){
+	++nRelevantEigens;
+      }
     }
+    std::cout<<"Eigenvalue threshold: "<<minRelevantEigens<<" Eigenvalues found: "<<nGramEigens<<std::endl;
+    std::cout<<"Eigenvalues of N: ";
+    for(int j=0;j<nGramEigens;++j){
+      std::cout<<gramEigens[j]<<" ";
+    }
+    std::cout<<"\nNumber of relevant eigenvectors: "<<nRelevantEigens<<std::endl;
+    getLocalDimensions(i);
+    auxiliaryMatrix.initialize(nRelevantEigens,lDL,lDR*ld);
+    lapack_complex_double *workingMatrix, *Fki, *preFactor;
+    lapack_complex_double zFactor;
+    lapack_complex_double zone=1.0;
+    lapack_complex_double zzero=0.0;
+    int const offset=(nCurrentEigen*(nCurrentEigen-1))/2;
+    delete[] projectionMatrix;
+    projectionMatrix=new lapack_complex_double[lDL*lDL];
+    for(int mu=0;mu<nRelevantEigens;++mu){
+      auxiliaryMatrix.subMatrixStart(workingMatrix,mu);
+      //Eigenvectors are returned in ascending order
+      for(int k=0;k<nCurrentEigen;++k){
+	scalarProducts[k+offset].F.subMatrixStart(Fki,i);
+	zFactor=gramEigenvecs[k+mu*nCurrentEigen]*1.0/sqrt(gramEigens[nGramEigens-1-mu]);
+	cblas_zaxpy(ld*lDR*lDL,&zFactor,Fki,1,workingMatrix,1);
+      }
+      if(mu==0){
+	preFactor=&zzero;
+      }
+      else{
+	preFactor=&zone;
+      }
+      cblas_zgemm(CblasColMajor,CblasNoTrans,CblasConjTrans,lDL,lDL,ld*lDR,&zone,workingMatrix,lDL,workingMatrix,lDL,preFactor,projectionMatrix,lDL);
+    }
+    delete[] gram;
+    delete[] suppZ;
+    delete[] gramEigenvecs;
+    delete[] gramEigens;
   }
-  getLocalDimensions(i);
-  auxiliaryMatrix.initialize(nRelevantEigens,lDL,ld*lDR);
-  lapack_complex_double *workingMatrix, *Fki;
-  lapack_complex_double zFactor;
-  int const offset=(nCurrentEigen*(nCurrentEigen-1))/2;
-  for(int mu=0;mu<nRelevantEigens;++mu){
-    auxiliaryMatrix.subMatrixStart(workingMatrix,mu);
-    //Eigenvectors are returned in ascending order
-    for(int k=0;k<nCurrentEigen;++k){
-      scalarProducts[k+offset].F.subMatrixStart(Fki,i);
-      zFactor=1.0/sqrt(gramEigens[nGramEigens-1-mu])*gramEigenvecs[k+mu*nCurrentEigen];
-      cblas_zaxpy(ld*lDR*lDL,&zFactor,Fki,1,workingMatrix,1);
-    }
-  } 
-  delete[] gram;
-  delete[] suppZ;
-  delete[] gramEigenvecs;
-  delete[] gramEigens;
 }
 
 //---------------------------------------------------------------------------------------------------//

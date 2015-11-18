@@ -1,6 +1,7 @@
 #ifndef NETWORK_PROJECTOR
 #define NETWORK_PROJECTOR
 
+#include <lapacke.h>
 #include "mps.h"
 #include "overlap.h"
 #include "siteArray.h"
@@ -14,7 +15,7 @@ class projector{
   void loadScalarProducts(mps *variationalState, int const iEigen);
   void updateScalarProducts(int const i, int const direction);
   void getProjector(int const i);
-  void project(int const i, void *vec);
+  void project(int const i, lapack_complex_double *vec);
   mps *orthoStates;
   overlap *scalarProducts;
   int nCurrentEigen;
@@ -24,6 +25,7 @@ class projector{
   void getLocalDimensions(int const i);
   int ld, lDL, lDR;
   int nEigs, nRelevantEigens;
+  lapack_complex_double *projectionMatrix;
 };
 
 #endif

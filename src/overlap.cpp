@@ -1,4 +1,5 @@
 #include <lapacke.h>
+#include <iostream>
 #include "overlap.h"
 #include "tmpContainer.h"
 
@@ -154,7 +155,7 @@ void overlap::updateF(int const i){
       for(int aim=0;aim<lDL;++aim){
 	simpleContainer=0;
 	for(int aimp=0;aimp<lDL;++aimp){
-	  simpleContainer+=0;//leftPart[pCtrLocalIndex(aimp,aim)]*(*phi).global_access(i,si,aimp,aip);
+	  simpleContainer+=leftPart[pCtrLocalIndex(aimp,aim)]*(*phi).global_access(i,si,aip,aimp);
 	}
 	innerContainer.global_access(0,si,aip,aim)=simpleContainer;
       }
@@ -176,13 +177,13 @@ void overlap::updateF(int const i){
 //---------------------------------------------------------------------------------------------------//
 
 void overlap::getF(){
-  for(int i=1;i<L;++i){
+  for(int i=0;i<L-1;++i){
     calcCtrIterLeft(i);
   }
   updateF(L-1);
-  for(int i=L-2;i>=0;--i){
+  for(int i=L-1;i>0;--i){
     calcCtrIterRight(i);
-    updateF(i);
+    updateF(i-1);
   }
 }
 
@@ -190,19 +191,23 @@ void overlap::getF(){
 
 void overlap::stepLeft(int const i){
   //i is the source site of the step, i.e. site i-1 is updated
-  if(i<(L-1)){
-    calcCtrIterRight(i);
+  calcCtrIterRight(i);
+  if(i>0){
+    updateF(i-1);
   }
-  updateF(i-1);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
 void overlap::stepRight(int const i){
-  if(i>0){
-    calcCtrIterLeft(i);
-  }
+  calcCtrIterLeft(i);
   updateF(i+1);
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+lapack_complex_double overlap::fullOverlap(){
+  return Rctr[0];
 }
 
 

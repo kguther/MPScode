@@ -23,7 +23,7 @@ class network{
   network();
   network(problemParameters inputpars, simulationParameters inputsimPars);
   ~network();
-  int solve(double &lambda);
+  int solve(double *lambda);
   int measure(mpo<lapack_complex_double> *MPOperator, double &expValue);
   void initialize(problemParameters inputpars, simulationParameters inputSimPars);
   void loadNetworkState(mps &source);
@@ -44,6 +44,7 @@ class network{
   simulationParameters simPars;
   int d,D,L,Dw,icrit;
   int lDL, lDR, ld, lDwR, lDwL;
+  int *nConverged;
   iterativeMeasurement pCtr;
   lapack_complex_double expectationValue;
   int pctrIndex(int const ai, int const bi, int const aip){return aip+bi*D+ai*D*Dw;}
