@@ -21,6 +21,7 @@ class overlap{
   void loadMPS(mps *psi, mps *phi);
   stateArray F;
   lapack_complex_double fullOverlap();
+  lapack_complex_double getFullOverlap();
   void stepLeft(int const i);
   void stepRight(int const i);
  private:
@@ -38,7 +39,7 @@ class overlap{
   void getF();
   //Important: During sweeping, only the F matrix of the last updated site can be used, and only the mps site matrices of the last updated site should be manipulated. This ensures that the overlap is always up to date. Of course, use the corresponding step for updating (i.e. update the correct direction)
   void updateF(int const i);
-  int pCtrLocalIndex(int const ai, int const aip){return ai+D*aip;} 
+  int pCtrLocalIndex(int const aip, int const ai){return aip+D*ai;} 
 };
 
 #endif

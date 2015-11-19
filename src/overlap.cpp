@@ -4,6 +4,9 @@
 #include "tmpContainer.h"
 
 //---------------------------------------------------------------------------------------------------//
+// Tested computation of partial contractions, they work as intended. Check computation of F (and its
+// usage in network).
+//---------------------------------------------------------------------------------------------------//
 
 overlap::overlap(){
   Lctr=0;
@@ -207,6 +210,15 @@ void overlap::stepRight(int const i){
 //---------------------------------------------------------------------------------------------------//
 
 lapack_complex_double overlap::fullOverlap(){
+  return Rctr[0];
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+lapack_complex_double overlap::getFullOverlap(){
+  for(int i=L-1;i>=0;--i){
+    calcCtrIterRight(i);
+  }
   return Rctr[0];
 }
 

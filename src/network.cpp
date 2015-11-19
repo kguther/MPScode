@@ -196,6 +196,7 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
 void network::sweep(double const maxIter, double const tol, double const alpha, double &lambda){
   clock_t curtime;
   int errRet;
+  overlap test;
   std::cout<<"Starting rightsweep\n";
   for(int i=0;i<(L-1);++i){
     //Step of leftsweep
@@ -204,10 +205,10 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
     errRet=optimize(i,maxIter,tol,lambda);
     curtime=clock()-curtime;
     //Here, the scalar products with lower lying states are updated
-    excitedStateP.updateScalarProducts(i,1);
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
-    //networkState.leftNormalizeState(i);
-    leftEnrichment(alpha,i);
+    networkState.leftNormalizeState(i);
+    excitedStateP.updateScalarProducts(i,1);
+    //leftEnrichment(alpha,i);
     pCtr.calcCtrIterLeft(i+1);
   }
   networkState.normalizeFinal(0);
@@ -219,13 +220,15 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
     errRet=optimize(i,maxIter,tol,lambda);
     curtime=clock()-curtime;
     //same as above for the scalar products with lower lying states
-    excitedStateP.updateScalarProducts(i,-1);
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
-    //networkState.rightNormalizeState(i);
-    rightEnrichment(alpha,i);
+    networkState.rightNormalizeState(i);
+    excitedStateP.updateScalarProducts(i,-1);
+    //rightEnrichment(alpha,i);
     pCtr.calcCtrIterRight(i-1);
   }
   networkState.normalizeFinal(1);
+  test.loadMPS(&networkState,&networkState);
+  std::cout<<"Norm of state is: "<<test.getFullOverlap()<<std::endl;
 }
 
 
