@@ -138,6 +138,7 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
   double convergenceQuality;
   double alpha;
   double tol;
+  double energy;
   alpha=simPars.alpha;
   pCtr.initialize(&networkH,&networkState);
   for(int i=L-1;i>0;--i){
@@ -177,6 +178,8 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
       for(int prev=0;prev<iEigen;++prev){
 	std::cout<<"Overlap with state "<<prev<<" is: "<<excitedStateP.scalarProducts[prev+offset].fullOverlap()<<std::endl;
       }
+      measure(&networkH,energy);
+      std::cout<<"Measured energy is: "<<energy<<std::endl;
     }
     stepRet=gotoNextEigen();
     if(!stepRet){
@@ -200,7 +203,7 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
   std::cout<<"Starting rightsweep\n";
   for(int i=0;i<(L-1);++i){
     //Step of leftsweep
-    std::cout<<"Optimizing site matrix\n";
+    std::cout<<"Optimizing site matrix for state "<<excitedStateP.nCurrentEigen<<std::endl;
     curtime=clock();
     errRet=optimize(i,maxIter,tol,lambda);
     curtime=clock()-curtime;
@@ -215,7 +218,7 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
   std::cout<<"Starting leftsweep\n";
   for(int i=L-1;i>0;--i){
     //Step of rightsweep
-    std::cout<<"Optimizing site matrix\n";      
+    std::cout<<"Optimizing site matrix for state "<<excitedStateP.nCurrentEigen<<std::endl;     
     curtime=clock();
     errRet=optimize(i,maxIter,tol,lambda);
     curtime=clock()-curtime;

@@ -24,6 +24,7 @@ class overlap{
   lapack_complex_double getFullOverlap();
   void stepLeft(int const i);
   void stepRight(int const i);
+  lapack_complex_double applyF(lapack_complex_double *vec, int const i);
  private:
   int L, D, d;
   mps *psi;

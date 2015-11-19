@@ -80,7 +80,7 @@ void overlap::calcCtrIterLeft(int const i){
       simpleContainer=0;
       for(int si=0;si<ld;++si){
 	for(int aim=0;aim<lDL;++aim){
-	  simpleContainer+=innerContainer.global_access(0,si,aip,aim)*(*psi).global_access(i,si,ai,aim);
+	  simpleContainer+=innerContainer.global_access(0,si,aip,aim)*conj((*psi).global_access(i,si,ai,aim));
 	}
       }
       target[pCtrLocalIndex(aip,ai)]=simpleContainer;
@@ -122,7 +122,7 @@ void overlap::calcCtrIterRight(int const i){
       simpleContainer=0;
       for(int si=0;si<ld;++si){
 	for(int ai=0;ai<lDR;++ai){
-	  simpleContainer+=innerContainer.global_access(0,si,ai,aimp)*(*psi).global_access(i,si,ai,aim);
+	  simpleContainer+=innerContainer.global_access(0,si,ai,aimp)*conj((*psi).global_access(i,si,ai,aim));
 	}
       }
       target[pCtrLocalIndex(aimp,aim)]=simpleContainer;
@@ -220,6 +220,24 @@ lapack_complex_double overlap::getFullOverlap(){
     calcCtrIterRight(i);
   }
   return Rctr[0];
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+lapack_complex_double overlap::applyF(lapack_complex_double *vec, int const i){
+  lapack_complex_double simpleContainer=0.0;
+  int lDR, lDL, ld;
+  lDL=(*phi).locDimL(i);
+  lDR=(*phi).locDimR(i);
+  ld=(*phi).locd(i);
+  for(int si=0;si<ld;++si){
+    for(int ai=0;ai<lDR;++ai){
+      for(int aim=0;aim<lDL;++aim){
+	simpleContainer+=F.global_access(i,si,ai,aim)*vec[aim+lDL*ai+lDR*lDL*si];
+      }
+    }
+  }
+  return simpleContainer;
 }
 
 

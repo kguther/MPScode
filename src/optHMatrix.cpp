@@ -68,7 +68,7 @@ void optHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
   tmpContainer<arcomplex<double> > outercontainer(d,lDwL,lDR,lDL);
   int nNzero;
   arcomplex<double> simpleContainer;
-  (*P).project(currentSite,v);
+  (*P).project(v,currentSite);
   //Similar to the calculation of partial contractions, we use optimal bracketing to reuse any intermediate results. This greatly reduces the computational effort and is much faster than storing H in a sparse format and using the internal ARPACK++ matrix classes
   for(int sip=0;sip<d;++sip){
     for(int aimp=0;aimp<lDL;++aimp){
@@ -111,5 +111,5 @@ void optHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
       }
     }
   }
-  (*P).project(currentSite,w);
+  (*P).project(w,currentSite);
 }

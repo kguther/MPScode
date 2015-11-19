@@ -81,9 +81,34 @@ void projector::getLocalDimensions(int const i){
 // for the current site before using project to ensure the auxiliary matrix is set.
 //---------------------------------------------------------------------------------------------------//
 
-void projector::project(int const i, lapack_complex_double *vec){
+void projector::project(lapack_complex_double *vec, int const i){
   //vec is required to be of dimension lDL x ld*lDR
   if(nCurrentEigen>0){
+    /*lapack_complex_double *orthoStateSiteMatrix;
+    lapack_complex_double *vecContainer;
+    lapack_complex_double prefactor;
+    getLocalDimensions(i);
+    vecContainer=new lapack_complex_double[ld*lDR*lDL];
+    int const offset=(nCurrentEigen*(nCurrentEigen-1))/2;
+    for(int k=0;k<nCurrentEigen;++k){
+      orthoStates[k].subMatrixStart(orthoStateSiteMatrix,i);
+      prefactor=scalarProducts[k+offset].applyF(vec,i)/scalarProducts[k+offset].applyF(orthoStateSiteMatrix,i);
+      for(int si=0;si<ld;++si){
+	for(int ai=0;ai<lDR;++ai){
+	  for(int aim=0;aim<lDL;++aim){
+	    if(k==0){
+	      vecContainer[vecIndex(si,ai,aim)]=-orthoStates[k].global_access(i,si,ai,aim)*prefactor;
+	    }
+	    else{
+	      vecContainer[vecIndex(si,ai,aim)]-=orthoStates[k].global_access(i,si,ai,aim)*prefactor;
+	    }
+	  }
+	}
+      }
+    }
+    for(int mi=0;mi<ld*lDL*lDR;++mi){
+      vec[mi]+=vecContainer[mi];
+      }*/
     lapack_complex_double *trContainer;
     lapack_complex_double *G;
     lapack_complex_double *vecContainer;
@@ -93,9 +118,9 @@ void projector::project(int const i, lapack_complex_double *vec){
     lapack_complex_double zmone=-1.0;
     getLocalDimensions(i);
     vecContainer=new lapack_complex_double[ld*lDR*lDL];
-    arraycpy(lDL,ld*lDR,vec,vecContainer);
-    cblas_zgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,lDL,ld*lDR,lDL,&zmone,projectionMatrix,lDL,vecContainer,lDL,&zone,vec,lDL);
-    /*trContainer=new lapack_complex_double[ld*lDR*ld*lDR];
+    /*arraycpy(lDL,ld*lDR,vec,vecContainer);
+      cblas_zgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,lDL,ld*lDR,lDL,&zmone,projectionMatrix,lDL,vecContainer,lDL,&zone,vec,lDL);*/
+    trContainer=new lapack_complex_double[ld*lDR*ld*lDR];
     for(int mi=0;mi<ld*lDR*lDL;++mi){
       vecContainer[mi]=0;
     }
@@ -106,18 +131,19 @@ void projector::project(int const i, lapack_complex_double *vec){
       for(int mi=0;mi<ld*lDR;++mi){
 	simpleContainer+=trContainer[mi+ld*lDR*mi];
       }
-      simpleContainer*=-1.0;
       cblas_zaxpy(ld*lDR*lDL,&simpleContainer,G,1,vecContainer,1);
     }
     for(int mi=0;mi<ld*lDR*lDL;++mi){
-      vec[mi]+=vecContainer[mi];
+      vec[mi]-=vecContainer[mi];
     }
-    delete[] trContainer;*/
+    delete[] trContainer;
     delete[] vecContainer;
   }
 }
 
 //---------------------------------------------------------------------------------------------------//
+
+//Probably wrong
 
 void projector::getProjector(int const i){
   //Only apply getProjector on the site next (in direction of sweep) to the last updated
@@ -133,7 +159,6 @@ void projector::getProjector(int const i){
     lapack_complex_double zone=1.0;
     lapack_complex_double zzero=0.0;
     int const offset=(nCurrentEigen*(nCurrentEigen-1))/2;
-    delete[] projectionMatrix;
     gram=new lapack_complex_double[nCurrentEigen*nCurrentEigen];
     gramEigenvecs=new lapack_complex_double[nCurrentEigen*nCurrentEigen];
     suppZ=new lapack_int[2*nCurrentEigen];
@@ -155,6 +180,7 @@ void projector::getProjector(int const i){
     std::cout<<"\nNumber of relevant eigenvectors: "<<nRelevantEigens<<std::endl;
     getLocalDimensions(i);
     auxiliaryMatrix.initialize(nRelevantEigens,lDL,lDR*ld);
+    delete[] projectionMatrix;
     projectionMatrix=new lapack_complex_double[lDL*lDL];
     for(int mu=0;mu<nRelevantEigens;++mu){
       auxiliaryMatrix.subMatrixStart(workingMatrix,mu);
@@ -173,7 +199,7 @@ void projector::getProjector(int const i){
       }
       cblas_zgemm(CblasColMajor,CblasNoTrans,CblasConjTrans,lDL,lDL,ld*lDR,&zone,workingMatrix,lDL,workingMatrix,lDL,preFactor,projectionMatrix,lDL);
     }
-    lapack_complex_double *test=new lapack_complex_double[lDL*lDL];
+    /*lapack_complex_double *test=new lapack_complex_double[lDL*lDL];
     lapack_complex_double *testResult=new lapack_complex_double[lDL*lDL];
     for(int mi=0;mi<lDL*lDL;++mi){
       test[mi]=projectionMatrix[mi];
@@ -184,9 +210,7 @@ void projector::getProjector(int const i){
     }
     std::cout<<cblas_dznrm2(lDL*lDL,testResult,1)<<std::endl;
     delete[] testResult;
-    delete[] test;
-    //TODO: USE OWN PROJECTOR
-
+    delete[] test;*/
     delete[] gram;
     delete[] suppZ;
     delete[] gramEigenvecs;
