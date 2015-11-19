@@ -133,7 +133,6 @@ void network::getLocalDimensions(int const i){
 
 int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT -> HUGE SPEEDUP
   int maxIter=5000;
-  int offset;
   int stepRet;
   double convergenceQuality;
   double alpha;
@@ -153,7 +152,6 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
     alpha=simPars.alpha;
     tol=simPars.tolInitial;
-    offset=(iEigen*(iEigen-1))/2;
     //load all pairings with the current state and previous ones into the scalar products
     excitedStateP.loadScalarProducts(&networkState,iEigen);
     for(int iSweep=0;iSweep<simPars.nSweeps;++iSweep){
@@ -176,7 +174,7 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
       }
       std::cout<<"Quality of convergence: "<<convergenceQuality<<"\tRequired accuracy: "<<simPars.devAccuracy<<std::endl;
       for(int prev=0;prev<iEigen;++prev){
-	std::cout<<"Overlap with state "<<prev<<" is: "<<excitedStateP.scalarProducts[prev+offset].fullOverlap()<<std::endl;
+	std::cout<<"Overlap with state "<<prev<<" is: "<<excitedStateP.scalarProducts[prev].fullOverlap()<<std::endl;
       }
       measure(&networkH,energy);
       std::cout<<"Measured energy is: "<<energy<<std::endl;
@@ -331,9 +329,11 @@ int network::gotoNextEigen(){
     return 1;
   }
   //Each state is calculated using independent initial states, i.e. the converged ground state is not used as initial guess for the excited state since the projective method used for finding the excited states would map this initial state to zero
-  excitedStateP.orthoStates[excitedStateP.nCurrentEigen].mpsCpy(networkState);
-  ++(excitedStateP.nCurrentEigen);
-  loadNetworkState(excitedStateP.orthoStates[excitedStateP.nCurrentEigen]);
+  excitedStateP.storeCurrentState(networkState);
+  excitedStateP.loadNextState(networkState);
+  //excitedStateP.orthoStates[excitedStateP.nCurrentEigen].mpsCpy(networkState);
+  //++(excitedStateP.nCurrentEigen);
+  //loadNetworkState(excitedStateP.orthoStates[excitedStateP.nCurrentEigen]);
   return 0;
 }
 

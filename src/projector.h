@@ -16,6 +16,8 @@ class projector{
   void updateScalarProducts(int const i, int const direction);
   void getProjector(int const i);
   void project(lapack_complex_double *vec, int const i);
+  void storeCurrentState(mps &source);
+  void loadNextState(mps &target);
   mps *orthoStates;
   overlap *scalarProducts;
   int nCurrentEigen;
@@ -25,7 +27,7 @@ class projector{
   void getLocalDimensions(int const i);
   int ld, lDL, lDR;
   int nEigs, nRelevantEigens;
-  lapack_complex_double *projectionMatrix;
+  //lapack_complex_double *projectionMatrix;
   int vecIndex(int si, int ai, int aim){return aim+ai*lDL+si*lDL*lDR;}
 };
 

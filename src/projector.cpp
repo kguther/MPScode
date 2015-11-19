@@ -8,18 +8,23 @@
 #include "overlap.h"
 #include "arrayprocessing.h"
 
+//---------------------------------------------------------------------------------------------------//
+// The projector class is still experimental, it seems to yield correct results, but I am not sure
+// whether everything is correct.
+//---------------------------------------------------------------------------------------------------//
+
 projector::projector(){
   orthoStates=0;
   scalarProducts=0;
   nCurrentEigen=0;
-  projectionMatrix=0;
+  //projectionMatrix=0;
 }
 
 //---------------------------------------------------------------------------------------------------//
 
 projector::~projector(){
   delete[] orthoStates;
-  delete[] projectionMatrix;
+  //delete[] projectionMatrix;
   delete[] scalarProducts;
 }
 
@@ -28,9 +33,11 @@ projector::~projector(){
 void projector::initialize(int const nEigsin){
   nEigs=nEigsin;
   orthoStates=new mps[nEigs];
-  scalarProducts=new overlap[((nEigs-1)*nEigs)/2];
+  scalarProducts=new overlap[nEigs-1];
 }
 
+//---------------------------------------------------------------------------------------------------//
+// When adjusting the simulation parameter D, all stored states are updated
 //---------------------------------------------------------------------------------------------------//
 
 void projector::setParameterD(int const Dnew){
@@ -40,30 +47,44 @@ void projector::setParameterD(int const Dnew){
 }
 
 //---------------------------------------------------------------------------------------------------//
+// This functions loads the state which shall be orthogonalized, and uses its index to determine to
+// which states it shall be orthogonalized.
+//---------------------------------------------------------------------------------------------------//
 
 void projector::loadScalarProducts(mps *variationalState,int const iEigen){
   //offset marks the beginning of the scalar products with the current state
-  int const offset=(iEigen*(iEigen-1))/2;
   for(int k=0;k<iEigen;++k){
-    scalarProducts[k+offset].loadMPS(variationalState,&orthoStates[k]);
+    scalarProducts[k].loadMPS(variationalState,&orthoStates[k]);
   }
+  nCurrentEigen=iEigen;
 }
 
 //---------------------------------------------------------------------------------------------------//
 
 void projector::updateScalarProducts(int const i, int const direction){
   if(nCurrentEigen>0){
-    int const offset=(nCurrentEigen*(nCurrentEigen-1))/2;
     for(int k=0;k<nCurrentEigen;++k){
       if(direction==1){
-	scalarProducts[k+offset].stepRight(i);
+	scalarProducts[k].stepRight(i);
       }
       else{
-	scalarProducts[k+offset].stepLeft(i);
+	scalarProducts[k].stepLeft(i);
       }
     }
   }
 }
+
+//---------------------------------------------------------------------------------------------------//
+
+void projector::storeCurrentState(mps &source){
+  orthoStates[nCurrentEigen].mpsCpy(source);
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void projector::loadNextState(mps &target){
+  target.mpsCpy(orthoStates[nCurrentEigen+1]);
+}		
 
 //---------------------------------------------------------------------------------------------------//
 
@@ -115,7 +136,7 @@ void projector::project(lapack_complex_double *vec, int const i){
     lapack_complex_double simpleContainer;
     lapack_complex_double zone=1.0;
     lapack_complex_double zzero=0.0;
-    lapack_complex_double zmone=-1.0;
+    //lapack_complex_double zmone=-1.0;
     getLocalDimensions(i);
     vecContainer=new lapack_complex_double[ld*lDR*lDL];
     /*arraycpy(lDL,ld*lDR,vec,vecContainer);
@@ -158,7 +179,6 @@ void projector::getProjector(int const i){
     lapack_complex_double zFactor;
     lapack_complex_double zone=1.0;
     lapack_complex_double zzero=0.0;
-    int const offset=(nCurrentEigen*(nCurrentEigen-1))/2;
     gram=new lapack_complex_double[nCurrentEigen*nCurrentEigen];
     gramEigenvecs=new lapack_complex_double[nCurrentEigen*nCurrentEigen];
     suppZ=new lapack_int[2*nCurrentEigen];
@@ -172,22 +192,16 @@ void projector::getProjector(int const i){
 	++nRelevantEigens;
       }
     }
-    std::cout<<"Eigenvalue threshold: "<<minRelevantEigens<<" Eigenvalues found: "<<nGramEigens<<std::endl;
-    std::cout<<"Eigenvalues of N: ";
-    for(int j=0;j<nGramEigens;++j){
-      std::cout<<gramEigens[j]<<" ";
-    }
-    std::cout<<"\nNumber of relevant eigenvectors: "<<nRelevantEigens<<std::endl;
     getLocalDimensions(i);
     auxiliaryMatrix.initialize(nRelevantEigens,lDL,lDR*ld);
-    delete[] projectionMatrix;
-    projectionMatrix=new lapack_complex_double[lDL*lDL];
+    //delete[] projectionMatrix;
+    //projectionMatrix=new lapack_complex_double[lDL*lDL];
     for(int mu=0;mu<nRelevantEigens;++mu){
       auxiliaryMatrix.subMatrixStart(workingMatrix,mu);
       //Eigenvectors are returned in ascending order
       for(int k=0;k<nCurrentEigen;++k){
-	scalarProducts[k+offset].F.subMatrixStart(Fki,i);
-	//F^dagger * F is proportional to identity, but a normation is required to ensure that the projector squares to itself
+	scalarProducts[k].F.subMatrixStart(Fki,i);
+	//F^dagger * F is proportional to identity (?), but a normation is required to ensure that the projector squares to itself
 	zFactor=gramEigenvecs[k+mu*nCurrentEigen]*1.0/sqrt(gramEigens[nGramEigens-1-mu]);
 	cblas_zaxpy(ld*lDR*lDL,&zFactor,Fki,1,workingMatrix,1);
       }
@@ -197,7 +211,7 @@ void projector::getProjector(int const i){
       else{
 	preFactor=&zone;
       }
-      cblas_zgemm(CblasColMajor,CblasNoTrans,CblasConjTrans,lDL,lDL,ld*lDR,&zone,workingMatrix,lDL,workingMatrix,lDL,preFactor,projectionMatrix,lDL);
+      //cblas_zgemm(CblasColMajor,CblasNoTrans,CblasConjTrans,lDL,lDL,ld*lDR,&zone,workingMatrix,lDL,workingMatrix,lDL,preFactor,projectionMatrix,lDL);
     }
     /*lapack_complex_double *test=new lapack_complex_double[lDL*lDL];
     lapack_complex_double *testResult=new lapack_complex_double[lDL*lDL];
@@ -223,7 +237,6 @@ void projector::getProjector(int const i){
 void projector::getGramMatrix(lapack_complex_double *gram, int const i){
   //Input has to be a nCurrentEigen x nCurrentEigen array
   if(nCurrentEigen>0){
-    int const offset=(nCurrentEigen*(nCurrentEigen-1))/2;
     getLocalDimensions(i);
     lapack_complex_double simpleContainer;
     lapack_complex_double *matrixContainer, *Fki, *Fkpi;
@@ -231,9 +244,9 @@ void projector::getGramMatrix(lapack_complex_double *gram, int const i){
     lapack_complex_double zzero=0.0;
     matrixContainer=new lapack_complex_double[ld*lDR*ld*lDR];
     for(int kp=0;kp<nCurrentEigen;++kp){
-      scalarProducts[kp+offset].F.subMatrixStart(Fkpi,i);
+      scalarProducts[kp].F.subMatrixStart(Fkpi,i);
       for(int k=0;k<nCurrentEigen;++k){
-	scalarProducts[k+offset].F.subMatrixStart(Fki,i);
+	scalarProducts[k].F.subMatrixStart(Fki,i);
 	cblas_zgemm(CblasColMajor,CblasConjTrans,CblasNoTrans,ld*lDR,ld*lDR,lDL,&zone,Fki,lDL,Fkpi,lDL,&zzero,matrixContainer,ld*lDR);
 	simpleContainer=0;
 	for(int mi=0;mi<ld*lDR;++mi){

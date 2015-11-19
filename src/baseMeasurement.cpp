@@ -96,5 +96,4 @@ void baseMeasurement::calcCtrIterRightBase(int const i, lapack_complex_double *t
       }
     }
   }
-  std::cout<<"Completed calculation of partial contraction at site "<<i<<std::endl;
 }

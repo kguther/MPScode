@@ -74,7 +74,6 @@ void iterativeMeasurement::calcCtrIterLeft(int const i){
       }
     }
   }
-  std::cout<<"Completed calculation of partial contraction at site "<<i<<std::endl;
 }
 
 //---------------------------------------------------------------------------------------------------//
