@@ -6,6 +6,18 @@
 #include "overlap.h"
 #include "siteArray.h"
 
+//---------------------------------------------------------------------------------------------------//
+// The projector class contains much more than just the projector onto some excited state space.
+// It is used for computation of excited states, therefore, it contains a mps array which can be 
+// used to store the computed states. 
+//
+// Also, it contains an array of overlaps to compute the scalar products of some external state with
+// the previously stored ones. From this overlap, the projector onto the space of interest is computed.
+//
+// The project(..) method can project some on-site matrices onto the space orthogonal to all previously
+// stored states. It is automatically used in the matrix class used for energy optimization.
+//---------------------------------------------------------------------------------------------------//
+
 class projector{
  public:
   projector();
@@ -17,11 +29,13 @@ class projector{
   void getProjector(int const i);
   void project(lapack_complex_double *vec, int const i);
   void storeCurrentState(mps &source);
-  void loadNextState(mps &target);
+  int loadNextState(mps &target);
+  void storeOrthoState(mps &source, int const iEigen);
+  lapack_complex_double fullOverlap(int const k);
+ private:
   mps *orthoStates;
   overlap *scalarProducts;
   int nCurrentEigen;
- private:
   siteArray<lapack_complex_double> auxiliaryMatrix;
   void getGramMatrix(lapack_complex_double *gram, int const i);
   void getLocalDimensions(int const i);

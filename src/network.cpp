@@ -72,7 +72,7 @@ void network::initialize(problemParameters inputpars, simulationParameters input
   excitedStateP.initialize(pars.nEigs);
   //Somewhat unelegant way to handle loading of the stored states in the first solve()
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
-    excitedStateP.orthoStates[iEigen].mpsCpy(networkState);
+    excitedStateP.storeOrthoState(networkState,iEigen);
   }
   //Note that it is perfectly fine to allocate memory of size 0. It still has to be deleted.
 }
@@ -148,7 +148,6 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
   pCtr.Lctr.global_access(0,0,0,0)=1;
   //In preparation of the first sweep, generate full contraction to the right (first sweeps starts at site 0)
   pCtr.calcCtrFull(1);
-  excitedStateP.nCurrentEigen=0;
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
     alpha=simPars.alpha;
     tol=simPars.tolInitial;
@@ -174,7 +173,7 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
       }
       std::cout<<"Quality of convergence: "<<convergenceQuality<<"\tRequired accuracy: "<<simPars.devAccuracy<<std::endl;
       for(int prev=0;prev<iEigen;++prev){
-	std::cout<<"Overlap with state "<<prev<<" is: "<<excitedStateP.scalarProducts[prev].fullOverlap()<<std::endl;
+	std::cout<<"Overlap with state "<<prev<<" is: "<<excitedStateP.fullOverlap(prev)<<std::endl;
       }
       measure(&networkH,energy);
       std::cout<<"Measured energy is: "<<energy<<std::endl;
@@ -201,12 +200,12 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
   std::cout<<"Starting rightsweep\n";
   for(int i=0;i<(L-1);++i){
     //Step of leftsweep
-    std::cout<<"Optimizing site matrix for state "<<excitedStateP.nCurrentEigen<<std::endl;
+    std::cout<<"Optimizing site matrix"<<std::endl;
     curtime=clock();
     errRet=optimize(i,maxIter,tol,lambda);
     curtime=clock()-curtime;
     //Here, the scalar products with lower lying states are updated
-    std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
+    std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
     networkState.leftNormalizeState(i);
     excitedStateP.updateScalarProducts(i,1);
     //leftEnrichment(alpha,i);
@@ -216,12 +215,12 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
   std::cout<<"Starting leftsweep\n";
   for(int i=L-1;i>0;--i){
     //Step of rightsweep
-    std::cout<<"Optimizing site matrix for state "<<excitedStateP.nCurrentEigen<<std::endl;     
+    std::cout<<"Optimizing site matrix"<<std::endl;     
     curtime=clock();
     errRet=optimize(i,maxIter,tol,lambda);
     curtime=clock()-curtime;
     //same as above for the scalar products with lower lying states
-    std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
+    std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
     networkState.rightNormalizeState(i);
     excitedStateP.updateScalarProducts(i,-1);
     //rightEnrichment(alpha,i);
@@ -325,16 +324,12 @@ void network::calcHSqrExpectationValue(double &ioHsqr){
 
 int network::gotoNextEigen(){
   //rather self-explanatory
-  if(excitedStateP.nCurrentEigen==(pars.nEigs-1)){
-    return 1;
-  }
   //Each state is calculated using independent initial states, i.e. the converged ground state is not used as initial guess for the excited state since the projective method used for finding the excited states would map this initial state to zero
   excitedStateP.storeCurrentState(networkState);
-  excitedStateP.loadNextState(networkState);
+  return excitedStateP.loadNextState(networkState);
   //excitedStateP.orthoStates[excitedStateP.nCurrentEigen].mpsCpy(networkState);
   //++(excitedStateP.nCurrentEigen);
   //loadNetworkState(excitedStateP.orthoStates[excitedStateP.nCurrentEigen]);
-  return 0;
 }
 
 //---------------------------------------------------------------------------------------------------//

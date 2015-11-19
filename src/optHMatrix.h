@@ -4,6 +4,8 @@
 
 //---------------------------------------------------------------------------------------------------//
 // This class is used as an interface to provide the matrix-vector product for ARPACK++
+// It also contains a projector for excited state search. The projection does nothing in ground state
+// search.
 //---------------------------------------------------------------------------------------------------//
 
 class optHMatrix{

@@ -47,6 +47,9 @@ void overlap::subContractionStartRight(lapack_complex_double *&pStart, int const
 }
 
 //---------------------------------------------------------------------------------------------------//
+// This is basically a more efficient way of measuring identity. It works just the same way as in 
+// the measurement classes, just without the intermediate step of inserting some MPO.
+//---------------------------------------------------------------------------------------------------//
 
 void overlap::calcCtrIterLeft(int const i){
   int lDR, lDL, ld;
@@ -131,6 +134,13 @@ void overlap::calcCtrIterRight(int const i){
 }
 
 //---------------------------------------------------------------------------------------------------//
+// The F matrix is given by F=d/dconj(M)_i <psi|phi>, that is, the complete contraction of the two 
+// states except for site i of psi. 
+// Structurally, F is just an mps but without normalization methods.
+// updateF(..) is used to update the F matrix of some site after 
+// one of the partial contractions Lctr or Rctr has changed.
+// getF() computes the F matrix for all sites.
+//---------------------------------------------------------------------------------------------------//
 
 void overlap::updateF(int const i){
   int lDR, lDL, ld;
@@ -191,6 +201,9 @@ void overlap::getF(){
 }
 
 //---------------------------------------------------------------------------------------------------//
+// These functions update the complete overlap after the on-site matrices of the state psi (first argument)
+// have changed on site i.
+//---------------------------------------------------------------------------------------------------//
 
 void overlap::stepLeft(int const i){
   //i is the source site of the step, i.e. site i-1 is updated
@@ -208,6 +221,10 @@ void overlap::stepRight(int const i){
 }
 
 //---------------------------------------------------------------------------------------------------//
+// These two functions return the scalar product of psi and phi. fullOverlap() only returns the value, 
+// but it has to be computed manually previously whereas getFullOverlap() re-evaluates the complete
+// contraction.
+//---------------------------------------------------------------------------------------------------//
 
 lapack_complex_double overlap::fullOverlap(){
   return Rctr[0];
@@ -223,6 +240,8 @@ lapack_complex_double overlap::getFullOverlap(){
 }
 
 //---------------------------------------------------------------------------------------------------//
+// Not in use currently. 
+//---------------------------------------------------------------------------------------------------//
 
 lapack_complex_double overlap::applyF(lapack_complex_double *vec, int const i){
   lapack_complex_double simpleContainer=0.0;
@@ -233,7 +252,7 @@ lapack_complex_double overlap::applyF(lapack_complex_double *vec, int const i){
   for(int si=0;si<ld;++si){
     for(int ai=0;ai<lDR;++ai){
       for(int aim=0;aim<lDL;++aim){
-	simpleContainer+=F.global_access(i,si,ai,aim)*vec[aim+lDL*ai+lDR*lDL*si];
+	simpleContainer+=F.global_access(i,si,ai,aim)*conj(vec[aim+lDL*ai+lDR*lDL*si]);
       }
     }
   }

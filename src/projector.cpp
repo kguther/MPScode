@@ -76,14 +76,24 @@ void projector::updateScalarProducts(int const i, int const direction){
 
 //---------------------------------------------------------------------------------------------------//
 
+void projector::storeOrthoState(mps &source, int const iEigen){
+  orthoStates[iEigen].mpsCpy(source);
+}
+
+//---------------------------------------------------------------------------------------------------//
+
 void projector::storeCurrentState(mps &source){
   orthoStates[nCurrentEigen].mpsCpy(source);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-void projector::loadNextState(mps &target){
-  target.mpsCpy(orthoStates[nCurrentEigen+1]);
+int projector::loadNextState(mps &target){
+  if(nCurrentEigen<(nEigs-1)){
+    target.mpsCpy(orthoStates[nCurrentEigen+1]);
+    return 0;
+  }
+  return 1;
 }		
 
 //---------------------------------------------------------------------------------------------------//
@@ -95,6 +105,12 @@ void projector::getLocalDimensions(int const i){
     lDL=orthoStates[0].locDimL(i);
     lDR=orthoStates[0].locDimR(i);
   }
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+lapack_complex_double projector::fullOverlap(int const k){
+  return scalarProducts[k].fullOverlap();
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -136,17 +152,16 @@ void projector::project(lapack_complex_double *vec, int const i){
     lapack_complex_double simpleContainer;
     lapack_complex_double zone=1.0;
     lapack_complex_double zzero=0.0;
-    //lapack_complex_double zmone=-1.0;
     getLocalDimensions(i);
     vecContainer=new lapack_complex_double[ld*lDR*lDL];
-    /*arraycpy(lDL,ld*lDR,vec,vecContainer);
-      cblas_zgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,lDL,ld*lDR,lDL,&zmone,projectionMatrix,lDL,vecContainer,lDL,&zone,vec,lDL);*/
     trContainer=new lapack_complex_double[ld*lDR*ld*lDR];
+    //Initialization is required (i.e. it is as fast as any other way)
     for(int mi=0;mi<ld*lDR*lDL;++mi){
       vecContainer[mi]=0;
     }
     for(int mu=0;mu<nRelevantEigens;++mu){
       auxiliaryMatrix.subMatrixStart(G,mu);
+      //Compute Tr(G^dagger *vec) which gives the projector onto the space spanned by lower lying states
       cblas_zgemm(CblasColMajor,CblasConjTrans,CblasNoTrans,ld*lDR,ld*lDR,lDL,&zone,G,lDL,vec,lDL,&zzero,trContainer,ld*lDR);
       simpleContainer=0;
       for(int mi=0;mi<ld*lDR;++mi){
@@ -154,6 +169,7 @@ void projector::project(lapack_complex_double *vec, int const i){
       }
       cblas_zaxpy(ld*lDR*lDL,&simpleContainer,G,1,vecContainer,1);
     }
+    //Use the projector to the orthogonal complement of the space spanned by lower lying states
     for(int mi=0;mi<ld*lDR*lDL;++mi){
       vec[mi]-=vecContainer[mi];
     }
@@ -163,8 +179,9 @@ void projector::project(lapack_complex_double *vec, int const i){
 }
 
 //---------------------------------------------------------------------------------------------------//
-
-//Probably wrong
+// Compute the auxiliary matrices of the projector from the moore-penrose pseudoinverse of the 
+// gram matrix
+//---------------------------------------------------------------------------------------------------//
 
 void projector::getProjector(int const i){
   //Only apply getProjector on the site next (in direction of sweep) to the last updated
@@ -233,6 +250,9 @@ void projector::getProjector(int const i){
 }
 
 //---------------------------------------------------------------------------------------------------//
+// Construct the Gram matrix gram=Tr(F^dagger * F)
+//---------------------------------------------------------------------------------------------------//
+
 
 void projector::getGramMatrix(lapack_complex_double *gram, int const i){
   //Input has to be a nCurrentEigen x nCurrentEigen array
