@@ -149,6 +149,7 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
   //In preparation of the first sweep, generate full contraction to the right (first sweeps starts at site 0)
   pCtr.calcCtrFull(1);
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
+    std::cout<<"Computing state "<<iEigen<<std::endl;
     alpha=simPars.alpha;
     tol=simPars.tolInitial;
     //load all pairings with the current state and previous ones into the scalar products
@@ -187,7 +188,7 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
     if(nConverged[iEigen]){
       return 1;
     }
-  }
+  }    
   return 0;
 }
 
@@ -204,11 +205,11 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
     curtime=clock();
     errRet=optimize(i,maxIter,tol,lambda);
     curtime=clock()-curtime;
-    //Here, the scalar products with lower lying states are updated
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
-    networkState.leftNormalizeState(i);
+    //networkState.leftNormalizeState(i);
+    leftEnrichment(alpha,i);
+    //Here, the scalar products with lower lying states are updated
     excitedStateP.updateScalarProducts(i,1);
-    //leftEnrichment(alpha,i);
     pCtr.calcCtrIterLeft(i+1);
   }
   networkState.normalizeFinal(0);
@@ -219,11 +220,11 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
     curtime=clock();
     errRet=optimize(i,maxIter,tol,lambda);
     curtime=clock()-curtime;
-    //same as above for the scalar products with lower lying states
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
-    networkState.rightNormalizeState(i);
+    //networkState.rightNormalizeState(i);
+    rightEnrichment(alpha,i);
+    //same as above for the scalar products with lower lying states
     excitedStateP.updateScalarProducts(i,-1);
-    //rightEnrichment(alpha,i);
     pCtr.calcCtrIterRight(i-1);
   }
   networkState.normalizeFinal(1);

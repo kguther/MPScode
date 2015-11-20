@@ -67,7 +67,7 @@ void projector::updateScalarProducts(int const i, int const direction){
       if(direction==1){
 	scalarProducts[k].stepRight(i);
       }
-      else{
+      if(direction==-1){
 	scalarProducts[k].stepLeft(i);
       }
     }
@@ -192,24 +192,39 @@ void projector::getProjector(int const i){
     lapack_int *suppZ;
     lapack_complex_double *gramEigenvecs;
     double *gramEigens;
-    lapack_complex_double *workingMatrix, *Fki, *preFactor;
+    lapack_complex_double *workingMatrix, *Fki;
     lapack_complex_double zFactor;
     lapack_complex_double zone=1.0;
     lapack_complex_double zzero=0.0;
+    lapack_int info;
     gram=new lapack_complex_double[nCurrentEigen*nCurrentEigen];
     gramEigenvecs=new lapack_complex_double[nCurrentEigen*nCurrentEigen];
     suppZ=new lapack_int[2*nCurrentEigen];
     gramEigens=new double[nCurrentEigen];
     getGramMatrix(gram,i);
-    LAPACKE_zheevr(LAPACK_COL_MAJOR,'V','A','U',nCurrentEigen,gram,nCurrentEigen,0.0,0.0,0,0,1e-5,&nGramEigens,gramEigens,gramEigenvecs,nCurrentEigen,suppZ);
-    int const minRelevantEigens=LDBL_EPSILON*nCurrentEigen*gramEigens[nGramEigens-1];
+    lapack_int gramDim=nCurrentEigen;
+    info=LAPACKE_zheevr(LAPACK_COL_MAJOR,'V','A','U',gramDim,gram,gramDim,0.0,0.0,0,0,1e-5,&nGramEigens,gramEigens,gramEigenvecs,gramDim,suppZ);
+    if(info){
+      std::cout<<"CRITICAL ERROR IN LAPACKE_zheevr: "<<info<<std::endl;
+      std::cout<<"At eigenvalue "<<nCurrentEigen<<std::endl;
+      exit(-1);
+    }
+    matrixprint(nGramEigens,nGramEigens,gramEigenvecs);
+    double const minRelevantEigens=LDBL_EPSILON*nCurrentEigen*gramEigens[nGramEigens-1];
     nRelevantEigens=0;
     for(int iEigen=0;iEigen<nGramEigens;++iEigen){
       if(gramEigens[iEigen]>minRelevantEigens){
 	++nRelevantEigens;
       }
     }
+    std::cout<<"Eigenvalue threshold: "<<minRelevantEigens<<"\nEigenvalues found: "<<nGramEigens<<std::endl;
+    std::cout<<"Eigenvalues of N: ";
+    for(int j=0;j<nGramEigens;++j){
+      std::cout<<gramEigens[j]<<" ";
+      }
+    std::cout<<"\nNumber of relevant eigenvectors: "<<nRelevantEigens<<std::endl;
     getLocalDimensions(i);
+    //stateArray::initialize automatically intializes all elements with zero
     auxiliaryMatrix.initialize(nRelevantEigens,lDL,lDR*ld);
     //delete[] projectionMatrix;
     //projectionMatrix=new lapack_complex_double[lDL*lDL];
@@ -219,17 +234,17 @@ void projector::getProjector(int const i){
       for(int k=0;k<nCurrentEigen;++k){
 	scalarProducts[k].F.subMatrixStart(Fki,i);
 	//F^dagger * F is proportional to identity (?), but a normation is required to ensure that the projector squares to itself
-	zFactor=gramEigenvecs[k+mu*nCurrentEigen]*1.0/sqrt(gramEigens[nGramEigens-1-mu]);
+	zFactor=gramEigenvecs[k+(nGramEigens-1-mu)*nCurrentEigen]*1.0/sqrt(gramEigens[nGramEigens-1-mu]);
 	cblas_zaxpy(ld*lDR*lDL,&zFactor,Fki,1,workingMatrix,1);
       }
-      if(mu==0){
+    }
+      /*if(mu==0){
 	preFactor=&zzero;
       }
       else{
 	preFactor=&zone;
       }
-      //cblas_zgemm(CblasColMajor,CblasNoTrans,CblasConjTrans,lDL,lDL,ld*lDR,&zone,workingMatrix,lDL,workingMatrix,lDL,preFactor,projectionMatrix,lDL);
-    }
+      cblas_zgemm(CblasColMajor,CblasNoTrans,CblasConjTrans,lDL,lDL,ld*lDR,&zone,workingMatrix,lDL,workingMatrix,lDL,preFactor,projectionMatrix,lDL);*/
     /*lapack_complex_double *test=new lapack_complex_double[lDL*lDL];
     lapack_complex_double *testResult=new lapack_complex_double[lDL*lDL];
     for(int mi=0;mi<lDL*lDL;++mi){
@@ -238,8 +253,7 @@ void projector::getProjector(int const i){
     cblas_zgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,lDL,lDL,lDL,&zone,test,lDL,test,lDL,&zzero,testResult,lDL);
     for(int mi=0;mi<lDL*lDL;++mi){
       testResult[mi]-=test[mi];
-    }
-    std::cout<<cblas_dznrm2(lDL*lDL,testResult,1)<<std::endl;
+      }
     delete[] testResult;
     delete[] test;*/
     delete[] gram;
