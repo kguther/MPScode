@@ -1,7 +1,7 @@
 #ifndef MATRIX_PRODUCT_STATE_ARRAY
 #define MATRIX_PRODUCT_STATE_ARRAY
 
-#include <lapacke.h>
+#include "mkl_complex_defined.h"
 #include "arraycreation.h"
 
 class stateArray{

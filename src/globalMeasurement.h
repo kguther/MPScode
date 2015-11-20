@@ -1,9 +1,6 @@
 #ifndef MPO_MEASURE
 #define MPO_MEASURE
 
-#include <lapacke.h>
-#include "mpo.h"
-#include "mps.h"
 #include "baseMeasurement.h"
 
 //---------------------------------------------------------------------------------------------------//

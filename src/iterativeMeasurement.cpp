@@ -1,10 +1,5 @@
-#include <lapacke.h>
 #include <iostream>
-#include "mpo.h"
-#include "mps.h"
 #include "iterativeMeasurement.h"
-#include "tmpContainer.h"
-#include "pContraction.h"
 
 iterativeMeasurement::iterativeMeasurement(){
 }
@@ -91,7 +86,7 @@ int iterativeMeasurement::calcCtrFull(int const direction){
   //This is just some ordinary iterative computation of the partial contraction Pctr (P=R,L)
   int L=(*MPOperator).length();
   if(direction==1){
-    Rctr.global_access(L-1,0,0,0)=lapack_make_complex_double(1.0,0.0);
+    Rctr.global_access(L-1,0,0,0)=1.0;
     for(int i=L-2;i>=0;--i){
       calcCtrIterRight(i);
 	}
@@ -99,7 +94,7 @@ int iterativeMeasurement::calcCtrFull(int const direction){
   }
   else{
     if(direction==-1){
-      Lctr.global_access(0,0,0,0)=lapack_make_complex_double(1.0,0.0);
+      Lctr.global_access(0,0,0,0)=1.0;
       for(int i=1;i<L;++i){
 	calcCtrIterLeft(i);
       }

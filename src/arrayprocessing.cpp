@@ -6,7 +6,7 @@ void upperdiag(int const dim1, int const dim2, lapack_complex_double *arrayin, l
   for(int i=0;i<dim1;i++){
     for(int j=0;j<dim2;j++){
       if(j<i){
-	arrayout[j+dim2*i]=lapack_make_complex_double(0.0,0.0);
+	arrayout[j+dim2*i]=0.0;
       }
       else{
 	arrayout[j+dim2*i]=arrayin[j+dim2*i];
@@ -22,7 +22,7 @@ void lowerdiag(int const dim1, int const dim2, lapack_complex_double *arrayin, l
   for(int i=0;i<dim1;i++){
     for(int j=0;j<dim2;j++){
       if(i<j){
-	arrayout[j+dim2*i]=lapack_make_complex_double(0.0,0.0);
+	arrayout[j+dim2*i]=0.0;
       }
       else{
 	arrayout[j+dim2*i]=arrayin[j+dim2*i];

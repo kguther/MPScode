@@ -1,7 +1,7 @@
 #ifndef BASE_MEASUREMENT
 #define BASE_MEASUREMENT
 
-#include <lapacke.h>
+#include "mkl_complex_defined.h"
 #include "mpo.h"
 #include "mps.h"
 #include "pContraction.h"

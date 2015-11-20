@@ -1,7 +1,7 @@
 #ifndef NETWORK_PROJECTOR
 #define NETWORK_PROJECTOR
 
-#include <lapacke.h>
+#include "mkl_complex_defined.h"
 #include "mps.h"
 #include "overlap.h"
 #include "siteArray.h"
@@ -26,7 +26,7 @@ class projector{
   void setParameterD(int const Dnew);
   void loadScalarProducts(mps *variationalState, int const iEigen);
   void updateScalarProducts(int const i, int const direction);
-  void getProjector(int const i);
+  int getProjector(int const i);
   void project(lapack_complex_double *vec, int const i);
   void storeCurrentState(mps &source);
   int loadNextState(mps &target);

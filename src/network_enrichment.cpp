@@ -1,5 +1,4 @@
-#include <lapacke.h>
-#include <cblas.h>
+#include "mkl_complex_defined.h"
 #include "arrayprocessing.h"
 #include "tmpContainer.h"
 #include "network.h"

@@ -1,10 +1,6 @@
 #ifndef ITERATIVE_MEASUREMENT
 #define ITERATIVE_MEASUREMENT
 
-#include <lapacke.h>
-#include "mpo.h"
-#include "mps.h"
-#include "pContraction.h"
 #include "baseMeasurement.h"
 
 //---------------------------------------------------------------------------------------------------//

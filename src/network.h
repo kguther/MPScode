@@ -2,8 +2,8 @@
 #define NETWORK
 
 #include <complex>
-#include <lapacke.h>
 #include <arcomp.h>
+#include "mkl_complex_defined.h"
 #include "parameters.h"
 #include "mpo.h"
 #include "pContraction.h"
@@ -41,6 +41,7 @@ class network{
   int d,D,L,Dw,icrit;
   int lDL, lDR, ld, lDwR, lDwL;
   int *nConverged;
+  double shift;
   iterativeMeasurement pCtr;
   lapack_complex_double expectationValue;
   //most of these methods are auxiliary functions

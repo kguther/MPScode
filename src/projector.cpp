@@ -1,7 +1,4 @@
-#include <cblas.h>
-#include <lapacke.h>
 #include <float.h>
-#include <iostream>
 #include "projector.h"
 #include "siteArray.h"
 #include "mps.h"
@@ -183,7 +180,7 @@ void projector::project(lapack_complex_double *vec, int const i){
 // gram matrix
 //---------------------------------------------------------------------------------------------------//
 
-void projector::getProjector(int const i){
+int projector::getProjector(int const i){
   //Only apply getProjector on the site next (in direction of sweep) to the last updated
   //The gram matrix is used in constructing the projector onto the space orthogonal to the lower lying states (if any). This allows for computation of excited states.
   if(nCurrentEigen>0){
@@ -204,12 +201,6 @@ void projector::getProjector(int const i){
     getGramMatrix(gram,i);
     lapack_int gramDim=nCurrentEigen;
     info=LAPACKE_zheevr(LAPACK_COL_MAJOR,'V','A','U',gramDim,gram,gramDim,0.0,0.0,0,0,1e-5,&nGramEigens,gramEigens,gramEigenvecs,gramDim,suppZ);
-    if(info){
-      std::cout<<"CRITICAL ERROR IN LAPACKE_zheevr: "<<info<<std::endl;
-      std::cout<<"At eigenvalue "<<nCurrentEigen<<std::endl;
-      exit(-1);
-    }
-    matrixprint(nGramEigens,nGramEigens,gramEigenvecs);
     double const minRelevantEigens=LDBL_EPSILON*nCurrentEigen*gramEigens[nGramEigens-1];
     nRelevantEigens=0;
     for(int iEigen=0;iEigen<nGramEigens;++iEigen){
@@ -217,12 +208,6 @@ void projector::getProjector(int const i){
 	++nRelevantEigens;
       }
     }
-    std::cout<<"Eigenvalue threshold: "<<minRelevantEigens<<"\nEigenvalues found: "<<nGramEigens<<std::endl;
-    std::cout<<"Eigenvalues of N: ";
-    for(int j=0;j<nGramEigens;++j){
-      std::cout<<gramEigens[j]<<" ";
-      }
-    std::cout<<"\nNumber of relevant eigenvectors: "<<nRelevantEigens<<std::endl;
     getLocalDimensions(i);
     //stateArray::initialize automatically intializes all elements with zero
     auxiliaryMatrix.initialize(nRelevantEigens,lDL,lDR*ld);
@@ -260,7 +245,11 @@ void projector::getProjector(int const i){
     delete[] suppZ;
     delete[] gramEigenvecs;
     delete[] gramEigens;
+    if(info){
+      return 1;
+    }
   }
+  return 0;
 }
 
 //---------------------------------------------------------------------------------------------------//

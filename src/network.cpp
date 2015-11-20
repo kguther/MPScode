@@ -6,7 +6,6 @@
 #include <arcomp.h>
 #include <arscomp.h>
 #include <time.h>
-#include <cblas.h>
 #include "network.h"
 #include "arraycreation.h"
 #include "arrayprocessing.h"
@@ -137,7 +136,7 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
   double convergenceQuality;
   double alpha;
   double tol;
-  double energy;
+  double cEnergy;
   alpha=simPars.alpha;
   pCtr.initialize(&networkH,&networkState);
   for(int i=L-1;i>0;--i){
@@ -149,6 +148,12 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
   //In preparation of the first sweep, generate full contraction to the right (first sweeps starts at site 0)
   pCtr.calcCtrFull(1);
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
+    if(iEigen){
+      shift=-2*abs(lambda[0]);
+    }
+    else{
+      shift=0.0;
+    }
     std::cout<<"Computing state "<<iEigen<<std::endl;
     alpha=simPars.alpha;
     tol=simPars.tolInitial;
@@ -176,8 +181,8 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
       for(int prev=0;prev<iEigen;++prev){
 	std::cout<<"Overlap with state "<<prev<<" is: "<<excitedStateP.fullOverlap(prev)<<std::endl;
       }
-      measure(&networkH,energy);
-      std::cout<<"Measured energy is: "<<energy<<std::endl;
+      //measure(&networkH,cEnergy);
+      //std::cout<<"Measured energy: "<<cEnergy<<std::endl;
     }
     stepRet=gotoNextEigen();
     if(!stepRet){
@@ -185,6 +190,9 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
     }
   }
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
+    if(iEigen){
+      lambda[iEigen]-=shift;
+    }
     if(nConverged[iEigen]){
       return 1;
     }
@@ -228,8 +236,6 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
     pCtr.calcCtrIterRight(i-1);
   }
   networkState.normalizeFinal(1);
-  test.loadMPS(&networkState,&networkState);
-  std::cout<<"Norm of state is: "<<test.getFullOverlap()<<std::endl;
 }
 
 
@@ -251,7 +257,7 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
   networkH.subMatrixStart(HTerm,i);
   //Generate matrix which is to be passed to ARPACK++
   excitedStateP.getProjector(i);
-  optHMatrix HMat(RTerm,LTerm,HTerm,pars,D,i,&excitedStateP);
+  optHMatrix HMat(RTerm,LTerm,HTerm,pars,D,i,&excitedStateP,shift);
   plambda=&lambda;
   //Using the current site matrix as a starting point allows for much faster convergence as it has already been optimized in previous sweeps (except for the first sweep, this is where a good starting point has to be guessed
   networkState.subMatrixStart(currentM,i);
@@ -267,7 +273,7 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
   }
   else{
     iolambda=real(lambda);
-    std::cout<<setprecision(21)<<"Current energy: "<<real(lambda)<<std::endl;
+    std::cout<<setprecision(21)<<"Current energy: "<<real(lambda)-shift<<std::endl;
     return 0;
   }
 }

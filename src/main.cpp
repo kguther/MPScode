@@ -3,10 +3,8 @@
 #include <iomanip>
 #include <complex>
 #include <cstdlib>
-#include <cblas.h>
-#include <lapacke.h>
-#include <lapacke_utils.h>
 #include <math.h>
+#include "mkl_complex_defined.h"
 #include "network.h"
 #include "arraycreation.h"
 #include "arrayprocessing.h"
@@ -38,7 +36,7 @@ void testSolve(){
   double eigVal;
   double const mEl=1;
   int nEigens=3;
-  problemParameters pars(2,10,5,nEigens);
+  problemParameters pars(2,20,5,nEigens);
   //simulationParameters simPars(100,5,2,1e-4,1e-8,1e-9,1e-2);
   simulationParameters simPars(100,4,3,1e-4,1e-4,1e-6,1e-4);
   Qsystem sys(pars,simPars);

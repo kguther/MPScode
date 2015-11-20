@@ -1,5 +1,4 @@
 #include "baseMeasurement.h"
-#include <lapacke.h>
 #include <iostream>
 #include "mpo.h"
 #include "mps.h"

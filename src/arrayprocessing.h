@@ -1,7 +1,7 @@
 #ifndef ARRAYPROCESSING
 #define ARRAYPROCESSING
 
-#include <lapacke.h>
+#include "mkl_complex_defined.h"
 
 using namespace std;
 

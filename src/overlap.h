@@ -1,7 +1,7 @@
 #ifndef MPS_OVERLAP
 #define MPS_OVERLAP
 
-#include <lapacke.h>
+#include "mkl_complex_defined.h"
 #include "mps.h"
 
 //---------------------------------------------------------------------------------------------------//

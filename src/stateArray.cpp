@@ -1,6 +1,3 @@
-#include <lapacke.h>
-#include <cblas.h>
-#include <lapacke_utils.h>
 #include "stateArray.h"
 #include "arrayprocessing.h"
 #include "arraycreation.h"

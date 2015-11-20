@@ -4,7 +4,7 @@
 #include "optHMatrix.h"
 #include "tmpContainer.h"
 
-optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, arcomplex<double> *Hin, problemParameters pars, int Din, int i, projector *excitedStateP):
+optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, arcomplex<double> *Hin, problemParameters pars, int Din, int i, projector *excitedStateP, double shiftin):
   Rctr(Rin),
   Lctr(Lin),
   H(Hin),
@@ -13,6 +13,7 @@ optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, arcomplex
   L(pars.L),
   Dw(pars.Dw),
   currentSite(i),
+  shift(shiftin),
   P(excitedStateP)
 {
   icrit=L/2;
@@ -107,7 +108,7 @@ void optHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
 	    simpleContainer+=outercontainer.global_access(si,bim,ai,aimp)*Lctr[ctrIndex(aim,bim,aimp)];
 	  }
 	}
-	w[vecIndex(si,ai,aim)]=simpleContainer;
+	w[vecIndex(si,ai,aim)]=simpleContainer+shift*v[vecIndex(si,ai,aim)];
       }
     }
   }

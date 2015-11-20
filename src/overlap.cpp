@@ -1,4 +1,3 @@
-#include <lapacke.h>
 #include <iostream>
 #include "overlap.h"
 #include "tmpContainer.h"

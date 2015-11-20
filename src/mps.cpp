@@ -1,6 +1,3 @@
-#include <lapacke.h>
-#include <cblas.h>
-#include <lapacke_utils.h>
 #include "mps.h"
 #include "arrayprocessing.h"
 #include "arraycreation.h"
@@ -62,7 +59,7 @@ int mps::leftNormalizeState(int const i){
   D3=locDimR(i+1);
   ld=locd(i);
   lapack_complex_double *Rcontainer, *Qcontainer;
-  const lapack_complex_double zone=lapack_make_complex_double(1.0,0.0);
+  const lapack_complex_double zone=1.0;
   Qcontainer=new lapack_complex_double[D2];//Used for storage of lapack-internal matrices
   Rcontainer=new lapack_complex_double[D2*D2];//Used for storage of R from RQ decomposition
   //Enable use of LAPACK_ROW_MAJOR which is necessary here due to the applied storage scheme
@@ -95,7 +92,7 @@ int mps::rightNormalizeState(int const i){
   D3=locDimL(i-1);
   ld=locd(i);
   lapack_complex_double *Rcontainer, *Qcontainer;
-  const lapack_complex_double zone=lapack_make_complex_double(1.0,0);
+  const lapack_complex_double zone=1.0;
   Qcontainer=new lapack_complex_double[ld*D1];
   Rcontainer=new lapack_complex_double[D2*D2];
   //Thats how zgerqf works: the last D2 columns contain the upper trigonal matrix R, to adress them, move D2 from the end
