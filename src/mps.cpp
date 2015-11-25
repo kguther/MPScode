@@ -33,9 +33,6 @@ void mps::createInitialState(){
 	  if(ai==aim){
 	    state_array_access_structure[i][si][ai][aim]=1;
 	  }
-	  else{
-	    state_array_access_structure[i][si][ai][aim]=0;
-	  }
 	}
       }
     }

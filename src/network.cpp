@@ -168,7 +168,6 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
       //In calcCtrIterRightBase, the second argument has to be a pointer, because it usually is an array. No call-by-reference here.
       pCtr.calcCtrIterRightBase(-1,&expectationValue);
       //Compute full scalar product - although not required, it is nice to know and requires very little computational effort
-      excitedStateP.updateScalarProducts(0,-1);
       convergenceQuality=convergenceCheck();
       if(convergenceQuality<simPars.devAccuracy){
 	nConverged[iEigen]=0;
@@ -178,11 +177,10 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
 	tol*=pow(simPars.tolMin/simPars.tolInitial,1.0/simPars.nSweeps);
       }
       std::cout<<"Quality of convergence: "<<convergenceQuality<<"\tRequired accuracy: "<<simPars.devAccuracy<<std::endl;
+      excitedStateP.updateScalarProducts(0,-1);
       for(int prev=0;prev<iEigen;++prev){
 	std::cout<<"Overlap with state "<<prev<<" is: "<<excitedStateP.fullOverlap(prev)<<std::endl;
       }
-      //measure(&networkH,cEnergy);
-      //std::cout<<"Measured energy: "<<cEnergy<<std::endl;
     }
     stepRet=gotoNextEigen();
     if(!stepRet){

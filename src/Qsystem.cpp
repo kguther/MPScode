@@ -5,12 +5,13 @@
 #include "network.h"
 #include "parameters.h"
 
-Qsystem::Qsystem(problemParameters inputpars, simulationParameters inputsimPars){
-  pars=inputpars;
-  simPars=inputsimPars;
-  DMax=simPars.D;
-  nSweepsMax=simPars.nSweeps;
-  tolInitialMax=simPars.tolInitial;
+Qsystem::Qsystem(problemParameters inputpars, simulationParameters inputsimPars):
+  pars(inputpars),
+  simPars(inputsimPars),
+  DMax(simPars.D),
+  nSweepsMax(simPars.nSweeps),
+  tolInitialMax(simPars.tolInitial)
+{
   simPars.D=stageD(0);
   simPars.nSweeps=stageNSweeps(0);
   simPars.tolInitial=stageTolInitial(0);
