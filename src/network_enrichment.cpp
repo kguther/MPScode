@@ -54,15 +54,17 @@ void network::leftEnrichment(double const alpha, int const i){
   //Singular Value Decomposition of Mnew=U*S*V
   int containerDim=(MNumRows>MNumCols)?MNumCols:MNumRows;
   double *diags=new double[containerDim];
-  lapack_complex_double *Mnewcpy=new lapack_complex_double[maxDim*maxDim];
+  lapack_complex_double *VT=new lapack_complex_double[maxDim*maxDim];
+  lapack_complex_double *U=new lapack_complex_double[maxDim*maxDim];
   //POSSIBLE IMPROVEMENT: USE LAPACK DRIVER ROUTINE INSTEAD OF COMPUTATIONAL ROUTINES
-  lapackSVD(MNumCols,MNumRows,Mnew,Mnewcpy,diags);
+  //lapackSVD(MNumCols,MNumRows,Mnew,Mnewcpy,diags);
+  LAPACKE_zgesdd(LAPACK_COL_MAJOR,'A',MNumRows,MNumCols,Mnew,MNumRows,diags,U,MNumRows,VT,MNumCols);
   //Mnewcpy -> A, S*Mnew->Multiply to B
   //Postprocessing: Truncate S to lDR eigenvalues, U to dimension ld*lDL x lDR (from ld*lDL x ld*lDL) if neccessary
   //Truncation is carried out implicitly by only adressing part of the matrix
   for(int mi=0;mi<MNumCols;++mi){
     for(int ai=0;ai<lDR;++ai){
-      Mnewcpy[ai+lDR*mi]*=diags[ai];
+      VT[ai+lDR*mi]*=diags[ai];
     }
   }
   delete[] diags;
@@ -76,18 +78,19 @@ void network::leftEnrichment(double const alpha, int const i){
   for(int si=0;si<ld;++si){
     networkState.subMatrixStart(networkB,i+1,si);
     BStart=Bnew+si*lDRR*MNumCols;
-    cblas_zgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,lDR,lDRR,MNumCols,&zone,Mnewcpy,lDR,BStart,MNumCols,&zzero,networkB,lDR);
+    cblas_zgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,lDR,lDRR,MNumCols,&zone,VT,lDR,BStart,MNumCols,&zzero,networkB,lDR);
   }
-  delete[] Mnewcpy;
+  delete[] VT;
   delete[] Bnew;
   for(int si=0;si<ld;++si){
     for(int ai=0;ai<lDR;++ai){
       for(int aim=0;aim<lDL;++aim){
-	networkState.global_access(i,si,ai,aim)=Mnew[aim+si*lDL+ai*MNumRows];
+	networkState.global_access(i,si,ai,aim)=U[aim+si*lDL+ai*MNumRows];
       }
     }
   }
   delete[] Mnew;
+  delete[] U;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -135,14 +138,16 @@ void network::rightEnrichment(double const alpha, int const i){
   //Singular Value Decomposition of Mnew=U*S*V
   int containerDim=(MNumRows>MNumCols)?MNumCols:MNumRows;
   double *diags=new double[containerDim];
-  lapack_complex_double *Mnewcpy=new lapack_complex_double[maxDim*maxDim];
-  lapackSVD(MNumCols,MNumRows,Mnew,Mnewcpy,diags);
+  lapack_complex_double *VT=new lapack_complex_double[maxDim*maxDim];
+  lapack_complex_double *U=new lapack_complex_double[maxDim*maxDim];
+  //lapackSVD(MNumCols,MNumRows,Mnew,Mnewcpy,diags);
+  LAPACKE_zgesdd(LAPACK_COL_MAJOR,'A',MNumRows,MNumCols,Mnew,MNumRows,diags,U,MNumRows,VT,MNumCols);
   //Mnewcpy -> A, S*Mnew->Multiply to B
   //Postprocessing: Truncate S to lDR eigenvalues, U to dimension ld*lDL x lDR (from ld*lDL x ld*lDL) if neccessary
   //Truncation is carried out implicitly by only adressing part of the matrix
   for(int aim=0;aim<lDL;++aim){
     for(int mi=0;mi<MNumRows;++mi){
-      Mnew[mi+aim*MNumRows]*=diags[aim];
+      U[mi+aim*MNumRows]*=diags[aim];
     }
   }
   delete[] diags;
@@ -160,20 +165,21 @@ void network::rightEnrichment(double const alpha, int const i){
 	AStart[aimm+mi*lDLL]=Anew[aimm+si*lDLL+mi*ld*lDLL];
       }
     }
-    cblas_zgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,lDLL,lDL,MNumRows,&zone,AStart,lDLL,Mnew,MNumRows,&zzero,networkA,lDLL);
+    cblas_zgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,lDLL,lDL,MNumRows,&zone,AStart,lDLL,U,MNumRows,&zzero,networkA,lDLL);
   }
   delete[] AStart;
-  delete[] Mnew;
+  delete[] U;
   delete[] Anew;
   //Store the remaining U into B
   for(int si=0;si<ld;++si){
     for(int ai=0;ai<lDR;++ai){
       for(int aim=0;aim<lDL;++aim){
-	networkState.global_access(i,si,ai,aim)=Mnewcpy[aim+si*lDR*MNumCols+ai*MNumCols];
+	networkState.global_access(i,si,ai,aim)=VT[aim+si*lDR*MNumCols+ai*MNumCols];
       }
     }
   }
-  delete[] Mnewcpy;
+  delete[] VT;
+  delete[] Mnew;
 }
 
 //---------------------------------------------------------------------------------------------------//

@@ -5,7 +5,7 @@ APCK_INCLUDE=-I /usr/include/arpack++
 SUPERLU_INCLUDE=-I /usr/include/superlu
 SUPERLU_LIB=/usr/lib/libsuperlu.a
 APCK_LIB=/usr/lib/libarpack.a /usr/lib/libarpack++.a
-CFLAGS=-Wall -openmp -static-intel -O3
+CFLAGS=-Wall -O3
 OBJECTS=main.o network.o arrayprocessing.o Qsystem.o optHMatrix.o mps.o globalMeasurement.o baseMeasurement.o iterativeMeasurement.o overlap.o stateArray.o network_enrichment.o projector.o
 TEMPLATES=arraycreation.h mpo.h pContraction.h tmpContainer.h
 NAME=MPScode
@@ -14,7 +14,7 @@ all: $(OBJECTS)
 	$(CC) -o $(NAME) $(OBJECTS) $(APCK_LIB) $(LFLAGS) $(DCFLAGS) $(CFLAGS) 
 
 $(OBJECTS): %.o: %.cpp $(TEMPLATES)
-	$(CC) -c $(DCFLAGS) $(CFLAGS) $(APCK_INCLUDE) -mkl $< -o $@
+	$(CC) -c $(DCFLAGS) $(CFLAGS) $(APCK_INCLUDE) $< -o $@
 
 clean:
 	\rm *.o

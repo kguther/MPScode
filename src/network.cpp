@@ -189,10 +189,10 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
       std::cout<<"LOADED STATES. PREPARED COMPUTATION OF NEXT EIGENSTATE"<<std::endl;
     }
   }
+  for(int iEigen=1;iEigen<pars.nEigs;++iEigen){
+    lambda[iEigen]-=shift;
+  }
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
-    if(iEigen){
-      lambda[iEigen]-=shift;
-    }
     if(nConverged[iEigen]){
       return 1;
     }
@@ -334,9 +334,6 @@ int network::gotoNextEigen(){
   //Each state is calculated using independent initial states, i.e. the converged ground state is not used as initial guess for the excited state since the projective method used for finding the excited states would map this initial state to zero
   excitedStateP.storeCurrentState(networkState);
   return excitedStateP.loadNextState(networkState);
-  //excitedStateP.orthoStates[excitedStateP.nCurrentEigen].mpsCpy(networkState);
-  //++(excitedStateP.nCurrentEigen);
-  //loadNetworkState(excitedStateP.orthoStates[excitedStateP.nCurrentEigen]);
 }
 
 //---------------------------------------------------------------------------------------------------//
