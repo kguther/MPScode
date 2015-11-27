@@ -143,7 +143,6 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
     networkState.rightNormalizeState(i);
   }
   networkState.normalizeFinal(1);
-  //Allocate a 4D array of dimension LxDxDwxD which is contigous in the last index for the partial contractions Lctr and Rctr
   pCtr.Lctr.global_access(0,0,0,0)=1;
   //In preparation of the first sweep, generate full contraction to the right (first sweeps starts at site 0)
   pCtr.calcCtrFull(1);
@@ -204,6 +203,7 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
   clock_t curtime;
   int errRet;
   overlap test;
+  double spinCheck;
   std::cout<<"Starting rightsweep\n";
   for(int i=0;i<(L-1);++i){
     //Step of leftsweep
@@ -212,8 +212,8 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
     errRet=optimize(i,maxIter,tol,lambda);
     curtime=clock()-curtime;
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
-    //networkState.leftNormalizeState(i);
-    leftEnrichment(alpha,i);
+    networkState.leftNormalizeState(i);
+    //leftEnrichment(alpha,i);
     //Here, the scalar products with lower lying states are updated
     excitedStateP.updateScalarProducts(i,1);
     pCtr.calcCtrIterLeft(i+1);
@@ -227,8 +227,8 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
     errRet=optimize(i,maxIter,tol,lambda);
     curtime=clock()-curtime;
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
-    //networkState.rightNormalizeState(i);
-    rightEnrichment(alpha,i);
+    networkState.rightNormalizeState(i);
+    //rightEnrichment(alpha,i);
     //same as above for the scalar products with lower lying states
     excitedStateP.updateScalarProducts(i,-1);
     pCtr.calcCtrIterRight(i-1);
@@ -343,7 +343,7 @@ int network::measure(mpo<lapack_complex_double> *MPOperator, double &lambda){
   lambda=currentMeasurement.measureFull();
   return 0;
 }
-  
+
 //---------------------------------------------------------------------------------------------------//
 // These are placeholder functions to allow for the dimension of the on-site Hilbert space to be
 // site dependent. This allows for the implementation of wire networks. Currently, they are just
@@ -406,87 +406,3 @@ void network::leftNormalizationMatrixIter(int i, lapack_complex_double *psi){
     }
   }	
 }
-
-
-/*void network::calcHSqrExpectationValue(double &ioHsqr){
-  dynamicContainer<lapack_complex_double> currentP;
-  dynamic5DContainer<lapack_complex_double> innerContainer;
-  dynamic5DContainer<lapack_complex_double> middleContainer;
-  dynamic5DContainer<lapack_complex_double> outerContainer;
-  lapack_complex_double simpleContainer;
-  currentP.generate(1,1,1,1);
-  currentP.global_access(0,0,0,0)=1;
-  std::cout<<"Starting evaluation of convergence quality\n";
-  for(int i=0;i<L;++i){
-    getLocalDimensions(i);
-    innerContainer.generate(ld,lDwL,lDwL,lDR,lDL);
-    for(int sipp=0;sipp<ld;++sipp){
-      for(int bimp=0;bimp<lDwL;++bimp){
-	for(int bim=0;bim<lDwL;++bim){
-	  for(int aip=0;aip<lDR;++aip){
-	    for(int aim=0;aim<lDL;++aim){
-	      simpleContainer=0;
-	      for(int aimp=0;aimp<lDL;++aimp){
-		simpleContainer+=networkState.global_access(i,sipp,aip,aimp)*currentP.global_access(bim,bimp,aim,aimp);
-	      }
-	      innerContainer.global_access(sipp,bim,bimp,aip,aim)=simpleContainer;
-	    }
-	  }
-	}
-      }
-    }
-    middleContainer.generate(ld,lDwR,lDwL,lDR,lDL);
-    for(int sip=0;sip<ld;++sip){
-      for(int bim=0;bim<lDwL;++bim){
-	for(int bip=0;bip<lDwR;++bip){
-	  for(int aip=0;aip<lDR;++aip){
-	    for(int aim=0;aim<lDL;++aim){
-	      simpleContainer=0;
-	      for(int sipp=0;sipp<ld;++sipp){
-		for(int bimp=0;bimp<lDwL;++bimp){
-		  simpleContainer+=innerContainer.global_access(sipp,bim,bimp,aip,aim)*networkH.global_access(i,sip,sipp,bip,bimp);
-		}
-	      }
-	      middleContainer.global_access(sip,bip,bim,aip,aim)=simpleContainer;
-	    }
-	  }
-	}
-      }
-    }
-    outerContainer.generate(ld,lDwR,lDwR,lDR,lDL);
-    for(int si=0;si<ld;++si){
-      for(int bi=0;bi<lDwR;++bi){
-	for(int bip=0;bip<lDwR;++bip){
-	  for(int aip=0;aip<lDR;++aip){
-	    for(int aim=0;aim<lDL;++aim){
-	      simpleContainer=0;
-	      for(int sip=0;sip<ld;++sip){
-		for(int bim=0;bim<lDwL;++bim){
-		  simpleContainer+=middleContainer.global_access(sip,bip,bim,aip,aim)*networkH.global_access(i,si,sip,bi,bim);
-		}
-	      }
-	      outerContainer.global_access(si,bi,bip,aip,aim)=simpleContainer;
-	    }
-	  }
-	}
-      }
-    }
-    currentP.generate(lDwR,lDwR,lDR,lDR);
-    for(int bi=0;bi<lDwR;++bi){
-      for(int bip=0;bip<lDwR;++bip){
-	for(int ai=0;ai<lDR;++ai){
-	  for(int aip=0;aip<lDR;++aip){
-	    simpleContainer=0;
-	    for(int si=0;si<ld;++si){
-	      for(int aim=0;aim<lDL;++aim){
-		simpleContainer+=outerContainer.global_access(si,bi,bip,aip,aim)*conj(networkState.global_access(i,si,ai,aim));
-	      }
-	    }
-	    currentP.global_access(bi,bip,ai,aip)=simpleContainer;
-	  }
-	}
-      }
-    }
-  }
-  ioHsqr=real(currentP.global_access(0,0,0,0));
-  }*/

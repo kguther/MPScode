@@ -50,7 +50,10 @@ void baseMeasurement::getLocalDimensions(int const i){
 void baseMeasurement::calcCtrIterRightBase(int const i, lapack_complex_double *targetPctr){
   lapack_complex_double simpleContainer;
   lapack_complex_double *sourcePctr;
+  lapack_complex_double *siteMatrixState, *siteMatrixH;
   Rctr.subContractionStart(sourcePctr,i+1);
+  (*MPState).subMatrixStart(siteMatrixState,i+1);
+  (*MPOperator).subMatrixStart(siteMatrixH,i+1);
   getLocalDimensions(i+1);
   tmpContainer<lapack_complex_double> innercontainer(ld,lDwR,lDR,lDL);
   tmpContainer<lapack_complex_double> outercontainer(ld,lDwL,lDL,lDR);
@@ -60,7 +63,7 @@ void baseMeasurement::calcCtrIterRightBase(int const i, lapack_complex_double *t
 	for(int aimp=0;aimp<lDL;++aimp){
 	  simpleContainer=0;
 	  for(int aip=0;aip<lDR;++aip){
-	    simpleContainer+=sourcePctr[pctrIndex(ai,bi,aip)]*(*MPState).global_access(i+1,sip,aip,aimp);
+	    simpleContainer+=sourcePctr[pctrIndex(ai,bi,aip)]*siteMatrixState[stateIndex(sip,aip,aimp)];
 	  }
 	  innercontainer.global_access(sip,bi,ai,aimp)=simpleContainer;
 	}
@@ -74,7 +77,7 @@ void baseMeasurement::calcCtrIterRightBase(int const i, lapack_complex_double *t
 	  simpleContainer=0;
 	  for(int sip=0;sip<ld;++sip){
 	    for(int bi=0;bi<lDwR;++bi){
-	      simpleContainer+=(*MPOperator).global_access(i+1,si,sip,bi,bim)*innercontainer.global_access(sip,bi,ai,aimp);
+	      simpleContainer+=siteMatrixH[operatorIndex(si,sip,bi,bim)]*innercontainer.global_access(sip,bi,ai,aimp);
 	    }
 	  }
 	  outercontainer.global_access(si,bim,aimp,ai)=simpleContainer;
@@ -88,7 +91,7 @@ void baseMeasurement::calcCtrIterRightBase(int const i, lapack_complex_double *t
 	simpleContainer=0;
 	for(int si=0;si<ld;++si){
 	  for(int ai=0;ai<lDR;++ai){
-	    simpleContainer+=conj((*MPState).global_access(i+1,si,ai,aim))*outercontainer.global_access(si,bim,aimp,ai);
+	    simpleContainer+=conj(siteMatrixState[stateIndex(si,ai,aim)])*outercontainer.global_access(si,bim,aimp,ai);
 	  }
 	}
 	targetPctr[pctrIndex(aim,bim,aimp)]=simpleContainer;

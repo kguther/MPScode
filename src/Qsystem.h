@@ -4,6 +4,7 @@
 #include <complex>
 #include "parameters.h"
 #include "network.h"
+#include "mpo.h"
 
 //---------------------------------------------------------------------------------------------------//
 // This class is used to execute the simulation with its main task being the adaption of bond
@@ -17,6 +18,7 @@ class Qsystem{
   network TensorNetwork;
   double *E0;
   int getGroundState();
+  int measure(mpo<std::complex<double> > &MPOperator, double &expectationValue);
  private:
   problemParameters pars;
   simulationParameters simPars;

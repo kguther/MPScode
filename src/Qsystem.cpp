@@ -67,7 +67,7 @@ int Qsystem::stageNSweeps(int const nStage){
   if(nStage==(simPars.nStages-1)){
     return nSweepsMax;
   }
-  return 1;
+  return 2;
 }
 
 double Qsystem::stageTolInitial(int const nStage){
@@ -76,4 +76,10 @@ double Qsystem::stageTolInitial(int const nStage){
   }
   double warmupTol=1e-2;
   return warmupTol*pow(tolInitialMax/warmupTol,static_cast<float>(nStage)/(simPars.nStages-1));
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+int Qsystem::measure(mpo<lapack_complex_double> &MPOperator, double &expectationValue){
+  return TensorNetwork.measure(&MPOperator,expectationValue);
 }

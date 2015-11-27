@@ -12,7 +12,10 @@ class mps: public stateArray{
   int rightNormalizeState(int const i);
   void normalizeFinal(int const i);
  private:
+  int totalQN;
+  int conservedQN;
   void createInitialState();
+  int QN(int const ai);
 };
 
 #endif

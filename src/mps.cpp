@@ -2,8 +2,7 @@
 #include "arrayprocessing.h"
 #include "arraycreation.h"
 
-mps::mps():stateArray()
-{
+mps::mps():stateArray(){
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -23,17 +22,15 @@ void mps::generate(int const din, int const Din, int const Lin){
 //---------------------------------------------------------------------------------------------------//
 
 void mps::createInitialState(){
-    int lDL, lDR;
+  int lDL, lDR;
   for(int i=0;i<L;++i){
     lDL=locDimL(i);
     lDR=locDimR(i);
+    lDR=(lDR<lDL)?lDR:lDL;
     for(int si=0;si<d;++si){
       for(int ai=0;ai<lDR;++ai){
-	for(int aim=0;aim<lDL;++aim){
-	  if(ai==aim){
-	    state_array_access_structure[i][si][ai][aim]=1;
-	  }
-	}
+	if(si==0)
+	  state_array_access_structure[i][si][ai][ai]=1;
       }
     }
   }
