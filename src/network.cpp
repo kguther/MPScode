@@ -139,6 +139,7 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
   double cEnergy;
   alpha=simPars.alpha;
   pCtr.initialize(&networkH,&networkState);
+  lapack_complex_double *check;
   for(int i=L-1;i>0;--i){
     networkState.rightNormalizeState(i);
   }
@@ -203,7 +204,6 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
   clock_t curtime;
   int errRet;
   overlap test;
-  double spinCheck;
   std::cout<<"Starting rightsweep\n";
   for(int i=0;i<(L-1);++i){
     //Step of leftsweep
@@ -248,6 +248,7 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
   arcomplex<double> *plambda;
   arcomplex<double> *currentM;
   arcomplex<double> *RTerm, *LTerm, *HTerm;
+  double spinCheck;
   //Get the projector onto the space orthogonal to any lower lying states
   //Get the current partial contractions and site matrix of the Hamiltonian
   pCtr.Lctr.subContractionStart(LTerm,i);
@@ -259,12 +260,16 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
   plambda=&lambda;
   //Using the current site matrix as a starting point allows for much faster convergence as it has already been optimized in previous sweeps (except for the first sweep, this is where a good starting point has to be guessed
   networkState.subMatrixStart(currentM,i);
+  measure(check,spinCheck);
+  std::cout<<"Spin before optimizing: "<<spinCheck<<std::endl;
   //Note that the types given do and have to match the ones in the projector class if more than one eigenvalue is computed
   ARCompStdEig<double, optHMatrix> eigProblem(HMat.dim(),1,&HMat,&optHMatrix::MultMv,"SR",0,tol,maxIter,currentM);
   //One should avoid to hit the maximum number of iterations since this can lead into a suboptimal site matrix, increasing the current energy (although usually not by a lot)
   //So far it seems that the eigensolver either converges quite fast or not at all (i.e. very slow, such that the maximum number of iterations is hit) depending strongly on the tolerance
   int nconv;
   nconv=eigProblem.EigenValVectors(currentM,plambda);
+  measure(check,spinCheck);
+  std::cout<<"Spin after optimizing: "<<spinCheck<<std::endl;
   if(nconv!=1){
     std::cout<<"Failed to converge in iterative eigensolver, number of Iterations taken: "<<maxIter<<" With tolerance "<<tol<<std::endl;
     return 1;
