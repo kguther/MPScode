@@ -11,6 +11,7 @@
 #include "iterativeMeasurement.h"
 #include "projector.h"
 #include "overlap.h"
+#include "quantumNumber.h"
 
 //---------------------------------------------------------------------------------------------------//
 // The network class contains all information required for a run of the simulation, that is, the whole
@@ -43,6 +44,7 @@ class network{
   int lDL, lDR, ld, lDwR, lDwL;
   int *nConverged;
   double shift;
+  quantumNumber *conservedQNs;
   iterativeMeasurement pCtr;
   lapack_complex_double expectationValue;
   //most of these methods are auxiliary functions

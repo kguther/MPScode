@@ -4,7 +4,7 @@
 #include "optHMatrix.h"
 #include "tmpContainer.h"
 
-optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, arcomplex<double> *Hin, problemParameters pars, int Din, int i, projector *excitedStateP, double shiftin):
+optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, arcomplex<double> *Hin, problemParameters pars, int Din, int iIn, projector *excitedStateP, double shiftin, int const nQNsin, quantumNumber *conservedQNsin):
   Rctr(Rin),
   Lctr(Lin),
   H(Hin),
@@ -14,7 +14,10 @@ optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, arcomplex
   Dw(pars.Dw),
   currentSite(i),
   shift(shiftin),
-  P(excitedStateP)
+  P(excitedStateP),
+  nQNs(nQNsin),
+  i(iIn),
+  conservedQNs(conservedQNsin)
 {
   icrit=L/2;
   for(int j=0;j<L/2;j++){
@@ -113,4 +116,28 @@ void optHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
     }
   }
   (*P).project(w,currentSite);
+}
+
+void optHMatrix::MultMvQNConserving(arcomplex<double> *v, arcomplex<double> *w){
+  projectQN(v);
+  MultMv(v,w);
+  projectQN(w);
+}
+
+void optHMatrix::projectQN(arcomplex<double> *v){
+  for(int si=0;si<d;++si){
+    for(int ai=0;ai<lDR;++ai){
+      for(int aim=0;aim<lDL;++aim){
+	for(int iQN=0;iQN<nQNs;++iQN){
+	  if(qTensorConstraint(iQN,si,ai,aim)){
+	    v[vecIndex(si,ai,aim)]=0;
+	  }
+	}
+      }
+    }
+  }
+}
+
+int optHMatrix::qTensorConstraint(int const iQN, int const si, int const ai, int const aim){
+  return conservedQNs[iQN].QNLabel(i,ai,lDR)-conservedQNs[iQN].QNLabel(i-1,aim,lDL)-conservedQNs[iQN].QNLabel(si);
 }

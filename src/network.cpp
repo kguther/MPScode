@@ -31,10 +31,11 @@
 // Constructors and similar stuff for the basic network class
 //---------------------------------------------------------------------------------------------------//
 
-network::network(){
-  nConverged=0;
+network::network():
+  nConverged(0),
+  conservedQNs(0)
   //Empty networks dont do much, use the generate function to fill them - this allows for separation of declaration and assignment
-}
+{}
 
 //---------------------------------------------------------------------------------------------------//
 
@@ -46,6 +47,7 @@ network::network(problemParameters inputpars, simulationParameters inputsimPars)
 
 network::~network(){
   delete[] nConverged;
+  delete[] conservedQNs;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -74,6 +76,12 @@ void network::initialize(problemParameters inputpars, simulationParameters input
     excitedStateP.storeOrthoState(networkState,iEigen);
   }
   //Note that it is perfectly fine to allocate memory of size 0. It still has to be deleted.
+  if(pars.nQNs){
+    conservedQNs=new quantumNumber[pars.nQNs];
+    for(int iQN=0;iQN<pars.nQNs;++iQN){
+      conservedQNs[iQN].initialize(d,L,pars.QNconserved[iQN],pars.QNLocalList+iQN*d);
+    }
+  }
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -249,21 +257,28 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
   arcomplex<double> *currentM;
   arcomplex<double> *RTerm, *LTerm, *HTerm;
   double spinCheck;
+  void (optHMatrix::*multMV)(arcomplex<double> *v, arcomplex<double> *w);
   //Get the projector onto the space orthogonal to any lower lying states
   //Get the current partial contractions and site matrix of the Hamiltonian
   pCtr.Lctr.subContractionStart(LTerm,i);
   pCtr.Rctr.subContractionStart(RTerm,i);
   networkH.subMatrixStart(HTerm,i);
-  //Generate matrix which is to be passed to ARPACK++
   excitedStateP.getProjector(i);
-  optHMatrix HMat(RTerm,LTerm,HTerm,pars,D,i,&excitedStateP,shift);
+  if(pars.nQNs){
+    multMV=&optHMatrix::MultMvQNConserving;
+  }
+  else{
+    multMV=&optHMatrix::MultMv;
+  }
+  //Generate matrix which is to be passed to ARPACK++
+  optHMatrix HMat(RTerm,LTerm,HTerm,pars,D,i,&excitedStateP,shift,pars.nQNs,conservedQNs);
   plambda=&lambda;
   //Using the current site matrix as a starting point allows for much faster convergence as it has already been optimized in previous sweeps (except for the first sweep, this is where a good starting point has to be guessed
   networkState.subMatrixStart(currentM,i);
   measure(check,spinCheck);
   std::cout<<"Spin before optimizing: "<<spinCheck<<std::endl;
   //Note that the types given do and have to match the ones in the projector class if more than one eigenvalue is computed
-  ARCompStdEig<double, optHMatrix> eigProblem(HMat.dim(),1,&HMat,&optHMatrix::MultMv,"SR",0,tol,maxIter,currentM);
+  ARCompStdEig<double, optHMatrix> eigProblem(HMat.dim(),1,&HMat,multMV,"SR",0,tol,maxIter,currentM);
   //One should avoid to hit the maximum number of iterations since this can lead into a suboptimal site matrix, increasing the current energy (although usually not by a lot)
   //So far it seems that the eigensolver either converges quite fast or not at all (i.e. very slow, such that the maximum number of iterations is hit) depending strongly on the tolerance
   int nconv;

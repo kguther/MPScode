@@ -4,8 +4,9 @@
 class problemParameters{
  public:
   problemParameters(){}
- problemParameters(int din, int Lin, int Dwin, int nEigsin=1): d(din),L(Lin),Dw(Dwin),nEigs(nEigsin){}
-  int L, d, Dw, nEigs;
+  problemParameters(int din, int Lin, int Dwin, int nEigsin=1, int NumberQNs=0, int *QNconservedin=0, int *QNListin=0): d(din),L(Lin),Dw(Dwin),nEigs(nEigsin),nQNs(NumberQNs),QNconserved(QNconservedin),QNLocalList(QNListin){}
+  int *QNconserved, *QNLocalList;
+  int L, d, Dw, nEigs,nQNs;
 };
 
 //---------------------------------------------------------------------------------------------------//
