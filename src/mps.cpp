@@ -26,15 +26,14 @@ void mps::createInitialState(){
   for(int i=0;i<L;++i){
     lDL=locDimL(i);
     lDR=locDimR(i);
-    lDR=(lDR<lDL)?lDR:lDL;
+    lDL=(lDR<lDL)?lDR:lDL;
     for(int si=0;si<d;++si){
-      for(int ai=0;ai<lDR;++ai){
+      for(int aim=0;aim<lDL;++aim){
 	if(si==0)
-	  state_array_access_structure[i][si][ai][ai]=1;
+	  state_array_access_structure[i][si][aim][aim]=1;
       }
     }
   }
-  totalQN=L;
 }
 
 //---------------------------------------------------------------------------------------------------//

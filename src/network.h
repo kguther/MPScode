@@ -64,6 +64,7 @@ class network{
   void getLocalDimensions(int const i);
   //This one is only for consistency checks
   void leftNormalizationMatrixIter(int i, lapack_complex_double *psi);
+  int checkQN();
 };
 
 #endif

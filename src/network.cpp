@@ -148,6 +148,7 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
   alpha=simPars.alpha;
   pCtr.initialize(&networkH,&networkState);
   lapack_complex_double *check;
+  checkQN();
   for(int i=L-1;i>0;--i){
     networkState.rightNormalizeState(i);
   }
@@ -172,6 +173,7 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
 	break;
       }
       //actual sweep is executed here
+      checkQN();
       sweep(maxIter,tol,alpha,lambda[iEigen]);
       //In calcCtrIterRightBase, the second argument has to be a pointer, because it usually is an array. No call-by-reference here.
       pCtr.calcCtrIterRightBase(-1,&expectationValue);
@@ -282,7 +284,9 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
   //One should avoid to hit the maximum number of iterations since this can lead into a suboptimal site matrix, increasing the current energy (although usually not by a lot)
   //So far it seems that the eigensolver either converges quite fast or not at all (i.e. very slow, such that the maximum number of iterations is hit) depending strongly on the tolerance
   int nconv;
+  checkQN();
   nconv=eigProblem.EigenValVectors(currentM,plambda);
+  checkQN();
   measure(check,spinCheck);
   std::cout<<"Spin after optimizing: "<<spinCheck<<std::endl;
   if(nconv!=1){
@@ -425,4 +429,25 @@ void network::leftNormalizationMatrixIter(int i, lapack_complex_double *psi){
       psi[i*D*D+aim*D+aimp]=psiContainer;
     }
   }	
+}
+
+int network::checkQN(){
+  for(int iQN=0;iQN<pars.nQNs;++iQN){
+    for(int i=0;i<L;++i){
+      getLocalDimensions(i);
+      for(int si=0;si<ld;++si){
+	for(int ai=0;ai<lDR;++ai){
+	  for(int aim=0;aim<lDL;++aim){
+	    if((conservedQNs[iQN].QNLabel(i,ai,lDR)-conservedQNs[iQN].QNLabel(i-1,aim,lDL)-conservedQNs[iQN].QNLabel(si)) && abs(networkState.global_access(i,si,ai,aim))>0.0001){
+	      std::cout<<"Violation of quantum number constraint at "<<"("<<i<<", "<<si<<", "<<ai<<", "<<aim<<"): "<<networkState.global_access(i,si,ai,aim)<<std::endl;
+	      std::cout<<"QN Labels: "<<conservedQNs[iQN].QNLabel(i,ai,lDR)<<", "<<conservedQNs[iQN].QNLabel(i-1,aim,lDL)<<", "<<conservedQNs[iQN].QNLabel(si)<<std::endl;
+	      return 1;
+	    }
+	  }
+	}
+      }
+    }
+  }
+  std::cout<<"Validated quantum number constraint\n";
+  return 0;
 }

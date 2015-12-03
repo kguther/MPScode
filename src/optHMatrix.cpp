@@ -119,6 +119,7 @@ void optHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
 }
 
 void optHMatrix::MultMvQNConserving(arcomplex<double> *v, arcomplex<double> *w){
+  shift=-100;
   projectQN(v);
   MultMv(v,w);
   projectQN(w);
