@@ -19,7 +19,7 @@ void testMatrix();
 int delta(int i, int j);
 
 //-----------------------------------------------------------------//
-//HUGE TESTING REALM (CURRENTLY: EXCITED STATES)
+//HUGE TESTING REALM (CURRENTLY: QUANTUM NUMBERS)
 //-----------------------------------------------------------------//
 
 int main(int argc, char *argv[]){
@@ -38,12 +38,12 @@ void testSolve(){
   int const nEigens=1;
   int const L=12;
   int const nQuantumNumbers=1;
-  int QNValue[1]={0};
-  int QNList[2]={0,1};
+  int QNValue[1]={L};
+  int QNList[2]={1,-1};
   problemParameters pars(2,L,5,nEigens,nQuantumNumbers,QNValue,QNList);
   //simulationParameters simPars(100,5,2,1e-4,1e-8,1e-9,1e-2);
   //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack
-  simulationParameters simPars(100,4,1,1e-3,1e-4,1e-8,1e-4);
+  simulationParameters simPars(100,1,1,1e-3,1e-4,1e-8,1e-4);
   Qsystem sys(pars,simPars);
   int lDwR, lDwL, Dw;
   Dw=pars.Dw;

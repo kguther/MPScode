@@ -29,8 +29,9 @@ void mps::createInitialState(){
     lDL=(lDR<lDL)?lDR:lDL;
     for(int si=0;si<d;++si){
       for(int aim=0;aim<lDL;++aim){
-	if(si==0)
+	if(si==0 && aim==0){
 	  state_array_access_structure[i][si][aim][aim]=1;
+	}
       }
     }
   }

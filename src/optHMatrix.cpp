@@ -118,12 +118,16 @@ void optHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
   (*P).project(w,currentSite);
 }
 
+//---------------------------------------------------------------------------------------------------//
+
 void optHMatrix::MultMvQNConserving(arcomplex<double> *v, arcomplex<double> *w){
-  shift=-100;
+  //TRY MORE SOPHISTICATED QN CONSERVING MULTIPLICATION
   projectQN(v);
   MultMv(v,w);
   projectQN(w);
 }
+
+//---------------------------------------------------------------------------------------------------//
 
 void optHMatrix::projectQN(arcomplex<double> *v){
   for(int si=0;si<d;++si){
@@ -139,6 +143,12 @@ void optHMatrix::projectQN(arcomplex<double> *v){
   }
 }
 
+//---------------------------------------------------------------------------------------------------//
+
 int optHMatrix::qTensorConstraint(int const iQN, int const si, int const ai, int const aim){
-  return conservedQNs[iQN].QNLabel(i,ai,lDR)-conservedQNs[iQN].QNLabel(i-1,aim,lDL)-conservedQNs[iQN].QNLabel(si);
+  int qnCriterium=conservedQNs[iQN].QNLabel(i,ai)-conservedQNs[iQN].QNLabel(i-1,aim)-conservedQNs[iQN].QNLabel(si);
+  if(qnCriterium || conservedQNs[iQN].QNUpperCheck(i,ai) || conservedQNs[iQN].QNLowerCheck(i-1,aim)){
+    return 1;
+  }
+  return 0;
 }
