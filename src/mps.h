@@ -2,6 +2,7 @@
 #define MATRIX_PRODUCT_STATE
 
 #include "stateArray.h"
+#include "quantumNumber.h"
 
 class mps: public stateArray{
  public:
@@ -11,12 +12,9 @@ class mps: public stateArray{
   int leftNormalizeState(int const i);
   int rightNormalizeState(int const i);
   void normalizeFinal(int const i);
-  void enforceQN(int const i);
  private:
-  int totalQN;
-  int conservedQN;
+  quantumNumber *conservedQNs;
   void createInitialState();
-  int QN(int const ai);
 };
 
 #endif

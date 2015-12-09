@@ -55,6 +55,8 @@ class network{
   int gotoNextEigen();
   int setParameterD(int Dnew);
   double convergenceCheck();
+  void createInitialState();
+  void normalize(int const i, int const direction, double const alpha=0);
   void sweep(double const maxIter, double const tol, double const alpha ,double &lambda);
   void leftEnrichment(double const alpha, int const i);
   void rightEnrichment(double const alpha, int const i);

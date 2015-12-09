@@ -29,9 +29,8 @@ void mps::createInitialState(){
     lDL=(lDR<lDL)?lDR:lDL;
     for(int si=0;si<d;++si){
       for(int aim=0;aim<lDL;++aim){
-	if(si==0 && aim==0){
-	  state_array_access_structure[i][si][aim][aim]=1;
-	}
+	if(si==0 && aim==0)
+	state_array_access_structure[i][si][aim][aim]=1;
       }
     }
   }
@@ -118,20 +117,4 @@ void mps::normalizeFinal(int const i){
   normalization=cblas_dznrm2(ld*lcD,state_array_access_structure[site][0][0],1);
   normalization=1.0/normalization;
   cblas_zscal(ld*lcD,&normalization,state_array_access_structure[site][0][0],1);
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-void mps::enforceQN(int const i){
-  int check;
-  for(int si=0;si<locd(i);++si){
-    for(int ai=0;ai<locDimR(i);++ai){
-      for(int aim=0;aim<locDimL(i);++aim){
-	check=ai-aim-si;
-	if(check){
-	  state_array_access_structure[i][si][ai][aim]=0;
-	}
-      }
-    }
-  }
 }

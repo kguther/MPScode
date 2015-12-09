@@ -12,11 +12,10 @@ optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, arcomplex
   D(Din),
   L(pars.L),
   Dw(pars.Dw),
-  currentSite(i),
+  i(iIn),
   shift(shiftin),
   P(excitedStateP),
   nQNs(nQNsin),
-  i(iIn),
   conservedQNs(conservedQNsin)
 {
   icrit=L/2;
@@ -72,7 +71,7 @@ void optHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
   tmpContainer<arcomplex<double> > outercontainer(d,lDwL,lDR,lDL);
   int nNzero;
   arcomplex<double> simpleContainer;
-  (*P).project(v,currentSite);
+  (*P).project(v,i);
   //Similar to the calculation of partial contractions, we use optimal bracketing to reuse any intermediate results. This greatly reduces the computational effort and is much faster than storing H in a sparse format and using the internal ARPACK++ matrix classes
   for(int sip=0;sip<d;++sip){
     for(int aimp=0;aimp<lDL;++aimp){
@@ -115,7 +114,7 @@ void optHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
       }
     }
   }
-  (*P).project(w,currentSite);
+  (*P).project(w,i);
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -134,21 +133,11 @@ void optHMatrix::projectQN(arcomplex<double> *v){
     for(int ai=0;ai<lDR;++ai){
       for(int aim=0;aim<lDL;++aim){
 	for(int iQN=0;iQN<nQNs;++iQN){
-	  if(qTensorConstraint(iQN,si,ai,aim)){
+	  if(conservedQNs[iQN].qnCriterium(i,si,ai,aim)){
 	    v[vecIndex(si,ai,aim)]=0;
 	  }
 	}
       }
     }
   }
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-int optHMatrix::qTensorConstraint(int const iQN, int const si, int const ai, int const aim){
-  int qnCriterium=conservedQNs[iQN].QNLabel(i,ai)-conservedQNs[iQN].QNLabel(i-1,aim)-conservedQNs[iQN].QNLabel(si);
-  if(qnCriterium || conservedQNs[iQN].QNUpperCheck(i,ai) || conservedQNs[iQN].QNLowerCheck(i-1,aim)){
-    return 1;
-  }
-  return 0;
 }

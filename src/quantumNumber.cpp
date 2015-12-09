@@ -1,4 +1,5 @@
 #include "quantumNumber.h"
+#include <iostream>
 
 quantumNumber::quantumNumber(){
   leftLabel=0;
@@ -32,11 +33,11 @@ void quantumNumber::initialize(int const din, int const Lin, int const Nin, int 
 void quantumNumber::initializeLabelList(){
   //This is for particle number quantum numbers
   int const Lred=L;
-  leftLabel=new int[Lred*Lred];
-  rightLabel=new int[Lred*Lred];
+  leftLabel=new int[Lred*Lred+1];
+  rightLabel=new int[Lred*Lred+1];
   for(int i=0;i<=L;++i){
     if(i<L/2){
-      for(int ai=0;ai<i;++ai){
+      for(int ai=0;ai<=i;++ai){
 	leftLabel[ai+i*Lred]=i-2*ai;
       }
     }
@@ -49,13 +50,13 @@ void quantumNumber::initializeLabelList(){
 }
 
 int quantumNumber::QNLabel(int const i, int const ai){
-  if((i+1)<L/2 && ai<(i+1)){
+  if((i+1)<L/2 && ai<=(i+1)){
     return leftLabel[ai+(i+1)*L];
   }
-  if(ai<=(L-(i+1))){
+  if((i+1)>=L/2 && ai<=(L-(i+1))){
     return rightLabel[ai+(i+1)*L];
   }
-  return N*L;
+  return N*L*L;
 }
 
 int quantumNumber::QNLabel(int const si){
@@ -74,4 +75,12 @@ int quantumNumber::QNUpperCheck(int i, int ai){
     return 0;
   }
   return 1;
+}
+
+int quantumNumber::qnCriterium(int const i, int const si, int const ai, int const aim){
+  int qnCriteriumViolation=QNLabel(i,ai)-QNLabel(i-1,aim)-QNLabel(si);
+  if(qnCriteriumViolation || QNUpperCheck(i,ai) || QNLowerCheck(i-1,aim)){
+    return 1;
+  }
+  return 0;
 }
