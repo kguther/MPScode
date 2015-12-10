@@ -68,14 +68,12 @@ void network::initialize(problemParameters inputpars, simulationParameters input
   //Allocation of Hamiltonian MPO - square matrices are used since no library matrix functions have to be applied - this allows for faster access
   networkH.initialize(d,Dw,L);
   //Allocation of MPS - memory of the matrices has to be allocated exactly matching the dimension to use them with lapack and cblas
-  networkState.generate(d,D,L);
   //All states have to be stored, for reusability in later solve() with other simulation parameters
   //Somewhat unelegant way to handle loading of the stored states in the first solve()
-  if(pars.nQNs){
-    conservedQNs=new quantumNumber[pars.nQNs];
-    for(int iQN=0;iQN<pars.nQNs;++iQN){
-      conservedQNs[iQN].initialize(d,L,pars.QNconserved[iQN],pars.QNLocalList+iQN*d);
-    }
+  conservedQNs=new quantumNumber[pars.nQNs];
+  networkState.generate(d,D,L,conservedQNs);
+  for(int iQN=0;iQN<pars.nQNs;++iQN){
+    conservedQNs[iQN].initialize(networkState.dimInfo,pars.QNconserved[iQN],pars.QNLocalList+iQN*d);
   }
   createInitialState();
   excitedStateP.initialize(pars.nEigs);
@@ -143,6 +141,9 @@ int network::setParameterD(int Dnew){
   networkState.setParameterD(Dnew);
   //All stored states have to be brought into the correct form for compatibility with current D
   excitedStateP.setParameterD(Dnew);
+  for(int iQN=0;iQN<pars.nQNs;++iQN){
+    conservedQNs[iQN].setParameterD(Dnew);
+  }
   //Adapt D
   D=Dnew;
   simPars.D=Dnew;
@@ -203,7 +204,6 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
 	break;
       }
       //actual sweep is executed here
-      checkQN();
       sweep(maxIter,tol,alpha,lambda[iEigen]);
       //In calcCtrIterRightBase, the second argument has to be a pointer, because it usually is an array. No call-by-reference here.
       pCtr.calcCtrIterRightBase(-1,&expectationValue);
@@ -255,7 +255,7 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
     errRet=optimize(i,maxIter,tol,lambda);
     curtime=clock()-curtime;
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
-    normalize(i,1,0);
+    normalize(i,1,alpha);
     //Here, the scalar products with lower lying states are updated
     excitedStateP.updateScalarProducts(i,1);
     pCtr.calcCtrIterLeft(i+1);
@@ -269,7 +269,7 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
     errRet=optimize(i,maxIter,tol,lambda);
     curtime=clock()-curtime;
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
-    normalize(i,0,0);
+    normalize(i,0,alpha);
     //same as above for the scalar products with lower lying states
     excitedStateP.updateScalarProducts(i,-1);
     pCtr.calcCtrIterRight(i-1);
@@ -316,9 +316,11 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
   //So far it seems that the eigensolver either converges quite fast or not at all (i.e. very slow, such that the maximum number of iterations is hit) depending strongly on the tolerance
   int nconv;
   nconv=eigProblem.EigenValVectors(currentM,plambda);
-  getLocalDimensions(i);
   measure(check,spinCheck);
   std::cout<<"Spin after optimizing: "<<spinCheck<<std::endl;
+  if(spinCheck>-11){
+    //exit(-1);
+  }
   if(nconv!=1){
     std::cout<<"Failed to converge in iterative eigensolver, number of Iterations taken: "<<maxIter<<" With tolerance "<<tol<<std::endl;
     return 1;
@@ -333,7 +335,7 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
 //---------------------------------------------------------------------------------------------------//
 
 void network::normalize(int const i, int const direction, double const alpha){
-  if(pars.nQNs){
+  if(1){
   if(direction){
     if(alpha){
       leftEnrichment(alpha,i);
@@ -487,23 +489,25 @@ void network::leftNormalizationMatrixIter(int i, lapack_complex_double *psi){
 //---------------------------------------------------------------------------------------------------//
 
 int network::checkQN(){
+  int valid=1;
   for(int iQN=0;iQN<pars.nQNs;++iQN){
     for(int i=0;i<L;++i){
       getLocalDimensions(i);
       for(int si=0;si<ld;++si){
 	for(int ai=0;ai<lDR;++ai){
 	  for(int aim=0;aim<lDL;++aim){
-	    if(((conservedQNs[iQN].QNLabel(i,ai)-conservedQNs[iQN].QNLabel(i-1,aim)-conservedQNs[iQN].QNLabel(si))|| conservedQNs[iQN].QNUpperCheck(i,ai) || conservedQNs[iQN].QNLowerCheck(i,ai)) && abs(networkState.global_access(i,si,ai,aim))>0.0001){
+	    if((conservedQNs[iQN].QNLabel(i,ai)-conservedQNs[iQN].QNLabel(i-1,aim)-conservedQNs[iQN].QNLabel(si)) && abs(networkState.global_access(i,si,ai,aim))>0.000001){
 	      //if(abs(networkState.global_access(i,si,ai,aim))>0.0001 && (si!=0 || aim!=0)){
 	      std::cout<<"Violation of quantum number constraint at "<<"("<<i<<", "<<si<<", "<<ai<<", "<<aim<<"): "<<networkState.global_access(i,si,ai,aim)<<std::endl;
 	      std::cout<<"QN Labels: "<<conservedQNs[iQN].QNLabel(i,ai)<<", "<<conservedQNs[iQN].QNLabel(i-1,aim)<<", "<<conservedQNs[iQN].QNLabel(si)<<std::endl;
-	      return 1;
+	      valid=0;
 	    }
 	  }
 	}
       }
     }
   }
-  std::cout<<"Validated quantum number constraint\n";
+  if(valid)
+    std::cout<<"Validated quantum number constraint\n";
   return 0;
 }

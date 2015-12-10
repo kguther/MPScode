@@ -3,6 +3,7 @@
 #include "arraycreation.h"
 
 stateArray::stateArray(){
+  dimInfo.initialize(1,1,1);
   createStateArray(1,1,1,&state_array_access_structure);
 }
 
@@ -51,8 +52,8 @@ void stateArray::initialize(int din, int Din, int Lin){
   d=din;
   D=Din;
   L=Lin;
+  dimInfo.initialize(din,Din,Lin);
   createStateArray(d,D,L,&state_array_access_structure);
-  getIcrit();
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -80,20 +81,8 @@ int stateArray::setParameterD(int Dnew){
   deleteStateArray(&state_array_access_structure);
   state_array_access_structure=newNetworkState;
   D=Dnew;
-  getIcrit();
+  dimInfo.setParameterD(Dnew);
   return 0;
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-void stateArray::getIcrit(){
-  icrit=L/2;//In case chain is too short, this is the correct value (trust me)
-  for(int j=0;j<L/2;++j){
-    if(locDMax(j)>D){
-      icrit=j;
-      break;
-    }
-  }
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -105,25 +94,13 @@ void stateArray::getIcrit(){
 //---------------------------------------------------------------------------------------------------//
 
 int stateArray::locDimL(int const i){
-  if(i<=icrit){
-    return locDMax(i-1);
-  }
-  if(i<=L-icrit-1){
-    return D;
-  }
-  return locDMax(i);
+  return dimInfo.locDimL(i);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
 int stateArray::locDimR(int const i){
-  if(i<icrit){
-    return locDMax(i);
-  }
-  if(i<=L-icrit-2){
-    return D;
-  }
-  return locDMax(i+1);
+  return dimInfo.locDimR(i);
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -133,14 +110,59 @@ int stateArray::locDimR(int const i){
 //---------------------------------------------------------------------------------------------------//
 
 int stateArray::locd(int const i){
-  return d;
+  return dimInfo.locd(i);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
 int stateArray::locDMax(int const i){
-  if(i<=L/2){
-    return pow(d,i+1);
+  return dimInfo.locDMax(i);
+}
+
+void stateArray::createStateArray(int const d, int const D, int const L, lapack_complex_double *****array){
+  int dimR, dimL, lD, rD;
+  dimR=0;
+  dimL=0;
+  for(int i=0;i<L;i++){
+    dimR+=d*locDimR(i);
+    dimL+=d*locDimR(i)*locDimL(i);
   }
-  return pow(d,L-i);
+  create2D(L,d,array);
+  (*array)[0][0]=new lapack_complex_double*[dimR];
+  for(int i=0;i<L;i++){
+    rD=locDimR(i);
+    if(i>0){
+      (*array)[i][0]=(*array)[i-1][0]+d*locDimR(i-1);
+    }
+    for(int si=1;si<d;si++){
+      (*array)[i][si]=(*array)[i][si-1]+rD;
+    }
+  }
+  (*array)[0][0][0]=new lapack_complex_double[dimL];
+  for(int i=0;i<L;i++){
+    lD=locDimL(i);
+    rD=locDimR(i);
+    if(i>0){
+      (*array)[i][0][0]=(*array)[i-1][0][0]+d*locDimL(i-1)*locDimR(i-1);
+    }
+    for(int si=0;si<d;si++){
+      if(si>0){
+	(*array)[i][si][0]=(*array)[i][si-1][0]+lD*rD;
+      }
+      for(int ai=1;ai<rD;ai++){
+	(*array)[i][si][ai]=(*array)[i][si][ai-1]+lD;
+      }
+    }
+  }
+  for(int i=0;i<L;i++){
+    lD=locDimL(i);
+    rD=locDimR(i);
+    for(int si=0;si<d;si++){
+      for(int ai=0;ai<rD;ai++){
+	for(int aim=0;aim<lD;aim++){
+	  (*array)[i][si][ai][aim]=0;
+	}
+      }
+    }
+  }
 }

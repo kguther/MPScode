@@ -12,6 +12,7 @@
 #include "projector.h"
 #include "overlap.h"
 #include "quantumNumber.h"
+#include "dimensionTable.h"
 
 //---------------------------------------------------------------------------------------------------//
 // The network class contains all information required for a run of the simulation, that is, the whole

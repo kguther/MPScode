@@ -9,14 +9,10 @@ using namespace std; //BEWARE: FOR LAPACK ACCESS ALWAYS USE [0] AS SECOND INDEX 
 // Save for the stateArray functions, none of them is used directly anymore.
 //-----------------------------------------------------------------------------------------------------------------//
 
-int locDimL(int d, int D, int L, int i, int icrit);
-int locDimR(int d, int D, int L, int i, int icrit);
-
 template<typename T> void create2D(const int dim1, const int dim2, T ***array);
 template<typename T> void create3D(const int dim1, const int dim2, const int dim3, T ****array);
 template<typename T> void create4D(const int dim1, const int dim2, const int dim3, const int dim4, T *****array);
 template<typename T> void create5D(const int dim1, const int dim2, const int dim3, const int dim4, const int dim5,  T ******array);
-template<typename T> void createStateArray(int d, int D, int L, T *****array);
 template<typename T> void delete2D(T ***array);
 template<typename T> void delete3D(T ****array);
 template<typename T> void delete4D(T *****array);
@@ -96,64 +92,6 @@ template<typename T> void create5D(const int dim1, const int dim2, const int dim
 
 //---------------------------------------------------------------------------------------------------//
 
-template<typename T> void createStateArray(int d, int D, int L, T *****array){
-  int icrit, dimR, dimL, lD, rD;
-  icrit=L/2;
-  for(int i=0;i<L/2;i++){
-    if(pow(d,i+1)>D){
-      icrit=i;
-      break;
-    } //TODO: Add exception throw
-  }
-  dimR=0;
-  dimL=0;
-  for(int i=0;i<L;i++){
-    dimR+=d*locDimR(d,D,L,i,icrit);
-    dimL+=d*locDimR(d,D,L,i,icrit)*locDimL(d,D,L,i,icrit);
-  }
-  create2D(L,d,array);
-  (*array)[0][0]=new T*[dimR];
-  for(int i=0;i<L;i++){
-    rD=locDimR(d,D,L,i,icrit);
-    if(i>0){
-      (*array)[i][0]=(*array)[i-1][0]+d*locDimR(d,D,L,i-1,icrit);
-    }
-    for(int si=1;si<d;si++){
-      (*array)[i][si]=(*array)[i][si-1]+rD;
-    }
-  }
-  (*array)[0][0][0]=new T[dimL];
-  for(int i=0;i<L;i++){
-    lD=locDimL(d,D,L,i,icrit);
-    rD=locDimR(d,D,L,i,icrit);
-    if(i>0){
-      (*array)[i][0][0]=(*array)[i-1][0][0]+d*locDimL(d,D,L,i-1,icrit)*locDimR(d,D,L,i-1,icrit);
-    }
-    for(int si=0;si<d;si++){
-      if(si>0){
-	(*array)[i][si][0]=(*array)[i][si-1][0]+lD*rD;
-      }
-      for(int ai=1;ai<rD;ai++){
-	(*array)[i][si][ai]=(*array)[i][si][ai-1]+lD;
-      }
-    }
-  }
-  for(int i=0;i<L;i++){
-    lD=locDimL(d,D,L,i,icrit);
-    rD=locDimR(d,D,L,i,icrit);
-    for(int si=0;si<d;si++){
-      for(int ai=0;ai<rD;ai++){
-	for(int aim=0;aim<lD;aim++){
-	  (*array)[i][si][ai][aim]=0;
-	}
-      }
-    }
-  }
-  //return 1;
-}
-
-//---------------------------------------------------------------------------------------------------//
-
 template<typename T> void delete2D(T ***array){
   delete[] (*array)[0];
   delete *array;
@@ -182,28 +120,6 @@ template <typename T> void delete5D(T ******array){
 
 template <typename T> void deleteStateArray(T *****array){
   delete4D(array);
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-inline int locDimL(int d, int D, int L, int i, int icrit){
-  if(i<=icrit){
-    return pow(d,i);
-  }
-  if(i<=L-icrit-1){
-    return D;
-  }
-  return pow(d,L-i);
-}
-
-inline int locDimR(int d, int D, int L, int i, int icrit){
-  if(i<icrit){
-    return pow(d,i+1);
-  }
-  if(i<=L-icrit-2){
-    return D;
-  }
-  return pow(d,L-i-1);
 }
 
 #endif

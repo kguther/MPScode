@@ -7,15 +7,17 @@ mps::mps():stateArray(){
 
 //---------------------------------------------------------------------------------------------------//
 
-mps::mps(int const din, int const Din, int const Lin){
+mps::mps(int const din, int const Din, int const Lin, quantumNumber *conservedQNsin){
   stateArray::initialize(din,Din,Lin);
+  conservedQNs=conservedQNsin;
   createInitialState();
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-void mps::generate(int const din, int const Din, int const Lin){
+void mps::generate(int const din, int const Din, int const Lin, quantumNumber *conservedQNsin){
   stateArray::generate(din,Din,Lin);
+  conservedQNs=conservedQNsin;
   createInitialState();
 }
 

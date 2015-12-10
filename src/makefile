@@ -7,7 +7,7 @@ DCFLAGS=-DHAVE_LAPACK_CONFIG_H -DLAPACK_COMPLEX_CPP
 CFLAGS=-Wall -qopenmp -O3 $(MKL_INCLUDE) 
 APCK_INCLUDE=-I/usr/include/arpack++
 MKL_INCLUDE=-I$(MKL_INCLUDE_PATH)
-OBJECTS=main.o network.o arrayprocessing.o Qsystem.o optHMatrix.o mps.o globalMeasurement.o baseMeasurement.o iterativeMeasurement.o overlap.o stateArray.o network_enrichment.o projector.o quantumNumber.o
+OBJECTS=main.o network.o arrayprocessing.o Qsystem.o optHMatrix.o mps.o globalMeasurement.o baseMeasurement.o iterativeMeasurement.o overlap.o stateArray.o network_enrichment.o projector.o quantumNumber.o dimensionTable.o
 TEMPLATES=arraycreation.h mpo.h pContraction.h tmpContainer.h
 NAME=vMPScode
 

@@ -3,6 +3,7 @@
 
 #include "mkl_complex_defined.h"
 #include "arraycreation.h"
+#include "dimensionTable.h"
 
 class stateArray{
  public:
@@ -21,6 +22,7 @@ class stateArray{
   int maxDim() const {return D;}
   int siteDim() const {return d;}
   int length() const {return L;}
+  dimensionTable dimInfo;
  private:
   stateArray(stateArray const &cpyState);
   stateArray& operator=(stateArray const &cpyState);
@@ -29,6 +31,7 @@ class stateArray{
   lapack_complex_double ****state_array_access_structure;
   virtual void initialize(int const din, int const Din, int const Lin);
   void getIcrit();
+  void createStateArray(int const din, int const Din, int const Lin, lapack_complex_double *****array);
 };
 
 #endif
