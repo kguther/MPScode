@@ -23,6 +23,7 @@ class mps: public stateArray{
   void createInitialState();
   int leftNormalizeStateBlockwise(int const i);
   int rightNormalizeStateBlockwise(int const i);
+  void convertIndices(int const i, int const j, int const k, int const iBlock, int &si, int &ai, int &aim);
 };
 
 #endif
