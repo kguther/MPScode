@@ -9,6 +9,7 @@ class quantumNumber{
   ~quantumNumber();
   void initialize(dimensionTable &dimInfoin, int const Nin, int *QNlocin);
   int qnCriterium(int const i, int const si, int const ai, int const aim);
+  int qnConstraint(int const i, int const si, int const ai, int const aim);
   int QNLabel(int const i, int const ai);
   int QNLabel(int const si);
   int QNLowerCheck(int i, int ai);

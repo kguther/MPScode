@@ -1,6 +1,7 @@
 #include "mps.h"
 #include "arrayprocessing.h"
 #include "arraycreation.h"
+#include <iostream>
 
 mps::mps():stateArray(),
 	   aiBlockIndices(0),
@@ -31,7 +32,7 @@ void mps::generate(int const din, int const Din, int const Lin, std::vector<quan
   aiBlockIndices=new std::vector<std::vector<int> >[L];
   siaimBlockIndices=new std::vector<std::vector<multInt> >[L];
   for(int i=0;i<L;++i){
-    indexCalc.blockStructure(i,aiBlockIndices[i],siaimBlockIndices[i]);
+    indexCalc.blockStructure(i,0,aiBlockIndices[i],siaimBlockIndices[i]);
   }
 }
 
@@ -119,7 +120,7 @@ int mps::leftNormalizeState(int const i){
 
 int mps::rightNormalizeState(int const i){
   if(nQNs){
-    return rightNormalizeStateBlockwise(i);
+    //return rightNormalizeStateBlockwise(i);
   }
   lapack_int info;
   //This time, we decompose a D2xd*D1 matrix and multiply the D2xD2 matrix R with a D3xD2 matrix
@@ -169,28 +170,144 @@ void mps::normalizeFinal(int const i){
 //---------------------------------------------------------------------------------------------------//
 
 int mps::leftNormalizeStateBlockwise(int const i){
-  int ld, lDR, lDL;
-  int blockSize;
-  int aiCurrent, siCurrent, aimCurrent;
-  lapack_complex_double *M, *Q, *R;
+  int ld, lDR, lDL, lDRR;
+  int lBlockSize,rBlockSize, minBlockSize;
+  int aiCurrent, siCurrent, aimCurrent, aipCurrent;
+  lapack_complex_double *M, *R;
   lapack_complex_double *Rcontainer, *Qcontainer;
+  lapack_complex_double *inputA;
+  lapack_complex_double zone=1.0, zzero=0.0;
+  lapack_int info;
   lDL=locDimL(i);
   lDR=locDimR(i);
+  lDRR=locDimR(i+1);
   ld=locd(i);
+  R=new lapack_complex_double[lDR*lDR];
   for(int iBlock=0;iBlock<aiBlockIndices[i].size();++iBlock){
-    blockSize=aiBlockIndices[i][iBlock].size();
-    M=new lapack_complex_double[blockSize*blockSize];
-    for(int j=0;j<blockSize;++j){
-      for(int k=0;k<blockSize;++k){
-	aiCurrent=aiBlockIndices[i][iBlock][j];
-	siCurrent=siaimBlockIndices[i][iBlock][k].si;
-	aimCurrent=siaimBlockIndices[i][iBlock][k].aim;
-	M[k+j*blockSize]=global_acces(i,siCurrent,aiCurrent,aimCurrent);
+    rBlockSize=aiBlockIndices[i][iBlock].size();
+    lBlockSize=siaimBlockIndices[i][iBlock].size();
+    std::cout<<lBlockSize<<"\t"<<rBlockSize<<std::endl;
+    //rBlockSize is required to be smaller than or equal to lBlockSize
+    minBlockSize=(lBlockSize<rBlockSize)?lBlockSize:rBlockSize;
+    if(rBlockSize!=0 && lBlockSize!=0){
+      M=new lapack_complex_double[lBlockSize*rBlockSize];
+      for(int j=0;j<rBlockSize;++j){
+	for(int k=0;k<lBlockSize;++k){
+	  aiCurrent=aiBlockIndices[i][iBlock][j];
+	  siCurrent=siaimBlockIndices[i][iBlock][k].si;
+	  aimCurrent=siaimBlockIndices[i][iBlock][k].aim;
+	  M[k+j*lBlockSize]=global_access(i,siCurrent,aiCurrent,aimCurrent);
+	}
       }
+      Rcontainer=new lapack_complex_double[rBlockSize*rBlockSize];
+      Qcontainer=new lapack_complex_double[rBlockSize];
+      info=LAPACKE_zgeqrf(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,M,lBlockSize,Qcontainer);
+      if(info){
+	std::cout<<"Error in LAPACKE_zgeqrf: "<<info<<std::endl;
+	//exit(1);
+      }
+      lowerdiag(rBlockSize,rBlockSize,M,Rcontainer,rBlockSize);
+      info=LAPACKE_zungqr(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,rBlockSize,M,lBlockSize,Qcontainer);
+      if(info){
+	std::cout<<"Error in LAPACKE_zungqr: "<<info<<std::endl;
+	//exit(1);
+      }
+      for(int j=0;j<rBlockSize;++j){
+	aiCurrent=aiBlockIndices[i][iBlock][j];
+	for(int k=0;k<lBlockSize;++k){
+	  siCurrent=siaimBlockIndices[i][iBlock][k].si;
+	  aimCurrent=siaimBlockIndices[i][iBlock][k].aim;
+	  global_access(i,siCurrent,aiCurrent,aimCurrent)=M[k+j*lBlockSize];
+	}
+	for(int l=0;l<rBlockSize;++l){
+	  aipCurrent=aiBlockIndices[i][iBlock][l];
+	  R[aipCurrent+aiCurrent*lDR]=Rcontainer[l+j*rBlockSize];
+	}
+      }
+      delete[] Rcontainer;
+      delete[] Qcontainer;
+      delete[] M;
     }
-    delete[] M;
   }
+  inputA=new lapack_complex_double[lDR*lDRR];
+  for(int si=0;si<ld;++si){
+    arraycpy(lDRR,lDR,state_array_access_structure[i+1][si][0],inputA);
+    cblas_zgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,lDR,lDRR,lDR,&zone,R,lDR,inputA,lDR,&zzero,state_array_access_structure[i+1][si][0],lDR);
+  }
+  delete[] inputA;
+  delete[] R;
+  return 0;
 }
 
 //---------------------------------------------------------------------------------------------------//
 
+int mps::rightNormalizeStateBlockwise(int const i){
+  int ld, lDR, lDL, lDLL;
+  int lBlockSize,rBlockSize, minBlockSize;
+  int aiCurrent, siCurrent, aimCurrent, aipCurrent;
+  lapack_complex_double *M, *R;
+  lapack_complex_double *Rcontainer, *Qcontainer;
+  lapack_complex_double *inputA;
+  lapack_complex_double zone=1.0, zzero=0.0;
+  lapack_int info;
+  lDL=locDimL(i);
+  lDR=locDimR(i);
+  lDLL=locDimL(i-1);
+  ld=locd(i);
+  R=new lapack_complex_double[lDR*lDR];
+  for(int iBlock=0;iBlock<aiBlockIndices[i].size();++iBlock){
+    rBlockSize=aiBlockIndices[i][iBlock].size();
+    lBlockSize=siaimBlockIndices[i][iBlock].size();
+    std::cout<<lBlockSize<<"\t"<<rBlockSize<<std::endl;
+    //lBlockSize is required to be smaller than or equal to rBlockSize
+    // THUS, ONLY lBlockSize=rBlockSize ENABLES BOTH NORMALIZATION FUNCTIONS WITH A SINGLE BLOCKSIZE
+    minBlockSize=(lBlockSize<rBlockSize)?lBlockSize:rBlockSize;
+    if(rBlockSize!=0 && lBlockSize!=0){
+      M=new lapack_complex_double[lBlockSize*rBlockSize];
+      for(int j=0;j<rBlockSize;++j){
+	for(int k=0;k<lBlockSize;++k){
+	  aiCurrent=aiBlockIndices[i][iBlock][j];
+	  siCurrent=siaimBlockIndices[i][iBlock][k].si;
+	  aimCurrent=siaimBlockIndices[i][iBlock][k].aim;
+	  M[k+j*lBlockSize]=global_access(i,siCurrent,aiCurrent,aimCurrent);
+	}
+      }
+      Rcontainer=new lapack_complex_double[rBlockSize*rBlockSize];
+      Qcontainer=new lapack_complex_double[rBlockSize];
+      info=LAPACKE_zgerqf(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,M,lBlockSize,Qcontainer);
+      if(info){
+	std::cout<<"Error in LAPACKE_zgeqrf: "<<info<<std::endl;
+	exit(1);
+      }
+      lowerdiag(lBlockSize,lBlockSize,M,Rcontainer);
+      info=LAPACKE_zungrq(LAPACK_COL_MAJOR,minBlockSize,rBlockSize,rBlockSize,M,minBlockSize,Qcontainer);
+      if(info){
+	std::cout<<"Error in LAPACKE_zungqr: "<<info<<std::endl;
+	exit(1);
+      }
+      for(int j=0;j<rBlockSize;++j){
+	aiCurrent=aiBlockIndices[i][iBlock][j];
+	for(int k=0;k<lBlockSize;++k){
+	  siCurrent=siaimBlockIndices[i][iBlock][k].si;
+	  aimCurrent=siaimBlockIndices[i][iBlock][k].aim;
+	  global_access(i,siCurrent,aiCurrent,aimCurrent)=M[k+j*lBlockSize];
+	}
+	for(int l=0;l<rBlockSize;++l){
+	  aipCurrent=aiBlockIndices[i][iBlock][l];
+	  R[aipCurrent+aiCurrent*lDR]=Rcontainer[l+j*rBlockSize];
+	}
+      }
+      delete[] Rcontainer;
+      delete[] Qcontainer;
+      delete[] M;
+    }
+  }
+  inputA=new lapack_complex_double[lDL*lDLL];
+  for(int si=0;si<ld;++si){
+    arraycpy(lDLL,lDL,state_array_access_structure[i-1][si][0],inputA);
+    cblas_zgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,lDLL,lDL,lDL,&zone,inputA,lDLL,R,lDL,&zzero,state_array_access_structure[i-1][si][0],lDLL);
+  }
+  delete[] inputA;
+  delete[] R;
+  return 0;
+}

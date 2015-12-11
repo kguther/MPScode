@@ -13,7 +13,7 @@ struct multInt{
 class basisQNOrderMatrix{
  public:
   basisQNOrderMatrix(dimensionTable &dimin, std::vector<quantumNumber> *conservedQNsin);
-  int blockStructure(int const i, std::vector<std::vector<int> > &aiIndices, std::vector<std::vector<multInt> > &siaimIndices);
+  int blockStructure(int const i, int const direction, std::vector<std::vector<int> > &aiIndices, std::vector<std::vector<multInt> > &siaimIndices);
  private:
   std::vector<quantumNumber> *conservedQNs;
   dimensionTable dimInfo;

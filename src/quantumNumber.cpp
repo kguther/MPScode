@@ -32,30 +32,6 @@ void quantumNumber::initialize(dimensionTable &dimInfoin, int const Nin, int *QN
   initializeLabelList();
 }
 
-
-void quantumNumber::initializeLabelList(){
-  //This is for particle number quantum numbers
-  int const Lred=dimInfo.L();
-  int const Dred=dimInfo.D();
-  int lDR;
-  indexLabel=new int[Dred*(Lred+1)];
-  for(int j=0;j<=Lred;++j){
-    lDR=(j<Lred)?dimInfo.locDimR(j-1):1;
-    for(int ai=0;ai<lDR;++ai){
-      if(j<=Lred/2){
-	indexLabel[ai+j*dimInfo.D()]=exactLabel(j-1,ai);
-      }
-      else{
-	indexLabel[ai+j*dimInfo.D()]=N-exactLabel(Lred-j-1,ai);
-      }
-    }
-  }
-}
-
-int quantumNumber::QNLabel(int const i, int const ai){
-  return indexLabel[ai+(i+1)*dimInfo.D()];
-}
-
 int quantumNumber::QNLabel(int const si){
   return QNloc[si];
 }
@@ -75,11 +51,15 @@ int quantumNumber::QNUpperCheck(int i, int ai){
 }
 
 int quantumNumber::qnCriterium(int const i, int const si, int const ai, int const aim){
-  int qnCriteriumViolation=QNLabel(i,ai)-QNLabel(i-1,aim)-QNLabel(si);
+  int qnCriteriumViolation=qnConstraint(i,si,ai,aim);
   if(qnCriteriumViolation || QNUpperCheck(i,ai) || QNLowerCheck(i-1,aim)){
     return 1;
   }
   return 0;
+}
+
+int quantumNumber::qnConstraint(int const i, int const si, int const ai, int const aim){
+  return QNLabel(i,ai)-QNLabel(i-1,aim)-QNLabel(si);
 }
 
 int quantumNumber::exactLabel(int const i, int const ai){
@@ -132,3 +112,26 @@ int quantumNumber::QNLabel(int const i, int const ai){
   return dimInfo.L()*dimInfo.L();
 }
 */
+
+void quantumNumber::initializeLabelList(){
+  //This is for particle number quantum numbers
+  int const Lred=dimInfo.L();
+  int const Dred=dimInfo.D();
+  int lDR;
+  indexLabel=new int[Dred*(Lred+1)];
+  for(int j=0;j<=Lred;++j){
+    lDR=(j<Lred)?dimInfo.locDimR(j-1):1;
+    for(int ai=0;ai<lDR;++ai){
+      if(j<=Lred/2){
+	indexLabel[ai+j*dimInfo.D()]=exactLabel(j-1,ai);
+      }
+      else{
+	indexLabel[ai+j*dimInfo.D()]=N-exactLabel(Lred-j-1,ai);
+      }
+    }
+  }
+}
+
+int quantumNumber::QNLabel(int const i, int const ai){
+  return indexLabel[ai+(i+1)*dimInfo.D()];
+}
