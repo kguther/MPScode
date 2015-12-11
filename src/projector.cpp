@@ -118,31 +118,6 @@ lapack_complex_double projector::fullOverlap(int const k){
 void projector::project(lapack_complex_double *vec, int const i){
   //vec is required to be of dimension lDL x ld*lDR
   if(nCurrentEigen>0){
-    /*lapack_complex_double *orthoStateSiteMatrix;
-    lapack_complex_double *vecContainer;
-    lapack_complex_double prefactor;
-    getLocalDimensions(i);
-    vecContainer=new lapack_complex_double[ld*lDR*lDL];
-    int const offset=(nCurrentEigen*(nCurrentEigen-1))/2;
-    for(int k=0;k<nCurrentEigen;++k){
-      orthoStates[k].subMatrixStart(orthoStateSiteMatrix,i);
-      prefactor=scalarProducts[k+offset].applyF(vec,i)/scalarProducts[k+offset].applyF(orthoStateSiteMatrix,i);
-      for(int si=0;si<ld;++si){
-	for(int ai=0;ai<lDR;++ai){
-	  for(int aim=0;aim<lDL;++aim){
-	    if(k==0){
-	      vecContainer[vecIndex(si,ai,aim)]=-orthoStates[k].global_access(i,si,ai,aim)*prefactor;
-	    }
-	    else{
-	      vecContainer[vecIndex(si,ai,aim)]-=orthoStates[k].global_access(i,si,ai,aim)*prefactor;
-	    }
-	  }
-	}
-      }
-    }
-    for(int mi=0;mi<ld*lDL*lDR;++mi){
-      vec[mi]+=vecContainer[mi];
-      }*/
     lapack_complex_double *trContainer;
     lapack_complex_double *G;
     lapack_complex_double *vecContainer;
@@ -223,24 +198,6 @@ int projector::getProjector(int const i){
 	cblas_zaxpy(ld*lDR*lDL,&zFactor,Fki,1,workingMatrix,1);
       }
     }
-      /*if(mu==0){
-	preFactor=&zzero;
-      }
-      else{
-	preFactor=&zone;
-      }
-      cblas_zgemm(CblasColMajor,CblasNoTrans,CblasConjTrans,lDL,lDL,ld*lDR,&zone,workingMatrix,lDL,workingMatrix,lDL,preFactor,projectionMatrix,lDL);*/
-    /*lapack_complex_double *test=new lapack_complex_double[lDL*lDL];
-    lapack_complex_double *testResult=new lapack_complex_double[lDL*lDL];
-    for(int mi=0;mi<lDL*lDL;++mi){
-      test[mi]=projectionMatrix[mi];
-    }
-    cblas_zgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,lDL,lDL,lDL,&zone,test,lDL,test,lDL,&zzero,testResult,lDL);
-    for(int mi=0;mi<lDL*lDL;++mi){
-      testResult[mi]-=test[mi];
-      }
-    delete[] testResult;
-    delete[] test;*/
     delete[] gram;
     delete[] suppZ;
     delete[] gramEigenvecs;

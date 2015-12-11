@@ -73,9 +73,7 @@ int dimensionTable::locd(int const i){
 
 int dimensionTable::locDMax(int const i){
   if(i<=Lpar/2){
-    //return i+2;
     return pow(dpar,i+1);
   }
-  //return L-i;
   return pow(dpar,Lpar-i);
 }

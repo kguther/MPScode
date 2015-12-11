@@ -4,7 +4,7 @@
 #include "optHMatrix.h"
 #include "tmpContainer.h"
 
-optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, arcomplex<double> *Hin, problemParameters pars, int Din, int iIn, projector *excitedStateP, double shiftin, int const nQNsin, quantumNumber *conservedQNsin):
+optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, arcomplex<double> *Hin, problemParameters pars, int Din, int iIn, projector *excitedStateP, double shiftin, std::vector<quantumNumber> *conservedQNsin):
   Rctr(Rin),
   Lctr(Lin),
   H(Hin),
@@ -15,7 +15,6 @@ optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, arcomplex
   i(iIn),
   shift(shiftin),
   P(excitedStateP),
-  nQNs(nQNsin),
   conservedQNs(conservedQNsin)
 {
   icrit=L/2;
@@ -132,8 +131,8 @@ void optHMatrix::projectQN(arcomplex<double> *v){
   for(int si=0;si<d;++si){
     for(int ai=0;ai<lDR;++ai){
       for(int aim=0;aim<lDL;++aim){
-	for(int iQN=0;iQN<nQNs;++iQN){
-	  if(conservedQNs[iQN].qnCriterium(i,si,ai,aim)){
+	for(int iQN=0;iQN<(*conservedQNs).size();++iQN){
+	  if((*conservedQNs)[iQN].qnCriterium(i,si,ai,aim)){
 	    v[vecIndex(si,ai,aim)]=0;
 	  }
 	  else{

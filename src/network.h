@@ -3,6 +3,7 @@
 
 #include <complex>
 #include <arcomp.h>
+#include <vector>
 #include "mkl_complex_defined.h"
 #include "parameters.h"
 #include "mpo.h"
@@ -41,11 +42,12 @@ class network{
   projector excitedStateP;
   problemParameters pars;
   simulationParameters simPars;
+  dimensionTable networkDimInfo;
   int d,D,L,Dw,icrit;
   int lDL, lDR, ld, lDwR, lDwL;
   int *nConverged;
   double shift;
-  quantumNumber *conservedQNs;
+  std::vector<quantumNumber> conservedQNs;
   iterativeMeasurement pCtr;
   lapack_complex_double expectationValue;
   //most of these methods are auxiliary functions
@@ -56,7 +58,6 @@ class network{
   int gotoNextEigen();
   int setParameterD(int Dnew);
   double convergenceCheck();
-  void createInitialState();
   void normalize(int const i, int const direction, double const alpha=0);
   void sweep(double const maxIter, double const tol, double const alpha ,double &lambda);
   void leftEnrichment(double const alpha, int const i);

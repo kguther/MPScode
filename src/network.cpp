@@ -32,8 +32,7 @@
 //---------------------------------------------------------------------------------------------------//
 
 network::network():
-  nConverged(0),
-  conservedQNs(0)
+  nConverged(0)
   //Empty networks dont do much, use the generate function to fill them - this allows for separation of declaration and assignment
 {}
 
@@ -47,7 +46,6 @@ network::network(problemParameters inputpars, simulationParameters inputsimPars)
 
 network::~network(){
   delete[] nConverged;
-  delete[] conservedQNs;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -61,6 +59,7 @@ void network::initialize(problemParameters inputpars, simulationParameters input
   L=inputpars.L;
   Dw=inputpars.Dw;
   simPars=inputsimPars;
+  networkDimInfo.initialize(d,D,L);
   nConverged=new int[pars.nEigs];
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
     nConverged[iEigen]=1;
@@ -70,12 +69,11 @@ void network::initialize(problemParameters inputpars, simulationParameters input
   //Allocation of MPS - memory of the matrices has to be allocated exactly matching the dimension to use them with lapack and cblas
   //All states have to be stored, for reusability in later solve() with other simulation parameters
   //Somewhat unelegant way to handle loading of the stored states in the first solve()
-  conservedQNs=new quantumNumber[pars.nQNs];
-  networkState.generate(d,D,L,conservedQNs);
+  conservedQNs.resize(pars.nQNs);
   for(int iQN=0;iQN<pars.nQNs;++iQN){
-    conservedQNs[iQN].initialize(networkState.dimInfo,pars.QNconserved[iQN],pars.QNLocalList+iQN*d);
+    conservedQNs[iQN].initialize(networkDimInfo,pars.QNconserved[iQN],pars.QNLocalList+iQN*d);
   }
-  createInitialState();
+  networkState.generate(d,D,L,&conservedQNs);
   excitedStateP.initialize(pars.nEigs);
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
     excitedStateP.storeOrthoState(networkState,iEigen);
@@ -86,33 +84,6 @@ void network::initialize(problemParameters inputpars, simulationParameters input
 
 void network::loadNetworkState(mps &source){
   networkState.mpsCpy(source);
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-void network::createInitialState(){
-  if(pars.nQNs){
-    int qnCriteriumCheck;
-    for(int i=0;i<L;++i){
-      getLocalDimensions(i);	    
-      for(int si=0;si<ld;++si){
-	for(int ai=0;ai<lDR;++ai){
-	  for(int aim=0;aim<lDL;++aim){
-	    qnCriteriumCheck=0;
-	    for(int iQN=0;iQN<pars.nQNs;++iQN){
-	      qnCriteriumCheck+=conservedQNs[iQN].qnCriterium(i,si,ai,aim);
-	    }
-	    if(qnCriteriumCheck){
-	      networkState.global_access(i,si,ai,aim)=0;
-	    }
-	    else{
-	      networkState.global_access(i,si,ai,aim)=1;
-	    }
-	  }
-	}
-      }
-    }
-  }
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -304,7 +275,7 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
     multMV=&optHMatrix::MultMv;
   }
   //Generate matrix which is to be passed to ARPACK++
-  optHMatrix HMat(RTerm,LTerm,HTerm,pars,D,i,&excitedStateP,shift,pars.nQNs,conservedQNs);
+  optHMatrix HMat(RTerm,LTerm,HTerm,pars,D,i,&excitedStateP,shift,&conservedQNs);
   plambda=&lambda;
   //Using the current site matrix as a starting point allows for much faster convergence as it has already been optimized in previous sweeps (except for the first sweep, this is where a good starting point has to be guessed
   networkState.subMatrixStart(currentM,i);

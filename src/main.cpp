@@ -35,15 +35,15 @@ int main(int argc, char *argv[]){
 void testSolve(){
   double eigVal;
   double const mEl=1;
-  int const nEigens=3;
-  int const L=15;
-  int const nQuantumNumbers=0;
-  int QNValue[1]={12};
+  int const nEigens=1;
+  int const L=20;
+  int const nQuantumNumbers=1;
+  int QNValue[1]={L};
   int QNList[2]={1,-1};
   problemParameters pars(2,L,5,nEigens,nQuantumNumbers,QNValue,QNList);
   //simulationParameters simPars(100,5,2,1e-4,1e-8,1e-9,1e-2);
   //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack
-  simulationParameters simPars(100,4,3,1e-3,1e-4,1e-8,1e-4);
+  simulationParameters simPars(100,4,1,1e-3,1e-4,1e-8,1e-4);
   Qsystem sys(pars,simPars);
   int lDwR, lDwL, Dw;
   Dw=pars.Dw;

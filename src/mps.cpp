@@ -2,29 +2,43 @@
 #include "arrayprocessing.h"
 #include "arraycreation.h"
 
-mps::mps():stateArray(){
-}
+mps::mps():stateArray(),
+	   aiBlockIndices(0),
+	   siaimBlockIndices(0)
+{}
 
 //---------------------------------------------------------------------------------------------------//
 
-mps::mps(int const din, int const Din, int const Lin, quantumNumber *conservedQNsin){
+mps::mps(int const din, int const Din, int const Lin, std::vector<quantumNumber> *conservedQNsin){
   stateArray::initialize(din,Din,Lin);
   conservedQNs=conservedQNsin;
   createInitialState();
 }
 
+mps::~mps(){
+  delete[] aiBlockIndices;
+  delete[] siaimBlockIndices;
+}
+
 //---------------------------------------------------------------------------------------------------//
 
-void mps::generate(int const din, int const Din, int const Lin, quantumNumber *conservedQNsin){
+void mps::generate(int const din, int const Din, int const Lin, std::vector<quantumNumber> *conservedQNsin){
   stateArray::generate(din,Din,Lin);
   conservedQNs=conservedQNsin;
+  nQNs=(*conservedQNs).size();
   createInitialState();
+  basisQNOrderMatrix indexCalc(dimInfo,conservedQNs);
+  aiBlockIndices=new std::vector<std::vector<int> >[L];
+  siaimBlockIndices=new std::vector<std::vector<multInt> >[L];
+  for(int i=0;i<L;++i){
+    indexCalc.blockStructure(i,aiBlockIndices[i],siaimBlockIndices[i]);
+  }
 }
 
 //---------------------------------------------------------------------------------------------------//
 
 void mps::createInitialState(){
-  int lDL, lDR;
+  int lDL, lDR, ld;
   for(int i=0;i<L;++i){
     lDL=locDimL(i);
     lDR=locDimR(i);
@@ -36,6 +50,30 @@ void mps::createInitialState(){
       }
     }
   }
+  if(nQNs){
+    int qnCriteriumCheck;
+    for(int i=0;i<L;++i){
+      ld=locd(i);
+      lDR=locDimR(i);
+      lDL=locDimL(i);
+      for(int si=0;si<ld;++si){
+	for(int ai=0;ai<lDR;++ai){
+	  for(int aim=0;aim<lDL;++aim){
+	    qnCriteriumCheck=0;
+	    for(int iQN=0;iQN<nQNs;++iQN){
+	      qnCriteriumCheck+=(*conservedQNs)[iQN].qnCriterium(i,si,ai,aim);
+	    }
+	    if(qnCriteriumCheck){
+	      global_access(i,si,ai,aim)=0;
+	    }
+	    else{
+	      global_access(i,si,ai,aim)=1;
+	    }
+	  }
+	}
+      }
+    }
+  }
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -44,6 +82,9 @@ void mps::createInitialState(){
 //---------------------------------------------------------------------------------------------------//
 
 int mps::leftNormalizeState(int const i){
+  if(nQNs){
+    return leftNormalizeStateBlockwise(i);
+  }
   lapack_int info;
   int D1, D2, D3, ld;
   //Yep, the local dimensions are just named D1, D2, D3 - the decomposition is of a d*D1xD2 matrix
@@ -77,6 +118,9 @@ int mps::leftNormalizeState(int const i){
 //---------------------------------------------------------------------------------------------------//
 
 int mps::rightNormalizeState(int const i){
+  if(nQNs){
+    return rightNormalizeStateBlockwise(i);
+  }
   lapack_int info;
   //This time, we decompose a D2xd*D1 matrix and multiply the D2xD2 matrix R with a D3xD2 matrix
   int D1,D2,D3,ld;
@@ -120,3 +164,33 @@ void mps::normalizeFinal(int const i){
   normalization=1.0/normalization;
   cblas_zscal(ld*lcD,&normalization,state_array_access_structure[site][0][0],1);
 }
+
+
+//---------------------------------------------------------------------------------------------------//
+
+int mps::leftNormalizeStateBlockwise(int const i){
+  int ld, lDR, lDL;
+  int blockSize;
+  int aiCurrent, siCurrent, aimCurrent;
+  lapack_complex_double *M, *Q, *R;
+  lapack_complex_double *Rcontainer, *Qcontainer;
+  lDL=locDimL(i);
+  lDR=locDimR(i);
+  ld=locd(i);
+  for(int iBlock=0;iBlock<aiBlockIndices[i].size();++iBlock){
+    blockSize=aiBlockIndices[i][iBlock].size();
+    M=new lapack_complex_double[blockSize*blockSize];
+    for(int j=0;j<blockSize;++j){
+      for(int k=0;k<blockSize;++k){
+	aiCurrent=aiBlockIndices[i][iBlock][j];
+	siCurrent=siaimBlockIndices[i][iBlock][k].si;
+	aimCurrent=siaimBlockIndices[i][iBlock][k].aim;
+	M[k+j*blockSize]=global_acces(i,siCurrent,aiCurrent,aimCurrent);
+      }
+    }
+    delete[] M;
+  }
+}
+
+//---------------------------------------------------------------------------------------------------//
+

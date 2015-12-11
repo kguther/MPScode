@@ -3,14 +3,20 @@
 
 #include "mkl_complex_defined.h"
 #include "quantumNumber.h"
+#include <vector>
+
+struct multInt{
+  int aim;
+  int si;
+};
 
 class basisQNOrderMatrix{
  public:
-  basisQNOrderMatrix(int const i, int const dimin, quantumNumber *conservedQNsin);
-  lapack_complex_double *matrix;
+  basisQNOrderMatrix(dimensionTable &dimin, std::vector<quantumNumber> *conservedQNsin);
+  int blockStructure(int const i, std::vector<std::vector<int> > &aiIndices, std::vector<std::vector<multInt> > &siaimIndices);
  private:
-  quantumNumber *conservedQNs;
-  int dim;
+  std::vector<quantumNumber> *conservedQNs;
+  dimensionTable dimInfo;
 };
 
 #endif
