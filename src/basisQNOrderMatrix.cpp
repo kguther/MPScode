@@ -17,6 +17,7 @@ int basisQNOrderMatrix::blockStructure(int const i, int const direction, std::ve
   int isNew=1;
   int lDsingle;
   int lDpaired;
+  int pre;
   int qnConstraint;
   int matchBlock;
   int numBlocks;
@@ -24,10 +25,12 @@ int basisQNOrderMatrix::blockStructure(int const i, int const direction, std::ve
   if(direction==0){
     lDsingle=dimInfo.locDimR(i);
     lDpaired=dimInfo.locDimL(i);
+    pre=1;
   }
   if(direction==1){
     lDsingle=dimInfo.locDimL(i);
     lDpaired=dimInfo.locDimR(i);
+    pre=-1;
   }
   qnLabels=new std::vector<int>[nQNs];
   for(int ai=0;ai<lDsingle;++ai){
@@ -67,7 +70,7 @@ int basisQNOrderMatrix::blockStructure(int const i, int const direction, std::ve
       for(int iBlock=0;iBlock<numBlocks;++iBlock){
 	matchBlock=1;
 	for(int iQN=0;iQN<nQNs;++iQN){
-	  if(direction==0 && (*conservedQNs)[iQN].QNLabel(i-1+direction,aim)+2*(.5-direction)*(*conservedQNs)[iQN].QNLabel(si)!=qnLabels[iQN][iBlock]){
+	  if((*conservedQNs)[iQN].QNLabel(i-1+direction,aim)+pre*(*conservedQNs)[iQN].QNLabel(si)!=qnLabels[iQN][iBlock]){
 	    matchBlock=0;
 	  }
 	}

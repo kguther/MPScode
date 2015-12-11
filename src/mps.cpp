@@ -37,7 +37,7 @@ void mps::generate(int const din, int const Din, int const Lin, std::vector<quan
       direction=0;
     }
     else{
-      direction=0;
+      direction=1;
     }
     indexCalc.blockStructure(i,direction,aiBlockIndices[i],siaimBlockIndices[i]);
   }
@@ -91,7 +91,7 @@ void mps::createInitialState(){
 
 int mps::leftNormalizeState(int const i){
   if(nQNs){
-    return leftNormalizeStateBlockwise(i);
+    //return leftNormalizeStateBlockwise(i);
   }
   lapack_int info;
   int D1, D2, D3, ld;
@@ -110,12 +110,13 @@ int mps::leftNormalizeState(int const i){
   }
   //Use thin QR decomposition
   info=LAPACKE_zgeqrf(LAPACK_ROW_MAJOR,ld*D1,D2,state_array_access_structure[i][0][0],D2,Qcontainer);
-  upperdiag(D2,D2,state_array_access_structure[i][0][0],Rcontainer);                               
+  upperdiag(D2,D2,state_array_access_structure[i][0][0],Rcontainer);
   //Only first D2 columns are used -> thin QR (below icrit, this is equivalent to a full QR)
   info=LAPACKE_zungqr(LAPACK_ROW_MAJOR,ld*D1,D2,D2,state_array_access_structure[i][0][0],D2,Qcontainer);
+  transp(D2,D2,Rcontainer);
   for(int si=0;si<ld;++si){
     transp(D1,D2,state_array_access_structure[i][si][0]);
-    cblas_ztrmm(CblasColMajor,CblasLeft,CblasUpper,CblasTrans,CblasNonUnit,D2,D3,&zone,Rcontainer,D2,state_array_access_structure[i+1][si][0],D2); 
+    cblas_ztrmm(CblasColMajor,CblasLeft,CblasUpper,CblasNoTrans,CblasNonUnit,D2,D3,&zone,Rcontainer,D2,state_array_access_structure[i+1][si][0],D2);
     //REMARK: Use CblasTrans because Rcontainer is in row_major while state_array_access_structure[i+1][si][0] is in column_major order - this is a normal matrix multiplication - here, R is packed into the matrices of the next site
   }                                                //POSSIBLE TESTS: TEST FOR Q*R - DONE: WORKS THE WAY INTENDED
   delete[] Rcontainer;
@@ -194,7 +195,7 @@ int mps::leftNormalizeStateBlockwise(int const i){
     leftPart=1;
   }
   else{
-    leftPart=1;
+    leftPart=0;
   }
   R=new lapack_complex_double[lDR*lDR];
   for(int iBlock=0;iBlock<aiBlockIndices[i].size();++iBlock){
@@ -222,13 +223,11 @@ int mps::leftNormalizeStateBlockwise(int const i){
       info=LAPACKE_zgeqrf(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,M,lBlockSize,Qcontainer);
       if(info){
 	std::cout<<"Error in LAPACKE_zgeqrf: "<<info<<std::endl;
-	//exit(1);
       }
       lowerdiag(rBlockSize,rBlockSize,M,Rcontainer,rBlockSize);
       info=LAPACKE_zungqr(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,rBlockSize,M,lBlockSize,Qcontainer);
       if(info){
 	std::cout<<"Error in LAPACKE_zungqr: "<<info<<std::endl;
-	//exit(1);
       }
       for(int j=0;j<rBlockSize;++j){
 	for(int k=0;k<lBlockSize;++k){
@@ -273,15 +272,33 @@ int mps::rightNormalizeStateBlockwise(int const i){
   lapack_complex_double *inputA;
   lapack_complex_double zone=1.0, zzero=0.0;
   lapack_int info;
+  int leftPart;
   lDL=locDimL(i);
   lDR=locDimR(i);
   lDLL=locDimL(i-1);
   ld=locd(i);
-  R=new lapack_complex_double[lDR*lDR];
+  if(i<L/2){
+    leftPart=1;
+  }
+  else{
+    leftPart=0;
+  }
+  R=new lapack_complex_double[lDL*lDL];
   for(int iBlock=0;iBlock<aiBlockIndices[i].size();++iBlock){
-    rBlockSize=aiBlockIndices[i][iBlock].size();
-    lBlockSize=siaimBlockIndices[i][iBlock].size();
+    if(leftPart){
+      rBlockSize=aiBlockIndices[i][iBlock].size();
+      lBlockSize=siaimBlockIndices[i][iBlock].size();
+    }
+    else{
+      rBlockSize=siaimBlockIndices[i][iBlock].size();
+      lBlockSize=aiBlockIndices[i][iBlock].size();
+    }
     std::cout<<lBlockSize<<"\t"<<rBlockSize<<std::endl;
+    minBlockSize=(lBlockSize<rBlockSize)?lBlockSize:rBlockSize;
+    if(lBlockSize!=rBlockSize){
+      lBlockSize=minBlockSize;
+      rBlockSize=minBlockSize;
+    }
     //lBlockSize is required to be smaller than or equal to rBlockSize
     // THUS, ONLY lBlockSize=rBlockSize ENABLES BOTH NORMALIZATION FUNCTIONS WITH A SINGLE BLOCKSIZE
     minBlockSize=(lBlockSize<rBlockSize)?lBlockSize:rBlockSize;
@@ -293,33 +310,36 @@ int mps::rightNormalizeStateBlockwise(int const i){
 	  M[k+j*lBlockSize]=global_access(i,siCurrent,aiCurrent,aimCurrent);
 	}
       }
-      Rcontainer=new lapack_complex_double[rBlockSize*rBlockSize];
+      Rcontainer=new lapack_complex_double[lBlockSize*lBlockSize];
       Qcontainer=new lapack_complex_double[rBlockSize];
       info=LAPACKE_zgerqf(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,M,lBlockSize,Qcontainer);
       if(info){
 	std::cout<<"Error in LAPACKE_zgeqrf: "<<info<<std::endl;
-	exit(1);
       }
       lowerdiag(lBlockSize,lBlockSize,M,Rcontainer);
-      info=LAPACKE_zungrq(LAPACK_COL_MAJOR,minBlockSize,rBlockSize,rBlockSize,M,minBlockSize,Qcontainer);
+      info=LAPACKE_zungrq(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,lBlockSize,M,lBlockSize,Qcontainer);
       if(info){
 	std::cout<<"Error in LAPACKE_zungqr: "<<info<<std::endl;
-	exit(1);
       }
       for(int j=0;j<lBlockSize;++j){
-	aimCurrent=siaimBlockIndices[i][iBlock][j].aim;
-	siCurrent=siaimBlockIndices[i][iBlock][j].si;
 	for(int k=0;k<rBlockSize;++k){
-	  aiCurrent=aiBlockIndices[i][iBlock][k];
+	  convertIndices(i,k,j,iBlock,siCurrent,aiCurrent,aimCurrent);
 	  global_access(i,siCurrent,aiCurrent,aimCurrent)=M[k+j*lBlockSize];
 	}
 	for(int l=0;l<lBlockSize;++l){
-	  aimpCurrent=siaimBlockIndices[i][iBlock][l].aim;
-	  R[aimpCurrent+aimCurrent*lDR]=Rcontainer[l+j*rBlockSize];
+	  if(leftPart){
+	    aimCurrent=siaimBlockIndices[i][iBlock][j].aim;
+	    aimpCurrent=siaimBlockIndices[i][iBlock][l].aim;
+	  }
+	  else{
+	    aimCurrent=aiBlockIndices[i][iBlock][j];
+	    aimpCurrent=aiBlockIndices[i][iBlock][l];
+	  }
+	  R[aimpCurrent+aimCurrent*lDL]=Rcontainer[l+j*rBlockSize];
 	}
       }
-      delete[] Rcontainer;
       delete[] Qcontainer;
+      delete[] Rcontainer;
       delete[] M;
     }
   }
@@ -334,13 +354,14 @@ int mps::rightNormalizeStateBlockwise(int const i){
 }
 
 void mps::convertIndices(int const i, int const j, int const k, int const iBlock, int &si, int &ai, int &aim){
-  if(1){
+  if(i<L/2){
     ai=aiBlockIndices[i][iBlock][j];
     aim=siaimBlockIndices[i][iBlock][k].aim;
+    si=siaimBlockIndices[i][iBlock][k].si;
   }
   else{
-    ai=siaimBlockIndices[i][iBlock][k].aim;
-    aim=aiBlockIndices[i][iBlock][j];
+    ai=siaimBlockIndices[i][iBlock][j].aim;
+    aim=aiBlockIndices[i][iBlock][k];
+    si=siaimBlockIndices[i][iBlock][j].si;
   }
-  si=siaimBlockIndices[i][iBlock][k].si;
 }

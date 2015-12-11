@@ -147,7 +147,7 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
   double spinCheck;
   alpha=simPars.alpha;
   pCtr.initialize(&networkH,&networkState);
-  checkQN();
+  //checkQN();
   for(int i=L-1;i>0;--i){
     normalize(i,0,0);
   }
@@ -217,7 +217,6 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
 void network::sweep(double const maxIter, double const tol, double const alpha, double &lambda){
   clock_t curtime;
   int errRet;
-  overlap test;
   std::cout<<"Starting rightsweep\n";
   for(int i=0;i<(L-1);++i){
     //Step of leftsweep
@@ -226,7 +225,7 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
     errRet=optimize(i,maxIter,tol,lambda);
     curtime=clock()-curtime;
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
-    normalize(i,1,0);
+    normalize(i,1,alpha);
     //Here, the scalar products with lower lying states are updated
     excitedStateP.updateScalarProducts(i,1);
     pCtr.calcCtrIterLeft(i+1);
@@ -240,7 +239,7 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
     errRet=optimize(i,maxIter,tol,lambda);
     curtime=clock()-curtime;
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
-    normalize(i,0,0);
+    normalize(i,0,alpha);
     //same as above for the scalar products with lower lying states
     excitedStateP.updateScalarProducts(i,-1);
     pCtr.calcCtrIterRight(i-1);
@@ -306,9 +305,9 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
 //---------------------------------------------------------------------------------------------------//
 
 void network::normalize(int const i, int const direction, double const alpha){
-  if(1){
+  int enrichment=0;
   if(direction){
-    if(alpha){
+    if(enrichment){
       leftEnrichment(alpha,i);
     }
     else{
@@ -316,13 +315,12 @@ void network::normalize(int const i, int const direction, double const alpha){
     }
   }
   else{
-    if(alpha){
+    if(enrichment){
       rightEnrichment(alpha,i);
     }
     else{
       networkState.rightNormalizeState(i);
     }
-  }
   }
 }
 
