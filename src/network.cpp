@@ -145,17 +145,18 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
   double alpha;
   double tol;
   double spinCheck;
+  overlap test;
   alpha=simPars.alpha;
-  pCtr.initialize(&networkH,&networkState);
-  //checkQN();
-  for(int i=L-1;i>0;--i){
-    normalize(i,0,0);
-  }
-  networkState.normalizeFinal(1);
-  pCtr.Lctr.global_access(0,0,0,0)=1;
-  //In preparation of the first sweep, generate full contraction to the right (first sweeps starts at site 0)
-  pCtr.calcCtrFull(1);
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
+    pCtr.initialize(&networkH,&networkState);
+    for(int i=L-1;i>0;--i){
+      checkQN();
+      normalize(i,0,0);
+    }
+    networkState.normalizeFinal(1);
+    pCtr.Lctr.global_access(0,0,0,0)=1;
+    //In preparation of the first sweep, generate full contraction to the right (first sweeps starts at site 0)
+    pCtr.calcCtrFull(1);
     if(iEigen){
       shift=-2*abs(lambda[0]);
     }
@@ -176,6 +177,10 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
       }
       //actual sweep is executed here
       sweep(maxIter,tol,alpha,lambda[iEigen]);
+      for(int i=L-1;i>0;--i){
+      	normalize(i,0,0);
+      }
+      networkState.normalizeFinal(1);
       //In calcCtrIterRightBase, the second argument has to be a pointer, because it usually is an array. No call-by-reference here.
       pCtr.calcCtrIterRightBase(-1,&expectationValue);
       //Compute full scalar product - although not required, it is nice to know and requires very little computational effort
@@ -217,15 +222,20 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
 void network::sweep(double const maxIter, double const tol, double const alpha, double &lambda){
   clock_t curtime;
   int errRet;
+  overlap test;
+  test.loadMPS(&networkState,&networkState);
   std::cout<<"Starting rightsweep\n";
   for(int i=0;i<(L-1);++i){
     //Step of leftsweep
+    std::cout<<"Norm of state before step: "<<test.getFullOverlap()<<std::endl;
     std::cout<<"Optimizing site matrix"<<std::endl;
     curtime=clock();
     errRet=optimize(i,maxIter,tol,lambda);
     curtime=clock()-curtime;
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
+    std::cout<<"Norm of state after optimization: "<<test.getFullOverlap()<<std::endl;
     normalize(i,1,alpha);
+    std::cout<<"Norm of state after step: "<<test.getFullOverlap()<<std::endl;
     //Here, the scalar products with lower lying states are updated
     excitedStateP.updateScalarProducts(i,1);
     pCtr.calcCtrIterLeft(i+1);
@@ -234,12 +244,15 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
   std::cout<<"Starting leftsweep\n";
   for(int i=L-1;i>0;--i){
     //Step of rightsweep
-    std::cout<<"Optimizing site matrix"<<std::endl;     
+    std::cout<<"Norm of state before step: "<<test.getFullOverlap()<<std::endl; 
+    std::cout<<"Optimizing site matrix"<<std::endl;    
     curtime=clock();
     errRet=optimize(i,maxIter,tol,lambda);
     curtime=clock()-curtime;
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
+    std::cout<<"Norm of state after optimization: "<<test.getFullOverlap()<<std::endl;
     normalize(i,0,alpha);
+    std::cout<<"Norm of state after step: "<<test.getFullOverlap()<<std::endl; 
     //same as above for the scalar products with lower lying states
     excitedStateP.updateScalarProducts(i,-1);
     pCtr.calcCtrIterRight(i-1);
@@ -288,9 +301,6 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
   nconv=eigProblem.EigenValVectors(currentM,plambda);
   measure(check,spinCheck);
   std::cout<<"Spin after optimizing: "<<spinCheck<<std::endl;
-  if(spinCheck>-11){
-    //exit(-1);
-  }
   if(nconv!=1){
     std::cout<<"Failed to converge in iterative eigensolver, number of Iterations taken: "<<maxIter<<" With tolerance "<<tol<<std::endl;
     return 1;

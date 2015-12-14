@@ -69,7 +69,7 @@ void mps::createInitialState(){
 	  for(int aim=0;aim<lDL;++aim){
 	    qnCriteriumCheck=0;
 	    for(int iQN=0;iQN<nQNs;++iQN){
-	      qnCriteriumCheck+=(*conservedQNs)[iQN].qnCriterium(i,si,ai,aim);
+	      qnCriteriumCheck+=(*conservedQNs)[iQN].qnConstraint(i,si,ai,aim);
 	    }
 	    if(qnCriteriumCheck){
 	      global_access(i,si,ai,aim)=0;
@@ -117,10 +117,15 @@ int mps::leftNormalizeState(int const i){
   for(int si=0;si<ld;++si){
     transp(D1,D2,state_array_access_structure[i][si][0]);
     cblas_ztrmm(CblasColMajor,CblasLeft,CblasUpper,CblasNoTrans,CblasNonUnit,D2,D3,&zone,Rcontainer,D2,state_array_access_structure[i+1][si][0],D2);
-    //REMARK: Use CblasTrans because Rcontainer is in row_major while state_array_access_structure[i+1][si][0] is in column_major order - this is a normal matrix multiplication - here, R is packed into the matrices of the next site
+    //here, R is packed into the matrices of the next site
   }                                                //POSSIBLE TESTS: TEST FOR Q*R - DONE: WORKS THE WAY INTENDED
   delete[] Rcontainer;
   delete[] Qcontainer;
+  if(nQNs){
+    //It should be totally legit to eliminate all QN constraint violating matrix elements
+    restoreQN(i);
+    restoreQN(i+1);
+  }
   return 0;  //TODO: Add exception throw
 }
 
@@ -151,6 +156,10 @@ int mps::rightNormalizeState(int const i){
   }                                                //POSSIBLE TESTS: TEST FOR R*Q - DONE: WORKS THE WAY INTENDED
   delete[] Rcontainer;
   delete[] Qcontainer;
+  if(nQNs){
+    restoreQN(i);
+    restoreQN(i-1);
+  }
   return 0;  //TODO: Add exception throw
 }
 
@@ -365,3 +374,24 @@ void mps::convertIndices(int const i, int const j, int const k, int const iBlock
     si=siaimBlockIndices[i][iBlock][j].si;
   }
 }
+
+//---------------------------------------------------------------------------------------------------//
+
+void mps::restoreQN(int const i){
+  int lDL, lDR, ld;
+  for(int iQN=0;iQN<nQNs;++iQN){
+    ld=locd(i);
+    lDR=locDimR(i);
+    lDL=locDimL(i);
+    for(int si=0;si<ld;++si){
+      for(int ai=0;ai<lDR;++ai){
+	for(int aim=0;aim<lDL;++aim){
+	  if(((*conservedQNs)[iQN].QNLabel(i,ai)-(*conservedQNs)[iQN].QNLabel(i-1,aim)-(*conservedQNs)[iQN].QNLabel(si)) && abs(global_access(i,si,ai,aim))>0.000001){
+	    global_access(i,si,ai,aim)=0;
+	  }
+	}
+      }
+    }
+  }
+}
+

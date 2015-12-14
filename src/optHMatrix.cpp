@@ -136,8 +136,10 @@ void optHMatrix::projectQN(arcomplex<double> *v){
 	    v[vecIndex(si,ai,aim)]=0;
 	  }
 	  else{
-	    //std::cout<<"Nonzero element at ("<<i<<", "<<si<<", "<<ai<<", "<<aim<<")\n";
-	    //std::cout<<"QN Labels: "<<conservedQNs[0].QNLabel(i,ai)<<", "<<conservedQNs[0].QNLabel(i-1,aim)<<", "<<conservedQNs[0].QNLabel(si)<<std::endl;
+	    if(i==129){
+	    std::cout<<"Nonzero element at ("<<i<<", "<<si<<", "<<ai<<", "<<aim<<")\n";
+	    std::cout<<"QN Labels: "<<(*conservedQNs)[0].QNLabel(i,ai)<<", "<<(*conservedQNs)[0].QNLabel(i-1,aim)<<", "<<(*conservedQNs)[0].QNLabel(si)<<std::endl;
+	    }
 	  }
 	}
       }

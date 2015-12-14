@@ -59,7 +59,10 @@ int quantumNumber::qnCriterium(int const i, int const si, int const ai, int cons
 }
 
 int quantumNumber::qnConstraint(int const i, int const si, int const ai, int const aim){
-  return QNLabel(i,ai)-QNLabel(i-1,aim)-QNLabel(si);
+  if(QNLabel(i,ai)-QNLabel(i-1,aim)-QNLabel(si)){
+    return 1;
+  }
+  return 0;
 }
 
 int quantumNumber::exactLabel(int const i, int const ai){
@@ -128,6 +131,7 @@ void quantumNumber::initializeLabelList(){
       else{
 	indexLabel[ai+j*dimInfo.D()]=N-exactLabel(Lred-j-1,ai);
       }
+      std::cout<<"Label for ai= "<<ai<<" at site "<<j<<": "<<indexLabel[ai+j*dimInfo.D()]<<std::endl;
     }
   }
 }
