@@ -252,7 +252,7 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
     std::cout<<"Norm of state after optimization: "<<test.getFullOverlap()<<std::endl;
     normalize(i,0,alpha);
-    std::cout<<"Norm of state after step: "<<test.getFullOverlap()<<std::endl; 
+    std::cout<<"Norm of state after step: "<<test.getFullOverlap()<<std::endl;
     //same as above for the scalar products with lower lying states
     excitedStateP.updateScalarProducts(i,-1);
     pCtr.calcCtrIterRight(i-1);
@@ -301,6 +301,9 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
   nconv=eigProblem.EigenValVectors(currentM,plambda);
   measure(check,spinCheck);
   std::cout<<"Spin after optimizing: "<<spinCheck<<std::endl;
+  if(spinCheck<1.9){
+    matrixprint(4,4,currentM);
+  }
   if(nconv!=1){
     std::cout<<"Failed to converge in iterative eigensolver, number of Iterations taken: "<<maxIter<<" With tolerance "<<tol<<std::endl;
     return 1;
