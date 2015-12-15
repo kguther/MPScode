@@ -129,7 +129,7 @@ int mps::leftNormalizeState(int const i){
 
 int mps::rightNormalizeState(int const i){
   if(nQNs){
-    //return rightNormalizeStateBlockwise(i);
+    return rightNormalizeStateBlockwise(i);
   }
   lapack_int info;
   //This time, we decompose a D2xd*D1 matrix and multiply the D2xD2 matrix R with a D3xD2 matrix
@@ -152,23 +152,6 @@ int mps::rightNormalizeState(int const i){
   }                                                //POSSIBLE TESTS: TEST FOR R*Q - DONE: WORKS THE WAY INTENDED
   delete[] Rcontainer;
   delete[] Qcontainer;
-  lapack_complex_double *unity=new lapack_complex_double[lDR*lDR];
-  lapack_complex_double *networkB;
-  subMatrixStart(networkB,i);
-  for(int ai=0;ai<lDR;++ai){
-    for(int aip=0;aip<lDR;++aip){
-      unity[ai+aip*lDR]=(ai==aip)?-1:0;
-    }
-  }
-  for(int si=0;si<ld;++si){
-    transp(lDR,lDL,networkB+si*lDL*lDR);
-  }
-  cblas_zgemm(CblasRowMajor,CblasConjTrans,CblasNoTrans,lDR,lDR,ld*lDL,&zone,networkB,lDR,networkB,lDR,&zone,unity,lDR);
-  for(int si=0;si<ld;++si){
-    transp(lDL,lDR,networkB+si*lDL*lDR);
-  }
-  std::cout<<"Verification: "<<cblas_dznrm2(lDR*lDR,unity,1)<<std::endl;
-  delete[] unity;
   return 0;  //TODO: Add exception throw
 }
 
@@ -199,7 +182,6 @@ int mps::leftNormalizeStateBlockwise(int const i){
   int ld, lDR, lDL, lDRR;
   int lBlockSize,rBlockSize, minBlockSize;
   int aiCurrent, siCurrent, aimCurrent, aipCurrent;
-  int leftPart;
   lapack_complex_double *M, *R;
   lapack_complex_double *Rcontainer, *Qcontainer;
   lapack_complex_double *inputA;
@@ -209,17 +191,11 @@ int mps::leftNormalizeStateBlockwise(int const i){
   lDR=locDimR(i);
   lDRR=locDimR(i+1);
   ld=locd(i);
-  if(i<L/2){
-    leftPart=1;
-  }
-  else{
-    leftPart=1;
-  }
   R=new lapack_complex_double[lDR*lDR];
   for(int iBlock=0;iBlock<aiBlockIndicesLP[i].size();++iBlock){
     rBlockSize=aiBlockIndicesLP[i][iBlock].size();
     lBlockSize=siaimBlockIndicesLP[i][iBlock].size();
-    std::cout<<lBlockSize<<"\t"<<rBlockSize<<std::endl;
+    //std::cout<<lBlockSize<<"\t"<<rBlockSize<<std::endl;
     //rBlockSize is required to be smaller than or equal to lBlockSize
     minBlockSize=(lBlockSize<rBlockSize)?lBlockSize:rBlockSize;
     if(rBlockSize!=0 && lBlockSize!=0){
@@ -237,7 +213,7 @@ int mps::leftNormalizeStateBlockwise(int const i){
 	std::cout<<"Error in LAPACKE_zgeqrf: "<<info<<std::endl;
 	exit(1);
       }
-      lowerdiag(rBlockSize,rBlockSize,M,Rcontainer,rBlockSize);
+      lowerdiag(rBlockSize,rBlockSize,M,Rcontainer,lBlockSize);
       info=LAPACKE_zungqr(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,rBlockSize,M,lBlockSize,Qcontainer);
       if(info){
 	std::cout<<"Error in LAPACKE_zungqr: "<<info<<std::endl;
@@ -266,23 +242,6 @@ int mps::leftNormalizeStateBlockwise(int const i){
   }
   delete[] inputA;
   delete[] R;
-  lapack_complex_double *unity=new lapack_complex_double[lDR*lDR];
-  lapack_complex_double *networkB;
-  subMatrixStart(networkB,i);
-  for(int ai=0;ai<lDR;++ai){
-    for(int aip=0;aip<lDR;++aip){
-      unity[ai+aip*lDR]=(ai==aip)?-1:0;
-    }
-  }
-  for(int si=0;si<ld;++si){
-    transp(lDR,lDL,networkB+si*lDL*lDR);
-  }
-  cblas_zgemm(CblasRowMajor,CblasConjTrans,CblasNoTrans,lDR,lDR,ld*lDL,&zone,networkB,lDR,networkB,lDR,&zone,unity,lDR);
-  for(int si=0;si<ld;++si){
-    transp(lDL,lDR,networkB+si*lDL*lDR);
-  }
-  std::cout<<"Verification: "<<cblas_dznrm2(lDR*lDR,unity,1)<<std::endl;
-  delete[] unity;
   return 0;
 }
 
@@ -305,7 +264,7 @@ int mps::rightNormalizeStateBlockwise(int const i){
   for(int iBlock=0;iBlock<aimBlockIndicesRP[i].size();++iBlock){
     lBlockSize=aimBlockIndicesRP[i][iBlock].size();
     rBlockSize=siaiBlockIndicesRP[i][iBlock].size();
-    std::cout<<lBlockSize<<"\t"<<rBlockSize<<std::endl;
+    //std::cout<<lBlockSize<<"\t"<<rBlockSize<<std::endl;
     minBlockSize=(lBlockSize<rBlockSize)?lBlockSize:rBlockSize;
     //lBlockSize is required to be smaller than or equal to rBlockSize
     minBlockSize=(lBlockSize<rBlockSize)?lBlockSize:rBlockSize;
@@ -321,19 +280,19 @@ int mps::rightNormalizeStateBlockwise(int const i){
       Qcontainer=new lapack_complex_double[rBlockSize];
       info=LAPACKE_zgerqf(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,M,lBlockSize,Qcontainer);
       if(info){
-	std::cout<<"Error in LAPACKE_zgeqrf: "<<info<<std::endl;
+	std::cout<<"Error in LAPACKE_zgerqf: "<<info<<std::endl;
 	exit(1);
       }
-      lowerdiag(lBlockSize,lBlockSize,M,Rcontainer);
+      lowerdiag(lBlockSize,lBlockSize,M+(rBlockSize-lBlockSize)*lBlockSize,Rcontainer);
       info=LAPACKE_zungrq(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,lBlockSize,M,lBlockSize,Qcontainer);
       if(info){
-	std::cout<<"Error in LAPACKE_zungqr: "<<info<<std::endl;
+	std::cout<<"Error in LAPACKE_zungrq: "<<info<<std::endl;
 	exit(1);
       }
       for(int j=0;j<lBlockSize;++j){
 	for(int k=0;k<rBlockSize;++k){
 	  convertIndicesRP(i,k,j,iBlock,siCurrent,aiCurrent,aimCurrent);
-	  global_access(i,siCurrent,aiCurrent,aimCurrent)=M[k+j*lBlockSize];
+	  global_access(i,siCurrent,aiCurrent,aimCurrent)=M[j+k*lBlockSize];
 	}
 	for(int l=0;l<lBlockSize;++l){
 	  aimCurrent=aimBlockIndicesRP[i][iBlock][j];
@@ -348,24 +307,15 @@ int mps::rightNormalizeStateBlockwise(int const i){
   }
   inputA=new lapack_complex_double[lDL*lDLL];
   for(int si=0;si<ld;++si){
-    arraycpy(lDLL,lDL,state_array_access_structure[i-1][si][0],inputA);
+    arraycpy(lDLL*lDL,state_array_access_structure[i-1][si][0],inputA);
     cblas_zgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,lDLL,lDL,lDL,&zone,inputA,lDLL,R,lDL,&zzero,state_array_access_structure[i-1][si][0],lDLL);
   }
   delete[] inputA;
   delete[] R;
-  lapack_complex_double *unity=new lapack_complex_double[lDL*lDL];
-  lapack_complex_double *networkA;
-  for(int ai=0;ai<lDL;++ai){
-    for(int aip=0;aip<lDL;++aip){
-      unity[ai+aip*lDL]=(ai==aip)?-1:0;
-    }
-  }
-  subMatrixStart(networkA,i);
-  cblas_zgemm(CblasColMajor,CblasNoTrans,CblasConjTrans,lDL,lDL,ld*lDR,&zone,networkA,lDL,networkA,lDL,&zone,unity,lDL);
-  std::cout<<"Verification: "<<cblas_dznrm2(lDL*lDL,unity,1)<<std::endl;
-  delete[] unity;
   return 0;
 }
+
+//---------------------------------------------------------------------------------------------------//
 
 void mps::convertIndicesLP(int const i, int const j, int const k, int const iBlock, int &si, int &ai, int &aim){
   ai=aiBlockIndicesLP[i][iBlock][j];

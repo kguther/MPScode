@@ -150,18 +150,6 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
   alpha=simPars.alpha;
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
     pCtr.initialize(&networkH,&networkState);
-    for(int i=0;i<L-1;++i){
-      checkQN();
-      normalize(i,1,alpha);
-      std::cout<<"Norm of state: "<<test.getFullOverlap()<<std::endl;
-      measure(check,spinCheck);
-      std::cout<<"Spin: "<<spinCheck<<std::endl;
-    }
-    networkState.normalizeFinal(0);
-    std::cout<<"Finished left normalization\n";
-    measure(check,spinCheck);
-    std::cout<<"Spin: "<<spinCheck<<std::endl;
-    std::cout<<"Norm of state: "<<test.getFullOverlap()<<std::endl;
     for(int i=L-1;i>0;--i){
       checkQN();
       normalize(i,0,alpha);
@@ -172,10 +160,7 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
     networkState.normalizeFinal(1);
     std::cout<<"Finished right normalization\n";    
     std::cout<<"Norm of state: "<<test.getFullOverlap()<<std::endl;
-    measure(check,spinCheck);
-    std::cout<<"Spin: "<<spinCheck<<std::endl;
     pCtr.Lctr.global_access(0,0,0,0)=1;
-    exit(1);
     //In preparation of the first sweep, generate full contraction to the right (first sweeps starts at site 0)
     pCtr.calcCtrFull(1);
     if(iEigen){
