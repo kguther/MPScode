@@ -37,7 +37,7 @@ void mps::generate(int const din, int const Din, int const Lin, std::vector<quan
       direction=0;
     }
     else{
-      direction=1;
+      direction=0;
     }
     indexCalc.blockStructure(i,direction,aiBlockIndices[i],siaimBlockIndices[i]);
   }
@@ -91,7 +91,7 @@ void mps::createInitialState(){
 
 int mps::leftNormalizeState(int const i){
   if(nQNs){
-    //return leftNormalizeStateBlockwise(i);
+    return leftNormalizeStateBlockwise(i);
   }
   lapack_int info;
   int D1, D2, D3, ld;
@@ -121,9 +121,8 @@ int mps::leftNormalizeState(int const i){
   }                                                //POSSIBLE TESTS: TEST FOR Q*R - DONE: WORKS THE WAY INTENDED
   delete[] Rcontainer;
   delete[] Qcontainer;
-  if(nQNs){
+  if(0){
     //It should be totally legit to eliminate all QN constraint violating matrix elements
-    restoreQN(i);
     restoreQN(i+1);
   }
   return 0;  //TODO: Add exception throw
@@ -156,8 +155,7 @@ int mps::rightNormalizeState(int const i){
   }                                                //POSSIBLE TESTS: TEST FOR R*Q - DONE: WORKS THE WAY INTENDED
   delete[] Rcontainer;
   delete[] Qcontainer;
-  if(nQNs){
-    restoreQN(i);
+  if(0){
     restoreQN(i-1);
   }
   return 0;  //TODO: Add exception throw
@@ -204,7 +202,7 @@ int mps::leftNormalizeStateBlockwise(int const i){
     leftPart=1;
   }
   else{
-    leftPart=0;
+    leftPart=1;
   }
   R=new lapack_complex_double[lDR*lDR];
   for(int iBlock=0;iBlock<aiBlockIndices[i].size();++iBlock){
@@ -363,7 +361,7 @@ int mps::rightNormalizeStateBlockwise(int const i){
 }
 
 void mps::convertIndices(int const i, int const j, int const k, int const iBlock, int &si, int &ai, int &aim){
-  if(i<L/2){
+  if(1){
     ai=aiBlockIndices[i][iBlock][j];
     aim=siaimBlockIndices[i][iBlock][k].aim;
     si=siaimBlockIndices[i][iBlock][k].si;

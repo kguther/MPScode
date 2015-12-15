@@ -146,14 +146,18 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
   double tol;
   double spinCheck;
   overlap test;
+  test.loadMPS(&networkState,&networkState);
   alpha=simPars.alpha;
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
     pCtr.initialize(&networkH,&networkState);
     for(int i=L-1;i>0;--i){
-      checkQN();
       normalize(i,0,0);
+    std::cout<<"Norm of state: "<<test.getFullOverlap()<<std::endl;
+      
     }
     networkState.normalizeFinal(1);
+    exit(1);
+    std::cout<<"Norm of state: "<<test.getFullOverlap()<<std::endl;
     pCtr.Lctr.global_access(0,0,0,0)=1;
     //In preparation of the first sweep, generate full contraction to the right (first sweeps starts at site 0)
     pCtr.calcCtrFull(1);
@@ -222,12 +226,13 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
 void network::sweep(double const maxIter, double const tol, double const alpha, double &lambda){
   clock_t curtime;
   int errRet;
+  lapack_complex_double stateNorm;
   overlap test;
+  double spinCheck;
   test.loadMPS(&networkState,&networkState);
   std::cout<<"Starting rightsweep\n";
   for(int i=0;i<(L-1);++i){
     //Step of leftsweep
-    std::cout<<"Norm of state before step: "<<test.getFullOverlap()<<std::endl;
     std::cout<<"Optimizing site matrix"<<std::endl;
     curtime=clock();
     errRet=optimize(i,maxIter,tol,lambda);
@@ -235,7 +240,11 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
     std::cout<<"Norm of state after optimization: "<<test.getFullOverlap()<<std::endl;
     normalize(i,1,alpha);
-    std::cout<<"Norm of state after step: "<<test.getFullOverlap()<<std::endl;
+    stateNorm=test.getFullOverlap();
+    std::cout<<"Norm of state after normalization: "<<stateNorm<<std::endl;
+    if(abs(stateNorm)<.999){
+      exit(1);
+    }
     //Here, the scalar products with lower lying states are updated
     excitedStateP.updateScalarProducts(i,1);
     pCtr.calcCtrIterLeft(i+1);
@@ -244,7 +253,6 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
   std::cout<<"Starting leftsweep\n";
   for(int i=L-1;i>0;--i){
     //Step of rightsweep
-    std::cout<<"Norm of state before step: "<<test.getFullOverlap()<<std::endl; 
     std::cout<<"Optimizing site matrix"<<std::endl;    
     curtime=clock();
     errRet=optimize(i,maxIter,tol,lambda);
@@ -252,7 +260,11 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
     std::cout<<"Norm of state after optimization: "<<test.getFullOverlap()<<std::endl;
     normalize(i,0,alpha);
-    std::cout<<"Norm of state after step: "<<test.getFullOverlap()<<std::endl;
+    stateNorm=test.getFullOverlap();
+    std::cout<<"Norm of state after normalization: "<<stateNorm<<std::endl<<std::endl;
+    if(abs(stateNorm)<.999){
+      exit(1);
+    }
     //same as above for the scalar products with lower lying states
     excitedStateP.updateScalarProducts(i,-1);
     pCtr.calcCtrIterRight(i-1);
@@ -301,9 +313,6 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
   nconv=eigProblem.EigenValVectors(currentM,plambda);
   measure(check,spinCheck);
   std::cout<<"Spin after optimizing: "<<spinCheck<<std::endl;
-  if(spinCheck<1.9){
-    matrixprint(4,4,currentM);
-  }
   if(nconv!=1){
     std::cout<<"Failed to converge in iterative eigensolver, number of Iterations taken: "<<maxIter<<" With tolerance "<<tol<<std::endl;
     return 1;
@@ -315,6 +324,9 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
   }
 }
 
+//---------------------------------------------------------------------------------------------------//
+// Functions for normalization of site matrices, creation of canonical MPS and adressing the subspace
+// expansion
 //---------------------------------------------------------------------------------------------------//
 
 void network::normalize(int const i, int const direction, double const alpha){
