@@ -19,12 +19,15 @@ class mps: public stateArray{
  private:
   int nQNs;
   std::vector<quantumNumber> *conservedQNs;
-  std::vector<std::vector<int> > *aiBlockIndices;
-  std::vector<std::vector<multInt> > *siaimBlockIndices;
+  std::vector<std::vector<int> > *aiBlockIndicesLP;
+  std::vector<std::vector<multInt> > *siaimBlockIndicesLP;
+  std::vector<std::vector<int> > *aimBlockIndicesRP;
+  std::vector<std::vector<multInt> > *siaiBlockIndicesRP;
   void createInitialState();
   int leftNormalizeStateBlockwise(int const i);
   int rightNormalizeStateBlockwise(int const i);
-  void convertIndices(int const i, int const j, int const k, int const iBlock, int &si, int &ai, int &aim);
+  void convertIndicesLP(int const i, int const j, int const k, int const iBlock, int &si, int &ai, int &aim);
+  void convertIndicesRP(int const i, int const j, int const k, int const iBlock, int &si, int &ai, int &aim);
 };
 
 #endif

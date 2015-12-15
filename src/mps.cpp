@@ -4,8 +4,10 @@
 #include <iostream>
 
 mps::mps():stateArray(),
-	   aiBlockIndices(0),
-	   siaimBlockIndices(0)
+	   aiBlockIndicesLP(0),
+	   siaimBlockIndicesLP(0),
+	   aimBlockIndicesRP(0),
+	   siaiBlockIndicesRP(0)
 {}
 
 //---------------------------------------------------------------------------------------------------//
@@ -17,8 +19,10 @@ mps::mps(int const din, int const Din, int const Lin, std::vector<quantumNumber>
 }
 
 mps::~mps(){
-  delete[] aiBlockIndices;
-  delete[] siaimBlockIndices;
+  delete[] aiBlockIndicesLP;
+  delete[] siaimBlockIndicesLP;
+  delete[] siaiBlockIndicesRP;
+  delete[] aimBlockIndicesRP;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -30,16 +34,13 @@ void mps::generate(int const din, int const Din, int const Lin, std::vector<quan
   nQNs=(*conservedQNs).size();
   createInitialState();
   basisQNOrderMatrix indexCalc(dimInfo,conservedQNs);
-  aiBlockIndices=new std::vector<std::vector<int> >[L];
-  siaimBlockIndices=new std::vector<std::vector<multInt> >[L];
+  aiBlockIndicesLP=new std::vector<std::vector<int> >[L];
+  siaimBlockIndicesLP=new std::vector<std::vector<multInt> >[L];
+  aimBlockIndicesRP=new std::vector<std::vector<int> >[L];
+  siaiBlockIndicesRP=new std::vector<std::vector<multInt> >[L];
   for(int i=0;i<L;++i){
-    if(i<L/2){
-      direction=0;
-    }
-    else{
-      direction=0;
-    }
-    indexCalc.blockStructure(i,direction,aiBlockIndices[i],siaimBlockIndices[i]);
+    indexCalc.blockStructure(i,0,aiBlockIndicesLP[i],siaimBlockIndicesLP[i]);
+    indexCalc.blockStructure(i,1,aimBlockIndicesRP[i],siaiBlockIndicesRP[i]);
   }
 }
 
@@ -121,10 +122,6 @@ int mps::leftNormalizeState(int const i){
   }                                                //POSSIBLE TESTS: TEST FOR Q*R - DONE: WORKS THE WAY INTENDED
   delete[] Rcontainer;
   delete[] Qcontainer;
-  if(0){
-    //It should be totally legit to eliminate all QN constraint violating matrix elements
-    restoreQN(i+1);
-  }
   return 0;  //TODO: Add exception throw
 }
 
@@ -155,9 +152,23 @@ int mps::rightNormalizeState(int const i){
   }                                                //POSSIBLE TESTS: TEST FOR R*Q - DONE: WORKS THE WAY INTENDED
   delete[] Rcontainer;
   delete[] Qcontainer;
-  if(0){
-    restoreQN(i-1);
+  lapack_complex_double *unity=new lapack_complex_double[lDR*lDR];
+  lapack_complex_double *networkB;
+  subMatrixStart(networkB,i);
+  for(int ai=0;ai<lDR;++ai){
+    for(int aip=0;aip<lDR;++aip){
+      unity[ai+aip*lDR]=(ai==aip)?-1:0;
+    }
   }
+  for(int si=0;si<ld;++si){
+    transp(lDR,lDL,networkB+si*lDL*lDR);
+  }
+  cblas_zgemm(CblasRowMajor,CblasConjTrans,CblasNoTrans,lDR,lDR,ld*lDL,&zone,networkB,lDR,networkB,lDR,&zone,unity,lDR);
+  for(int si=0;si<ld;++si){
+    transp(lDL,lDR,networkB+si*lDL*lDR);
+  }
+  std::cout<<"Verification: "<<cblas_dznrm2(lDR*lDR,unity,1)<<std::endl;
+  delete[] unity;
   return 0;  //TODO: Add exception throw
 }
 
@@ -205,15 +216,9 @@ int mps::leftNormalizeStateBlockwise(int const i){
     leftPart=1;
   }
   R=new lapack_complex_double[lDR*lDR];
-  for(int iBlock=0;iBlock<aiBlockIndices[i].size();++iBlock){
-    if(leftPart){
-      rBlockSize=aiBlockIndices[i][iBlock].size();
-      lBlockSize=siaimBlockIndices[i][iBlock].size();
-    }
-    else{
-      rBlockSize=siaimBlockIndices[i][iBlock].size();
-      lBlockSize=aiBlockIndices[i][iBlock].size();
-    }
+  for(int iBlock=0;iBlock<aiBlockIndicesLP[i].size();++iBlock){
+    rBlockSize=aiBlockIndicesLP[i][iBlock].size();
+    lBlockSize=siaimBlockIndicesLP[i][iBlock].size();
     std::cout<<lBlockSize<<"\t"<<rBlockSize<<std::endl;
     //rBlockSize is required to be smaller than or equal to lBlockSize
     minBlockSize=(lBlockSize<rBlockSize)?lBlockSize:rBlockSize;
@@ -221,7 +226,7 @@ int mps::leftNormalizeStateBlockwise(int const i){
       M=new lapack_complex_double[lBlockSize*rBlockSize];
       for(int j=0;j<rBlockSize;++j){
 	for(int k=0;k<lBlockSize;++k){
-	  convertIndices(i,j,k,iBlock,siCurrent,aiCurrent,aimCurrent);
+	  convertIndicesLP(i,j,k,iBlock,siCurrent,aiCurrent,aimCurrent);
 	  M[k+j*lBlockSize]=global_access(i,siCurrent,aiCurrent,aimCurrent);
 	}
       }
@@ -240,18 +245,12 @@ int mps::leftNormalizeStateBlockwise(int const i){
       }
       for(int j=0;j<rBlockSize;++j){
 	for(int k=0;k<lBlockSize;++k){
-	  convertIndices(i,j,k,iBlock,siCurrent,aiCurrent,aimCurrent);
+	  convertIndicesLP(i,j,k,iBlock,siCurrent,aiCurrent,aimCurrent);
 	  global_access(i,siCurrent,aiCurrent,aimCurrent)=M[k+j*lBlockSize];
 	}
 	for(int l=0;l<rBlockSize;++l){
-	  if(leftPart){
-	    aiCurrent=aiBlockIndices[i][iBlock][j];
-	    aipCurrent=aiBlockIndices[i][iBlock][l];
-	  }
-	  else{
-	    aiCurrent=siaimBlockIndices[i][iBlock][j].aim;
-	    aipCurrent=siaimBlockIndices[i][iBlock][l].aim;
-	  }
+	  aiCurrent=aiBlockIndicesLP[i][iBlock][j];
+	  aipCurrent=aiBlockIndicesLP[i][iBlock][l];
 	  R[aipCurrent+aiCurrent*lDR]=Rcontainer[l+j*rBlockSize];
 	}
       }
@@ -267,6 +266,23 @@ int mps::leftNormalizeStateBlockwise(int const i){
   }
   delete[] inputA;
   delete[] R;
+  lapack_complex_double *unity=new lapack_complex_double[lDR*lDR];
+  lapack_complex_double *networkB;
+  subMatrixStart(networkB,i);
+  for(int ai=0;ai<lDR;++ai){
+    for(int aip=0;aip<lDR;++aip){
+      unity[ai+aip*lDR]=(ai==aip)?-1:0;
+    }
+  }
+  for(int si=0;si<ld;++si){
+    transp(lDR,lDL,networkB+si*lDL*lDR);
+  }
+  cblas_zgemm(CblasRowMajor,CblasConjTrans,CblasNoTrans,lDR,lDR,ld*lDL,&zone,networkB,lDR,networkB,lDR,&zone,unity,lDR);
+  for(int si=0;si<ld;++si){
+    transp(lDL,lDR,networkB+si*lDL*lDR);
+  }
+  std::cout<<"Verification: "<<cblas_dznrm2(lDR*lDR,unity,1)<<std::endl;
+  delete[] unity;
   return 0;
 }
 
@@ -281,41 +297,23 @@ int mps::rightNormalizeStateBlockwise(int const i){
   lapack_complex_double *inputA;
   lapack_complex_double zone=1.0, zzero=0.0;
   lapack_int info;
-  int leftPart;
   lDL=locDimL(i);
   lDR=locDimR(i);
   lDLL=locDimL(i-1);
   ld=locd(i);
-  if(i<L/2){
-    leftPart=1;
-  }
-  else{
-    leftPart=0;
-  }
   R=new lapack_complex_double[lDL*lDL];
-  for(int iBlock=0;iBlock<aiBlockIndices[i].size();++iBlock){
-    if(leftPart){
-      rBlockSize=aiBlockIndices[i][iBlock].size();
-      lBlockSize=siaimBlockIndices[i][iBlock].size();
-    }
-    else{
-      rBlockSize=siaimBlockIndices[i][iBlock].size();
-      lBlockSize=aiBlockIndices[i][iBlock].size();
-    }
+  for(int iBlock=0;iBlock<aimBlockIndicesRP[i].size();++iBlock){
+    lBlockSize=aimBlockIndicesRP[i][iBlock].size();
+    rBlockSize=siaiBlockIndicesRP[i][iBlock].size();
     std::cout<<lBlockSize<<"\t"<<rBlockSize<<std::endl;
     minBlockSize=(lBlockSize<rBlockSize)?lBlockSize:rBlockSize;
-    if(lBlockSize!=rBlockSize){
-      lBlockSize=minBlockSize;
-      rBlockSize=minBlockSize;
-    }
     //lBlockSize is required to be smaller than or equal to rBlockSize
-    // THUS, ONLY lBlockSize=rBlockSize ENABLES BOTH NORMALIZATION FUNCTIONS WITH A SINGLE BLOCKSIZE
     minBlockSize=(lBlockSize<rBlockSize)?lBlockSize:rBlockSize;
     if(rBlockSize!=0 && lBlockSize!=0){
       M=new lapack_complex_double[lBlockSize*rBlockSize];
       for(int j=0;j<rBlockSize;++j){
 	for(int k=0;k<lBlockSize;++k){
-	  convertIndices(i,j,k,iBlock,siCurrent,aiCurrent,aimCurrent);
+	  convertIndicesRP(i,j,k,iBlock,siCurrent,aiCurrent,aimCurrent);
 	  M[k+j*lBlockSize]=global_access(i,siCurrent,aiCurrent,aimCurrent);
 	}
       }
@@ -324,27 +322,23 @@ int mps::rightNormalizeStateBlockwise(int const i){
       info=LAPACKE_zgerqf(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,M,lBlockSize,Qcontainer);
       if(info){
 	std::cout<<"Error in LAPACKE_zgeqrf: "<<info<<std::endl;
+	exit(1);
       }
       lowerdiag(lBlockSize,lBlockSize,M,Rcontainer);
       info=LAPACKE_zungrq(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,lBlockSize,M,lBlockSize,Qcontainer);
       if(info){
 	std::cout<<"Error in LAPACKE_zungqr: "<<info<<std::endl;
+	exit(1);
       }
       for(int j=0;j<lBlockSize;++j){
 	for(int k=0;k<rBlockSize;++k){
-	  convertIndices(i,k,j,iBlock,siCurrent,aiCurrent,aimCurrent);
+	  convertIndicesRP(i,k,j,iBlock,siCurrent,aiCurrent,aimCurrent);
 	  global_access(i,siCurrent,aiCurrent,aimCurrent)=M[k+j*lBlockSize];
 	}
 	for(int l=0;l<lBlockSize;++l){
-	  if(leftPart){
-	    aimCurrent=siaimBlockIndices[i][iBlock][j].aim;
-	    aimpCurrent=siaimBlockIndices[i][iBlock][l].aim;
-	  }
-	  else{
-	    aimCurrent=aiBlockIndices[i][iBlock][j];
-	    aimpCurrent=aiBlockIndices[i][iBlock][l];
-	  }
-	  R[aimpCurrent+aimCurrent*lDL]=Rcontainer[l+j*rBlockSize];
+	  aimCurrent=aimBlockIndicesRP[i][iBlock][j];
+	  aimpCurrent=aimBlockIndicesRP[i][iBlock][l];
+	  R[aimpCurrent+aimCurrent*lDL]=Rcontainer[l+j*lBlockSize];
 	}
       }
       delete[] Qcontainer;
@@ -359,20 +353,30 @@ int mps::rightNormalizeStateBlockwise(int const i){
   }
   delete[] inputA;
   delete[] R;
+  lapack_complex_double *unity=new lapack_complex_double[lDL*lDL];
+  lapack_complex_double *networkA;
+  for(int ai=0;ai<lDL;++ai){
+    for(int aip=0;aip<lDL;++aip){
+      unity[ai+aip*lDL]=(ai==aip)?-1:0;
+    }
+  }
+  subMatrixStart(networkA,i);
+  cblas_zgemm(CblasColMajor,CblasNoTrans,CblasConjTrans,lDL,lDL,ld*lDR,&zone,networkA,lDL,networkA,lDL,&zone,unity,lDL);
+  std::cout<<"Verification: "<<cblas_dznrm2(lDL*lDL,unity,1)<<std::endl;
+  delete[] unity;
   return 0;
 }
 
-void mps::convertIndices(int const i, int const j, int const k, int const iBlock, int &si, int &ai, int &aim){
-  if(1){
-    ai=aiBlockIndices[i][iBlock][j];
-    aim=siaimBlockIndices[i][iBlock][k].aim;
-    si=siaimBlockIndices[i][iBlock][k].si;
-  }
-  else{
-    ai=siaimBlockIndices[i][iBlock][j].aim;
-    aim=aiBlockIndices[i][iBlock][k];
-    si=siaimBlockIndices[i][iBlock][j].si;
-  }
+void mps::convertIndicesLP(int const i, int const j, int const k, int const iBlock, int &si, int &ai, int &aim){
+  ai=aiBlockIndicesLP[i][iBlock][j];
+  aim=siaimBlockIndicesLP[i][iBlock][k].aim;
+  si=siaimBlockIndicesLP[i][iBlock][k].si;
+}
+
+void mps::convertIndicesRP(int const i, int const j, int const k, int const iBlock, int &si, int &ai, int &aim){
+  aim=aimBlockIndicesRP[i][iBlock][k];
+  ai=siaiBlockIndicesRP[i][iBlock][j].aim;
+  si=siaiBlockIndicesRP[i][iBlock][j].si;
 }
 
 //---------------------------------------------------------------------------------------------------//

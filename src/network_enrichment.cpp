@@ -2,6 +2,7 @@
 #include "arrayprocessing.h"
 #include "tmpContainer.h"
 #include "network.h"
+#include <iostream>
 
 //---------------------------------------------------------------------------------------------------//
 // The implementation of the enrichment is very ugly and might still contain severe bugs which
@@ -13,7 +14,7 @@
 void network::leftEnrichment(double const alpha, int const i){
   lapack_complex_double *Mnew;
   lapack_complex_double *Bnew;
-  lapack_complex_double *pExpression;
+  lapack_complex_double *pExpression, *unity;
   int lDRR, ldp;
   getLocalDimensions(i);
   lDRR=networkState.locDimR(i+1);
@@ -59,7 +60,7 @@ void network::leftEnrichment(double const alpha, int const i){
   //POSSIBLE IMPROVEMENT: USE LAPACK DRIVER ROUTINE INSTEAD OF COMPUTATIONAL ROUTINES
   //lapackSVD(MNumCols,MNumRows,Mnew,Mnewcpy,diags);
   LAPACKE_zgesdd(LAPACK_COL_MAJOR,'A',MNumRows,MNumCols,Mnew,MNumRows,diags,U,MNumRows,VT,MNumCols);
-  //Mnewcpy -> A, S*Mnew->Multiply to B
+  //U -> A, S*VT->Multiply to B
   //Postprocessing: Truncate S to lDR eigenvalues, U to dimension ld*lDL x lDR (from ld*lDL x ld*lDL) if neccessary
   //Truncation is carried out implicitly by only adressing part of the matrix
   for(int mi=0;mi<MNumCols;++mi){
@@ -82,13 +83,38 @@ void network::leftEnrichment(double const alpha, int const i){
   }
   delete[] VT;
   delete[] Bnew;
+  /*unity=new lapack_complex_double[MNumRows*MNumRows];
+  for(int ai=0;ai<MNumRows;++ai){
+    for(int aip=0;aip<MNumRows;++aip){
+      unity[ai+aip*MNumRows]=(ai==aip)?-1:0;
+    }
+  }
+  cblas_zgemm(CblasColMajor,CblasConjTrans,CblasNoTrans,MNumRows,MNumRows,MNumRows,&zone,U,MNumRows,U,MNumRows,&zone,unity,MNumRows);
+  std::cout<<"Verification of U: "<<cblas_dznrm2(MNumRows*MNumRows,unity,1)<<std::endl;
+  delete[] unity;*/
+  networkState.subMatrixStart(networkB,i);
   for(int si=0;si<ld;++si){
     for(int ai=0;ai<lDR;++ai){
       for(int aim=0;aim<lDL;++aim){
-	networkState.global_access(i,si,ai,aim)=U[aim+si*lDL+ai*MNumRows];
+        networkState.global_access(i,si,ai,aim)=U[aim+si*lDL+ai*lDL*ld];
       }
     }
   }
+  unity=new lapack_complex_double[lDR*lDR];
+  for(int ai=0;ai<lDR;++ai){
+    for(int aip=0;aip<lDR;++aip){
+      unity[ai+aip*lDR]=(ai==aip)?-1:0;
+    }
+  }
+  for(int si=0;si<ld;++si){
+    transp(lDR,lDL,networkB+si*lDL*lDR);
+  }
+  cblas_zgemm(CblasRowMajor,CblasConjTrans,CblasNoTrans,lDR,lDR,ld*lDL,&zone,networkB,lDR,networkB,lDR,&zone,unity,lDR);
+  for(int si=0;si<ld;++si){
+    transp(lDL,lDR,networkB+si*lDL*lDR);
+  }
+  std::cout<<"Verification: "<<cblas_dznrm2(lDR*lDR,unity,1)<<std::endl;
+  delete[] unity;
   delete[] Mnew;
   delete[] U;
 }
@@ -178,6 +204,16 @@ void network::rightEnrichment(double const alpha, int const i){
       }
     }
   }
+  lapack_complex_double *unity=new lapack_complex_double[lDL*lDL];
+  for(int ai=0;ai<lDL;++ai){
+    for(int aip=0;aip<lDL;++aip){
+      unity[ai+aip*lDL]=(ai==aip)?-1:0;
+    }
+  }
+  networkState.subMatrixStart(networkA,i);
+  cblas_zgemm(CblasColMajor,CblasNoTrans,CblasConjTrans,lDL,lDL,ld*lDR,&zone,networkA,lDL,networkA,lDL,&zone,unity,lDL);
+  std::cout<<"Verification: "<<cblas_dznrm2(lDL*lDL,unity,1)<<std::endl;
+  delete[] unity;
   delete[] VT;
   delete[] Mnew;
 }

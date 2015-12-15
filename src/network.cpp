@@ -150,14 +150,32 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
   alpha=simPars.alpha;
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
     pCtr.initialize(&networkH,&networkState);
-    for(int i=L-1;i>0;--i){
-      normalize(i,0,0);
+    for(int i=0;i<L-1;++i){
+      checkQN();
+      normalize(i,1,alpha);
+      std::cout<<"Norm of state: "<<test.getFullOverlap()<<std::endl;
+      measure(check,spinCheck);
+      std::cout<<"Spin: "<<spinCheck<<std::endl;
+    }
+    networkState.normalizeFinal(0);
+    std::cout<<"Finished left normalization\n";
+    measure(check,spinCheck);
+    std::cout<<"Spin: "<<spinCheck<<std::endl;
     std::cout<<"Norm of state: "<<test.getFullOverlap()<<std::endl;
-      
+    for(int i=L-1;i>0;--i){
+      checkQN();
+      normalize(i,0,alpha);
+      std::cout<<"Norm of state: "<<test.getFullOverlap()<<std::endl;
+      measure(check,spinCheck);
+      std::cout<<"Spin: "<<spinCheck<<std::endl;
     }
     networkState.normalizeFinal(1);
+    std::cout<<"Finished right normalization\n";    
     std::cout<<"Norm of state: "<<test.getFullOverlap()<<std::endl;
+    measure(check,spinCheck);
+    std::cout<<"Spin: "<<spinCheck<<std::endl;
     pCtr.Lctr.global_access(0,0,0,0)=1;
+    exit(1);
     //In preparation of the first sweep, generate full contraction to the right (first sweeps starts at site 0)
     pCtr.calcCtrFull(1);
     if(iEigen){
@@ -241,9 +259,6 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
     normalize(i,1,alpha);
     stateNorm=test.getFullOverlap();
     std::cout<<"Norm of state after normalization: "<<stateNorm<<std::endl;
-    if(abs(stateNorm)<.999){
-      exit(1);
-    }
     //Here, the scalar products with lower lying states are updated
     excitedStateP.updateScalarProducts(i,1);
     pCtr.calcCtrIterLeft(i+1);
@@ -261,9 +276,6 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
     normalize(i,0,alpha);
     stateNorm=test.getFullOverlap();
     std::cout<<"Norm of state after normalization: "<<stateNorm<<std::endl<<std::endl;
-    if(abs(stateNorm)<.999){
-      exit(1);
-    }
     //same as above for the scalar products with lower lying states
     excitedStateP.updateScalarProducts(i,-1);
     pCtr.calcCtrIterRight(i-1);
@@ -493,7 +505,7 @@ int network::checkQN(){
 	      //if(abs(networkState.global_access(i,si,ai,aim))>0.0001 && (si!=0 || aim!=0)){
 	      std::cout<<"Violation of quantum number constraint at "<<"("<<i<<", "<<si<<", "<<ai<<", "<<aim<<"): "<<networkState.global_access(i,si,ai,aim)<<std::endl;
 	      std::cout<<"QN Labels: "<<conservedQNs[iQN].QNLabel(i,ai)<<", "<<conservedQNs[iQN].QNLabel(i-1,aim)<<", "<<conservedQNs[iQN].QNLabel(si)<<std::endl;
-	      valid=0;
+	      return 1;
 	    }
 	  }
 	}
