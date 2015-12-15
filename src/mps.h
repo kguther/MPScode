@@ -16,13 +16,10 @@ class mps: public stateArray{
   int rightNormalizeState(int const i);
   void normalizeFinal(int const i);
   void restoreQN(int const i);
+  basisQNOrderMatrix indexTable;
  private:
   int nQNs;
   std::vector<quantumNumber> *conservedQNs;
-  std::vector<std::vector<int> > *aiBlockIndicesLP;
-  std::vector<std::vector<multInt> > *siaimBlockIndicesLP;
-  std::vector<std::vector<int> > *aimBlockIndicesRP;
-  std::vector<std::vector<multInt> > *siaiBlockIndicesRP;
   void createInitialState();
   int leftNormalizeStateBlockwise(int const i);
   int rightNormalizeStateBlockwise(int const i);

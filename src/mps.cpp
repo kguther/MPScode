@@ -3,11 +3,7 @@
 #include "arraycreation.h"
 #include <iostream>
 
-mps::mps():stateArray(),
-	   aiBlockIndicesLP(0),
-	   siaimBlockIndicesLP(0),
-	   aimBlockIndicesRP(0),
-	   siaiBlockIndicesRP(0)
+mps::mps():stateArray()
 {}
 
 //---------------------------------------------------------------------------------------------------//
@@ -16,13 +12,13 @@ mps::mps(int const din, int const Din, int const Lin, std::vector<quantumNumber>
   stateArray::initialize(din,Din,Lin);
   conservedQNs=conservedQNsin;
   createInitialState();
+  indexTable.initialize(dimInfo,conservedQNs);
+  indexTable.generateQNIndexTables();
 }
 
+//---------------------------------------------------------------------------------------------------//
+
 mps::~mps(){
-  delete[] aiBlockIndicesLP;
-  delete[] siaimBlockIndicesLP;
-  delete[] siaiBlockIndicesRP;
-  delete[] aimBlockIndicesRP;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -33,15 +29,8 @@ void mps::generate(int const din, int const Din, int const Lin, std::vector<quan
   conservedQNs=conservedQNsin;
   nQNs=(*conservedQNs).size();
   createInitialState();
-  basisQNOrderMatrix indexCalc(dimInfo,conservedQNs);
-  aiBlockIndicesLP=new std::vector<std::vector<int> >[L];
-  siaimBlockIndicesLP=new std::vector<std::vector<multInt> >[L];
-  aimBlockIndicesRP=new std::vector<std::vector<int> >[L];
-  siaiBlockIndicesRP=new std::vector<std::vector<multInt> >[L];
-  for(int i=0;i<L;++i){
-    indexCalc.blockStructure(i,0,aiBlockIndicesLP[i],siaimBlockIndicesLP[i]);
-    indexCalc.blockStructure(i,1,aimBlockIndicesRP[i],siaiBlockIndicesRP[i]);
-  }
+  indexTable.initialize(dimInfo,conservedQNs);
+  indexTable.generateQNIndexTables();
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -192,9 +181,9 @@ int mps::leftNormalizeStateBlockwise(int const i){
   lDRR=locDimR(i+1);
   ld=locd(i);
   R=new lapack_complex_double[lDR*lDR];
-  for(int iBlock=0;iBlock<aiBlockIndicesLP[i].size();++iBlock){
-    rBlockSize=aiBlockIndicesLP[i][iBlock].size();
-    lBlockSize=siaimBlockIndicesLP[i][iBlock].size();
+  for(int iBlock=0;iBlock<indexTable.numBlocksLP(i);++iBlock){
+    rBlockSize=indexTable.rBlockSizeLP(i,iBlock);
+    lBlockSize=indexTable.lBlockSizeLP(i,iBlock);
     //std::cout<<lBlockSize<<"\t"<<rBlockSize<<std::endl;
     //rBlockSize is required to be smaller than or equal to lBlockSize
     minBlockSize=(lBlockSize<rBlockSize)?lBlockSize:rBlockSize;
@@ -225,8 +214,8 @@ int mps::leftNormalizeStateBlockwise(int const i){
 	  global_access(i,siCurrent,aiCurrent,aimCurrent)=M[k+j*lBlockSize];
 	}
 	for(int l=0;l<rBlockSize;++l){
-	  aiCurrent=aiBlockIndicesLP[i][iBlock][j];
-	  aipCurrent=aiBlockIndicesLP[i][iBlock][l];
+	  aiCurrent=indexTable.aiBlockIndexLP(i,iBlock,j);
+	  aipCurrent=indexTable.aiBlockIndexLP(i,iBlock,l);
 	  R[aipCurrent+aiCurrent*lDR]=Rcontainer[l+j*rBlockSize];
 	}
       }
@@ -261,9 +250,9 @@ int mps::rightNormalizeStateBlockwise(int const i){
   lDLL=locDimL(i-1);
   ld=locd(i);
   R=new lapack_complex_double[lDL*lDL];
-  for(int iBlock=0;iBlock<aimBlockIndicesRP[i].size();++iBlock){
-    lBlockSize=aimBlockIndicesRP[i][iBlock].size();
-    rBlockSize=siaiBlockIndicesRP[i][iBlock].size();
+  for(int iBlock=0;iBlock<indexTable.numBlocksRP(i);++iBlock){
+    lBlockSize=indexTable.lBlockSizeRP(i,iBlock);
+    rBlockSize=indexTable.rBlockSizeRP(i,iBlock);
     //std::cout<<lBlockSize<<"\t"<<rBlockSize<<std::endl;
     minBlockSize=(lBlockSize<rBlockSize)?lBlockSize:rBlockSize;
     //lBlockSize is required to be smaller than or equal to rBlockSize
@@ -295,8 +284,8 @@ int mps::rightNormalizeStateBlockwise(int const i){
 	  global_access(i,siCurrent,aiCurrent,aimCurrent)=M[j+k*lBlockSize];
 	}
 	for(int l=0;l<lBlockSize;++l){
-	  aimCurrent=aimBlockIndicesRP[i][iBlock][j];
-	  aimpCurrent=aimBlockIndicesRP[i][iBlock][l];
+	  aimCurrent=indexTable.aimBlockIndexRP(i,iBlock,j);
+	  aimpCurrent=indexTable.aimBlockIndexRP(i,iBlock,l);
 	  R[aimpCurrent+aimCurrent*lDL]=Rcontainer[l+j*lBlockSize];
 	}
       }
@@ -318,15 +307,15 @@ int mps::rightNormalizeStateBlockwise(int const i){
 //---------------------------------------------------------------------------------------------------//
 
 void mps::convertIndicesLP(int const i, int const j, int const k, int const iBlock, int &si, int &ai, int &aim){
-  ai=aiBlockIndicesLP[i][iBlock][j];
-  aim=siaimBlockIndicesLP[i][iBlock][k].aim;
-  si=siaimBlockIndicesLP[i][iBlock][k].si;
+  ai=indexTable.aiBlockIndexLP(i,iBlock,j);
+  aim=indexTable.aimBlockIndexLP(i,iBlock,k);
+  si=indexTable.siBlockIndexLP(i,iBlock,k);
 }
 
 void mps::convertIndicesRP(int const i, int const j, int const k, int const iBlock, int &si, int &ai, int &aim){
-  aim=aimBlockIndicesRP[i][iBlock][k];
-  ai=siaiBlockIndicesRP[i][iBlock][j].aim;
-  si=siaiBlockIndicesRP[i][iBlock][j].si;
+  aim=indexTable.aimBlockIndexRP(i,iBlock,k);
+  ai=indexTable.aiBlockIndexRP(i,iBlock,j);
+  si=indexTable.siBlockIndexRP(i,iBlock,j);
 }
 
 //---------------------------------------------------------------------------------------------------//

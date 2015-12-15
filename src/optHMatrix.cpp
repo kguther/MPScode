@@ -4,27 +4,17 @@
 #include "optHMatrix.h"
 #include "tmpContainer.h"
 
-optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, arcomplex<double> *Hin, problemParameters pars, int Din, int iIn, projector *excitedStateP, double shiftin, std::vector<quantumNumber> *conservedQNsin):
+optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, arcomplex<double> *Hin, dimensionTable &dimInfo, int Dwin, int iIn, projector *excitedStateP, double shiftin, std::vector<quantumNumber> *conservedQNsin):
   Rctr(Rin),
   Lctr(Lin),
   H(Hin),
-  d(pars.d),
-  D(Din),
-  L(pars.L),
-  Dw(pars.Dw),
+  Dw(Dwin),
   i(iIn),
   shift(shiftin),
   P(excitedStateP),
   conservedQNs(conservedQNsin)
 {
-  icrit=L/2;
-  for(int j=0;j<L/2;j++){
-    if(pow(d,j+1)>D){
-      icrit=j;
-      break;
-    }
-  }
-  //Lengthy initialization of local Matrix dimension
+  D=dimInfo.D();
   lDwL=Dw;
   lDwR=Dw;
   if(i==0){
@@ -33,28 +23,9 @@ optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, arcomplex
   if(i==(L-1)){
     lDwR=1;
   }
-  if(i<=icrit){
-    lDL=pow(d,i);
-  }
-  else{
-    if(i<=L-icrit-1){
-    lDL=D;
-  }
-    else{
-      lDL=pow(d,L-i);
-    }
-  }
-  if(i<icrit){
-    lDR=pow(d,i+1);
-  }
-  else{
-    if(i<=L-icrit-2){
-    lDR=D;
-  }
-    else{
-      lDR=pow(d,L-i-1);
-    }
-  }
+  lDR=dimInfo.locDimR(i);
+  lDL=dimInfo.locDimL(i);
+  d=dimInfo.locd(i);
   //Dimension of H is obviously a necessary information for ARPACK++
   dimension=d*lDL*lDR;
   std::cout<<"Current eigenvalue problem Dimension: "<<dimension<<std::endl;

@@ -151,11 +151,7 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
     pCtr.initialize(&networkH,&networkState);
     for(int i=L-1;i>0;--i){
-      checkQN();
-      normalize(i,0,alpha);
-      std::cout<<"Norm of state: "<<test.getFullOverlap()<<std::endl;
-      measure(check,spinCheck);
-      std::cout<<"Spin: "<<spinCheck<<std::endl;
+      normalize(i,0,0);
     }
     networkState.normalizeFinal(1);
     std::cout<<"Finished right normalization\n";    
@@ -229,9 +225,6 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
   clock_t curtime;
   int errRet;
   lapack_complex_double stateNorm;
-  overlap test;
-  double spinCheck;
-  test.loadMPS(&networkState,&networkState);
   std::cout<<"Starting rightsweep\n";
   for(int i=0;i<(L-1);++i){
     //Step of leftsweep
@@ -240,10 +233,7 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
     errRet=optimize(i,maxIter,tol,lambda);
     curtime=clock()-curtime;
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
-    std::cout<<"Norm of state after optimization: "<<test.getFullOverlap()<<std::endl;
     normalize(i,1,alpha);
-    stateNorm=test.getFullOverlap();
-    std::cout<<"Norm of state after normalization: "<<stateNorm<<std::endl;
     //Here, the scalar products with lower lying states are updated
     excitedStateP.updateScalarProducts(i,1);
     pCtr.calcCtrIterLeft(i+1);
@@ -257,10 +247,7 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
     errRet=optimize(i,maxIter,tol,lambda);
     curtime=clock()-curtime;
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
-    std::cout<<"Norm of state after optimization: "<<test.getFullOverlap()<<std::endl;
     normalize(i,0,alpha);
-    stateNorm=test.getFullOverlap();
-    std::cout<<"Norm of state after normalization: "<<stateNorm<<std::endl<<std::endl;
     //same as above for the scalar products with lower lying states
     excitedStateP.updateScalarProducts(i,-1);
     pCtr.calcCtrIterRight(i-1);
@@ -295,7 +282,7 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
     multMV=&optHMatrix::MultMv;
   }
   //Generate matrix which is to be passed to ARPACK++
-  optHMatrix HMat(RTerm,LTerm,HTerm,pars,D,i,&excitedStateP,shift,&conservedQNs);
+  optHMatrix HMat(RTerm,LTerm,HTerm,networkDimInfo,Dw,i,&excitedStateP,shift,&conservedQNs);
   plambda=&lambda;
   //Using the current site matrix as a starting point allows for much faster convergence as it has already been optimized in previous sweeps (except for the first sweep, this is where a good starting point has to be guessed
   networkState.subMatrixStart(currentM,i);
@@ -327,6 +314,9 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
 
 void network::normalize(int const i, int const direction, double const alpha){
   int enrichment=0;
+  if(!pars.nQNs && alpha>1e-20){
+    enrichment=1;
+  }
   if(direction){
     if(enrichment){
       leftEnrichment(alpha,i);

@@ -85,7 +85,7 @@ void quantumNumber::setParameterD(int const Dnew){
   initializeLabelList();
 }
 
-/*
+
 void quantumNumber::initializeLabelList(){
   //This is for spin quantum numbers
   int const Lred=dimInfo.L();
@@ -114,8 +114,8 @@ int quantumNumber::QNLabel(int const i, int const ai){
   }
   return dimInfo.L()*dimInfo.L();
 }
-*/
 
+/*
 void quantumNumber::initializeLabelList(){
   //This is for particle number quantum numbers
   int const Lred=dimInfo.L();
@@ -139,3 +139,5 @@ void quantumNumber::initializeLabelList(){
 int quantumNumber::QNLabel(int const i, int const ai){
   return indexLabel[ai+(i+1)*dimInfo.D()];
 }
+
+*/

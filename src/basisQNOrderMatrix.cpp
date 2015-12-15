@@ -1,11 +1,44 @@
 #include "basisQNOrderMatrix.h"
 #include <iostream>
 
+basisQNOrderMatrix::basisQNOrderMatrix():
+  aiBlockIndicesLP(0),
+  siaimBlockIndicesLP(0),
+  aimBlockIndicesRP(0),
+  siaiBlockIndicesRP(0)
+{}
+
 basisQNOrderMatrix::basisQNOrderMatrix(dimensionTable &dimin, std::vector<quantumNumber> *conservedQNsin):
   dimInfo(dimin),
-  conservedQNs(conservedQNsin)
-{
+  conservedQNs(conservedQNsin),
+  aiBlockIndicesLP(0),
+  siaimBlockIndicesLP(0),
+  aimBlockIndicesRP(0),
+  siaiBlockIndicesRP(0)
+{}
 
+basisQNOrderMatrix::~basisQNOrderMatrix(){
+  delete[] aiBlockIndicesLP;
+  delete[] siaimBlockIndicesLP;
+  delete[] siaiBlockIndicesRP;
+  delete[] aimBlockIndicesRP;
+}
+
+void basisQNOrderMatrix::initialize(dimensionTable &dimin, std::vector<quantumNumber> *conservedQNsin){
+  dimInfo=dimin;
+  conservedQNs=conservedQNsin;
+}
+
+void basisQNOrderMatrix::generateQNIndexTables(){
+  int L=dimInfo.L();
+  aiBlockIndicesLP=new std::vector<std::vector<int> >[L];
+  siaimBlockIndicesLP=new std::vector<std::vector<multInt> >[L];
+  aimBlockIndicesRP=new std::vector<std::vector<int> >[L];
+  siaiBlockIndicesRP=new std::vector<std::vector<multInt> >[L];
+  for(int i=0;i<dimInfo.L();++i){
+    blockStructure(i,0,aiBlockIndicesLP[i],siaimBlockIndicesLP[i]);
+    blockStructure(i,1,aimBlockIndicesRP[i],siaiBlockIndicesRP[i]);
+  }
 }
 
 int basisQNOrderMatrix::blockStructure(int const i, int const direction, std::vector<std::vector<int> > &aiIndices, std::vector<std::vector<multInt> > &siaimIndices){

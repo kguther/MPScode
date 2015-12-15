@@ -13,9 +13,29 @@ struct multInt{
 class basisQNOrderMatrix{
  public:
   basisQNOrderMatrix(dimensionTable &dimin, std::vector<quantumNumber> *conservedQNsin);
+  basisQNOrderMatrix();
+  ~basisQNOrderMatrix();
+  void initialize(dimensionTable &dimin, std::vector<quantumNumber> *conservedQNsin);
+  void generateQNIndexTables();
   int blockStructure(int const i, int const direction, std::vector<std::vector<int> > &aiIndices, std::vector<std::vector<multInt> > &siaimIndices);
+  int aiBlockIndexLP(int const i, int const iBlock, int const j) const{return aiBlockIndicesLP[i][iBlock][j];}
+  int siBlockIndexLP(int const i, int const iBlock, int const k) const{return siaimBlockIndicesLP[i][iBlock][k].si;}
+  int aimBlockIndexLP(int const i, int const iBlock, int const k) const{return siaimBlockIndicesLP[i][iBlock][k].aim;}
+  int aiBlockIndexRP(int const i, int const iBlock, int const k) const{return siaiBlockIndicesRP[i][iBlock][k].aim;}
+  int siBlockIndexRP(int const i, int const iBlock, int const k) const{return siaiBlockIndicesRP[i][iBlock][k].si;}
+  int aimBlockIndexRP(int const i, int const iBlock, int const j) const{return aimBlockIndicesRP[i][iBlock][j];}
+  int lBlockSizeLP(int const i, int const iBlock){return siaimBlockIndicesLP[i][iBlock].size();}
+  int rBlockSizeLP(int const i, int const iBlock){return aiBlockIndicesLP[i][iBlock].size();}
+  int lBlockSizeRP(int const i, int const iBlock){return aimBlockIndicesRP[i][iBlock].size();}
+  int rBlockSizeRP(int const i, int const iBlock){return siaiBlockIndicesRP[i][iBlock].size();}
+  int numBlocksLP(int const i){return aiBlockIndicesLP[i].size();}
+  int numBlocksRP(int const i){return aimBlockIndicesRP[i].size();}
  private:
   std::vector<quantumNumber> *conservedQNs;
+  std::vector<std::vector<int> > *aiBlockIndicesLP;
+  std::vector<std::vector<multInt> > *siaimBlockIndicesLP;
+  std::vector<std::vector<int> > *aimBlockIndicesRP;
+  std::vector<std::vector<multInt> > *siaiBlockIndicesRP;
   dimensionTable dimInfo;
 };
 
