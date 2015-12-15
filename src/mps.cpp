@@ -230,11 +230,13 @@ int mps::leftNormalizeStateBlockwise(int const i){
       info=LAPACKE_zgeqrf(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,M,lBlockSize,Qcontainer);
       if(info){
 	std::cout<<"Error in LAPACKE_zgeqrf: "<<info<<std::endl;
+	exit(1);
       }
       lowerdiag(rBlockSize,rBlockSize,M,Rcontainer,rBlockSize);
       info=LAPACKE_zungqr(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,rBlockSize,M,lBlockSize,Qcontainer);
       if(info){
 	std::cout<<"Error in LAPACKE_zungqr: "<<info<<std::endl;
+	exit(1);
       }
       for(int j=0;j<rBlockSize;++j){
 	for(int k=0;k<lBlockSize;++k){

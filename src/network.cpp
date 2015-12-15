@@ -156,7 +156,6 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
       
     }
     networkState.normalizeFinal(1);
-    exit(1);
     std::cout<<"Norm of state: "<<test.getFullOverlap()<<std::endl;
     pCtr.Lctr.global_access(0,0,0,0)=1;
     //In preparation of the first sweep, generate full contraction to the right (first sweeps starts at site 0)
