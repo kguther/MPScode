@@ -36,7 +36,7 @@ void testSolve(){
   double eigVal;
   double const mEl=1;
   int const nEigens=1;
-  int const L=20;
+  int const L=12;
   int const nQuantumNumbers=1;
   int QNValue[1]={-8};
   int QNList[2]={1,-1};

@@ -32,6 +32,11 @@ optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, arcomplex
 }
 
 //---------------------------------------------------------------------------------------------------//
+
+optHMatrix::~optHMatrix(){
+}
+
+//---------------------------------------------------------------------------------------------------//
 // This is the multiplication of some vector v with an optHMatrix, the output is returned in w
 // The functiion arguments are required this way by ARPACK++ 
 //---------------------------------------------------------------------------------------------------//
@@ -41,7 +46,7 @@ void optHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
   tmpContainer<arcomplex<double> > outercontainer(d,lDwL,lDR,lDL);
   int nNzero;
   arcomplex<double> simpleContainer;
-  (*P).project(v,i);
+  P->project(v,i);
   //Similar to the calculation of partial contractions, we use optimal bracketing to reuse any intermediate results. This greatly reduces the computational effort and is much faster than storing H in a sparse format and using the internal ARPACK++ matrix classes
   for(int sip=0;sip<d;++sip){
     for(int aimp=0;aimp<lDL;++aimp){
@@ -84,7 +89,7 @@ void optHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
       }
     }
   }
-  (*P).project(w,i);
+  P->project(w,i);
 }
 
 //---------------------------------------------------------------------------------------------------//

@@ -53,6 +53,8 @@ class network{
   //most of these methods are auxiliary functions
   int pctrIndex(int const ai, int const bi, int const aip){return aip+bi*D+ai*D*Dw;}
   int optimize(int const i, int const maxIter, double const tol, double &iolambda);
+  int solveSiteEigenProb(int const i, int const maxIter, double const tol, double &iolambda);
+  int solveSiteEigenProbQNC(int const i, int const maxIter, double const tol, double &iolambda);
   int locd(int const i);
   int locDMax(int const i);
   int gotoNextEigen();
