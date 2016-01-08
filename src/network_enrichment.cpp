@@ -250,7 +250,7 @@ void network::getPExpressionLeft(int const i, lapack_complex_double *pExpr){
 	      simpleContainer+=networkH.global_access(i,si,sip,bi,bim)*innerContainer.global_access(sip,aim,ai,bim);
 	    }
 	  }
-	  pExpr[aim+lDL*si+bi*lDL*d*lDR+ai*lDL*d]=simpleContainer;    
+	  pExpr[aim+lDL*si+bi*lDL*ld*lDR+ai*lDL*ld]=simpleContainer;    
 	}
       }
     }

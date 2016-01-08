@@ -6,6 +6,12 @@
 #include "quantumNumber.h"
 #include "basisQNOrderMatrix.h"
 
+//---------------------------------------------------------------------------------------------------//
+// The blockHMatrix class is an expansion of the optHMatrix class which is designed to exploit good
+// quantum numbers. Therefore, it accesses an index table (i.e. a basisQNOrderMatrix object) containing
+// the block structure of the MPS matrices. Usually, this is the index table of the corresponding MPS
+//---------------------------------------------------------------------------------------------------//
+
 class blockHMatrix: public optHMatrix{
  public: 
   blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, arcomplex<double> *Hin, dimensionTable &dimInfo, int Dwin, int iIn, basisQNOrderMatrix *indexTable, projector *excitedStateP, double shift, std::vector<quantumNumber> *conservedQNsin);

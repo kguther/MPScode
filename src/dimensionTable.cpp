@@ -4,19 +4,48 @@
 dimensionTable::dimensionTable(){
 }
 
-dimensionTable::dimensionTable(int const din, int const Din, int const Lin):
-  dpar(din),
+//---------------------------------------------------------------------------------------------------//
+
+dimensionTable::dimensionTable(int const Din, int const Lin, localHSpaces din):
+  dpars(din),
   Dpar(Din),
   Lpar(Lin)
 {
+  dpar=dpars.maxd();
+  getDMaxTable();
   getIcrit();
 }
 
-void dimensionTable::initialize(int const din, int const Din, int const Lin){
-  dpar=din;
+//---------------------------------------------------------------------------------------------------//
+
+void dimensionTable::initialize(int const Din, int const Lin, localHSpaces din){
+  dpars=din;
   Lpar=Lin;
+  dpar=dpars.maxd();
+  getDMaxTable();
   setParameterD(Din);
 }
+
+void dimensionTable::getDMaxTable(){
+  int lDM;
+  for(int i=0;i<=Lpar;++i){
+    lDM=1;
+    if(i<Lpar/2){
+      for(int j=1;j<=i;++j){
+	lDM*=dpars.locd(j);
+      }
+      DMaxTable.push_back(lDM);
+    }
+    else{
+      for(int j=Lpar;j>i;--j){
+	lDM*=dpars.locd(j);
+      }
+      DMaxTable.push_back(lDM);
+    }
+  }
+}
+
+//---------------------------------------------------------------------------------------------------//
 
 void dimensionTable::setParameterD(int const Dnew){
   Dpar=Dnew;
@@ -36,6 +65,8 @@ void dimensionTable::getIcrit(){
 }
 
 //---------------------------------------------------------------------------------------------------//
+// Functions returning the local bond dimensions of a MPS with the given parameters at site i.
+//---------------------------------------------------------------------------------------------------//
 
 int dimensionTable::locDimL(int const i){
   if(i<=icrit){
@@ -44,7 +75,7 @@ int dimensionTable::locDimL(int const i){
   if(i<=Lpar-icrit-1){
     return Dpar;
   }
-  return locDMax(i);
+  return locDMax(i-1);
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -56,7 +87,7 @@ int dimensionTable::locDimR(int const i){
   if(i<=Lpar-icrit-2){
     return Dpar;
   }
-  return locDMax(i+1);
+  return locDMax(i);
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -66,14 +97,11 @@ int dimensionTable::locDimR(int const i){
 //---------------------------------------------------------------------------------------------------//
 
 int dimensionTable::locd(int const i){
-  return dpar;
+  return dpars.locd(i);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
 int dimensionTable::locDMax(int const i){
-  if(i<=Lpar/2){
-    return pow(dpar,i+1);
-  }
-  return pow(dpar,Lpar-i);
+  return DMaxTable[i+1];
 }

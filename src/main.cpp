@@ -10,6 +10,7 @@
 #include "arrayprocessing.h"
 #include "optHMatrix.h"
 #include "Qsystem.h"
+#include "localHSpaces.h"
 
 using namespace std;
 
@@ -37,13 +38,14 @@ void testSolve(){
   double const mEl=1;
   int const nEigens=1;
   int const L=12;
-  int const nQuantumNumbers=1;
+  int const nQuantumNumbers=0;
   int QNValue[1]={-8};
   int QNList[2]={1,-1};
-  problemParameters pars(2,L,5,nEigens,nQuantumNumbers,QNValue,QNList);
+  localHSpaces localHilbertSpaceDims(2);
+  problemParameters pars(localHilbertSpaceDims,L,5,nEigens,nQuantumNumbers,QNValue,QNList);
   //simulationParameters simPars(100,5,2,1e-4,1e-8,1e-9,1e-2);
   //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack
-  simulationParameters simPars(100,5,1,1e-4,1e-4,1e-8,1e-4);
+  simulationParameters simPars(100,5,3,1e-4,1e-4,1e-8,1e-4);
   Qsystem sys(pars,simPars);
   int lDwR, lDwL, Dw;
   Dw=pars.Dw;
@@ -60,8 +62,8 @@ void testSolve(){
     else{
       lDwR=Dw;
     }
-    for(int s=0;s<pars.d;s++){
-      for(int sp=0;sp<pars.d;sp++){
+    for(int s=0;s<pars.d.maxd();s++){
+      for(int sp=0;sp<pars.d.maxd();sp++){
 	for(int bi=0;bi<lDwR;bi++){
 	  for(int bim=0;bim<lDwL;bim++){
 	    if(bi==0){
@@ -123,8 +125,8 @@ void testSolve(){
   for(int i=0;i<L;++i){
     for(int bi=0;bi<2;++bi){
       for(int bim=0;bim<2;++bim){
-	for(int si=0;si<pars.d;++si){
-	  for(int sip=0;sip<pars.d;++sip){
+	for(int si=0;si<pars.d.maxd();++si){
+	  for(int sip=0;sip<pars.d.maxd();++sip){
 	    matEls=delta(si,sip);
 	    if(i!=0 && i!=L-1 && bi==1 && bim==0){
 	      matEls=0;

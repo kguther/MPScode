@@ -5,6 +5,14 @@
 #include "quantumNumber.h"
 #include <vector>
 
+
+//---------------------------------------------------------------------------------------------------//
+// The basisQNOrderMatrix class (which has a somewhat strange name) contains the indices of all blocks
+// of the MPS matrices for given good quantum numbers. The only necessary input are these quantum numbers
+// and the bond dimensions of the MPS. Then, a bunch of vectors containing the indices can be generated.
+// Index functions returning the global MPS index for given block indices are supplied.
+//---------------------------------------------------------------------------------------------------//
+
 struct multInt{
   int aim;
   int si;

@@ -10,6 +10,8 @@ basisQNOrderMatrix::basisQNOrderMatrix():
   siBlockIndicesSplit(0)
 {}
 
+//---------------------------------------------------------------------------------------------------//
+
 basisQNOrderMatrix::basisQNOrderMatrix(dimensionTable &dimin, std::vector<quantumNumber> *conservedQNsin):
   dimInfo(dimin),
   conservedQNs(conservedQNsin),
@@ -21,9 +23,13 @@ basisQNOrderMatrix::basisQNOrderMatrix(dimensionTable &dimin, std::vector<quantu
   siBlockIndicesSplit(0)
 {}
 
+//---------------------------------------------------------------------------------------------------//
+
 basisQNOrderMatrix::~basisQNOrderMatrix(){
   deleteTables();
 }
+
+//---------------------------------------------------------------------------------------------------//
 
 void basisQNOrderMatrix::deleteTables(){
   delete[] aiBlockIndicesLP;
@@ -34,10 +40,14 @@ void basisQNOrderMatrix::deleteTables(){
   delete[] siBlockIndicesSplit;
 }
 
+//---------------------------------------------------------------------------------------------------//
+
 void basisQNOrderMatrix::initialize(dimensionTable &dimin, std::vector<quantumNumber> *conservedQNsin){
   dimInfo=dimin;
   conservedQNs=conservedQNsin;
 }
+
+//---------------------------------------------------------------------------------------------------//
 
 void basisQNOrderMatrix::generateQNIndexTables(){
   int L=dimInfo.L();
@@ -54,6 +64,12 @@ void basisQNOrderMatrix::generateQNIndexTables(){
     splitIndexTables(i);
   }
 }
+
+//---------------------------------------------------------------------------------------------------//
+// The blockStructure function goes through the indices of a given matrix and determines those index
+// triplets which fullfill the QN constraint, i.e. which belong to one of the blocks. These are stored
+// together with information on their block and can then be accessed by the index functions.
+//---------------------------------------------------------------------------------------------------//
 
 int basisQNOrderMatrix::blockStructure(int const i, int const direction, std::vector<std::vector<int> > &aiIndices, std::vector<std::vector<multInt> > &siaimIndices){
   int const nQNs=(*conservedQNs).size();
@@ -146,6 +162,8 @@ int basisQNOrderMatrix::blockStructure(int const i, int const direction, std::ve
   delete[] qnLabels;
   return 0;
 }
+
+//---------------------------------------------------------------------------------------------------//
 
 void basisQNOrderMatrix::splitIndexTables(int const i){
   int newIndex;

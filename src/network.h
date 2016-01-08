@@ -43,7 +43,7 @@ class network{
   problemParameters pars;
   simulationParameters simPars;
   dimensionTable networkDimInfo;
-  int d,D,L,Dw,icrit;
+  int D,L,Dw,icrit;
   int lDL, lDR, ld, lDwR, lDwL;
   int *nConverged;
   double shift;

@@ -29,7 +29,7 @@ void overlap::loadMPS(mps *psiIn, mps *phiIn){
   d=(*psiIn).siteDim();
   Lctr=new lapack_complex_double[L*D*D];
   Rctr=new lapack_complex_double[L*D*D];
-  F.generate(d,D,L);
+  F.generate((*psiIn).dimInfo);
   getF();
 }
 

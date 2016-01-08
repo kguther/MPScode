@@ -9,9 +9,9 @@
 class mps: public stateArray{
  public:
   mps();
-  mps(int const d, int const D, int const L, std::vector<quantumNumber> *conservedQNsin);
+  mps(dimensionTable &dimInfoIn, std::vector<quantumNumber> *conservedQNsin);
   ~mps();
-  void generate(int const din, int const Din, int const Lin, std::vector<quantumNumber> *conservedQNsin);
+  void generate(dimensionTable &dimInfoIn, std::vector<quantumNumber> *conservedQNsin);
   int leftNormalizeState(int const i);
   int rightNormalizeState(int const i);
   void normalizeFinal(int const i);

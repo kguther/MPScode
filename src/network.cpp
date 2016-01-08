@@ -54,26 +54,25 @@ network::~network(){
 
 void network::initialize(problemParameters inputpars, simulationParameters inputsimPars){
   pars=inputpars;
-  d=inputpars.d;
   D=inputsimPars.D;
   L=inputpars.L;
   Dw=inputpars.Dw;
   simPars=inputsimPars;
-  networkDimInfo.initialize(d,D,L);
+  networkDimInfo.initialize(D,L,pars.d);
   nConverged=new int[pars.nEigs];
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
     nConverged[iEigen]=1;
   }
   //Allocation of Hamiltonian MPO - square matrices are used since no library matrix functions have to be applied - this allows for faster access
-  networkH.initialize(d,Dw,L);
+  networkH.initialize(pars.d.maxd(),Dw,L);
   //Allocation of MPS - memory of the matrices has to be allocated exactly matching the dimension to use them with lapack and cblas
   //All states have to be stored, for reusability in later solve() with other simulation parameters
   //Somewhat unelegant way to handle loading of the stored states in the first solve()
   conservedQNs.resize(pars.nQNs);
   for(int iQN=0;iQN<pars.nQNs;++iQN){
-    conservedQNs[iQN].initialize(networkDimInfo,pars.QNconserved[iQN],pars.QNLocalList+iQN*d);
+    conservedQNs[iQN].initialize(networkDimInfo,pars.QNconserved[iQN],pars.QNLocalList+iQN*pars.d.maxd());
   }
-  networkState.generate(d,D,L,&conservedQNs);
+  networkState.generate(networkDimInfo,&conservedQNs);
   excitedStateP.initialize(pars.nEigs);
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
     excitedStateP.storeOrthoState(networkState,iEigen);
@@ -110,6 +109,7 @@ int network::setParameterD(int Dnew){
     return -1;
   }
   networkState.setParameterD(Dnew);
+  networkDimInfo.setParameterD(Dnew);
   //All stored states have to be brought into the correct form for compatibility with current D
   excitedStateP.setParameterD(Dnew);
   for(int iQN=0;iQN<pars.nQNs;++iQN){
@@ -138,7 +138,7 @@ void network::getLocalDimensions(int const i){
 //---------------------------------------------------------------------------------------------------//
 
 int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT -> HUGE SPEEDUP
-  int maxIter=5000;
+  int maxIter=10000;
   int stepRet;
   int cshift=-100;
   double convergenceQuality;
@@ -356,7 +356,7 @@ double network::convergenceCheck(){
 //---------------------------------------------------------------------------------------------------//
 
 void network::calcHSqrExpectationValue(double &ioHsqr){
-  mpo<lapack_complex_double> Hsqr(d,Dw*Dw,L);
+  mpo<lapack_complex_double> Hsqr(networkState.siteDim(),Dw*Dw,L);
   lapack_complex_double simpleContainer;
   for(int i=0;i<L;++i){
     getLocalDimensions(i);
@@ -410,16 +410,13 @@ int network::measure(mpo<lapack_complex_double> *MPOperator, double &lambda){
 //---------------------------------------------------------------------------------------------------//
 
 int network::locd(int const i){
-  return d;
+  return networkState.locd(i);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
 int network::locDMax(int const i){
-  if(i<=L/2){
-    return pow(d,i+1);
-  }
-  return pow(d,L-i);
+  return networkState.dimInfo.locDMax(i);
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -454,7 +451,7 @@ void network::leftNormalizationMatrixIter(int i, lapack_complex_double *psi){
   for(int aim=0;aim<networkState.locDimL(i);++aim){
     for(int aimp=0;aimp<networkState.locDimL(i);++aimp){
       psiContainer=0;
-      for(int si=0;si<d;++si){
+      for(int si=0;si<locd(i);++si){
 	for(int aimm=0;aimm<networkState.locDimL(i-1);aimm++){
 	  for(int aimmp=0;aimmp<networkState.locDimL(i-1);aimmp++){
 	    psiContainer+=networkState.global_access(i-1,si,aim,aimm)*conj(networkState.global_access(i-1,si,aimp,aimm))*psi[(i-1)*D*D+aimm*D+aimmp];

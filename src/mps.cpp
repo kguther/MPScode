@@ -8,8 +8,8 @@ mps::mps():stateArray()
 
 //---------------------------------------------------------------------------------------------------//
 
-mps::mps(int const din, int const Din, int const Lin, std::vector<quantumNumber> *conservedQNsin){
-  stateArray::initialize(din,Din,Lin);
+mps::mps(dimensionTable &dimInfoIn, std::vector<quantumNumber> *conservedQNsin){
+  stateArray::initialize(dimInfoIn);
   conservedQNs=conservedQNsin;
   createInitialState();
   indexTable.initialize(dimInfo,conservedQNs);
@@ -23,9 +23,9 @@ mps::~mps(){
 
 //---------------------------------------------------------------------------------------------------//
 
-void mps::generate(int const din, int const Din, int const Lin, std::vector<quantumNumber> *conservedQNsin){
+void mps::generate(dimensionTable &dimInfoIn, std::vector<quantumNumber> *conservedQNsin){
   int direction;
-  stateArray::generate(din,Din,Lin);
+  stateArray::generate(dimInfoIn);
   conservedQNs=conservedQNsin;
   nQNs=(*conservedQNs).size();
   createInitialState();
@@ -41,9 +41,9 @@ void mps::createInitialState(){
     lDL=locDimL(i);
     lDR=locDimR(i);
     lDL=(lDR<lDL)?lDR:lDL;
-    for(int si=0;si<d;++si){
+    ld=locd(i);
+    for(int si=0;si<ld;++si){
       for(int aim=0;aim<lDL;++aim){
-	if(si==0 && aim==0)
 	state_array_access_structure[i][si][aim][aim]=1;
       }
     }

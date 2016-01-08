@@ -1,6 +1,7 @@
 #include "blockHMatrix.h"
 #include "tmpContainer.h"
 
+
 blockHMatrix::blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, arcomplex<double> *Hin, dimensionTable &dimInfo, int Dwin, int iIn, basisQNOrderMatrix *indexTablein, projector *excitedStateP, double shift, std::vector<quantumNumber> *conservedQNsin):
   optHMatrix(R,L,Hin,dimInfo,Dwin,iIn,excitedStateP,shift,conservedQNsin),
   indexTable(indexTablein),
@@ -17,6 +18,8 @@ blockHMatrix::blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, arcomplex
     }
   }
 }
+
+//---------------------------------------------------------------------------------------------------//
 
 void blockHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
   tmpContainer<arcomplex<double> > innerContainer(d,lDL,lDR,lDwR);
@@ -80,6 +83,10 @@ void blockHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
   excitedStateProject(w,i);
 }
 
+//---------------------------------------------------------------------------------------------------//
+// Function used as an interface to the projector class used in the computation of excited states.
+//---------------------------------------------------------------------------------------------------//
+
 void blockHMatrix::excitedStateProject(arcomplex<double> *v, int const i){
   arcomplex<double> *vExpanded=new arcomplex<double>[d*lDR*lDL];
   storageExpand(v,vExpanded);
@@ -87,6 +94,11 @@ void blockHMatrix::excitedStateProject(arcomplex<double> *v, int const i){
   storageCompress(vExpanded,v);
   delete[] vExpanded;
 }
+
+//---------------------------------------------------------------------------------------------------//
+// These funcions can swap between the full storage scheme as used in the mps and the block-storage
+// scheme as used in this class.
+//---------------------------------------------------------------------------------------------------//
 
 void blockHMatrix::storageExpand(arcomplex<double> *v, arcomplex<double> *vExpanded){
   int rBlockSize, lBlockSize;
@@ -101,6 +113,8 @@ void blockHMatrix::storageExpand(arcomplex<double> *v, arcomplex<double> *vExpan
     }
   }
 }
+
+//---------------------------------------------------------------------------------------------------//
 
 void blockHMatrix::storageCompress(arcomplex<double> *v, arcomplex<double> *vCompressed){
   int rBlockSize, lBlockSize;
