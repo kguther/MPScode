@@ -133,7 +133,7 @@ int basisQNOrderMatrix::blockStructure(int const i, int const direction, std::ve
       for(int iBlock=0;iBlock<numBlocks;++iBlock){
 	matchBlock=1;
 	for(int iQN=0;iQN<nQNs;++iQN){
-	  if((*conservedQNs)[iQN].QNLabel(i-1+direction,aim)+pre*(*conservedQNs)[iQN].QNLabel(si)!=qnLabels[iQN][iBlock]){
+	  if(qnCriterium(iQN,i,aim,si,direction,pre)!=qnLabels[iQN][iBlock]){
 	    matchBlock=0;
 	  }
 	}
@@ -190,4 +190,13 @@ void basisQNOrderMatrix::splitIndexTables(int const i){
       }
     }
   }
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+int basisQNOrderMatrix::qnCriterium(int const iQN, int const i, int const aim, int const si, int const direction, int const pre){
+  if((*conservedQNs)[iQN].parityType()){
+    return (*conservedQNs)[iQN].QNLabel(i-1+direction,aim)*(*conservedQNs)[iQN].QNLabel(si);
+  }
+  return (*conservedQNs)[iQN].QNLabel(i-1+direction,aim)+pre*(*conservedQNs)[iQN].QNLabel(si);
 }

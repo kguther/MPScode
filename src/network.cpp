@@ -140,7 +140,8 @@ void network::getLocalDimensions(int const i){
 int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT -> HUGE SPEEDUP
   int maxIter=10000;
   int stepRet;
-  int cshift=-100;
+  int cshift=0;
+  int storeShift;
   double convergenceQuality;
   double alpha;
   double tol;
@@ -148,26 +149,19 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
   overlap test;
   test.loadMPS(&networkState,&networkState);
   alpha=simPars.alpha;
+  if(pars.nQNs){
+    cshift=-100;
+  }
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
     pCtr.initialize(&networkH,&networkState);
     for(int i=L-1;i>0;--i){
       normalize(i,0,0);
     }
     networkState.normalizeFinal(1);
-    std::cout<<"Finished right normalization\n";    
-    std::cout<<"Norm of state: "<<test.getFullOverlap()<<std::endl;
     pCtr.Lctr.global_access(0,0,0,0)=1;
     //In preparation of the first sweep, generate full contraction to the right (first sweeps starts at site 0)
     pCtr.calcCtrFull(1);
-    if(iEigen){
-      shift=-2*abs(lambda[0]);
-    }
-    else{
-      shift=0.0;
-    }
-    if(pars.nQNs){
-      shift+=cshift;
-    }
+    shift=cshift;
     std::cout<<"Computing state "<<iEigen<<std::endl;
     alpha=simPars.alpha;
     tol=simPars.tolInitial;
@@ -185,7 +179,6 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
       networkState.normalizeFinal(1);
       //In calcCtrIterRightBase, the second argument has to be a pointer, because it usually is an array. No call-by-reference here.
       pCtr.calcCtrIterRightBase(-1,&expectationValue);
-      //Compute full scalar product - although not required, it is nice to know and requires very little computational effort
       convergenceQuality=convergenceCheck();
       if(convergenceQuality<simPars.devAccuracy){
 	nConverged[iEigen]=0;
@@ -205,9 +198,7 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
       std::cout<<"LOADED STATES. PREPARED COMPUTATION OF NEXT EIGENSTATE"<<std::endl;
     }
   }
-  if(pars.nQNs){
-    lambda[0]-=cshift;
-  }
+  lambda[0]-=cshift;
   for(int iEigen=1;iEigen<pars.nEigs;++iEigen){
     lambda[iEigen]-=shift;
   }
@@ -401,6 +392,12 @@ int network::measure(mpo<lapack_complex_double> *MPOperator, double &lambda){
   globalMeasurement currentMeasurement(MPOperator,&networkState);
   lambda=currentMeasurement.measureFull();
   return 0;
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+int network::measureLocalOperators(mpo<lapack_complex_double> *MPOperator, std::vector<double> &lambda){
+
 }
 
 //---------------------------------------------------------------------------------------------------//

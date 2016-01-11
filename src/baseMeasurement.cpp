@@ -30,6 +30,14 @@ void baseMeasurement::initializeBase(mpo<lapack_complex_double> *MPOperatorIn, m
 }
 
 //---------------------------------------------------------------------------------------------------//  
+
+void baseMeasurement::setupMeasurement(mpo<lapack_complex_double> *MPOperatorIn, mps *MPStateIn){
+  MPOperator=MPOperatorIn;
+  MPState=MPStateIn;
+  initializeBase(MPOperatorIn,MPStateIn);
+}
+
+//---------------------------------------------------------------------------------------------------//  
 // This does the same as the getLocalDimensions of the network
 //---------------------------------------------------------------------------------------------------//
 

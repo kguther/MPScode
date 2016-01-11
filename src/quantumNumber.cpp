@@ -15,7 +15,7 @@ quantumNumber::~quantumNumber(){
   delete[] rightLabel;
 }
 
-void quantumNumber::initialize(dimensionTable &dimInfoin, int const Nin, int *QNlocin){
+void quantumNumber::initialize(dimensionTable &dimInfoin, int const Nin, int *QNlocin, int mult){
   N=Nin;
   dimInfo=dimInfoin;
   QNloc=QNlocin;
@@ -30,6 +30,7 @@ void quantumNumber::initialize(dimensionTable &dimInfoin, int const Nin, int *QN
     }
   }
   initializeLabelList();
+  parityNumber=mult;
 }
 
 int quantumNumber::QNLabel(int const si){

@@ -53,6 +53,7 @@ class basisQNOrderMatrix{
   dimensionTable dimInfo;
   void deleteTables();
   void splitIndexTables(int const i);
+  int qnCriterium(int const iQN, int const i, int const aim, int const si, int const direction, int const pre);
 };
 
 #endif

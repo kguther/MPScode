@@ -37,9 +37,9 @@ void testSolve(){
   double eigVal;
   double const mEl=1;
   int const nEigens=1;
-  int const L=12;
-  int const nQuantumNumbers=0;
-  int QNValue[1]={-8};
+  int const L=25;
+  int const nQuantumNumbers=1;
+  int QNValue[1]={7};
   int QNList[2]={1,-1};
   localHSpaces localHilbertSpaceDims(2);
   problemParameters pars(localHilbertSpaceDims,L,5,nEigens,nQuantumNumbers,QNValue,QNList);

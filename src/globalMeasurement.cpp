@@ -7,6 +7,12 @@ globalMeasurement::globalMeasurement(mpo<lapack_complex_double> *MPOperatorIn, m
 
 //---------------------------------------------------------------------------------------------------//
 
+void globalMeasurement::setupMeasurement(mpo<lapack_complex_double> *MPOperatorIn, mps *MPStateIn){
+  baseMeasurement::setupMeasurement(MPOperatorIn,MPStateIn);
+}
+
+//---------------------------------------------------------------------------------------------------//
+
 double globalMeasurement::measureFull(){
   lapack_complex_double *targetPtr;
   lapack_complex_double result;
