@@ -1,5 +1,6 @@
 #include <arcomp.h>
 #include <iostream>
+#include <time.h>
 #include "parameters.h"
 #include "optHMatrix.h"
 #include "tmpContainer.h"
@@ -96,9 +97,16 @@ void optHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
 
 void optHMatrix::MultMvQNConserving(arcomplex<double> *v, arcomplex<double> *w){
   //TRY MORE SOPHISTICATED QN CONSERVING MULTIPLICATION
+  clock_t curtime;
+  curtime=clock();
   projectQN(v);
   MultMv(v,w);
   projectQN(w);
+  if(0){
+  curtime=clock()-curtime;
+  std::cout<<"Matrix multiplication took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
+  exit(1);
+  }
 }
 
 //---------------------------------------------------------------------------------------------------//

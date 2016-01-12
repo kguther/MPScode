@@ -136,6 +136,10 @@ int mps::rightNormalizeState(int const i){
   //lowerdiag does get an upper trigonal matrix in column major ordering, dont get confused
   lowerdiag(D2,D2,state_array_access_structure[i][0][0]+D2*(ld*D1-D2),Rcontainer);
   info=LAPACKE_zungrq(LAPACK_COL_MAJOR,D2,ld*D1,D2,state_array_access_structure[i][0][0],D2,Qcontainer);
+  if(info){
+    std::cout<<"ERROR IN LAPACKE_zungrq:"<<info<<" At site: "<<i<<" With dimensions: "<<D2<<"x"<<D1<<" and local Hilbert space dimension: "<<ld<<std::endl;
+    exit(1);
+  }
   for(int si=0;si<ld;++si){
     cblas_ztrmm(CblasColMajor,CblasRight,CblasUpper,CblasNoTrans,CblasNonUnit,D3,D2,&zone,Rcontainer,D2,state_array_access_structure[i-1][si][0],D3);
   }                                                //POSSIBLE TESTS: TEST FOR R*Q - DONE: WORKS THE WAY INTENDED
@@ -254,7 +258,6 @@ int mps::rightNormalizeStateBlockwise(int const i){
     lBlockSize=indexTable.lBlockSizeRP(i,iBlock);
     rBlockSize=indexTable.rBlockSizeRP(i,iBlock);
     //std::cout<<lBlockSize<<"\t"<<rBlockSize<<std::endl;
-    minBlockSize=(lBlockSize<rBlockSize)?lBlockSize:rBlockSize;
     //lBlockSize is required to be smaller than or equal to rBlockSize
     minBlockSize=(lBlockSize<rBlockSize)?lBlockSize:rBlockSize;
     if(rBlockSize!=0 && lBlockSize!=0){

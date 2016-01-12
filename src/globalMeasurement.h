@@ -13,7 +13,7 @@ class globalMeasurement: public baseMeasurement{
   globalMeasurement();
   globalMeasurement(mpo<lapack_complex_double> *MPOperator, mps *MPState);
   void setupMeasurement(mpo<lapack_complex_double> *MPOperator, mps *MPState);
-  double measureFull();
+  void measureFull(double &lambda);
 };
 
 #endif

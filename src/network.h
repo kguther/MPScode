@@ -7,11 +7,10 @@
 #include "mkl_complex_defined.h"
 #include "parameters.h"
 #include "mpo.h"
-#include "pContraction.h"
+#include "localMpo.h"
 #include "mps.h"
 #include "iterativeMeasurement.h"
 #include "projector.h"
-#include "overlap.h"
 #include "quantumNumber.h"
 #include "dimensionTable.h"
 
@@ -27,7 +26,7 @@ class network{
   ~network();
   int solve(double *lambda);
   int measure(mpo<lapack_complex_double> *MPOperator, double &expValue);
-  int measureLocalOperators(mpo<lapack_complex_double>, std::vector<double> &expValue);
+  int measureLocalOperators(localMpo<lapack_complex_double> *MPOperator, std::vector<double> &expValue);
   void initialize(problemParameters inputpars, simulationParameters inputSimPars);
   void loadNetworkState(mps &source);
   int setSimParameters(simulationParameters newPars);

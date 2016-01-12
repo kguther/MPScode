@@ -1,33 +1,48 @@
 #include "blockHMatrix.h"
 #include "tmpContainer.h"
+#include "arrayprocessing.h"
+#include <iostream>
+#include <time.h>
 
 
-blockHMatrix::blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, arcomplex<double> *Hin, dimensionTable &dimInfo, int Dwin, int iIn, basisQNOrderMatrix *indexTablein, projector *excitedStateP, double shift, std::vector<quantumNumber> *conservedQNsin):
+blockHMatrix::blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, arcomplex<double> *Hin, dimensionTable &dimInfo, int Dwin, int iIn, int sweepDirectionIn, basisQNOrderMatrix *indexTablein, projector *excitedStateP, double shift, std::vector<quantumNumber> *conservedQNsin):
   optHMatrix(R,L,Hin,dimInfo,Dwin,iIn,excitedStateP,shift,conservedQNsin),
   indexTable(indexTablein),
-  conservedQNsB(conservedQNsin)
+  conservedQNsB(conservedQNsin),
+  sweepDirection(sweepDirectionIn)
 {
   int cBlockSize;
+  int const numBlocks=indexTable->numBlocksLP(i);
   dimension=0;
-  blockOffset[0]=0;
-  for(int iBlock=0;iBlock<(indexTable->numBlocksLP(i));++iBlock){
+  blockOffset.clear();
+  blockOffset.push_back(0);
+  for(int iBlock=0;iBlock<numBlocks;++iBlock){
     cBlockSize=(indexTable->lBlockSizeLP(i,iBlock))*(indexTable->rBlockSizeLP(i,iBlock));
     dimension+=cBlockSize;
-    if(iBlock>0){
-      blockOffset[iBlock]=blockOffset[iBlock-1]+cBlockSize;
+    if(iBlock<numBlocks-1){
+      blockOffset.push_back(blockOffset[iBlock]+cBlockSize);
     }
   }
+  compressedVector=new arcomplex<double>[dimension];
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-void blockHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
+blockHMatrix::~blockHMatrix(){
+  delete[] compressedVector;
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
   tmpContainer<arcomplex<double> > innerContainer(d,lDL,lDR,lDwR);
   tmpContainer<arcomplex<double> > outerContainer(d,lDwL,lDR,lDL);
   arcomplex<double> simpleContainer;
-  int numBlocks=indexTable->numBlocksLP(i);
+  int const numBlocks=indexTable->numBlocksLP(i);
   int lBlockSize, rBlockSize, siBlockSize, aimBlockSize;
-  excitedStateProject(v,i);
+  clock_t curtime;
+  curtime=clock();
+  //excitedStateProject(v,i);
   for(int bi=0;bi<lDwR;++bi){
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
       lBlockSize=indexTable->lBlockSizeLP(i,iBlock);
@@ -48,19 +63,32 @@ void blockHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
       for(int iBlock=0;iBlock<numBlocks;++iBlock){
 	lBlockSize=indexTable->lBlockSizeLP(i,iBlock);
 	rBlockSize=indexTable->rBlockSizeLP(i,iBlock);
-	siBlockSize=indexTable->siBlockSizeSplit(i,iBlock);
+	/*
 	aimBlockSize=indexTable->aimBlockSizeSplit(i,iBlock);
-	for(int j=0;j<rBlockSize;++j){
-	  for(int kp=0;kp<aimBlockSize;++kp){
+   	for(int kp=0;kp<aimBlockSize;++kp){
+	  siBlockSize=indexTable->siBlockSizeSplitFixedaim(i,iBlock,kp);
+	  for(int j=0;j<rBlockSize;++j){
 	    simpleContainer=0;
 	    for(int k=0;k<siBlockSize;++k){
 	      for(int bi=0;bi<lDwR;++bi){
-		simpleContainer+=H[hIndex(si,indexTable->siBlockIndexLP(i,iBlock,k),bi,bim)]*innerContainer.global_access(indexTable->siBlockIndexSplit(i,iBlock,k),indexTable->aimBlockIndexLP(i,iBlock,k),indexTable->aiBlockIndexLP(i,iBlock,j),bi);
+		simpleContainer+=H[hIndex(si,indexTable->siBlockIndexSplitFixedaim(i,iBlock,kp,k),bi,bim)]*innerContainer.global_access(indexTable->siBlockIndexSplitFixedaim(i,iBlock,kp,k),indexTable->aimBlockIndexSplit(i,iBlock,kp),indexTable->aiBlockIndexLP(i,iBlock,j),bi);
 	      }
 	    }
 	    outerContainer.global_access(si,bim,indexTable->aiBlockIndexLP(i,iBlock,j),indexTable->aimBlockIndexSplit(i,iBlock,kp))=simpleContainer;
 	  }
 	}
+	*/
+	for(int j=0;j<rBlockSize;++j){
+	  for(int k=0;k<lBlockSize;++k){
+	    outerContainer.global_access(si,bim,indexTable->aiBlockIndexLP(i,iBlock,j),indexTable->aimBlockIndexLP(i,iBlock,k))=0;
+	  }
+	  for(int k=0;k<lBlockSize;++k){
+	    for(int bi=0;bi<lDwR;++bi){
+	      outerContainer.global_access(si,bim,indexTable->aiBlockIndexLP(i,iBlock,j),indexTable->aimBlockIndexLP(i,iBlock,k))+=H[hIndex(si,indexTable->siBlockIndexLP(i,iBlock,k),bi,bim)]*innerContainer.global_access(indexTable->siBlockIndexLP(i,iBlock,k),indexTable->aimBlockIndexLP(i,iBlock,k),indexTable->aiBlockIndexLP(i,iBlock,j),bi);
+	    }
+	  }
+	}
+       
       }
     }
   }	 
@@ -76,11 +104,16 @@ void blockHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
 	    simpleContainer+=Lctr[ctrIndex(indexTable->aimBlockIndexLP(i,iBlock,k),bim,indexTable->aimBlockIndexSplit(i,iBlock,kp))]*outerContainer.global_access(indexTable->siBlockIndexLP(i,iBlock,k),bim,indexTable->aiBlockIndexLP(i,iBlock,j),indexTable->aimBlockIndexSplit(i,iBlock,kp));
 	  }
 	}
-	w[vecBlockIndex(iBlock,j,k)]=simpleContainer;
+	w[vecBlockIndex(iBlock,j,k)]=simpleContainer+shift*v[vecBlockIndex(iBlock,j,k)];
       }
     }
   }
-  excitedStateProject(w,i);
+  //excitedStateProject(w,i);
+  if(0){
+  curtime=clock()-curtime;
+  std::cout<<"Matrix multiplication took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
+  exit(1);
+  }
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -102,7 +135,7 @@ void blockHMatrix::excitedStateProject(arcomplex<double> *v, int const i){
 
 void blockHMatrix::storageExpand(arcomplex<double> *v, arcomplex<double> *vExpanded){
   int rBlockSize, lBlockSize;
-  int numBlocks=indexTable->numBlocksLP(i);
+  int const numBlocks=indexTable->numBlocksLP(i);
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
     lBlockSize=indexTable->lBlockSizeLP(i,iBlock);
     rBlockSize=indexTable->rBlockSizeLP(i,iBlock);
@@ -118,7 +151,7 @@ void blockHMatrix::storageExpand(arcomplex<double> *v, arcomplex<double> *vExpan
 
 void blockHMatrix::storageCompress(arcomplex<double> *v, arcomplex<double> *vCompressed){
   int rBlockSize, lBlockSize;
-  int numBlocks=indexTable->numBlocksLP(i);
+  int const numBlocks=indexTable->numBlocksLP(i);
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
     lBlockSize=indexTable->lBlockSizeLP(i,iBlock);
     rBlockSize=indexTable->rBlockSizeLP(i,iBlock);
@@ -128,4 +161,16 @@ void blockHMatrix::storageCompress(arcomplex<double> *v, arcomplex<double> *vCom
       }
     }
   }
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void blockHMatrix::prepareInput(arcomplex<double> *inputVector){
+  storageCompress(inputVector,compressedVector);
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void blockHMatrix::readOutput(arcomplex<double> *outputVector){
+  storageExpand(compressedVector,outputVector);
 }

@@ -7,7 +7,9 @@ basisQNOrderMatrix::basisQNOrderMatrix():
   aimBlockIndicesRP(0),
   siaiBlockIndicesRP(0),
   aimBlockIndicesSplit(0),
-  siBlockIndicesSplit(0)
+  siBlockIndicesSplit(0),
+  siBlockIndicesSplitFixedaim(0),
+  aiBlockIndicesSplit(0)
 {}
 
 //---------------------------------------------------------------------------------------------------//
@@ -20,7 +22,9 @@ basisQNOrderMatrix::basisQNOrderMatrix(dimensionTable &dimin, std::vector<quantu
   aimBlockIndicesRP(0),
   siaiBlockIndicesRP(0),
   aimBlockIndicesSplit(0),
-  siBlockIndicesSplit(0)
+  siBlockIndicesSplit(0),
+  siBlockIndicesSplitFixedaim(0),
+  aiBlockIndicesSplit(0)
 {}
 
 //---------------------------------------------------------------------------------------------------//
@@ -38,6 +42,8 @@ void basisQNOrderMatrix::deleteTables(){
   delete[] aimBlockIndicesRP;
   delete[] aimBlockIndicesSplit;
   delete[] siBlockIndicesSplit;
+  delete[] siBlockIndicesSplitFixedaim;
+  delete[] aiBlockIndicesSplit;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -58,6 +64,8 @@ void basisQNOrderMatrix::generateQNIndexTables(){
   siaiBlockIndicesRP=new std::vector<std::vector<multInt> >[L];
   siBlockIndicesSplit=new std::vector<std::vector<int> >[L];
   aimBlockIndicesSplit=new std::vector<std::vector<int> >[L];
+  aiBlockIndicesSplit=new std::vector<std::vector<int> >[L];
+  siBlockIndicesSplitFixedaim=new std::vector<std::vector<std::vector<int > > >[L];
   for(int i=0;i<dimInfo.L();++i){
     blockStructure(i,0,aiBlockIndicesLP[i],siaimBlockIndicesLP[i]);
     blockStructure(i,1,aimBlockIndicesRP[i],siaiBlockIndicesRP[i]);
@@ -169,6 +177,8 @@ void basisQNOrderMatrix::splitIndexTables(int const i){
   int newIndex;
   aimBlockIndicesSplit[i].resize(numBlocksLP(i));
   siBlockIndicesSplit[i].resize(numBlocksLP(i));
+  aiBlockIndicesSplit[i].resize(numBlocksRP(i));
+  siBlockIndicesSplitFixedaim[i].resize(numBlocksLP(i));
   for(int iBlock=0;iBlock<aiBlockIndicesLP[i].size();++iBlock){
     for(int k=0;k<lBlockSizeLP(i,iBlock);++k){
       newIndex=1;
@@ -187,6 +197,38 @@ void basisQNOrderMatrix::splitIndexTables(int const i){
       }
       if(newIndex){
 	siBlockIndicesSplit[i][iBlock].push_back(siBlockIndexLP(i,iBlock,k));
+      }
+    }
+    siBlockIndicesSplitFixedaim[i][iBlock].resize(aimBlockSizeSplit(i,iBlock));
+    for(int k=0;k<aimBlockSizeSplit(i,iBlock);++k){
+      for(int kp=0;kp<lBlockSizeLP(i,iBlock);++kp){
+	newIndex=1;
+	if(aimBlockIndexLP(i,iBlock,kp)!=aimBlockIndexSplit(i,iBlock,k)){
+	  newIndex=0;
+	}
+	if(newIndex){
+	  for(int splitIndex=0;splitIndex<siBlockIndicesSplitFixedaim[i][iBlock][k].size();++splitIndex){
+	    if(siBlockIndexLP(i,iBlock,kp)==siBlockIndicesSplitFixedaim[i][iBlock][k][splitIndex]){
+	      newIndex=0;
+	    }
+	  }
+	}
+	if(newIndex){
+	  siBlockIndicesSplitFixedaim[i][iBlock][k].push_back(siBlockIndexLP(i,iBlock,kp));
+	}
+      }
+    }
+  }
+  for(int iBlock=0;iBlock<numBlocksRP(i);++iBlock){
+    for(int j=0;j<rBlockSizeRP(i,iBlock);++j){
+      newIndex=1;
+      for(int splitIndex=0;splitIndex<aiBlockIndicesSplit[i][iBlock].size();++splitIndex){
+	if(aiBlockIndexRP(i,iBlock,j)==aiBlockIndicesSplit[i][iBlock][splitIndex]){
+	  newIndex=0;
+	}
+      }
+      if(newIndex){
+	aiBlockIndicesSplit[i][iBlock].push_back(aiBlockIndexRP(i,iBlock,j));
       }
     }
   }

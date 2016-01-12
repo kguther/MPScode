@@ -42,11 +42,11 @@ void baseMeasurement::setupMeasurement(mpo<lapack_complex_double> *MPOperatorIn,
 //---------------------------------------------------------------------------------------------------//
 
 void baseMeasurement::getLocalDimensions(int const i){
-  lDL=(*MPState).locDimL(i);
-  lDR=(*MPState).locDimR(i);
-  ld=(*MPState).locd(i);
-  lDwR=(*MPOperator).locDimR(i);
-  lDwL=(*MPOperator).locDimL(i);
+  lDL=MPState->locDimL(i);
+  lDR=MPState->locDimR(i);
+  ld=MPState->locd(i);
+  lDwR=MPOperator->locDimR(i);
+  lDwL=MPOperator->locDimL(i);
 }
 
 //---------------------------------------------------------------------------------------------------//

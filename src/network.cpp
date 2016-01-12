@@ -7,14 +7,11 @@
 #include <arscomp.h>
 #include <time.h>
 #include "network.h"
-#include "arraycreation.h"
 #include "arrayprocessing.h"
 #include "optHMatrix.h"
-#include "mpo.h"
-#include "mps.h"
+#include "blockHMatrix.h"
 #include "globalMeasurement.h"
-#include "iterativeMeasurement.h"
-#include "projector.h"
+#include "localMeasurementSeries.h"
 
 //BEWARE: ALL MPS AND MPO NETWORK MATRICES ARE STORED WITH A CONTIGOUS COLUMN INDEX (i.e. transposed with respect to C standard, for better compatibility with LAPACK)
 
@@ -216,7 +213,7 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
   clock_t curtime;
   int errRet;
   lapack_complex_double stateNorm;
-  std::cout<<"Starting rightsweep\n";
+  std::cout<<"STARTING RIGHTSWEEP\n\n";
   for(int i=0;i<(L-1);++i){
     //Step of leftsweep
     std::cout<<"Optimizing site matrix"<<std::endl;
@@ -230,7 +227,7 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
     pCtr.calcCtrIterLeft(i+1);
   }
   networkState.normalizeFinal(0);
-  std::cout<<"Starting leftsweep\n";
+  std::cout<<"STARTING LEFTSWEEP\n\n";
   for(int i=L-1;i>0;--i){
     //Step of rightsweep
     std::cout<<"Optimizing site matrix"<<std::endl;    
@@ -259,6 +256,7 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
   arcomplex<double> *currentM;
   arcomplex<double> *RTerm, *LTerm, *HTerm;
   double spinCheck;
+  int nconv;
   void (optHMatrix::*multMV)(arcomplex<double> *v, arcomplex<double> *w);
   //Get the projector onto the space orthogonal to any lower lying states
   //Get the current partial contractions and site matrix of the Hamiltonian
@@ -266,25 +264,28 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
   pCtr.Rctr.subContractionStart(RTerm,i);
   networkH.subMatrixStart(HTerm,i);
   excitedStateP.getProjector(i);
-  if(pars.nQNs){
-    multMV=&optHMatrix::MultMvQNConserving;
-  }
-  else{
-    multMV=&optHMatrix::MultMv;
-  }
-  //Generate matrix which is to be passed to ARPACK++
-  optHMatrix HMat(RTerm,LTerm,HTerm,networkDimInfo,Dw,i,&excitedStateP,shift,&conservedQNs);
   plambda=&lambda;
   //Using the current site matrix as a starting point allows for much faster convergence as it has already been optimized in previous sweeps (except for the first sweep, this is where a good starting point has to be guessed
   networkState.subMatrixStart(currentM,i);
   measure(check,spinCheck);
   std::cout<<"Spin before optimizing: "<<spinCheck<<std::endl;
-  //Note that the types given do and have to match the ones in the projector class if more than one eigenvalue is computed
-  ARCompStdEig<double, optHMatrix> eigProblem(HMat.dim(),1,&HMat,multMV,"SR",0,tol,maxIter,currentM);
-  //One should avoid to hit the maximum number of iterations since this can lead into a suboptimal site matrix, increasing the current energy (although usually not by a lot)
-  //So far it seems that the eigensolver either converges quite fast or not at all (i.e. very slow, such that the maximum number of iterations is hit) depending strongly on the tolerance
-  int nconv;
-  nconv=eigProblem.EigenValVectors(currentM,plambda);
+  if(pars.nQNs && i!=0 && i!=(L-1)){
+    blockHMatrix BMat(RTerm, LTerm,HTerm,networkDimInfo,Dw,i,0,&(networkState.indexTable),&excitedStateP,shift,&conservedQNs);
+    BMat.prepareInput(currentM);
+    ARCompStdEig<double, blockHMatrix> eigProblemBlocked(BMat.dim(),1,&BMat,&blockHMatrix::MultMvBlocked,"SR",0,tol,maxIter,BMat.compressedVector);
+    nconv=eigProblemBlocked.EigenValVectors(BMat.compressedVector,plambda);
+    BMat.readOutput(currentM);
+  }
+  else{
+    multMV=&optHMatrix::MultMvQNConserving;
+    //Generate matrix which is to be passed to ARPACK++
+    optHMatrix HMat(RTerm,LTerm,HTerm,networkDimInfo,Dw,i,&excitedStateP,shift,&conservedQNs);
+    //Note that the types given do and have to match the ones in the projector class if more than one eigenvalue is computed
+    ARCompStdEig<double, optHMatrix> eigProblem(HMat.dim(),1,&HMat,multMV,"SR",0,tol,maxIter,currentM);
+    //One should avoid to hit the maximum number of iterations since this can lead into a suboptimal site matrix, increasing the current energy (although usually not by a lot)
+    //So far it seems that the eigensolver either converges quite fast or not at all (i.e. very slow, such that the maximum number of iterations is hit) depending strongly on the tolerance
+    nconv=eigProblem.EigenValVectors(currentM,plambda);
+  }
   measure(check,spinCheck);
   std::cout<<"Spin after optimizing: "<<spinCheck<<std::endl;
   if(nconv!=1){
@@ -390,14 +391,16 @@ int network::gotoNextEigen(){
 
 int network::measure(mpo<lapack_complex_double> *MPOperator, double &lambda){
   globalMeasurement currentMeasurement(MPOperator,&networkState);
-  lambda=currentMeasurement.measureFull();
+  currentMeasurement.measureFull(lambda);
   return 0;
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-int network::measureLocalOperators(mpo<lapack_complex_double> *MPOperator, std::vector<double> &lambda){
-
+int network::measureLocalOperators(localMpo<lapack_complex_double> *MPOperator, std::vector<double> &lambda){
+  localMeasurementSeries currentMeasurement(MPOperator,&networkState);
+  currentMeasurement.measureFull(lambda);
+  return 0;
 }
 
 //---------------------------------------------------------------------------------------------------//

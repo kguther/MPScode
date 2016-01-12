@@ -1,4 +1,5 @@
 #include <math.h>
+#include <iostream>
 #include "dimensionTable.h"
 
 dimensionTable::dimensionTable(){
@@ -30,7 +31,7 @@ void dimensionTable::getDMaxTable(){
   int lDM;
   for(int i=0;i<=Lpar;++i){
     lDM=1;
-    if(i<Lpar/2){
+    if(i<Lpar/2+1){
       for(int j=1;j<=i;++j){
 	lDM*=dpars.locd(j);
       }

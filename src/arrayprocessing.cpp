@@ -40,8 +40,8 @@ void lowerdiag(int const dim1, int const dim2, lapack_complex_double *arrayin, l
 //---------------------------------------------------------------------------------------------------//
 
 void arraycpy(int const dim1, int const dim2, lapack_complex_double *arraysource, lapack_complex_double *arraytarget){
-  for(int i=0;i<dim1;i++){
-    for(int j=0;j<dim2;j++){
+  for(int i=0;i<dim1;++i){
+    for(int j=0;j<dim2;++j){
       arraytarget[j+dim2*i]=arraysource[j+dim2*i];
     }
   }
@@ -49,7 +49,7 @@ void arraycpy(int const dim1, int const dim2, lapack_complex_double *arraysource
 
 //---------------------------------------------------------------------------------------------------//
 void arraycpy(int const dim, lapack_complex_double *arraysource, lapack_complex_double *arraytarget){
-  for(int i=0;i<dim;i++){
+  for(int i=0;i<dim;++i){
     arraytarget[i]=arraysource[i];
   }
 }

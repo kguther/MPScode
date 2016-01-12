@@ -13,7 +13,7 @@ void globalMeasurement::setupMeasurement(mpo<lapack_complex_double> *MPOperatorI
 
 //---------------------------------------------------------------------------------------------------//
 
-double globalMeasurement::measureFull(){
+void globalMeasurement::measureFull(double &lambda){
   lapack_complex_double *targetPtr;
   lapack_complex_double result;
   Rctr.global_access((*MPOperator).length()-1,0,0,0)=1.0;
@@ -26,7 +26,7 @@ double globalMeasurement::measureFull(){
     }
     calcCtrIterRightBase(i,targetPtr);
   }
-  return real(result);
+  lambda=real(result);
 }
 
 
