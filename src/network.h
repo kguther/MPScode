@@ -52,7 +52,7 @@ class network{
   lapack_complex_double expectationValue;
   //most of these methods are auxiliary functions
   int pctrIndex(int const ai, int const bi, int const aip){return aip+bi*D+ai*D*Dw;}
-  int optimize(int const i, int const maxIter, double const tol, double &iolambda);
+  int optimize(int const i, int const sweepDirection, int const maxIter, double const tol, double &iolambda);
   int solveSiteEigenProb(int const i, int const maxIter, double const tol, double &iolambda);
   int solveSiteEigenProbQNC(int const i, int const maxIter, double const tol, double &iolambda);
   int locd(int const i);
@@ -71,6 +71,8 @@ class network{
   //This one is only for consistency checks
   void leftNormalizationMatrixIter(int i, lapack_complex_double *psi);
   int checkQN();
+  void checkContractions(int const i);
+  lapack_complex_double *backupCtr;
 };
 
 #endif

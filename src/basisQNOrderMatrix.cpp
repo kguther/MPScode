@@ -70,6 +70,27 @@ void basisQNOrderMatrix::generateQNIndexTables(){
     blockStructure(i,0,aiBlockIndicesLP[i],siaimBlockIndicesLP[i]);
     blockStructure(i,1,aimBlockIndicesRP[i],siaiBlockIndicesRP[i]);
     splitIndexTables(i);
+    if(0){
+      for(int iBlock=0;iBlock<numBlocksLP(i);++iBlock){
+	std::cout<<"Left indices: "<<std::endl;
+	for(int j=0;j<lBlockSizeLP(i,iBlock);++j){
+	  std::cout<<aimBlockIndexLP(i,iBlock,j)<<"\t"<<siBlockIndexLP(i,iBlock,j)<<std::endl;
+	}
+	std::cout<<"aim indices split: \n";
+	for(int j=0;j<aimBlockSizeSplit(i,iBlock);++j){
+	  std::cout<<aimBlockIndexSplit(i,iBlock,j);
+	  for(int k=0;k<siBlockSizeSplitFixedaim(i,iBlock,j);++k){
+	    std::cout<<"\t"<<siBlockIndexSplitFixedaim(i,iBlock,j,k);
+	  }
+	  std::cout<<std::endl;
+	}
+	std::cout<<"Right indices: \n";
+	for(int j=0;j<rBlockSizeLP(i,iBlock);++j){
+	  std::cout<<aiBlockIndexLP(i,iBlock,j)<<std::endl;
+	}
+      }
+      exit(1);
+    }
   }
 }
 
@@ -176,7 +197,7 @@ int basisQNOrderMatrix::blockStructure(int const i, int const direction, std::ve
 void basisQNOrderMatrix::splitIndexTables(int const i){
   int newIndex;
   aimBlockIndicesSplit[i].resize(numBlocksLP(i));
-  siBlockIndicesSplit[i].resize(numBlocksLP(i));
+  siBlockIndicesSplit[i].resize(numBlocksRP(i));
   aiBlockIndicesSplit[i].resize(numBlocksRP(i));
   siBlockIndicesSplitFixedaim[i].resize(numBlocksLP(i));
   for(int iBlock=0;iBlock<aiBlockIndicesLP[i].size();++iBlock){
@@ -189,14 +210,6 @@ void basisQNOrderMatrix::splitIndexTables(int const i){
       }
       if(newIndex){
 	aimBlockIndicesSplit[i][iBlock].push_back(aimBlockIndexLP(i,iBlock,k));
-      }
-      for(int splitIndex=0;splitIndex<siBlockIndicesSplit[i][iBlock].size();++splitIndex){
-	if(siBlockIndexLP(i,iBlock,k)==siBlockIndicesSplit[i][iBlock][splitIndex]){
-	  newIndex=0;
-	}
-      }
-      if(newIndex){
-	siBlockIndicesSplit[i][iBlock].push_back(siBlockIndexLP(i,iBlock,k));
       }
     }
     siBlockIndicesSplitFixedaim[i][iBlock].resize(aimBlockSizeSplit(i,iBlock));
@@ -229,6 +242,15 @@ void basisQNOrderMatrix::splitIndexTables(int const i){
       }
       if(newIndex){
 	aiBlockIndicesSplit[i][iBlock].push_back(aiBlockIndexRP(i,iBlock,j));
+      }
+      newIndex=1;
+      for(int splitIndex=0;splitIndex<siBlockIndicesSplit[i][iBlock].size();++splitIndex){
+	if(siBlockIndexRP(i,iBlock,j)==siBlockIndicesSplit[i][iBlock][splitIndex]){
+	  newIndex=0;
+	}
+      }
+      if(newIndex){
+	siBlockIndicesSplit[i][iBlock].push_back(siBlockIndexRP(i,iBlock,j));
       }
     }
   }

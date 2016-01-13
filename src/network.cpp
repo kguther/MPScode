@@ -184,7 +184,7 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
       if(tol>simPars.tolMin){
 	tol*=pow(simPars.tolMin/simPars.tolInitial,1.0/simPars.nSweeps);
       }
-      std::cout<<"Quality of convergence: "<<convergenceQuality<<"\tRequired accuracy: "<<simPars.devAccuracy<<std::endl;
+      std::cout<<"Quality of convergence: "<<convergenceQuality<<"\tRequired accuracy: "<<simPars.devAccuracy<<std::endl<<std::endl;
       excitedStateP.updateScalarProducts(0,-1);
       for(int prev=0;prev<iEigen;++prev){
 	std::cout<<"Overlap with state "<<prev<<" is: "<<excitedStateP.fullOverlap(prev)<<std::endl;
@@ -218,13 +218,15 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
     //Step of leftsweep
     std::cout<<"Optimizing site matrix"<<std::endl;
     curtime=clock();
-    errRet=optimize(i,maxIter,tol,lambda);
+    errRet=optimize(i,1,maxIter,tol,lambda);
     curtime=clock()-curtime;
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
     normalize(i,1,alpha);
     //Here, the scalar products with lower lying states are updated
     excitedStateP.updateScalarProducts(i,1);
     pCtr.calcCtrIterLeft(i+1);
+    if(i!=0)
+    checkContractions(i);
   }
   networkState.normalizeFinal(0);
   std::cout<<"STARTING LEFTSWEEP\n\n";
@@ -232,13 +234,15 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
     //Step of rightsweep
     std::cout<<"Optimizing site matrix"<<std::endl;    
     curtime=clock();
-    errRet=optimize(i,maxIter,tol,lambda);
+    errRet=optimize(i,0,maxIter,tol,lambda);
     curtime=clock()-curtime;
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
     normalize(i,0,alpha);
     //same as above for the scalar products with lower lying states
     excitedStateP.updateScalarProducts(i,-1);
     pCtr.calcCtrIterRight(i-1);
+    if(i!=L-1)
+    checkContractions(i);
   }
   networkState.normalizeFinal(1);
 }
@@ -249,7 +253,7 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
 // eigenvalue problem. 
 //---------------------------------------------------------------------------------------------------//
 
-int network::optimize(int const i, int const maxIter, double const tol, double &iolambda){
+int network::optimize(int const i, int const sweepDirection, int const maxIter, double const tol, double &iolambda){
   //Invokes ARPACK++ to solve the eigenvalue problem
   arcomplex<double> lambda;
   arcomplex<double> *plambda;
@@ -257,7 +261,6 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
   arcomplex<double> *RTerm, *LTerm, *HTerm;
   double spinCheck;
   int nconv;
-  void (optHMatrix::*multMV)(arcomplex<double> *v, arcomplex<double> *w);
   //Get the projector onto the space orthogonal to any lower lying states
   //Get the current partial contractions and site matrix of the Hamiltonian
   pCtr.Lctr.subContractionStart(LTerm,i);
@@ -269,19 +272,18 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
   networkState.subMatrixStart(currentM,i);
   measure(check,spinCheck);
   std::cout<<"Spin before optimizing: "<<spinCheck<<std::endl;
-  if(pars.nQNs && i!=0 && i!=(L-1)){
-    blockHMatrix BMat(RTerm, LTerm,HTerm,networkDimInfo,Dw,i,0,&(networkState.indexTable),&excitedStateP,shift,&conservedQNs);
+  if(pars.nQNs && i!=0 && i!=(L-1)&&1){
+    blockHMatrix BMat(RTerm, LTerm,HTerm,networkDimInfo,Dw,i,sweepDirection,&(networkState.indexTable),&excitedStateP,shift,&conservedQNs);
     BMat.prepareInput(currentM);
     ARCompStdEig<double, blockHMatrix> eigProblemBlocked(BMat.dim(),1,&BMat,&blockHMatrix::MultMvBlocked,"SR",0,tol,maxIter,BMat.compressedVector);
     nconv=eigProblemBlocked.EigenValVectors(BMat.compressedVector,plambda);
     BMat.readOutput(currentM);
   }
   else{
-    multMV=&optHMatrix::MultMvQNConserving;
     //Generate matrix which is to be passed to ARPACK++
     optHMatrix HMat(RTerm,LTerm,HTerm,networkDimInfo,Dw,i,&excitedStateP,shift,&conservedQNs);
     //Note that the types given do and have to match the ones in the projector class if more than one eigenvalue is computed
-    ARCompStdEig<double, optHMatrix> eigProblem(HMat.dim(),1,&HMat,multMV,"SR",0,tol,maxIter,currentM);
+    ARCompStdEig<double, optHMatrix> eigProblem(HMat.dim(),1,&HMat,&optHMatrix::MultMvQNConserving,"SR",0,tol,maxIter,currentM);
     //One should avoid to hit the maximum number of iterations since this can lead into a suboptimal site matrix, increasing the current energy (although usually not by a lot)
     //So far it seems that the eigensolver either converges quite fast or not at all (i.e. very slow, such that the maximum number of iterations is hit) depending strongly on the tolerance
     nconv=eigProblem.EigenValVectors(currentM,plambda);
@@ -487,4 +489,82 @@ int network::checkQN(){
   if(valid)
     std::cout<<"Validated quantum number constraint\n";
   return 0;
+}
+
+void network::checkContractions(int const i){
+  /*
+  lapack_complex_double *RTerm;
+  int change=0;
+  if(i==8){
+    getLocalDimensions(i);
+    pCtr.Rctr.subContractionStart(RTerm,i);
+    if(!store){
+      for(int iBlock=0;iBlock<networkState.indexTable.numBlocksLP(i);++iBlock){
+	for(int bi=0;bi<lDwR;++bi){
+	  for(int j=0;j<networkState.indexTable.rBlockSizeLP(i,iBlock);++j){
+	    for(int jp=0;jp<networkState.indexTable.rBlockSizeLP(i,iBlock);++jp){
+	      if(abs(RTerm[networkState.indexTable.aiBlockIndexLP(i,iBlock,jp)+bi*lDR+lDR*lDwR*networkState.indexTable.aiBlockIndexLP(i,iBlock,j)]-backupCtr[networkState.indexTable.aiBlockIndexLP(i,iBlock,jp)+bi*lDR+lDR*lDwR*networkState.indexTable.aiBlockIndexLP(i,iBlock,j)])>1e-20)
+	      change=1;
+	    }
+	  }
+	}
+      }
+      if(!change){
+	std::cout<<"No update of Rctr was made. Exiting process.\n";
+	exit(1);
+      }
+      else{
+	std::cout<<"Successfully updated Rctr\n!";
+      }
+      delete[] backupCtr;
+    }
+    else{
+      backupCtr=new lapack_complex_double [lDR*lDR*lDwR];
+      arraycpy(lDR*lDR*lDwR,RTerm,backupCtr);
+    }
+  }
+  */
+  getLocalDimensions(i);
+  arcomplex<double> *direct;
+  arcomplex<double> *plambda=new arcomplex<double>;
+  arcomplex<double> *target=new arcomplex<double>[ld*lDL*lDR];
+  arcomplex<double> *currentM=new arcomplex<double>[ld*lDL*lDR];
+  arcomplex<double> *RTerm, *LTerm, *HTerm;
+  arcomplex<double> lambda;
+  double tol=1e-4;
+  double maxIter=4000;
+  pCtr.Lctr.subContractionStart(LTerm,i);
+  pCtr.Rctr.subContractionStart(RTerm,i);
+  networkH.subMatrixStart(HTerm,i);
+  networkState.subMatrixStart(direct,i);
+  arraycpy(ld*lDL*lDR,direct,currentM);
+  for(int m=0;m<ld*lDL*lDR;++m){
+    target[m]=0;
+  }
+  blockHMatrix BMat(RTerm, LTerm,HTerm,networkDimInfo,Dw,i,1,&(networkState.indexTable),&excitedStateP,-3,&conservedQNs);
+  BMat.prepareInput(currentM);
+  BMat.MultMvBlocked(BMat.compressedVector,BMat.compressedVector);
+  //ARCompStdEig<double, blockHMatrix> eigProblemBlocked(BMat.dim(),1,&BMat,&blockHMatrix::MultMvBlocked,"SR",0,tol,maxIter,BMat.compressedVector);
+  //eigProblemBlocked.EigenValVectors(BMat.compressedVector,plambda);
+  BMat.readOutput(target);
+  lambda=*plambda;
+  optHMatrix HMat(RTerm,LTerm,HTerm,networkDimInfo,Dw,i,&excitedStateP,-3,&conservedQNs);
+  //ARCompStdEig<double, optHMatrix> eigProblem(HMat.dim(),1,&HMat,&optHMatrix::MultMvQNConserving,"SR",0,tol,maxIter,currentM);
+  //eigProblem.EigenValVectors(currentM,plambda);
+  HMat.MultMvQNConserving(currentM,currentM);
+  double normb; 
+  normb=cblas_dznrm2(ld*lDL*lDR,target,1);
+  for(int m=0;m<ld*lDL*lDR;++m){
+    target[m]-=currentM[m];
+  }
+  double test=cblas_dznrm2(ld*lDL*lDR,target,1);
+  std::cout<<"Verification: "<<test<<std::endl;
+  std::cout<<"Eigenvec norm: "<<cblas_dznrm2(ld*lDL*lDR,currentM,1)<<"\t"<<normb<<std::endl;
+  if(test>1e-20){
+    //std::cout<<"Eigenvalues: "<<*plambda<<"\t"<<lambda<<std::endl;
+    exit(1);
+  }
+  delete[] target;
+  delete[] currentM;
+  delete plambda;
 }

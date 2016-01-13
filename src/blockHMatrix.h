@@ -17,6 +17,8 @@ class blockHMatrix: public optHMatrix{
   blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, arcomplex<double> *Hin, dimensionTable &dimInfo, int Dwin, int iIn, int sweepDirectionIn, basisQNOrderMatrix *indexTable, projector *excitedStateP, double shift, std::vector<quantumNumber> *conservedQNsin);
   ~blockHMatrix();
   void MultMvBlocked(arcomplex<double> *v, arcomplex<double> *w);
+  void MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w);
+  void MultMvBlockedRP(arcomplex<double> *v, arcomplex<double> *w);
   void storageCompress(arcomplex<double> *v, arcomplex<double> *vCompressed);
   void storageExpand(arcomplex<double> *v, arcomplex<double> *vExpanded);
   void prepareInput(arcomplex<double> *startingVector);
@@ -27,7 +29,8 @@ class blockHMatrix: public optHMatrix{
   std::vector<int> blockOffset;
   int sweepDirection;
   basisQNOrderMatrix *indexTable;
-  int vecBlockIndex(int const iBlock, int const j, int const k){return k+j*indexTable->lBlockSizeLP(i,iBlock)+blockOffset[iBlock];}
+  int vecBlockIndexLP(int const iBlock, int const j, int const k){return k+j*indexTable->lBlockSizeLP(i,iBlock)+blockOffset[iBlock];}
+  int vecBlockIndexRP(int const iBlock, int const j, int const k){return k+j*indexTable->lBlockSizeRP(i,iBlock)+blockOffset[iBlock];}
   void excitedStateProject(arcomplex<double> *v, int const i);
 };
 
