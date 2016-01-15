@@ -61,21 +61,25 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
   tmpContainer<arcomplex<double> > outerContainer(d,lDwL,lDR,lDL);
   arcomplex<double> simpleContainer;
   int const numBlocks=indexTable->numBlocksLP(i);
-  int lBlockSize, rBlockSize, siBlockSize, aimBlockSize;
+  int const aimBlockSize=indexTable->aimBlockSizeSplit(i,0);
+  int lBlockSize, rBlockSize, siBlockSize, rBlockSizep;
   clock_t curtime;
   curtime=clock();
   //excitedStateProject(v,i);
   for(int bi=0;bi<lDwR;++bi){
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
-      lBlockSize=indexTable->lBlockSizeLP(i,iBlock);
-      rBlockSize=indexTable->rBlockSizeLP(i,iBlock);
-      for(int k=0;k<lBlockSize;++k){
-	for(int jp=0;jp<rBlockSize;++jp){
-	  simpleContainer=0;
-	  for(int j=0;j<rBlockSize;++j){
-	    simpleContainer+=Rctr[ctrIndex(indexTable->aiBlockIndexLP(i,iBlock,jp),bi,indexTable->aiBlockIndexLP(i,iBlock,j))]*v[vecBlockIndexLP(iBlock,j,k)];
+      for(int iBlockp=0;iBlockp<numBlocks;++iBlockp){
+	lBlockSize=indexTable->lBlockSizeLP(i,iBlock);
+	rBlockSizep=indexTable->rBlockSizeLP(i,iBlockp);
+	rBlockSize=indexTable->rBlockSizeLP(i,iBlock);
+	for(int k=0;k<lBlockSize;++k){
+	  for(int jp=0;jp<rBlockSizep;++jp){
+	    simpleContainer=0;
+	    for(int j=0;j<rBlockSize;++j){
+	      simpleContainer+=Rctr[ctrIndex(indexTable->aiBlockIndexLP(i,iBlockp,jp),bi,indexTable->aiBlockIndexLP(i,iBlock,j))]*v[vecBlockIndexLP(iBlock,j,k)];
+	    }
+	    innerContainer.global_access(indexTable->siBlockIndexLP(i,iBlock,k),indexTable->aimBlockIndexLP(i,iBlock,k),indexTable->aiBlockIndexLP(i,iBlockp,jp),bi)=simpleContainer;
 	  }
-	  innerContainer.global_access(indexTable->siBlockIndexLP(i,iBlock,k),indexTable->aimBlockIndexLP(i,iBlock,k),indexTable->aiBlockIndexLP(i,iBlock,jp),bi)=simpleContainer;
 	}
       }
     }
@@ -83,20 +87,20 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
   for(int bim=0;bim<lDwL;++bim){
     for(int si=0;si<d;++si){
       for(int iBlock=0;iBlock<numBlocks;++iBlock){
-	lBlockSize=indexTable->lBlockSizeLP(i,iBlock);
-	rBlockSize=indexTable->rBlockSizeLP(i,iBlock);
-	
-	aimBlockSize=indexTable->aimBlockSizeSplit(i,iBlock);
-   	for(int kp=0;kp<aimBlockSize;++kp){
-	  siBlockSize=indexTable->siBlockSizeSplitFixedaim(i,iBlock,kp);
-	  for(int j=0;j<rBlockSize;++j){
-	    simpleContainer=0;
-	    for(int k=0;k<siBlockSize;++k){
-	      for(int bi=0;bi<lDwR;++bi){
-		simpleContainer+=H[hIndex(si,indexTable->siBlockIndexSplitFixedaim(i,iBlock,kp,k),bi,bim)]*innerContainer.global_access(indexTable->siBlockIndexSplitFixedaim(i,iBlock,kp,k),indexTable->aimBlockIndexSplit(i,iBlock,kp),indexTable->aiBlockIndexLP(i,iBlock,j),bi);
+	for(int iBlockp=0;iBlockp<numBlocks;++iBlockp){
+	  lBlockSize=indexTable->lBlockSizeLP(i,iBlock);
+	  rBlockSize=indexTable->rBlockSizeLP(i,iBlockp);
+	  for(int kp=0;kp<aimBlockSize;++kp){
+	    siBlockSize=indexTable->siBlockSizeSplitFixedaim(i,iBlock,kp);
+	    for(int jp=0;jp<rBlockSize;++jp){
+	      simpleContainer=0;
+	      for(int k=0;k<siBlockSize;++k){
+		for(int bi=0;bi<lDwR;++bi){
+		  simpleContainer+=H[hIndex(si,indexTable->siBlockIndexSplitFixedaim(i,iBlock,kp,k),bi,bim)]*innerContainer.global_access(indexTable->siBlockIndexSplitFixedaim(i,iBlock,kp,k),indexTable->aimBlockIndexSplit(i,iBlock,kp),indexTable->aiBlockIndexLP(i,iBlockp,jp),bi);
+		}
 	      }
+	      outerContainer.global_access(si,bim,indexTable->aiBlockIndexLP(i,iBlockp,jp),indexTable->aimBlockIndexSplit(i,iBlock,kp))=simpleContainer;
 	    }
-	    outerContainer.global_access(si,bim,indexTable->aiBlockIndexLP(i,iBlock,j),indexTable->aimBlockIndexSplit(i,iBlock,kp))=simpleContainer;
 	  }
 	}
 	/*
@@ -110,14 +114,13 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
 	    }
 	  }
 	}
-       */
+	*/
       }
     }
   }	 
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
     lBlockSize=indexTable->lBlockSizeLP(i,iBlock);
     rBlockSize=indexTable->rBlockSizeLP(i,iBlock);
-    aimBlockSize=indexTable->aimBlockSizeSplit(i,iBlock);
     for(int j=0;j<rBlockSize;++j){
       for(int k=0;k<lBlockSize;++k){
 	simpleContainer=0;

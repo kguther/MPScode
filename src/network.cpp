@@ -67,7 +67,7 @@ void network::initialize(problemParameters inputpars, simulationParameters input
   //Somewhat unelegant way to handle loading of the stored states in the first solve()
   conservedQNs.resize(pars.nQNs);
   for(int iQN=0;iQN<pars.nQNs;++iQN){
-    conservedQNs[iQN].initialize(networkDimInfo,pars.QNconserved[iQN],pars.QNLocalList+iQN*pars.d.maxd());
+    conservedQNs[iQN].initialize(networkDimInfo,pars.QNconserved[iQN],pars.QNLocalList+iQN*pars.d.maxd(),0);
   }
   networkState.generate(networkDimInfo,&conservedQNs);
   excitedStateP.initialize(pars.nEigs);
@@ -225,8 +225,6 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
     //Here, the scalar products with lower lying states are updated
     excitedStateP.updateScalarProducts(i,1);
     pCtr.calcCtrIterLeft(i+1);
-    if(i!=0)
-    checkContractions(i);
   }
   networkState.normalizeFinal(0);
   std::cout<<"STARTING LEFTSWEEP\n\n";
@@ -241,8 +239,6 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
     //same as above for the scalar products with lower lying states
     excitedStateP.updateScalarProducts(i,-1);
     pCtr.calcCtrIterRight(i-1);
-    if(i!=L-1)
-    checkContractions(i);
   }
   networkState.normalizeFinal(1);
 }
@@ -259,7 +255,7 @@ int network::optimize(int const i, int const sweepDirection, int const maxIter, 
   arcomplex<double> *plambda;
   arcomplex<double> *currentM;
   arcomplex<double> *RTerm, *LTerm, *HTerm;
-  double spinCheck;
+  double spinCheck=0;
   int nconv;
   //Get the projector onto the space orthogonal to any lower lying states
   //Get the current partial contractions and site matrix of the Hamiltonian
@@ -270,9 +266,9 @@ int network::optimize(int const i, int const sweepDirection, int const maxIter, 
   plambda=&lambda;
   //Using the current site matrix as a starting point allows for much faster convergence as it has already been optimized in previous sweeps (except for the first sweep, this is where a good starting point has to be guessed
   networkState.subMatrixStart(currentM,i);
-  measure(check,spinCheck);
+  //measure(check,spinCheck);
   std::cout<<"Spin before optimizing: "<<spinCheck<<std::endl;
-  if(pars.nQNs && i!=0 && i!=(L-1)&&1){
+  if(pars.nQNs && i!=0 && i!=(L-1)&&0){
     blockHMatrix BMat(RTerm, LTerm,HTerm,networkDimInfo,Dw,i,sweepDirection,&(networkState.indexTable),&excitedStateP,shift,&conservedQNs);
     BMat.prepareInput(currentM);
     ARCompStdEig<double, blockHMatrix> eigProblemBlocked(BMat.dim(),1,&BMat,&blockHMatrix::MultMvBlocked,"SR",0,tol,maxIter,BMat.compressedVector);
@@ -288,7 +284,7 @@ int network::optimize(int const i, int const sweepDirection, int const maxIter, 
     //So far it seems that the eigensolver either converges quite fast or not at all (i.e. very slow, such that the maximum number of iterations is hit) depending strongly on the tolerance
     nconv=eigProblem.EigenValVectors(currentM,plambda);
   }
-  measure(check,spinCheck);
+  //measure(check,spinCheck);
   std::cout<<"Spin after optimizing: "<<spinCheck<<std::endl;
   if(nconv!=1){
     std::cout<<"Failed to converge in iterative eigensolver, number of Iterations taken: "<<maxIter<<" With tolerance "<<tol<<std::endl;

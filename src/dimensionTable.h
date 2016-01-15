@@ -15,6 +15,7 @@ class dimensionTable{
   int d() const {return dpar;}
   int D() const {return Dpar;}
   int L() const {return Lpar;}
+  int iCrit() const {return icrit;}
   localHSpaces const & locdTable() {return dpars;}
   int locDimR(int const i);
   int locDimL(int const i);

@@ -32,6 +32,7 @@ class network{
   int setSimParameters(simulationParameters newPars);
   //MPO needs to be initialized externally
   mpo<lapack_complex_double> networkH;
+  int locd(int const i);
   //This one is only for consistency checks
   void leftNormalizationMatrixFull();
   mpo<lapack_complex_double> *check;
@@ -55,7 +56,6 @@ class network{
   int optimize(int const i, int const sweepDirection, int const maxIter, double const tol, double &iolambda);
   int solveSiteEigenProb(int const i, int const maxIter, double const tol, double &iolambda);
   int solveSiteEigenProbQNC(int const i, int const maxIter, double const tol, double &iolambda);
-  int locd(int const i);
   int locDMax(int const i);
   int gotoNextEigen();
   int setParameterD(int Dnew);

@@ -39,15 +39,15 @@ void testSolve(){
   int const nEigens=1;
   int const L=12;
   int const nQuantumNumbers=1;
-  int QNValue[1]={4};
-  int QNList[2]={1,-1};
-  localHSpaces localHilbertSpaceDims(2);
-  problemParameters pars(localHilbertSpaceDims,L,5,nEigens,nQuantumNumbers,QNValue,QNList);
+  int QNValue[2]={4,1};
+  int QNList[8]={0,1,1,2,1,1,-1,1};
+  localHSpaces localHilbertSpaceDims(4);
+  problemParameters pars(localHilbertSpaceDims,L,10,nEigens,nQuantumNumbers,QNValue,QNList);
   //simulationParameters simPars(100,5,2,1e-4,1e-8,1e-9,1e-2);
   //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack
-  simulationParameters simPars(100,1,1,1e-4,1e-4,1e-8,1e-4);
+  simulationParameters simPars(10,4,3,1e-4,1e-4,1e-8,1e-4);
   Qsystem sys(pars,simPars);
-  int lDwR, lDwL, Dw;
+  /*int lDwR, lDwL, Dw;
   Dw=pars.Dw;
   for(int i=0;i<pars.L;i++){
     if(i==0){
@@ -120,8 +120,9 @@ void testSolve(){
       }
     }
   }
+  */
   double matEls;
-  mpo<lapack_complex_double> spin(2,2,L);
+  mpo<lapack_complex_double> particleNumber(4,2,L);
   for(int i=0;i<L;++i){
     for(int bi=0;bi<2;++bi){
       for(int bim=0;bim<2;++bim){
@@ -131,10 +132,10 @@ void testSolve(){
 	    if(i!=0 && i!=L-1 && bi==1 && bim==0){
 	      matEls=0;
 	    }
-	    if(bi==0 && bim==spin.locDimL(i)-1 && si==1){
-	      matEls*=-1;
+	    if(bi==0 && bim==particleNumber.locDimL(i)-1){
+	      matEls*=(delta(si,1)+delta(si,2)+2*delta(si,3));
 	    }
-	    spin.global_access(i,si,sip,bi,bim)=matEls;
+	    particleNumber.global_access(i,si,sip,bi,bim)=matEls;
 	  }
 	}
       }
@@ -142,15 +143,15 @@ void testSolve(){
   }
   double spinQN;
   //Note that the inital state is not normalized, the result of this measurement does not make sense therefore
-  sys.measure(spin,spinQN);
+  sys.measure(particleNumber,spinQN);
   cout<<"Initial total spin: "<<spinQN<<endl;
-  sys.TensorNetwork.check=&spin;
+  sys.TensorNetwork.check=&particleNumber;
   sys.getGroundState();
   cout<<setprecision(21);
   for(int mi=0;mi<nEigens;++mi){
     cout<<"Obtained energy of state "<<mi<<" as: "<<sys.E0[mi]<<endl;
   }
-  sys.measure(spin,spinQN);
+  sys.measure(particleNumber,spinQN);
   cout<<"Final total spin: "<<spinQN<<endl;
 }
 

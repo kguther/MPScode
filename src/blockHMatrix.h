@@ -30,6 +30,7 @@ class blockHMatrix: public optHMatrix{
   int sweepDirection;
   basisQNOrderMatrix *indexTable;
   int vecBlockIndexLP(int const iBlock, int const j, int const k){return k+j*indexTable->lBlockSizeLP(i,iBlock)+blockOffset[iBlock];}
+  //int vecBlockIndexLP(int const iBlock, int const j, int const k){return vecIndex(indexTable->siBlockIndexLP(i,iBlock,k),indexTable->aiBlockIndexLP(i,iBlock,j),indexTable->aimBlockIndexLP(i,iBlock,k));}
   int vecBlockIndexRP(int const iBlock, int const j, int const k){return k+j*indexTable->lBlockSizeRP(i,iBlock)+blockOffset[iBlock];}
   void excitedStateProject(arcomplex<double> *v, int const i);
 };

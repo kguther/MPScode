@@ -32,18 +32,18 @@ class basisQNOrderMatrix{
   int aiBlockIndexRP(int const i, int const iBlock, int const k) const{return siaiBlockIndicesRP[i][iBlock][k].aim;}
   int siBlockIndexRP(int const i, int const iBlock, int const k) const{return siaiBlockIndicesRP[i][iBlock][k].si;}
   int aimBlockIndexRP(int const i, int const iBlock, int const j) const{return aimBlockIndicesRP[i][iBlock][j];}
-  int aimBlockIndexSplit(int const i, int const iBlock, int const j) const{return aimBlockIndicesSplit[i][iBlock][j];}
-  int aiBlockIndexSplit(int const i, int const iBlock, int const k) const{return aiBlockIndicesSplit[i][iBlock][k];}
-  int siBlockIndexSplit(int const i, int const iBlock, int const j) const{return siBlockIndicesSplit[i][iBlock][j];}
-  int siBlockIndexSplitFixedaim(int const i, int const iBlock, int const k, int const j) const{return siBlockIndicesSplitFixedaim[i][iBlock][k][j];}
+  int aimBlockIndexSplit(int const i, int const iBlock, int const j) const{return aimBlockIndicesSplit[i][j];}
+  int aiBlockIndexSplit(int const i, int const iBlock, int const k) const{return aiBlockIndicesSplit[i][k];}
+  int siBlockIndexSplit(int const i, int const iBlock, int const j) const{return siBlockIndicesSplit[i][j];}
+  int siBlockIndexSplitFixedaim(int const i, int const iBlock, int const k, int const j) const{return siBlockIndicesSplitFixedaim[i][k][j];}
   int lBlockSizeLP(int const i, int const iBlock){return siaimBlockIndicesLP[i][iBlock].size();}
   int rBlockSizeLP(int const i, int const iBlock){return aiBlockIndicesLP[i][iBlock].size();}
   int lBlockSizeRP(int const i, int const iBlock){return aimBlockIndicesRP[i][iBlock].size();}
   int rBlockSizeRP(int const i, int const iBlock){return siaiBlockIndicesRP[i][iBlock].size();}
-  int siBlockSizeSplit(int const i, int const iBlock){return siBlockIndicesSplit[i][iBlock].size();}
-  int siBlockSizeSplitFixedaim(int const i, int const iBlock, int const k){return siBlockIndicesSplitFixedaim[i][iBlock][k].size();}
-  int aimBlockSizeSplit(int const i, int const iBlock){return aimBlockIndicesSplit[i][iBlock].size();}
-  int aiBlockSizeSplit(int const i, int const iBlock){return aiBlockIndicesSplit[i][iBlock].size();}
+  int siBlockSizeSplit(int const i, int const iBlock){return siBlockIndicesSplit[i].size();}
+  int siBlockSizeSplitFixedaim(int const i, int const iBlock, int const k){return siBlockIndicesSplitFixedaim[i][k].size();}
+  int aimBlockSizeSplit(int const i, int const iBlock){return aimBlockIndicesSplit[i].size();}
+  int aiBlockSizeSplit(int const i, int const iBlock){return aiBlockIndicesSplit[i].size();}
   int numBlocksLP(int const i){return aiBlockIndicesLP[i].size();}
   int numBlocksRP(int const i){return aimBlockIndicesRP[i].size();}
  private:
@@ -52,10 +52,10 @@ class basisQNOrderMatrix{
   std::vector<std::vector<multInt> > *siaimBlockIndicesLP;
   std::vector<std::vector<int> > *aimBlockIndicesRP;
   std::vector<std::vector<multInt> > *siaiBlockIndicesRP;
-  std::vector<std::vector<int> > *siBlockIndicesSplit;
-  std::vector<std::vector<int> > *aimBlockIndicesSplit;
-  std::vector<std::vector<int> > *aiBlockIndicesSplit;
-  std::vector<std::vector<std::vector<int> > > *siBlockIndicesSplitFixedaim;
+  std::vector<int > *siBlockIndicesSplit;
+  std::vector<int> *aimBlockIndicesSplit;
+  std::vector<int> *aiBlockIndicesSplit;
+  std::vector<std::vector<int> > *siBlockIndicesSplitFixedaim;
   dimensionTable dimInfo;
   void deleteTables();
   void splitIndexTables(int const i);
