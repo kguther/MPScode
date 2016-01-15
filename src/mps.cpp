@@ -203,13 +203,13 @@ int mps::leftNormalizeStateBlockwise(int const i){
       Qcontainer=new lapack_complex_double[rBlockSize];
       info=LAPACKE_zgeqrf(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,M,lBlockSize,Qcontainer);
       if(info){
-	std::cout<<"Error in LAPACKE_zgeqrf: "<<info<<std::endl;
+	std::cout<<"Error in LAPACKE_zgeqrf: "<<info<<" with block sizes: "<<lBlockSize<<"x"<<rBlockSize<<" at site "<<i<<std::endl;
 	exit(1);
       }
       lowerdiag(rBlockSize,rBlockSize,M,Rcontainer,lBlockSize);
       info=LAPACKE_zungqr(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,rBlockSize,M,lBlockSize,Qcontainer);
       if(info){
-	std::cout<<"Error in LAPACKE_zungqr: "<<info<<std::endl;
+	std::cout<<"Error in LAPACKE_zungqr: "<<info<<" with block sizes: "<<lBlockSize<<"x"<<rBlockSize<<" at site "<<i<<std::endl;
 	exit(1);
       }
       for(int j=0;j<rBlockSize;++j){
@@ -272,13 +272,13 @@ int mps::rightNormalizeStateBlockwise(int const i){
       Qcontainer=new lapack_complex_double[rBlockSize];
       info=LAPACKE_zgerqf(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,M,lBlockSize,Qcontainer);
       if(info){
-	std::cout<<"Error in LAPACKE_zgerqf: "<<info<<std::endl;
+	std::cout<<"Error in LAPACKE_zgerqf: "<<info<<" with block sizes: "<<lBlockSize<<"x"<<rBlockSize<<" at site "<<i<<std::endl;
 	exit(1);
       }
       lowerdiag(lBlockSize,lBlockSize,M+(rBlockSize-lBlockSize)*lBlockSize,Rcontainer);
       info=LAPACKE_zungrq(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,lBlockSize,M,lBlockSize,Qcontainer);
       if(info){
-	std::cout<<"Error in LAPACKE_zungrq: "<<info<<std::endl;
+	std::cout<<"Error in LAPACKE_zungrq: "<<info<<" with block sizes: "<<lBlockSize<<"x"<<rBlockSize<<" at site "<<i<<std::endl;
 	exit(1);
       }
       for(int j=0;j<lBlockSize;++j){

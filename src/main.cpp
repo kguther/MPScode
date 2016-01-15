@@ -11,6 +11,7 @@
 #include "optHMatrix.h"
 #include "Qsystem.h"
 #include "localHSpaces.h"
+#include "problemOperators.h"
 
 using namespace std;
 
@@ -37,15 +38,15 @@ void testSolve(){
   double eigVal;
   double const mEl=1;
   int const nEigens=1;
-  int const L=12;
+  int const L=10;
   int const nQuantumNumbers=1;
-  int QNValue[2]={4,1};
+  int QNValue[2]={L,1};
   int QNList[8]={0,1,1,2,1,1,-1,1};
   localHSpaces localHilbertSpaceDims(4);
   problemParameters pars(localHilbertSpaceDims,L,10,nEigens,nQuantumNumbers,QNValue,QNList);
   //simulationParameters simPars(100,5,2,1e-4,1e-8,1e-9,1e-2);
   //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack
-  simulationParameters simPars(10,4,3,1e-4,1e-4,1e-8,1e-4);
+  simulationParameters simPars(100,4,1,1e-4,1e-4,1e-8,1e-4);
   Qsystem sys(pars,simPars);
   /*int lDwR, lDwL, Dw;
   Dw=pars.Dw;
@@ -121,6 +122,7 @@ void testSolve(){
     }
   }
   */
+  writeHamiltonian(&sys,1,1.1);
   double matEls;
   mpo<lapack_complex_double> particleNumber(4,2,L);
   for(int i=0;i<L;++i){
@@ -153,11 +155,4 @@ void testSolve(){
   }
   sys.measure(particleNumber,spinQN);
   cout<<"Final total spin: "<<spinQN<<endl;
-}
-
-int delta(int i, int j){
-  if(i==j){
-    return 1;
-  }
-  return 0;
 }

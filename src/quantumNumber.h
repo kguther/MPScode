@@ -28,6 +28,7 @@ class quantumNumber{
   int QNLowerCheck(int i, int ai);
   int QNUpperCheck(int i, int ai);
   int exactLabel(int const i, int const ai);
+  int truncLabel(int const i, int const ai);
   int truncLabel(int const i, int const ai, int const leftVacuum, int const rightVacuum);
   int groupOperation(int const label, int const labelp);
   int groupInverse(int const label);

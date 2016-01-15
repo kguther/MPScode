@@ -176,7 +176,7 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
       networkState.normalizeFinal(1);
       //In calcCtrIterRightBase, the second argument has to be a pointer, because it usually is an array. No call-by-reference here.
       pCtr.calcCtrIterRightBase(-1,&expectationValue);
-      convergenceQuality=convergenceCheck();
+      convergenceQuality=1;//convergenceCheck();
       if(convergenceQuality<simPars.devAccuracy){
 	nConverged[iEigen]=0;
       }

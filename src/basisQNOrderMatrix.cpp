@@ -70,17 +70,23 @@ void basisQNOrderMatrix::generateQNIndexTables(){
     blockStructure(i,0,aiBlockIndicesLP[i],siaimBlockIndicesLP[i]);
     blockStructure(i,1,aimBlockIndicesRP[i],siaiBlockIndicesRP[i]);
     splitIndexTables(i);
-    if(i==4){
-      for(int iBlock=0;iBlock<numBlocksLP(i);++iBlock){
-	std::cout<<"Left indices: "<<std::endl;
-	for(int j=0;j<lBlockSizeLP(i,iBlock);++j){
-	  std::cout<<aimBlockIndexLP(i,iBlock,j)<<"\t"<<siBlockIndexLP(i,iBlock,j)<<std::endl;
+    if(i==29 && 0){
+      /*std::cout<<"Left labels:\n";
+      for(int aim=0;aim<dimInfo.locDimL(i);++aim){
+	std::cout<<aim<<" with label "<<(*conservedQNs)[0].QNLabel(i-1,aim)<<std::endl;
+      }
+      */
+      for(int iBlock=0;iBlock<numBlocksRP(i);++iBlock){
+	std::cout<<"Right indices: "<<std::endl;
+	for(int j=0;j<rBlockSizeRP(i,iBlock);++j){
+	  std::cout<<aiBlockIndexRP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(i,aiBlockIndexRP(i,iBlock,j))<<"\t"<<siBlockIndexRP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(siBlockIndexRP(i,iBlock,j))<<std::endl;
 	}
-	std::cout<<"Right indices: \n";
-	for(int j=0;j<rBlockSizeLP(i,iBlock);++j){
-	  std::cout<<aiBlockIndexLP(i,iBlock,j)<<std::endl;
+	std::cout<<"Left indices: \n";
+	for(int j=0;j<lBlockSizeRP(i,iBlock);++j){
+	  std::cout<<aimBlockIndexRP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(i-1,aimBlockIndexRP(i,iBlock,j))<<std::endl;
 	}
       }
+      /*
       std::cout<<"aim indices split: \n";
       for(int j=0;j<aimBlockSizeSplit(i,0);++j){
 	std::cout<<aimBlockIndexSplit(i,0,j);
@@ -88,7 +94,7 @@ void basisQNOrderMatrix::generateQNIndexTables(){
 	  std::cout<<"\t"<<siBlockIndexSplitFixedaim(i,0,j,k);
 	}
 	std::cout<<std::endl;
-      }
+      }*/
       exit(1);
     }
   }
@@ -137,19 +143,7 @@ int basisQNOrderMatrix::blockStructure(int const i, int const direction, std::ve
 	}
       }
     }
-    /*for(int si=0;si<dimInfo.locd(i);++si){
-      for(int aim=0;aim<lDpaired;++aim){
-	qnConstraint=nQNs;
-	for(int iQN=0;iQN<nQNs;++iQN){
-	  if((*conservedQNs)[iQN].qnConstraint(i,si,ai,aim)==0){
-	    qnConstraint-=1;
-	  }
-	}
-      }
-    }
-    */
-    qnConstraint=0;
-    if(isNew && !qnConstraint){
+    if(isNew){
       for(int iQN=0;iQN<nQNs;++iQN){
 	qnLabels[iQN].push_back((*conservedQNs)[iQN].QNLabel(i-direction,ai));
       }
@@ -162,7 +156,7 @@ int basisQNOrderMatrix::blockStructure(int const i, int const direction, std::ve
       for(int iBlock=0;iBlock<numBlocks;++iBlock){
 	matchBlock=1;
 	for(int iQN=0;iQN<nQNs;++iQN){
-	  if(qnCriterium(iQN,i,aim,si,direction,pre)!=qnLabels[iQN][iBlock]){
+	  if(qnCriterium(iQN,i,aim,si,direction,pre)!=qnLabels[iQN][iBlock] || qnLabels[iQN][iBlock]<0){
 	    matchBlock=0;
 	  }
 	}
