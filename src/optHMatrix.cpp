@@ -29,7 +29,7 @@ optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, arcomplex
   d=dimInfo.locd(i);
   //Dimension of H is obviously a necessary information for ARPACK++
   dimension=d*lDL*lDR;
-  std::cout<<"Current eigenvalue problem Dimension: "<<dimension<<std::endl;
+  std::cout<<"Current eigenvalue problem dimension: "<<dimension<<std::endl;
 }
 
 //---------------------------------------------------------------------------------------------------//

@@ -20,6 +20,7 @@ quantumNumber::~quantumNumber(){
 //---------------------------------------------------------------------------------------------------//
 
 void quantumNumber::initialize(dimensionTable &dimInfoin, int const Nin, int *QNlocin, int mult){
+  int violation;
   N=Nin;
   dimInfo=dimInfoin;
   QNloc=QNlocin;
@@ -36,6 +37,18 @@ void quantumNumber::initialize(dimensionTable &dimInfoin, int const Nin, int *QN
   iLRSwap=dimInfo.L()/2;
   parityNumber=mult;
   initializeLabelList();
+  for(int i=dimInfo.L()-1;i>0;--i){
+    violation=0;
+    for(int ai=0;ai<dimInfo.locDimR(i);++ai){
+      if(rightLabel[ai+i*dimInfo.D()]==0){
+	++violation;
+      }
+    }
+    if(violation>1){
+      iLRSwap=i+1;
+      break;
+    }
+  }      
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -258,3 +271,4 @@ int quantumNumber::QNLabel(int const i, int const ai){
   }
   return rightLabel[ai+(i+1)*dimInfo.D()];
 }
+

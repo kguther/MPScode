@@ -143,10 +143,8 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
   double alpha;
   double tol;
   double spinCheck;
-  overlap test;
-  test.loadMPS(&networkState,&networkState);
   alpha=simPars.alpha;
-  if(pars.nQNs){
+  if(pars.nQNs || pars.nEigs>1){
     cshift=-100;
   }
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
@@ -176,7 +174,7 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
       networkState.normalizeFinal(1);
       //In calcCtrIterRightBase, the second argument has to be a pointer, because it usually is an array. No call-by-reference here.
       pCtr.calcCtrIterRightBase(-1,&expectationValue);
-      convergenceQuality=1;//convergenceCheck();
+      convergenceQuality=convergenceCheck();
       if(convergenceQuality<simPars.devAccuracy){
 	nConverged[iEigen]=0;
       }
@@ -213,9 +211,12 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
   clock_t curtime;
   int errRet;
   lapack_complex_double stateNorm;
+  overlap test;
+  test.loadMPS(&networkState,&networkState);
   std::cout<<"STARTING RIGHTSWEEP\n\n";
   for(int i=0;i<(L-1);++i){
     //Step of leftsweep
+    //std::cout<<"Norm of state "<<test.getFullOverlap()<<std::endl;
     std::cout<<"Optimizing site matrix"<<std::endl;
     curtime=clock();
     errRet=optimize(i,1,maxIter,tol,lambda);
@@ -230,6 +231,7 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
   std::cout<<"STARTING LEFTSWEEP\n\n";
   for(int i=L-1;i>0;--i){
     //Step of rightsweep
+    //std::cout<<"Norm of state "<<test.getFullOverlap()<<std::endl;
     std::cout<<"Optimizing site matrix"<<std::endl;    
     curtime=clock();
     errRet=optimize(i,0,maxIter,tol,lambda);
@@ -255,6 +257,7 @@ int network::optimize(int const i, int const sweepDirection, int const maxIter, 
   arcomplex<double> *plambda;
   arcomplex<double> *currentM;
   arcomplex<double> *RTerm, *LTerm, *HTerm;
+  void (optHMatrix::*multMv)(arcomplex<double> *v, arcomplex<double> *w);
   double spinCheck=0;
   int nconv;
   //Get the projector onto the space orthogonal to any lower lying states
@@ -267,8 +270,8 @@ int network::optimize(int const i, int const sweepDirection, int const maxIter, 
   //Using the current site matrix as a starting point allows for much faster convergence as it has already been optimized in previous sweeps (except for the first sweep, this is where a good starting point has to be guessed
   networkState.subMatrixStart(currentM,i);
   //measure(check,spinCheck);
-  std::cout<<"Spin before optimizing: "<<spinCheck<<std::endl;
-  if(pars.nQNs && i!=0 && i!=(L-1)&&0){
+  //std::cout<<"Spin before optimizing: "<<spinCheck<<std::endl;
+  if(pars.nQNs && i!=0 && i!=(L-1) && 0){
     blockHMatrix BMat(RTerm, LTerm,HTerm,networkDimInfo,Dw,i,sweepDirection,&(networkState.indexTable),&excitedStateP,shift,&conservedQNs);
     BMat.prepareInput(currentM);
     ARCompStdEig<double, blockHMatrix> eigProblemBlocked(BMat.dim(),1,&BMat,&blockHMatrix::MultMvBlocked,"SR",0,tol,maxIter,BMat.compressedVector);
@@ -277,15 +280,21 @@ int network::optimize(int const i, int const sweepDirection, int const maxIter, 
   }
   else{
     //Generate matrix which is to be passed to ARPACK++
+    if(pars.nQNs){
+      multMv=&optHMatrix::MultMvQNConserving;
+    }
+    else{
+      multMv=&optHMatrix::MultMv;
+    }
     optHMatrix HMat(RTerm,LTerm,HTerm,networkDimInfo,Dw,i,&excitedStateP,shift,&conservedQNs);
     //Note that the types given do and have to match the ones in the projector class if more than one eigenvalue is computed
-    ARCompStdEig<double, optHMatrix> eigProblem(HMat.dim(),1,&HMat,&optHMatrix::MultMvQNConserving,"SR",0,tol,maxIter,currentM);
+    ARCompStdEig<double, optHMatrix> eigProblem(HMat.dim(),1,&HMat,multMv,"SR",0,tol,maxIter,currentM);
     //One should avoid to hit the maximum number of iterations since this can lead into a suboptimal site matrix, increasing the current energy (although usually not by a lot)
     //So far it seems that the eigensolver either converges quite fast or not at all (i.e. very slow, such that the maximum number of iterations is hit) depending strongly on the tolerance
     nconv=eigProblem.EigenValVectors(currentM,plambda);
   }
   //measure(check,spinCheck);
-  std::cout<<"Spin after optimizing: "<<spinCheck<<std::endl;
+  //std::cout<<"Spin after optimizing: "<<spinCheck<<std::endl;
   if(nconv!=1){
     std::cout<<"Failed to converge in iterative eigensolver, number of Iterations taken: "<<maxIter<<" With tolerance "<<tol<<std::endl;
     return 1;
@@ -428,7 +437,7 @@ void network::leftNormalizationMatrixFull(){
   for(int i=0;i<L;++i){
     for(int ai=0;ai<D;++ai){
       for(int aip=0;aip<D;++aip){
-	psi[i][ai][aip]=0.0/0.0;
+	psi[i][ai][aip]=0.0;
       }
     }
   }
@@ -436,7 +445,6 @@ void network::leftNormalizationMatrixFull(){
   std::cout<<"Printing Psi expressions\n";
   for(int i=1;i<L;++i){
     leftNormalizationMatrixIter(i,psi[0][0]);
-    matrixprint(D,D,psi[i][0]);
   }
   std::cout<<"That's it\n";
   delete3D(&psi);
@@ -450,13 +458,16 @@ void network::leftNormalizationMatrixIter(int i, lapack_complex_double *psi){
     for(int aimp=0;aimp<networkState.locDimL(i);++aimp){
       psiContainer=0;
       for(int si=0;si<locd(i);++si){
-	for(int aimm=0;aimm<networkState.locDimL(i-1);aimm++){
-	  for(int aimmp=0;aimmp<networkState.locDimL(i-1);aimmp++){
+	for(int aimm=0;aimm<networkState.locDimL(i-1);++aimm){
+	  for(int aimmp=0;aimmp<networkState.locDimL(i-1);++aimmp){
 	    psiContainer+=networkState.global_access(i-1,si,aim,aimm)*conj(networkState.global_access(i-1,si,aimp,aimm))*psi[(i-1)*D*D+aimm*D+aimmp];
 	  }
 	}
       }
       psi[i*D*D+aim*D+aimp]=psiContainer;
+      if((abs(psiContainer)>1e-7 && aim!=aimp) || (abs(psiContainer-1)>1e-7 && aim==aimp)){
+	std::cout<<"Error in normalization procedure\n";
+      }
     }
   }	
 }
