@@ -6,8 +6,8 @@
 class problemParameters{
  public:
   problemParameters(){}
-  problemParameters(localHSpaces din, int Lin, int Dwin, int nEigsin=1, int NumberQNs=0, int *QNconservedin=0, int *QNListin=0): d(din),L(Lin),Dw(Dwin),nEigs(nEigsin),nQNs(NumberQNs),QNconserved(QNconservedin),QNLocalList(QNListin){}
-  int *QNconserved, *QNLocalList;
+ problemParameters(localHSpaces din, int Lin, int Dwin, int nEigsin=1, int NumberQNs=0, int *QNconservedin=0, int *QNListin=0, int *parityNumberin=0): d(din),L(Lin),Dw(Dwin),nEigs(nEigsin),nQNs(NumberQNs),QNconserved(QNconservedin),QNLocalList(QNListin),parityNumber(parityNumberin){}
+  int *QNconserved, *QNLocalList, *parityNumber;
   int L, Dw, nEigs,nQNs;
   localHSpaces d;
 };

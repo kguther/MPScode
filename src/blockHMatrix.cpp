@@ -35,6 +35,7 @@ blockHMatrix::blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, arcomplex
     }
   }
   compressedVector=new arcomplex<double>[dimension];
+  std::cout<<"Current eigenvalue problem dimension: "<<dimension<<std::endl;
 }
 
 //---------------------------------------------------------------------------------------------------//

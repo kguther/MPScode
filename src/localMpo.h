@@ -7,7 +7,7 @@ template<typename T>
 class localMpo: public mpo<T>{
  public:
  localMpo():mpo(){}
- localMpo(int const din, int const Dwin, int const Lin):mpo(din,Dwin,Lin){}
+ localMpo(int const din, int const Dwin, int const Lin):mpo<T>(din,Dwin,Lin){}
   void stepRight();
 };
 

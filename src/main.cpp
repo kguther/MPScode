@@ -37,17 +37,19 @@ int main(int argc, char *argv[]){
 void testSolve(){
   double eigVal;
   double const mEl=1;
+  int const N=17;
   int const nEigens=1;
-  int const L=15;
-  int const nQuantumNumbers=1;
+  int const L=18;
+  int const nQuantumNumbers=2;
   int hInfo;
-  int QNValue[2]={L,1};
-  int QNList[8]={0,1,1,2,1,1,-1,1};
+  int QNValue[2]={N,1};
+  int QNList[8]={0,1,1,2,1,1,-1,-1};
+  int parityNumber[2]={0,1};
   localHSpaces localHilbertSpaceDims(4);
-  problemParameters pars(localHilbertSpaceDims,L,12,nEigens,nQuantumNumbers,QNValue,QNList);
+  problemParameters pars(localHilbertSpaceDims,L,12,nEigens,nQuantumNumbers,QNValue,QNList,parityNumber);
   //simulationParameters simPars(100,5,2,1e-4,1e-8,1e-9,1e-2);
   //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack
-  simulationParameters simPars(100,4,3,0,1e-4,1e-8,1e-4);
+  simulationParameters simPars(2*N,1,1,0,1e-4,1e-8,1e-4);
   Qsystem sys(pars,simPars);
   hInfo=writeHamiltonian(&sys,1,1);
   if(hInfo){
@@ -129,7 +131,20 @@ void testSolve(){
   }
   */
   double matEls;
-  mpo<lapack_complex_double> particleNumber(4,2,L);
+  mpo<lapack_complex_double> particleNumber(pars.d.maxd(),1,L);
+  localMpo<lapack_complex_double> subChainParity(pars.d.maxd(),2,L);
+  for(int i=0;i<L;++i){
+    for(int bi=0;bi<1;++bi){
+      for(int bim=0;bim<1;++bim){
+	for(int si=0;si<pars.d.maxd();++si){
+	  for(int sip=0;sip<pars.d.maxd();++sip){
+	    matEls=delta(si,sip)*(delta(si,1)+delta(si,0)-delta(si,2)-delta(si,3));
+	    subChainParity.global_access(i,si,sip,bi,bim)=matEls;
+	  }
+	}
+      }
+    }
+  }
   for(int i=0;i<L;++i){
     for(int bi=0;bi<2;++bi){
       for(int bim=0;bim<2;++bim){
@@ -149,10 +164,7 @@ void testSolve(){
     }
   }
   double spinQN;
-  //Note that the inital state is not normalized, the result of this measurement does not make sense therefore
-  sys.measure(particleNumber,spinQN);
-  cout<<"Initial total spin: "<<spinQN<<endl;
-  sys.TensorNetwork.check=&particleNumber;
+  sys.TensorNetwork.check=&subChainParity;
   sys.getGroundState();
   cout<<setprecision(21);
   for(int mi=0;mi<nEigens;++mi){

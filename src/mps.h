@@ -25,6 +25,7 @@ class mps: public stateArray{
   int rightNormalizeStateBlockwise(int const i);
   void convertIndicesLP(int const i, int const j, int const k, int const iBlock, int &si, int &ai, int &aim);
   void convertIndicesRP(int const i, int const j, int const k, int const iBlock, int &si, int &ai, int &aim);
+  lapack_complex_double exactGroundStateEntry(int const i, int const si, int const ai, int const aim);
 };
 
 #endif

@@ -4,17 +4,13 @@
 #include "math.h"
 
 quantumNumber::quantumNumber(){
-  indexLabel=0;
   leftLabel=0;
-  rightLabel=0;
 }
 
 //---------------------------------------------------------------------------------------------------//
 
 quantumNumber::~quantumNumber(){
-  delete[] indexLabel;
   delete[] leftLabel;
-  delete[] rightLabel;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -34,21 +30,8 @@ void quantumNumber::initialize(dimensionTable &dimInfoin, int const Nin, int *QN
       QNlocMin=QNloc[si];
     }
   }
-  iLRSwap=dimInfo.L()/2;
   parityNumber=mult;
   initializeLabelList();
-  for(int i=dimInfo.L()-1;i>0;--i){
-    violation=0;
-    for(int ai=0;ai<dimInfo.locDimR(i);++ai){
-      if(rightLabel[ai+i*dimInfo.D()]==0){
-	++violation;
-      }
-    }
-    if(violation>1){
-      iLRSwap=i+1;
-      break;
-    }
-  }      
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -57,9 +40,12 @@ int quantumNumber::QNLabel(int const si){
   return QNloc[si];
 }
 
+
 //---------------------------------------------------------------------------------------------------//
 
-
+int quantumNumber::QNLabel(int const i, int const ai){
+  return leftLabel[ai+(i+1)*dimInfo.D()];
+}
 
 //---------------------------------------------------------------------------------------------------//
 
@@ -70,29 +56,13 @@ int quantumNumber::groupOperation(int const label, int const labelp){
   return label+labelp;
 }
 
+//---------------------------------------------------------------------------------------------------//
+
 int quantumNumber::groupInverse(int const label){
   if(parityNumber){
     return label;
   }
   return -label;
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-int quantumNumber::QNLowerCheck(int i, int aim){
-  if(QNLabel(i,aim)-(i+1)*QNlocMin>=0 && QNLabel(i,aim)-(i+1)*QNlocMax<=0){
-    return 0;
-  }
-  return 1;
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-int quantumNumber::QNUpperCheck(int i, int ai){
-  if(QNLabel(i,ai)+(dimInfo.L()-(i))*QNlocMax>=N && QNLabel(i,ai)+(dimInfo.L()-(i))*QNlocMin<=N){
-    return 0;
-  }
-  return 1;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -103,36 +73,6 @@ int quantumNumber::qnCriterium(int const i, int const si, int const ai, int cons
     return 1;
   }
   return 0;
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-int quantumNumber::qnConstraint(int const i, int const si, int const ai, int const aim){
-  if(QNLabel(i,ai)!=groupOperation(QNLabel(i-1,aim),QNLabel(si)) && QNLabel(i,ai)>-2){
-    return 1;
-  }
-  return 0;
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-int quantumNumber::exactLabel(int const i, int const ai){
-  int aiReduced=ai;
-  int QNSum=0;
-  int sigma;
-  if(i==-1){
-    if(parityNumber){
-      return 1;
-    }
-    return 0;
-  }
-  for(int j=i;j>=0;--j){
-    sigma=aiReduced/pow(dimInfo.d(),j);
-    QNSum=groupOperation(QNSum,QNLabel(sigma));
-    aiReduced-=sigma*pow(dimInfo.d(),j);
-  }
-  return QNSum;
-
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -202,59 +142,48 @@ int quantumNumber::QNLabel(int const i, int const ai){
 //---------------------------------------------------------------------------------------------------//
 
 void quantumNumber::initializeLabelList(){
-  delete[] indexLabel;
-  delete[] rightLabel;
   delete[] leftLabel;
-  rightLabel=new int[dimInfo.D()*(dimInfo.L()+1)];
   leftLabel=new int[dimInfo.D()*(dimInfo.L()+1)];
-  indexLabel=new int[dimInfo.D()*(dimInfo.L()+1)];
   int lDR;
-  for(int i=0;i<=dimInfo.iCrit();++i){
+  for(int i=0;i<dimInfo.L();++i){
     for(int ai=0;ai<dimInfo.locDimL(i);++ai){
-      leftLabel[ai+i*dimInfo.D()]=truncLabel(i-1,ai);
-      rightLabel[ai+i*dimInfo.D()]=groupOperation(N,groupInverse(abs(truncLabel(dimInfo.L()-1-i,ai))));
+      leftLabel[ai+i*dimInfo.D()]=truncLabel(i,ai,0,N);
     }
   }
-  for(int i=dimInfo.L()-1;i>=dimInfo.L()-dimInfo.iCrit()-1;--i){
-    for(int ai=0;ai<dimInfo.locDimR(i);++ai){
-      leftLabel[ai+(i+1)*dimInfo.D()]=truncLabel(i,ai);
-      rightLabel[ai+(i+1)*dimInfo.D()]=groupOperation(N,groupInverse(abs(truncLabel(dimInfo.L()-i-2,ai))));
-    }
-  }
-  for(int i=dimInfo.iCrit()+1;i<=dimInfo.L()-dimInfo.iCrit()-1;++i){
-    for(int ai=0;ai<dimInfo.locDimL(i);++ai){
-      leftLabel[ai+i*dimInfo.D()]=truncLabel(i-1,ai,0,N);
-      rightLabel[ai+i*dimInfo.D()]=groupOperation(N,groupInverse(abs(truncLabel(dimInfo.L()-1-i,ai,N,0))));
-    }
+  for(int ai=0;ai<dimInfo.locDimR(dimInfo.L()-1);++ai){
+    leftLabel[ai+dimInfo.L()*dimInfo.D()]=truncLabel(dimInfo.L(),ai,0,N);
   }
 }
+
+//---------------------------------------------------------------------------------------------------//
 
 int quantumNumber::truncLabel(int const i, int const ai){
   return truncLabel(i,ai,0,N);
 }
 
+//---------------------------------------------------------------------------------------------------//
+
 int quantumNumber::truncLabel(int const i, int const ai, int const leftVacuum ,int const rightVacuum){
   int minimalLabel, maximalLabel, labelRange;
   int aux, treshold, offset;
+  int const pre=(rightVacuum-leftVacuum)/abs(rightVacuum-leftVacuum);
+  int const initial=(leftVacuum>rightVacuum)?rightVacuum:leftVacuum;
+  int const final=(leftVacuum>rightVacuum)?leftVacuum:rightVacuum;
   // Use the minimal index twice if minimalLabel!=0 and the maximal twice if maximalLabel==N since these can be reached in more than one way. The other ones are unique and only one index can exist (else the block structure is corrupted. Be careful to consider the apt parity if an index only appears once.
-  minimalLabel=(N-2*(dimInfo.L()-i)>0)?N-2*(dimInfo.L()-i-1):0;
-  maximalLabel=(N>2*(i+1))?2*(i+1):N;
+  // Adapt such that right and left vacuum are used instead of fixed values of 0 and N -> left- and rightlabels only differ in vaccum QNs.
+  minimalLabel=(initial>final-2*(dimInfo.L()-i))?initial:final-2*(dimInfo.L()-i);
+  maximalLabel=(2*i+initial>final)?final:2*i;
   labelRange=maximalLabel-minimalLabel;
-  offset=(minimalLabel==0)?1:0;
-  if(maximalLabel!=2*(i+1)){
-    treshold=2*labelRange+2-offset;
-  }
-  else{
-    treshold=2*labelRange+1-offset;
-  }
+  offset=1;
+  treshold=2*labelRange;
   if(parityNumber){
-    if(ai%2 || ai+1==2*labelRange){
-      return 1;
-    }
-    return -1;
+    return parityLabel(i,ai);
   }
   else{
-    if(i==-1){
+    if(i==dimInfo.L()){
+      return N;
+    }
+    if(i==0){
       return 0;
     }
     aux=ai;
@@ -265,10 +194,56 @@ int quantumNumber::truncLabel(int const i, int const ai, int const leftVacuum ,i
   }
 }
 
-int quantumNumber::QNLabel(int const i, int const ai){
-  if((i+1)<iLRSwap){
-    return leftLabel[ai+(i+1)*dimInfo.D()];
-  }
-  return rightLabel[ai+(i+1)*dimInfo.D()];
+//---------------------------------------------------------------------------------------------------//
+
+int quantumNumber::parityLabel(int const i, int const ai){
 }
 
+
+//---------------------------------------------------------------------------------------------------//
+
+int quantumNumber::QNLowerCheck(int i, int aim){
+  if(QNLabel(i,aim)-(i+1)*QNlocMin>=0 && QNLabel(i,aim)-(i+1)*QNlocMax<=0){
+    return 0;
+  }
+  return 1;
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+int quantumNumber::QNUpperCheck(int i, int ai){
+  if(QNLabel(i,ai)+(dimInfo.L()-(i))*QNlocMax>=N && QNLabel(i,ai)+(dimInfo.L()-(i))*QNlocMin<=N){
+    return 0;
+  }
+  return 1;
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+int quantumNumber::qnConstraint(int const i, int const si, int const ai, int const aim){
+  if(QNLabel(i,ai)!=groupOperation(QNLabel(i-1,aim),QNLabel(si)) && QNLabel(i,ai)>-2){
+    return 1;
+  }
+  return 0;
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+int quantumNumber::exactLabel(int const i, int const ai){
+  int aiReduced=ai;
+  int QNSum=0;
+  int sigma;
+  if(i==-1){
+    if(parityNumber){
+      return 1;
+    }
+    return 0;
+  }
+  for(int j=i;j>=0;--j){
+    sigma=aiReduced/pow(dimInfo.d(),j);
+    QNSum=groupOperation(QNSum,QNLabel(sigma));
+    aiReduced-=sigma*pow(dimInfo.d(),j);
+  }
+  return QNSum;
+
+}

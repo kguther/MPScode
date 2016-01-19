@@ -14,6 +14,8 @@
 #include "quantumNumber.h"
 #include "dimensionTable.h"
 
+// A NOTE ON PERFORMANCE: ALMOST ALL FUNCTIONS DO NOT MATTER FOR PERFORMANCE, SINCE THE LOCAL OPTIMIZATION IS BY FAR THE MOST EFFORTIVE TASK. THAT IS, MORE THAN 97% OF COMPUTATION TIME IS USED IN THE ARPACK EIGENVALUE SOLVER. THEREFORE, PERFORMANCE IS ALMOST SOLELY DETERMINED BY THE FUNCTION optHMAtrix::MultMv OR ITS QN CONSERVING COUNTERPARTS.
+
 //---------------------------------------------------------------------------------------------------//
 // The network class contains all information required for a run of the simulation, that is, the whole
 // MPS, the Hamiltonian in MPO representation and the partial contractions.
@@ -68,6 +70,7 @@ class network{
   void getPExpressionLeft(int const i, lapack_complex_double *pExpr);
   void getPExpressionRight(int const i, lapack_complex_double *pExpr);
   void getLocalDimensions(int const i);
+  void buildSparseHBlocked(int const i, lapack_complex_double *sparseMatrix);
   //This one is only for consistency checks
   void leftNormalizationMatrixIter(int i, lapack_complex_double *psi);
   int checkQN();

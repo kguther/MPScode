@@ -65,7 +65,7 @@ void mps::createInitialState(){
 	      global_access(i,si,ai,aim)=0;
 	    }
 	    else{
-	      global_access(i,si,ai,aim)=1;
+	      global_access(i,si,ai,aim)=1;//exactGroundStateEntry(i,si,ai,aim);
 	    }
 	  }
 	}
@@ -341,3 +341,21 @@ void mps::restoreQN(int const i){
   }
 }
 
+//---------------------------------------------------------------------------------------------------//
+
+lapack_complex_double mps::exactGroundStateEntry(int const i, int const si, int const ai, int const aim){
+  int exponent;
+  if(nQNs!=2){
+    return 0.0;
+  }
+  if((*conservedQNs)[1].QNLabel(si)!=-1){
+    exponent=0;
+  }
+  else{
+    exponent=1;
+  }
+  if(i!=L-1){
+    return pow(-1,exponent);
+  }
+  return 0.5*pow(-1,exponent);
+}

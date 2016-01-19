@@ -67,7 +67,7 @@ void network::initialize(problemParameters inputpars, simulationParameters input
   //Somewhat unelegant way to handle loading of the stored states in the first solve()
   conservedQNs.resize(pars.nQNs);
   for(int iQN=0;iQN<pars.nQNs;++iQN){
-    conservedQNs[iQN].initialize(networkDimInfo,pars.QNconserved[iQN],pars.QNLocalList+iQN*pars.d.maxd(),0);
+    conservedQNs[iQN].initialize(networkDimInfo,pars.QNconserved[iQN],pars.QNLocalList+iQN*pars.d.maxd(),pars.parityNumber[iQN]);
   }
   networkState.generate(networkDimInfo,&conservedQNs);
   excitedStateP.initialize(pars.nEigs);
@@ -162,6 +162,10 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
     tol=simPars.tolInitial;
     //load all pairings with the current state and previous ones into the scalar products
     excitedStateP.loadScalarProducts(&networkState,iEigen);
+
+    pCtr.calcCtrIterRightBase(-1,&expectationValue);
+    std::cout<<"Initial energy: "<<expectationValue<<std::endl;
+
     for(int iSweep=0;iSweep<simPars.nSweeps;++iSweep){
       if(!nConverged[iEigen]){
 	break;
@@ -269,9 +273,9 @@ int network::optimize(int const i, int const sweepDirection, int const maxIter, 
   plambda=&lambda;
   //Using the current site matrix as a starting point allows for much faster convergence as it has already been optimized in previous sweeps (except for the first sweep, this is where a good starting point has to be guessed
   networkState.subMatrixStart(currentM,i);
-  //measure(check,spinCheck);
-  //std::cout<<"Spin before optimizing: "<<spinCheck<<std::endl;
-  if(pars.nQNs && i!=0 && i!=(L-1) && 0){
+  measure(check,spinCheck);
+  std::cout<<"Spin before optimizing: "<<spinCheck<<std::endl;
+  if(pars.nQNs && i!=0 && i!=(L-1) && 1){
     blockHMatrix BMat(RTerm, LTerm,HTerm,networkDimInfo,Dw,i,sweepDirection,&(networkState.indexTable),&excitedStateP,shift,&conservedQNs);
     BMat.prepareInput(currentM);
     ARCompStdEig<double, blockHMatrix> eigProblemBlocked(BMat.dim(),1,&BMat,&blockHMatrix::MultMvBlocked,"SR",0,tol,maxIter,BMat.compressedVector);
@@ -293,8 +297,8 @@ int network::optimize(int const i, int const sweepDirection, int const maxIter, 
     //So far it seems that the eigensolver either converges quite fast or not at all (i.e. very slow, such that the maximum number of iterations is hit) depending strongly on the tolerance
     nconv=eigProblem.EigenValVectors(currentM,plambda);
   }
-  //measure(check,spinCheck);
-  //std::cout<<"Spin after optimizing: "<<spinCheck<<std::endl;
+  measure(check,spinCheck);
+  std::cout<<"Spin after optimizing: "<<spinCheck<<std::endl;
   if(nconv!=1){
     std::cout<<"Failed to converge in iterative eigensolver, number of Iterations taken: "<<maxIter<<" With tolerance "<<tol<<std::endl;
     return 1;
@@ -472,6 +476,8 @@ void network::leftNormalizationMatrixIter(int i, lapack_complex_double *psi){
   }	
 }
 
+//---------------------------------------------------------------------------------------------------//
+// Here come further testing functions usable in case of unexplained failure.
 //---------------------------------------------------------------------------------------------------//
 
 int network::checkQN(){

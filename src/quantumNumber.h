@@ -3,6 +3,11 @@
 
 #include "dimensionTable.h"
 
+//-------------------------------------------------------------------------------------------//
+// The quantumNumber class contains the quantum number  labels for the MPS matrix indices and
+// can check whether an entry has to be zero due to QN constraints.
+//-------------------------------------------------------------------------------------------//
+
 class quantumNumber{
  public:
   quantumNumber();
@@ -12,12 +17,12 @@ class quantumNumber{
   int qnCriterium(int const i, int const si, int const ai, int const aim);
   int QNLabel(int const i, int const ai);
   int QNLabel(int const si);
+  int QNValue() const {return N;}
   void setParameterD(int const Dnew);
-  int *indexLabel;
   int parityType() const {return parityNumber;}
  private:
   dimensionTable dimInfo;
-  int *leftLabel, *rightLabel;
+  int *leftLabel;
   int N;
   int iLRSwap;
   int QNlocMax;
@@ -32,6 +37,7 @@ class quantumNumber{
   int truncLabel(int const i, int const ai, int const leftVacuum, int const rightVacuum);
   int groupOperation(int const label, int const labelp);
   int groupInverse(int const label);
+  int parityLabel(int const i, int const ai);
 };
 
 #endif
