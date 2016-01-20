@@ -71,7 +71,7 @@ void basisQNOrderMatrix::generateQNIndexTables(){
     blockStructure(i,0,aiBlockIndicesLP[i],siaimBlockIndicesLP[i]);
     blockStructure(i,1,aimBlockIndicesRP[i],siaiBlockIndicesRP[i]);
     splitIndexTables(i);
-    if(i==0 && 1){
+    if(i==dimInfo.L()-1 && 0){
       std::cout<<"Right labels:\n";
       for(int aim=0;aim<dimInfo.locDimL(i+1);++aim){
 	std::cout<<aim<<" with label ("<<(*conservedQNs)[0].QNLabel(i,aim)<<","<<(*conservedQNs)[1].QNLabel(i,aim)<<")"<<std::endl;

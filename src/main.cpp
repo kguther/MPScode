@@ -46,7 +46,7 @@ void testSolve(){
   int QNValue[2]={N,N};
   int QNList[8]={0,1,1,2,1,1,-1,-1};
   //Due to poor planning, subchain parity QNs work a bit odd. The QNValue has to be the total particle number, while the parityNumber gives the subchain parity, i.e. it is to be set +-1
-  int parityNumber[2]={0,1};
+  int parityNumber[2]={0,-1};
   localHSpaces localHilbertSpaceDims(4);
   problemParameters pars(localHilbertSpaceDims,L,12,nEigens,nQuantumNumbers,QNValue,QNList,parityNumber);
   //simulationParameters simPars(100,5,2,1e-4,1e-8,1e-9,1e-2);

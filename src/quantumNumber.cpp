@@ -168,6 +168,9 @@ int quantumNumber::truncLabel(int const i, int const ai){
   offset=1;
   treshold=(2*labelRange>0)?2*labelRange:1;
   if(parityNumber!=0){
+    if(i==dimInfo.L()){
+      return parityNumber;
+    }
     if(ai==0){
       if(minimalLabel==0){
 	return 1;
