@@ -51,7 +51,7 @@ void mps::createInitialState(){
     }
   }
   else{
-    int qnCriteriumCheck, numBlocks, lBlockSize, rBlockSize;
+    int numBlocks, lBlockSize, rBlockSize;
     for(int i=0;i<L;++i){
       numBlocks=indexTable.numBlocksLP(i);
       for(int iBlock=0;iBlock<numBlocks;++iBlock){

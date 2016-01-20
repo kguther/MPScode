@@ -15,11 +15,12 @@ quantumNumber::~quantumNumber(){
 
 //---------------------------------------------------------------------------------------------------//
 
-void quantumNumber::initialize(dimensionTable &dimInfoin, int const Nin, int *QNlocin, int mult){
+void quantumNumber::initialize(dimensionTable &dimInfoin, int const Nin, int *QNlocin, int Pin, int mult){
   int violation;
   N=Nin;
   dimInfo=dimInfoin;
   QNloc=QNlocin;
+  auxiliaryParityNumber=Pin;
   QNlocMax=QNloc[0];
   QNlocMin=QNloc[0];
   for(int si=1;si<dimInfo.d();++si){
@@ -156,12 +157,15 @@ void quantumNumber::initializeLabelList(){
 }
 
 //---------------------------------------------------------------------------------------------------//
+// The next function defines the QN Labels in the following way: Every particle number that allows for
+// reaching the left and rigth vacuum QNs appears twice, once with each parity. Only the maximal and
+// minimal particle numbers at a site that are possible appear once, if they have the right parity
+// and not at all if they have the wrong parity.
+//---------------------------------------------------------------------------------------------------//
 
 int quantumNumber::truncLabel(int const i, int const ai){
   int minimalLabel, maximalLabel, labelRange;
   int aux, treshold, offset;
-  // Use the minimal index twice if minimalLabel!=0 and the maximal twice if maximalLabel==N since these can be reached in more than one way. The other ones are unique and only one index can exist (else the block structure is corrupted. Be careful to consider the apt parity if an index only appears once.
-  // Adapt such that right and left vacuum are used instead of fixed values of 0 and N -> left- and rightlabels only differ in vaccum QNs.
   minimalLabel=(0>N-2*(dimInfo.L()-i))?0:N-2*(dimInfo.L()-i);
   maximalLabel=(2*i>N)?N:2*i;
   labelRange=maximalLabel-minimalLabel;
@@ -176,7 +180,7 @@ int quantumNumber::truncLabel(int const i, int const ai){
 	return 1;
       }
       else{
-	return integerParity(dimInfo.L()-i+1)*parityNumber;
+	return integerParity(dimInfo.L()-i)*parityNumber;
       }
     }
     if(ai==2*labelRange-1){
@@ -198,6 +202,12 @@ int quantumNumber::truncLabel(int const i, int const ai){
     }
     aux=ai;
     if(aux<treshold){
+      if(ai==0 && 0==N-2*(dimInfo.L()-i) && integerParity(dimInfo.L()-i)!=auxiliaryParityNumber){
+	return -100;
+      }
+      if(ai==treshold-1 && 2*i==N && integerParity(i)!=auxiliaryParityNumber){
+	return -100;
+      }
       return (aux+offset)/2+minimalLabel;
     }
     return -100;

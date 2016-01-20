@@ -14,11 +14,10 @@
 
 class blockHMatrix: public optHMatrix{
  public: 
-  blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, arcomplex<double> *Hin, dimensionTable &dimInfo, int Dwin, int iIn, int sweepDirectionIn, basisQNOrderMatrix *indexTable, projector *excitedStateP, double shift, std::vector<quantumNumber> *conservedQNsin);
+  blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, arcomplex<double> *Hin, dimensionTable &dimInfo, int Dwin, int iIn, basisQNOrderMatrix *indexTable, projector *excitedStateP, double shift, std::vector<quantumNumber> *conservedQNsin);
   ~blockHMatrix();
   void MultMvBlocked(arcomplex<double> *v, arcomplex<double> *w);
   void MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w);
-  void MultMvBlockedRP(arcomplex<double> *v, arcomplex<double> *w);
   void storageCompress(arcomplex<double> *v, arcomplex<double> *vCompressed);
   void storageExpand(arcomplex<double> *v, arcomplex<double> *vExpanded);
   void prepareInput(arcomplex<double> *startingVector);
@@ -30,11 +29,8 @@ class blockHMatrix: public optHMatrix{
   std::vector<int> blockOffset;
   std::vector<arcomplex<double> > sparseMatrix;
   std::vector<int> rowPtr, colIndices;
-  int sweepDirection;
   basisQNOrderMatrix *indexTable;
   int vecBlockIndexLP(int const iBlock, int const j, int const k){return k+j*indexTable->lBlockSizeLP(i,iBlock)+blockOffset[iBlock];}
-  //int vecBlockIndexLP(int const iBlock, int const j, int const k){return vecIndex(indexTable->siBlockIndexLP(i,iBlock,k),indexTable->aiBlockIndexLP(i,iBlock,j),indexTable->aimBlockIndexLP(i,iBlock,k));}
-  int vecBlockIndexRP(int const iBlock, int const j, int const k){return k+j*indexTable->lBlockSizeRP(i,iBlock)+blockOffset[iBlock];}
   void excitedStateProject(arcomplex<double> *v, int const i);
   arcomplex<double> HEffEntry(int const si, int const aim, int const ai, int const sip, int const aimp, int const aip);
 };

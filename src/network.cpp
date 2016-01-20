@@ -67,7 +67,7 @@ void network::initialize(problemParameters inputpars, simulationParameters input
   //Somewhat unelegant way to handle loading of the stored states in the first solve()
   conservedQNs.resize(pars.nQNs);
   for(int iQN=0;iQN<pars.nQNs;++iQN){
-    conservedQNs[iQN].initialize(networkDimInfo,pars.QNconserved[iQN],pars.QNLocalList+iQN*pars.d.maxd(),pars.parityNumber[iQN]);
+    conservedQNs[iQN].initialize(networkDimInfo,pars.QNconserved[iQN],pars.QNLocalList+iQN*pars.d.maxd(),pars.parityNumber[1],pars.parityNumber[iQN]);
   }
   networkState.generate(networkDimInfo,&conservedQNs);
   excitedStateP.initialize(pars.nEigs);
@@ -223,7 +223,7 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
     //Step of leftsweep
     std::cout<<"Optimizing site matrix"<<std::endl;
     curtime=clock();
-    errRet=optimize(i,1,maxIter,tol,lambda);
+    errRet=optimize(i,maxIter,tol,lambda);
     curtime=clock()-curtime;
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
     normalize(i,1,alpha);
@@ -237,7 +237,7 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
     //Step of rightsweep
     std::cout<<"Optimizing site matrix"<<std::endl;    
     curtime=clock();
-    errRet=optimize(i,0,maxIter,tol,lambda);
+    errRet=optimize(i,maxIter,tol,lambda);
     curtime=clock()-curtime;
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
     normalize(i,0,alpha);
@@ -254,7 +254,7 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
 // eigenvalue problem. 
 //---------------------------------------------------------------------------------------------------//
 
-int network::optimize(int const i, int const sweepDirection, int const maxIter, double const tol, double &iolambda){
+int network::optimize(int const i, int const maxIter, double const tol, double &iolambda){
   //Invokes ARPACK++ to solve the eigenvalue problem
   arcomplex<double> lambda;
   arcomplex<double> *plambda;
@@ -278,7 +278,7 @@ int network::optimize(int const i, int const sweepDirection, int const maxIter, 
   std::cout<<"Current particle number: "<<spinCheck<<std::endl;
   std::cout<<"Current subchain parity: "<<parCheck<<std::endl;
   if(pars.nQNs && i!=0 && i!=(L-1) && 1){
-    blockHMatrix BMat(RTerm, LTerm,HTerm,networkDimInfo,Dw,i,sweepDirection,&(networkState.indexTable),&excitedStateP,shift,&conservedQNs);
+    blockHMatrix BMat(RTerm, LTerm,HTerm,networkDimInfo,Dw,i,&(networkState.indexTable),&excitedStateP,shift,&conservedQNs);
     BMat.prepareInput(currentM);
     if(BMat.dim()>1){
       ARCompStdEig<double, blockHMatrix> eigProblemBlocked(BMat.dim(),1,&BMat,&blockHMatrix::MultMvBlocked,"SR",0,tol,maxIter,BMat.compressedVector);
@@ -556,7 +556,7 @@ void network::checkContractions(int const i){
   for(int m=0;m<ld*lDL*lDR;++m){
     target[m]=0;
   }
-  blockHMatrix BMat(RTerm, LTerm,HTerm,networkDimInfo,Dw,i,1,&(networkState.indexTable),&excitedStateP,0,&conservedQNs);
+  blockHMatrix BMat(RTerm, LTerm,HTerm,networkDimInfo,Dw,i,&(networkState.indexTable),&excitedStateP,0,&conservedQNs);
   BMat.prepareInput(currentM);
   BMat.MultMvBlocked(BMat.compressedVector,BMat.compressedVector);
   //ARCompStdEig<double, blockHMatrix> eigProblemBlocked(BMat.dim(),1,&BMat,&blockHMatrix::MultMvBlocked,"SR",0,tol,maxIter,BMat.compressedVector);

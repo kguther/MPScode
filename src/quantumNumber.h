@@ -12,7 +12,7 @@ class quantumNumber{
  public:
   quantumNumber();
   ~quantumNumber();
-  void initialize(dimensionTable &dimInfoin, int const Nin, int *QNlocin, int mult=0);
+  void initialize(dimensionTable &dimInfoin, int const Nin, int *QNlocin, int const Pin=1,  int mult=0);
   int qnConstraint(int const i, int const si, int const ai, int const aim);
   int qnCriterium(int const i, int const si, int const ai, int const aim);
   int QNLabel(int const i, int const ai);
@@ -28,6 +28,7 @@ class quantumNumber{
   int QNlocMax;
   int QNlocMin;
   int parityNumber;
+  int auxiliaryParityNumber;
   int *QNloc;
   void initializeLabelList();
   int QNLowerCheck(int i, int ai);

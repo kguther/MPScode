@@ -38,15 +38,15 @@ void testSolve(){
   double eigVal;
   double const mEl=1;
   int const nEigens=1;
-  int const L=25;
-  int const N=1;
+  int const L=6;
+  int const N=6;
   int const nQuantumNumbers=2;
   int const minimalD=(2*N>4)?2*N:4;
   int hInfo;
   int QNValue[2]={N,N};
   int QNList[8]={0,1,1,2,1,1,-1,-1};
   //Due to poor planning, subchain parity QNs work a bit odd. The QNValue has to be the total particle number, while the parityNumber gives the subchain parity, i.e. it is to be set +-1
-  int parityNumber[2]={0,-1};
+  int parityNumber[2]={0,1};
   localHSpaces localHilbertSpaceDims(4);
   problemParameters pars(localHilbertSpaceDims,L,12,nEigens,nQuantumNumbers,QNValue,QNList,parityNumber);
   //simulationParameters simPars(100,5,2,1e-4,1e-8,1e-9,1e-2);
