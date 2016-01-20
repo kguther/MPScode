@@ -37,102 +37,30 @@ int main(int argc, char *argv[]){
 void testSolve(){
   double eigVal;
   double const mEl=1;
-  int const N=17;
   int const nEigens=1;
-  int const L=18;
+  int const L=25;
+  int const N=1;
   int const nQuantumNumbers=2;
+  int const minimalD=(2*N>4)?2*N:4;
   int hInfo;
-  int QNValue[2]={N,1};
+  int QNValue[2]={N,N};
   int QNList[8]={0,1,1,2,1,1,-1,-1};
+  //Due to poor planning, subchain parity QNs work a bit odd. The QNValue has to be the total particle number, while the parityNumber gives the subchain parity, i.e. it is to be set +-1
   int parityNumber[2]={0,1};
   localHSpaces localHilbertSpaceDims(4);
   problemParameters pars(localHilbertSpaceDims,L,12,nEigens,nQuantumNumbers,QNValue,QNList,parityNumber);
   //simulationParameters simPars(100,5,2,1e-4,1e-8,1e-9,1e-2);
   //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack
-  simulationParameters simPars(2*N,1,1,0,1e-4,1e-8,1e-4);
+  simulationParameters simPars(minimalD,1,1,0,1e-4,1e-8,1e-4);
   Qsystem sys(pars,simPars);
   hInfo=writeHamiltonian(&sys,1,1);
   if(hInfo){
     std::cout<<"Invalid bond dimension for the construction of H. Terminating process.\n";
     exit(1);
   }
-  /*int lDwR, lDwL, Dw;
-  Dw=pars.Dw;
-  for(int i=0;i<pars.L;i++){
-    if(i==0){
-      lDwL=1;
-    }
-    else{
-      lDwL=Dw;
-    }
-    if(i==(pars.L-1)){
-      lDwR=1;
-    }
-    else{
-      lDwR=Dw;
-    }
-    for(int s=0;s<pars.d.maxd();s++){
-      for(int sp=0;sp<pars.d.maxd();sp++){
-	for(int bi=0;bi<lDwR;bi++){
-	  for(int bim=0;bim<lDwL;bim++){
-	    if(bi==0){
-	      if(i!=0){
-		switch(bim){
-		case 4:
-		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=0;
-		  break;
-		case 0:
-		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=delta(s,sp);
-		  break;
-		case 1:
-		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=mEl*delta(s,sp+1);
-		  break;
-		case 2:
-		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=mEl*delta(s,sp-1);
-		  break;
-		case 3:
-		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=(s-0.5)*delta(s,sp);
-		  break;
-		default:
-		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=0;
-		}
-	      }
-	      else{
-	        sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=0;
-	      }
-	    }
-	    else{
-	      if(bim==lDwL-1){
-		switch(bi){
-		case 1:
-		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=0.5*mEl*delta(s,sp-1);
-		  break;
-		case 2:
-		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=0.5*mEl*delta(s,sp+1);
-		  break;
-		case 3:
-		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=(s-0.5)*delta(s,sp);
-		  break;
-		case 4:
-		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=delta(s,sp);
-		  break;
-		default:
-		  sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=0;
-		}
-	      }
-	      else{
-	        sys.TensorNetwork.networkH.global_access(i,s,sp,bi,bim)=0;
-	      }
-	    }
-	  }
-	}
-      }
-    }
-  }
-  */
   double matEls;
-  mpo<lapack_complex_double> particleNumber(pars.d.maxd(),1,L);
-  localMpo<lapack_complex_double> subChainParity(pars.d.maxd(),2,L);
+  mpo<lapack_complex_double> particleNumber(pars.d.maxd(),2,L);
+  localMpo<lapack_complex_double> subChainParity(pars.d.maxd(),1,L);
   for(int i=0;i<L;++i){
     for(int bi=0;bi<1;++bi){
       for(int bim=0;bim<1;++bim){
@@ -164,12 +92,13 @@ void testSolve(){
     }
   }
   double spinQN;
-  sys.TensorNetwork.check=&subChainParity;
+  sys.TensorNetwork.check=&particleNumber;
+  sys.TensorNetwork.checkParity=&subChainParity;
   sys.getGroundState();
   cout<<setprecision(21);
   for(int mi=0;mi<nEigens;++mi){
     cout<<"Obtained energy of state "<<mi<<" as: "<<sys.E0[mi]<<endl;
   }
   sys.measure(particleNumber,spinQN);
-  cout<<"Final total spin: "<<spinQN<<endl;
+  cout<<"Final total particle number: "<<spinQN<<endl;
 }

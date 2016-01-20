@@ -147,12 +147,15 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
   if(pars.nQNs || pars.nEigs>1){
     cshift=-100;
   }
+  networkH.setUpSparse();
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
     pCtr.initialize(&networkH,&networkState);
+    std::cout<<"Startung normalization\n";
     for(int i=L-1;i>0;--i){
       normalize(i,0,0);
     }
     networkState.normalizeFinal(1);
+    std::cout<<"Computing partial contractions\n";
     pCtr.Lctr.global_access(0,0,0,0)=1;
     //In preparation of the first sweep, generate full contraction to the right (first sweeps starts at site 0)
     pCtr.calcCtrFull(1);
@@ -178,7 +181,7 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
       networkState.normalizeFinal(1);
       //In calcCtrIterRightBase, the second argument has to be a pointer, because it usually is an array. No call-by-reference here.
       pCtr.calcCtrIterRightBase(-1,&expectationValue);
-      convergenceQuality=convergenceCheck();
+      convergenceQuality=1;//convergenceCheck();
       if(convergenceQuality<simPars.devAccuracy){
 	nConverged[iEigen]=0;
       }
@@ -215,12 +218,9 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
   clock_t curtime;
   int errRet;
   lapack_complex_double stateNorm;
-  overlap test;
-  test.loadMPS(&networkState,&networkState);
   std::cout<<"STARTING RIGHTSWEEP\n\n";
   for(int i=0;i<(L-1);++i){
     //Step of leftsweep
-    //std::cout<<"Norm of state "<<test.getFullOverlap()<<std::endl;
     std::cout<<"Optimizing site matrix"<<std::endl;
     curtime=clock();
     errRet=optimize(i,1,maxIter,tol,lambda);
@@ -235,7 +235,6 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
   std::cout<<"STARTING LEFTSWEEP\n\n";
   for(int i=L-1;i>0;--i){
     //Step of rightsweep
-    //std::cout<<"Norm of state "<<test.getFullOverlap()<<std::endl;
     std::cout<<"Optimizing site matrix"<<std::endl;    
     curtime=clock();
     errRet=optimize(i,0,maxIter,tol,lambda);
@@ -263,6 +262,7 @@ int network::optimize(int const i, int const sweepDirection, int const maxIter, 
   arcomplex<double> *RTerm, *LTerm, *HTerm;
   void (optHMatrix::*multMv)(arcomplex<double> *v, arcomplex<double> *w);
   double spinCheck=0;
+  double parCheck=0;
   int nconv;
   //Get the projector onto the space orthogonal to any lower lying states
   //Get the current partial contractions and site matrix of the Hamiltonian
@@ -274,12 +274,16 @@ int network::optimize(int const i, int const sweepDirection, int const maxIter, 
   //Using the current site matrix as a starting point allows for much faster convergence as it has already been optimized in previous sweeps (except for the first sweep, this is where a good starting point has to be guessed
   networkState.subMatrixStart(currentM,i);
   measure(check,spinCheck);
-  std::cout<<"Spin before optimizing: "<<spinCheck<<std::endl;
+  measure(checkParity,parCheck);
+  std::cout<<"Current particle number: "<<spinCheck<<std::endl;
+  std::cout<<"Current subchain parity: "<<parCheck<<std::endl;
   if(pars.nQNs && i!=0 && i!=(L-1) && 1){
     blockHMatrix BMat(RTerm, LTerm,HTerm,networkDimInfo,Dw,i,sweepDirection,&(networkState.indexTable),&excitedStateP,shift,&conservedQNs);
     BMat.prepareInput(currentM);
-    ARCompStdEig<double, blockHMatrix> eigProblemBlocked(BMat.dim(),1,&BMat,&blockHMatrix::MultMvBlocked,"SR",0,tol,maxIter,BMat.compressedVector);
-    nconv=eigProblemBlocked.EigenValVectors(BMat.compressedVector,plambda);
+    if(BMat.dim()>1){
+      ARCompStdEig<double, blockHMatrix> eigProblemBlocked(BMat.dim(),1,&BMat,&blockHMatrix::MultMvBlocked,"SR",0,tol,maxIter,BMat.compressedVector);
+      nconv=eigProblemBlocked.EigenValVectors(BMat.compressedVector,plambda);
+    }
     BMat.readOutput(currentM);
   }
   else{
@@ -297,8 +301,6 @@ int network::optimize(int const i, int const sweepDirection, int const maxIter, 
     //So far it seems that the eigensolver either converges quite fast or not at all (i.e. very slow, such that the maximum number of iterations is hit) depending strongly on the tolerance
     nconv=eigProblem.EigenValVectors(currentM,plambda);
   }
-  measure(check,spinCheck);
-  std::cout<<"Spin after optimizing: "<<spinCheck<<std::endl;
   if(nconv!=1){
     std::cout<<"Failed to converge in iterative eigensolver, number of Iterations taken: "<<maxIter<<" With tolerance "<<tol<<std::endl;
     return 1;
@@ -554,14 +556,14 @@ void network::checkContractions(int const i){
   for(int m=0;m<ld*lDL*lDR;++m){
     target[m]=0;
   }
-  blockHMatrix BMat(RTerm, LTerm,HTerm,networkDimInfo,Dw,i,1,&(networkState.indexTable),&excitedStateP,-3,&conservedQNs);
+  blockHMatrix BMat(RTerm, LTerm,HTerm,networkDimInfo,Dw,i,1,&(networkState.indexTable),&excitedStateP,0,&conservedQNs);
   BMat.prepareInput(currentM);
   BMat.MultMvBlocked(BMat.compressedVector,BMat.compressedVector);
   //ARCompStdEig<double, blockHMatrix> eigProblemBlocked(BMat.dim(),1,&BMat,&blockHMatrix::MultMvBlocked,"SR",0,tol,maxIter,BMat.compressedVector);
   //eigProblemBlocked.EigenValVectors(BMat.compressedVector,plambda);
   BMat.readOutput(target);
   lambda=*plambda;
-  optHMatrix HMat(RTerm,LTerm,HTerm,networkDimInfo,Dw,i,&excitedStateP,-3,&conservedQNs);
+  optHMatrix HMat(RTerm,LTerm,HTerm,networkDimInfo,Dw,i,&excitedStateP,0,&conservedQNs);
   //ARCompStdEig<double, optHMatrix> eigProblem(HMat.dim(),1,&HMat,&optHMatrix::MultMvQNConserving,"SR",0,tol,maxIter,currentM);
   //eigProblem.EigenValVectors(currentM,plambda);
   HMat.MultMvQNConserving(currentM,currentM);
@@ -573,7 +575,7 @@ void network::checkContractions(int const i){
   double test=cblas_dznrm2(ld*lDL*lDR,target,1);
   std::cout<<"Verification: "<<test<<std::endl;
   std::cout<<"Eigenvec norm: "<<cblas_dznrm2(ld*lDL*lDR,currentM,1)<<"\t"<<normb<<std::endl;
-  if(test>1e-20){
+  if(test>1e-15){
     //std::cout<<"Eigenvalues: "<<*plambda<<"\t"<<lambda<<std::endl;
     exit(1);
   }

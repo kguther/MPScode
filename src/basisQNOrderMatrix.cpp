@@ -57,6 +57,7 @@ void basisQNOrderMatrix::initialize(dimensionTable &dimin, std::vector<quantumNu
 
 void basisQNOrderMatrix::generateQNIndexTables(){
   int L=dimInfo.L();
+  int cumulativeBlockSize;
   deleteTables();
   aiBlockIndicesLP=new std::vector<std::vector<int> >[L];
   siaimBlockIndicesLP=new std::vector<std::vector<multInt> >[L];
@@ -70,13 +71,11 @@ void basisQNOrderMatrix::generateQNIndexTables(){
     blockStructure(i,0,aiBlockIndicesLP[i],siaimBlockIndicesLP[i]);
     blockStructure(i,1,aimBlockIndicesRP[i],siaiBlockIndicesRP[i]);
     splitIndexTables(i);
-    if(i==17 && 1){
-      /*
-      std::cout<<"Left labels:\n";
+    if(i==0 && 1){
+      std::cout<<"Right labels:\n";
       for(int aim=0;aim<dimInfo.locDimL(i+1);++aim){
-	std::cout<<aim<<" with label "<<(*conservedQNs)[0].QNLabel(i,aim)<<std::endl;
+	std::cout<<aim<<" with label ("<<(*conservedQNs)[0].QNLabel(i,aim)<<","<<(*conservedQNs)[1].QNLabel(i,aim)<<")"<<std::endl;
       }
-      */
       for(int iBlock=0;iBlock<numBlocksRP(i);++iBlock){
 	std::cout<<"Right indices: "<<std::endl;
 	for(int j=0;j<rBlockSizeRP(i,iBlock);++j){
@@ -109,6 +108,14 @@ void basisQNOrderMatrix::generateQNIndexTables(){
 	std::cout<<std::endl;
       }*/
       exit(1);
+    }
+    cumulativeBlockSize=0;
+    for(int iBlock=0;iBlock<numBlocksLP(i);++iBlock){
+      cumulativeBlockSize+=lBlockSizeLP(i,iBlock);
+    }
+    if(cumulativeBlockSize==0){
+      std::cout<<"Critical error: Invalid quantum number. Terminating process.\n";
+      exit(2);
     }
   }
 }

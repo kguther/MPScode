@@ -50,7 +50,7 @@ int quantumNumber::QNLabel(int const i, int const ai){
 //---------------------------------------------------------------------------------------------------//
 
 int quantumNumber::groupOperation(int const label, int const labelp){
-  if(parityNumber){
+  if(parityNumber!=0){
     return label*labelp;
   }
   return label+labelp;
@@ -147,37 +147,44 @@ void quantumNumber::initializeLabelList(){
   int lDR;
   for(int i=0;i<dimInfo.L();++i){
     for(int ai=0;ai<dimInfo.locDimL(i);++ai){
-      leftLabel[ai+i*dimInfo.D()]=truncLabel(i,ai,0,N);
+      leftLabel[ai+i*dimInfo.D()]=truncLabel(i,ai);
     }
   }
   for(int ai=0;ai<dimInfo.locDimR(dimInfo.L()-1);++ai){
-    leftLabel[ai+dimInfo.L()*dimInfo.D()]=truncLabel(dimInfo.L(),ai,0,N);
+    leftLabel[ai+dimInfo.L()*dimInfo.D()]=truncLabel(dimInfo.L(),ai);
   }
 }
 
 //---------------------------------------------------------------------------------------------------//
 
 int quantumNumber::truncLabel(int const i, int const ai){
-  return truncLabel(i,ai,0,N);
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-int quantumNumber::truncLabel(int const i, int const ai, int const leftVacuum ,int const rightVacuum){
   int minimalLabel, maximalLabel, labelRange;
   int aux, treshold, offset;
-  int const pre=(rightVacuum-leftVacuum)/abs(rightVacuum-leftVacuum);
-  int const initial=(leftVacuum>rightVacuum)?rightVacuum:leftVacuum;
-  int const final=(leftVacuum>rightVacuum)?leftVacuum:rightVacuum;
   // Use the minimal index twice if minimalLabel!=0 and the maximal twice if maximalLabel==N since these can be reached in more than one way. The other ones are unique and only one index can exist (else the block structure is corrupted. Be careful to consider the apt parity if an index only appears once.
   // Adapt such that right and left vacuum are used instead of fixed values of 0 and N -> left- and rightlabels only differ in vaccum QNs.
-  minimalLabel=(initial>final-2*(dimInfo.L()-i))?initial:final-2*(dimInfo.L()-i);
-  maximalLabel=(2*i+initial>final)?final:2*i;
+  minimalLabel=(0>N-2*(dimInfo.L()-i))?0:N-2*(dimInfo.L()-i);
+  maximalLabel=(2*i>N)?N:2*i;
   labelRange=maximalLabel-minimalLabel;
   offset=1;
-  treshold=2*labelRange;
-  if(parityNumber){
-    return parityLabel(i,ai);
+  treshold=(2*labelRange>0)?2*labelRange:1;
+  if(parityNumber!=0){
+    if(ai==0){
+      if(minimalLabel==0){
+	return 1;
+      }
+      else{
+	return integerParity(dimInfo.L()-i+1)*parityNumber;
+      }
+    }
+    if(ai==2*labelRange-1){
+      if(maximalLabel==2*i){
+	return integerParity(i);
+      }
+      else{
+	return parityNumber;
+      }
+    }
+    return integerParity(ai);
   }
   else{
     if(i==dimInfo.L()){
@@ -196,9 +203,12 @@ int quantumNumber::truncLabel(int const i, int const ai, int const leftVacuum ,i
 
 //---------------------------------------------------------------------------------------------------//
 
-int quantumNumber::parityLabel(int const i, int const ai){
+int quantumNumber::integerParity(int const n){
+  if(n%2){
+    return -1;
+  }
+  return 1;
 }
-
 
 //---------------------------------------------------------------------------------------------------//
 

@@ -1,6 +1,7 @@
 #ifndef MPO_OPERATOR
 #define MPO_OPERATOR
 
+#include <vector>
 
 //REMARK: The MPO container consists only of same-sized arrays, even if d is site dependent. In this case, the maximal d has to be used as an input parameter. This creates some unused memory between matrices, but speeds up access to single matrices (which is what we want to do). This works because no matrix operations using external libraries have to be applied to H
 
@@ -16,20 +17,33 @@ class mpo{
   int maxDim() const{return Dw;}
   int length() const{return L;}
   void shift(T const delta);
-  T& sparse_access(int const si, int const sip, int const bi, int const n){return Qoperator[bimIndex[n+bi*Dw+sip*Dw*Dw+si*Dw*Dw*d]+bi*Dw+si*Dw*Dw+sip*Dw*Dw*d];}
-  int sparse_nNzero(int const si, int const sip, int const bi){return nNzero[bi+sip*Dw+si*Dw*d];}
   void subMatrixStart(T *&pStart, int const i, int const si=0, int const sip=0);
   void initialize(int const din, int const Dwin, int const Lin);
-  void setUpSiteSparse(int const i);
+  void setUpSparse();
+  void sparseSubMatrixStart(T *&pStart, int const i){pStart=sparseOperator+i*d*d*Dw*Dw;}
+  void biSubIndexArrayStart(int *&target, int const i){target=biIndices+i*d*d*Dw*Dw;}
+  void bimSubIndexArrayStart(int *&target, int const i){target=bimIndices+i*d*d*Dw*Dw;}
+  void siSubIndexArrayStart(int *&target, int const i){target=siIndices+i*d*d*Dw*Dw;}
+  void sipSubIndexArrayStart(int *&target, int const i){target=sipIndices+i*d*d*Dw*Dw;}
+  int numEls(int const i) const {return nZero[i];}
  private:
+  void setUpSiteSparse(int const i);
   int d, Dw, L;
-  int *nNzero, *bimIndex;
+  int *nNzero;
   T *Qoperator;
+  T* sparseOperator;
+  int *siIndices, *sipIndices, *biIndices, *bimIndices;
 };
 
 template<typename T>
 mpo<T>::mpo(){
   Qoperator=0;
+  nNzero=0;
+  sparseOperator=0;
+  biIndices=0;
+  bimIndices=0;
+  siIndices=0;
+  sipIndices=0;
 }
 
 template<typename T>
@@ -40,8 +54,12 @@ mpo<T>::mpo(int const din, int const Dwin, int const Lin){
 template<typename T>
 mpo<T>::~mpo(){
   delete[] Qoperator;
-  //delete[] nNzero;
-  //delete[] bimIndex;
+  delete[] nNzero;
+  delete[] sparseOperator;
+  delete[] biIndices;
+  delete[] bimIndices;
+  delete[] siIndices;
+  delete[] sipIndices;
 }
 
 template<typename T>
@@ -50,8 +68,12 @@ void mpo<T>::initialize(int const din, int const Dwin, int const Lin){
   Dw=Dwin; 
   L=Lin;
   Qoperator=new T[Lin*d*Dw*d*Dw];
-  //nNzero=new int[Dw*d*d];
-  //bimIndex=new int[Dw*Dw*d*d];
+  nNzero=0;
+  sparseOperator=0;
+  biIndices=0;
+  bimIndices=0;
+  siIndices=0;
+  sipIndices=0;
 }
 
 template<typename T>
@@ -66,16 +88,39 @@ void mpo<T>::shift(T const delta){
 }
 
 template<typename T>
+void mpo<T>::setUpSparse(){
+  delete[] sparseOperator;
+  delete[] biIndices;
+  delete[] bimIndices;
+  delete[] siIndices;
+  delete[] sipIndices;
+  delete[] nNzero;
+  nNzero=new int[L];
+  sparseOperator=new T[L*Dw*Dw*d*d];
+  biIndices=new int[L*Dw*Dw*d*d];
+  bimIndices=new int[L*Dw*Dw*d*d];
+  siIndices=new int[L*Dw*Dw*d*d];
+  sipIndices=new int[L*Dw*Dw*d*d];
+  for(int i=0;i<L;++i){
+    setUpSiteSparse(i);
+  }
+}
+
+template<typename T>
 void mpo<T>::setUpSiteSparse(int const i){
+  nNzero[i]=0;
   int threshold=1e-10;
-  for(int si=0;si<d;si++){
-    for(int sip=0;sip<d;sip++){
-      for(int bi=0;bi<Dw;bi++){
-	nNzero[bi+sip*Dw+si*Dw*d]=0;
-	for(int bim=0;bim<Dw;bim++){
+  for(int si=0;si<d;++si){
+    for(int sip=0;sip<d;++sip){
+      for(int bi=0;bi<Dw;++bi){
+	for(int bim=0;bim<Dw;++bim){
 	  if(abs(global_access(i,si,sip,bi,bim))>threshold){
-	    bimIndex[nNzero[bi+sip*Dw+si+Dw*d]+bi*Dw+sip*Dw*Dw+si*Dw*d*Dw]=bim;
-	    (nNzero[bi+sip*Dw+si*Dw*d])++;
+	    sparseOperator[nNzero[i]+i*Dw*Dw*d*d]=global_access(i,si,sip,bi,bim);
+	    biIndices[nNzero[i]+i*Dw*Dw*d*d]=bi;
+	    bimIndices[nNzero[i]+i*Dw*Dw*d*d]=bim;
+	    siIndices[nNzero[i]+i*Dw*Dw*d*d]=si;
+	    sipIndices[nNzero[i]+i*Dw*Dw*d*d]=sip;
+	    ++(nNzero[i]);
 	  }
 	}
       }

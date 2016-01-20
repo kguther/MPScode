@@ -1,5 +1,4 @@
 #include "baseMeasurement.h"
-#include <iostream>
 #include "mpo.h"
 #include "mps.h"
 #include "tmpContainer.h"

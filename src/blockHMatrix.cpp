@@ -3,6 +3,7 @@
 #include "arrayprocessing.h"
 #include <iostream>
 #include <time.h>
+#include "mkl_complex_defined.h"
 
 
 blockHMatrix::blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, arcomplex<double> *Hin, dimensionTable &dimInfo, int Dwin, int iIn, int sweepDirectionIn, basisQNOrderMatrix *indexTablein, projector *excitedStateP, double shift, std::vector<quantumNumber> *conservedQNsin):
@@ -36,6 +37,7 @@ blockHMatrix::blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, arcomplex
   }
   compressedVector=new arcomplex<double>[dimension];
   std::cout<<"Current eigenvalue problem dimension: "<<dimension<<std::endl;
+  buildSparseHBlocked();
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -47,12 +49,17 @@ blockHMatrix::~blockHMatrix(){
 //---------------------------------------------------------------------------------------------------//
 
 void blockHMatrix::MultMvBlocked(arcomplex<double> *v, arcomplex<double> *w){
-  if(sweepDirection){
-    MultMvBlockedLP(v,w);
+  lapack_complex_double *proxy=new lapack_complex_double[dimension];
+  arraycpy(dimension,v,proxy);
+  arcomplex<double> simpleContainer;
+  for(int m=0;m<dimension;++m){
+    simpleContainer=0;
+    for(int spIndex=rowPtr[m];spIndex<rowPtr[m+1];++spIndex){
+      simpleContainer+=sparseMatrix[spIndex]*proxy[colIndices[spIndex]];
+    }
+    w[m]=simpleContainer+shift*proxy[m];
   }
-  else{
-    MultMvBlockedRP(v,w);
-  }
+  delete[] proxy;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -104,18 +111,6 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
 	    }
 	  }
 	}
-	/*
-	for(int j=0;j<rBlockSize;++j){
-	  for(int k=0;k<lBlockSize;++k){
-	    outerContainer.global_access(si,bim,indexTable->aiBlockIndexLP(i,iBlock,j),indexTable->aimBlockIndexLP(i,iBlock,k))=0;
-	  }
-	  for(int k=0;k<lBlockSize;++k){
-	    for(int bi=0;bi<lDwR;++bi){
-	      outerContainer.global_access(si,bim,indexTable->aiBlockIndexLP(i,iBlock,j),indexTable->aimBlockIndexLP(i,iBlock,k))+=H[hIndex(si,indexTable->siBlockIndexLP(i,iBlock,k),bi,bim)]*innerContainer.global_access(indexTable->siBlockIndexLP(i,iBlock,k),indexTable->aimBlockIndexLP(i,iBlock,k),indexTable->aiBlockIndexLP(i,iBlock,j),bi);
-	    }
-	  }
-	}
-	*/
       }
     }
   }	 
@@ -141,6 +136,66 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
   exit(1);
   }
 }
+
+//---------------------------------------------------------------------------------------------------//
+
+void blockHMatrix::buildSparseHBlocked(){
+  clock_t curtime;
+  curtime=clock();
+  double treshold=1e-12;
+  arcomplex<double> currentEntry;
+  int lBlockSize, rBlockSize, lBlockSizep, rBlockSizep;
+  sparseMatrix.clear();
+  rowPtr.clear();
+  colIndices.clear();
+  int const numBlocks=indexTable->numBlocksLP(i);
+  for(int iBlock=0;iBlock<numBlocks;++iBlock){
+    lBlockSize=indexTable->lBlockSizeLP(i,iBlock);
+    rBlockSize=indexTable->rBlockSizeLP(i,iBlock);
+    for(int j=0;j<rBlockSize;++j){
+      for(int k=0;k<lBlockSize;++k){
+	rowPtr.push_back(sparseMatrix.size());
+	for(int iBlockp=0;iBlockp<numBlocks;++iBlockp){
+	  lBlockSizep=indexTable->lBlockSizeLP(i,iBlockp);
+	  rBlockSizep=indexTable->rBlockSizeLP(i,iBlockp);
+	  for(int jp=0;jp<rBlockSizep;++jp){
+	    for(int kp=0;kp<lBlockSizep;++kp){
+	      currentEntry=HEffEntry(indexTable->siBlockIndexLP(i,iBlock,k),indexTable->aimBlockIndexLP(i,iBlock,k),indexTable->aiBlockIndexLP(i,iBlock,j),indexTable->siBlockIndexLP(i,iBlockp,kp),indexTable->aimBlockIndexLP(i,iBlockp,kp),indexTable->aiBlockIndexLP(i,iBlockp,jp));
+	      if(abs(currentEntry)>treshold){
+		sparseMatrix.push_back(currentEntry);
+		colIndices.push_back(vecBlockIndexLP(iBlockp,jp,kp));
+	      }
+	    }
+	  }
+	}
+      }
+    }
+  }
+  rowPtr.push_back(sparseMatrix.size());
+  /*
+  curtime=clock()-curtime;
+  std::cout<<"Matrix construction took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
+  exit(1);
+  */
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+arcomplex<double> blockHMatrix::HEffEntry(int const si, int const aim, int const ai, int const sip, int const aimp, int const aip){
+  arcomplex<double> simpleContainer=0.0;
+  for(int bi=0;bi<lDwR;++bi){
+    if(bi==0){
+      for(int bim=0;bim<lDwL;++bim){
+	simpleContainer+=Lctr[ctrIndex(aim,bim,aimp)]*Rctr[ctrIndex(ai,bi,aip)]*H[hIndex(si,sip,bi,bim)];
+      }
+    }
+    else{
+      simpleContainer+=Lctr[ctrIndex(aim,lDwL-1,aimp)]*Rctr[ctrIndex(ai,bi,aip)]*H[hIndex(si,sip,bi,lDwL-1)];
+    }
+  }
+  return simpleContainer;
+}
+
 //---------------------------------------------------------------------------------------------------//
 // Function used as an interface to the projector class used in the computation of excited states.
 //---------------------------------------------------------------------------------------------------//

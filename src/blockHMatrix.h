@@ -24,15 +24,19 @@ class blockHMatrix: public optHMatrix{
   void prepareInput(arcomplex<double> *startingVector);
   void readOutput(arcomplex<double> *outputVector);
   arcomplex<double> *compressedVector;
+  void buildSparseHBlocked();
  private:
   std::vector<quantumNumber> *conservedQNsB;
   std::vector<int> blockOffset;
+  std::vector<arcomplex<double> > sparseMatrix;
+  std::vector<int> rowPtr, colIndices;
   int sweepDirection;
   basisQNOrderMatrix *indexTable;
   int vecBlockIndexLP(int const iBlock, int const j, int const k){return k+j*indexTable->lBlockSizeLP(i,iBlock)+blockOffset[iBlock];}
   //int vecBlockIndexLP(int const iBlock, int const j, int const k){return vecIndex(indexTable->siBlockIndexLP(i,iBlock,k),indexTable->aiBlockIndexLP(i,iBlock,j),indexTable->aimBlockIndexLP(i,iBlock,k));}
   int vecBlockIndexRP(int const iBlock, int const j, int const k){return k+j*indexTable->lBlockSizeRP(i,iBlock)+blockOffset[iBlock];}
   void excitedStateProject(arcomplex<double> *v, int const i);
+  arcomplex<double> HEffEntry(int const si, int const aim, int const ai, int const sip, int const aimp, int const aip);
 };
 
 #endif

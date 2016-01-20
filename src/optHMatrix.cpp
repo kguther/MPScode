@@ -29,7 +29,7 @@ optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, arcomplex
   d=dimInfo.locd(i);
   //Dimension of H is obviously a necessary information for ARPACK++
   dimension=d*lDL*lDR;
-  std::cout<<"Current eigenvalue problem dimension: "<<dimension<<std::endl;
+  //std::cout<<"Current eigenvalue problem dimension: "<<dimension<<std::endl;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -115,12 +115,8 @@ void optHMatrix::projectQN(arcomplex<double> *v){
   for(int si=0;si<d;++si){
     for(int ai=0;ai<lDR;++ai){
       for(int aim=0;aim<lDL;++aim){
-	for(int iQN=0;iQN<(*conservedQNs).size();++iQN){
-	  /*
-	  if((*conservedQNs)[iQN].qnCriterium(i,si,ai,aim) && (i==0)){
-	    v[vecIndex(si,ai,aim)]=0;
-	  }*/
-	  if((*conservedQNs)[iQN].qnConstraint(i,si,ai,aim)){
+	for(int iQN=0;iQN<conservedQNs->size();++iQN){
+	  if((*conservedQNs)[iQN].qnConstraint(i,si,ai,aim) || (*conservedQNs)[0].QNLabel(i,ai)<-2){
 	    v[vecIndex(si,ai,aim)]=0;
 	  }
 	  else{

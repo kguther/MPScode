@@ -28,45 +28,38 @@ void mps::generate(dimensionTable &dimInfoIn, std::vector<quantumNumber> *conser
   stateArray::generate(dimInfoIn);
   conservedQNs=conservedQNsin;
   nQNs=(*conservedQNs).size();
-  createInitialState();
   indexTable.initialize(dimInfo,conservedQNs);
   indexTable.generateQNIndexTables();
+  createInitialState();
 }
 
 //---------------------------------------------------------------------------------------------------//
 
 void mps::createInitialState(){
   int lDL, lDR, ld;
-  for(int i=0;i<L;++i){
-    lDL=locDimL(i);
-    lDR=locDimR(i);
-    lDL=(lDR<lDL)?lDR:lDL;
-    ld=locd(i);
-    for(int si=0;si<ld;++si){
-      for(int aim=0;aim<lDL;++aim){
-	state_array_access_structure[i][si][aim][aim]=1;
+  if(!nQNs){
+    for(int i=0;i<L;++i){
+      lDL=locDimL(i);
+      lDR=locDimR(i);
+      lDL=(lDR<lDL)?lDR:lDL;
+      ld=locd(i);
+      for(int si=0;si<ld;++si){
+	for(int aim=0;aim<lDL;++aim){
+	  state_array_access_structure[i][si][aim][aim]=1;
+	}
       }
     }
   }
-  if(nQNs){
-    int qnCriteriumCheck;
+  else{
+    int qnCriteriumCheck, numBlocks, lBlockSize, rBlockSize;
     for(int i=0;i<L;++i){
-      ld=locd(i);
-      lDR=locDimR(i);
-      lDL=locDimL(i);
-      for(int si=0;si<ld;++si){
-	for(int ai=0;ai<lDR;++ai){
-	  for(int aim=0;aim<lDL;++aim){
-	    qnCriteriumCheck=0;
-	    for(int iQN=0;iQN<nQNs;++iQN){
-	      qnCriteriumCheck+=(*conservedQNs)[iQN].qnConstraint(i,si,ai,aim);
-	    }
-	    if(qnCriteriumCheck){
-	      global_access(i,si,ai,aim)=0;
-	    }
-	    else{
-	      global_access(i,si,ai,aim)=1;//exactGroundStateEntry(i,si,ai,aim);
-	    }
+      numBlocks=indexTable.numBlocksLP(i);
+      for(int iBlock=0;iBlock<numBlocks;++iBlock){
+	rBlockSize=indexTable.rBlockSizeLP(i,iBlock);
+	lBlockSize=indexTable.lBlockSizeLP(i,iBlock);
+	for(int j=0;j<rBlockSize;++j){
+	  for(int k=0;k<lBlockSize;++k){
+	    state_array_access_structure[i][indexTable.siBlockIndexLP(i,iBlock,k)][indexTable.aiBlockIndexLP(i,iBlock,j)][indexTable.aimBlockIndexLP(i,iBlock,k)]=1;
 	  }
 	}
       }
