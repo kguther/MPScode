@@ -71,6 +71,7 @@ class network{
   //This one is only for consistency checks
   void leftNormalizationMatrixIter(int i, lapack_complex_double *psi);
   int checkQN();
+  int checkEqualWeightState();
   void checkContractions(int const i);
   lapack_complex_double *backupCtr;
 };

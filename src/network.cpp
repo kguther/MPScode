@@ -181,7 +181,7 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
       networkState.normalizeFinal(1);
       //In calcCtrIterRightBase, the second argument has to be a pointer, because it usually is an array. No call-by-reference here.
       pCtr.calcCtrIterRightBase(-1,&expectationValue);
-      convergenceQuality=1;//convergenceCheck();
+      convergenceQuality=convergenceCheck();
       if(convergenceQuality<simPars.devAccuracy){
 	nConverged[iEigen]=0;
       }
@@ -273,10 +273,12 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
   plambda=&lambda;
   //Using the current site matrix as a starting point allows for much faster convergence as it has already been optimized in previous sweeps (except for the first sweep, this is where a good starting point has to be guessed
   networkState.subMatrixStart(currentM,i);
-  measure(check,spinCheck);
-  measure(checkParity,parCheck);
-  std::cout<<"Current particle number: "<<spinCheck<<std::endl;
-  std::cout<<"Current subchain parity: "<<parCheck<<std::endl;
+
+  //measure(check,spinCheck);
+  //measure(checkParity,parCheck);
+  //std::cout<<"Current particle number: "<<spinCheck<<std::endl;
+  //std::cout<<"Current subchain parity: "<<parCheck<<std::endl;
+
   if(pars.nQNs && i!=0 && i!=(L-1) && 1){
     blockHMatrix BMat(RTerm, LTerm,HTerm,networkDimInfo,Dw,i,&(networkState.indexTable),&excitedStateP,shift,&conservedQNs);
     BMat.prepareInput(currentM);
@@ -506,6 +508,8 @@ int network::checkQN(){
   return 0;
 }
 
+//---------------------------------------------------------------------------------------------------//
+
 void network::checkContractions(int const i){
   /*
   lapack_complex_double *RTerm;
@@ -583,3 +587,38 @@ void network::checkContractions(int const i){
   delete[] currentM;
   delete plambda;
 }
+
+//---------------------------------------------------------------------------------------------------//
+// Function to check whether a state is an equal weight superposition (it only computes the scalar
+// product with one product state, since there are too many matching states for a full computation).
+//---------------------------------------------------------------------------------------------------//
+
+int network::checkEqualWeightState(){
+  mps productState(networkState.dimInfo,0);
+  for(int i=0;i<L;++i){
+    getLocalDimensions(i);
+    for(int si=0;si<ld;++si){
+      for(int ai=0;ai<lDR;++ai){
+	for(int aim=0;aim<lDL;++aim){
+	  if(ai==0 && aim==0){
+	    if( (i==2 && si==3) || (i==4 && si==4) || (i==3 && si==1) || (si==0 && i!=3 && i!=2)){
+	      productState.global_access(i,si,ai,aim)=1;
+	    }
+	    else{
+	      productState.global_access(i,si,ai,aim)=0;
+	    }
+	  }
+	  else{
+	    productState.global_access(i,si,ai,aim)=0;
+	  }
+	}
+      }
+    }
+  }
+  overlap test;
+  test.loadMPS(&networkState,&productState);
+  std::cout<<test.getFullOverlap()<<std::endl;
+  exit(1);    
+}
+
+

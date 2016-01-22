@@ -32,6 +32,7 @@ class projector{
   int loadNextState(mps &target);
   void storeOrthoState(mps &source, int const iEigen);
   lapack_complex_double fullOverlap(int const k);
+  int nEigen()const {return nCurrentEigen;}
  private:
   mps *orthoStates;
   overlap *scalarProducts;

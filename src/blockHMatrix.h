@@ -31,7 +31,7 @@ class blockHMatrix: public optHMatrix{
   std::vector<int> rowPtr, colIndices;
   basisQNOrderMatrix *indexTable;
   int vecBlockIndexLP(int const iBlock, int const j, int const k){return k+j*indexTable->lBlockSizeLP(i,iBlock)+blockOffset[iBlock];}
-  void excitedStateProject(arcomplex<double> *v, int const i);
+  void excitedStateProject(arcomplex<double> *v);
   arcomplex<double> HEffEntry(int const si, int const aim, int const ai, int const sip, int const aimp, int const aip);
 };
 

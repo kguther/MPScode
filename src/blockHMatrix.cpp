@@ -39,6 +39,7 @@ blockHMatrix::~blockHMatrix(){
 
 void blockHMatrix::MultMvBlocked(arcomplex<double> *v, arcomplex<double> *w){
   lapack_complex_double *proxy=new lapack_complex_double[dimension];
+  excitedStateProject(v);
   arraycpy(dimension,v,proxy);
   arcomplex<double> simpleContainer;
   for(int m=0;m<dimension;++m){
@@ -48,6 +49,7 @@ void blockHMatrix::MultMvBlocked(arcomplex<double> *v, arcomplex<double> *w){
     }
     w[m]=simpleContainer+shift*proxy[m];
   }
+  excitedStateProject(w);
   delete[] proxy;
 }
 
@@ -164,7 +166,6 @@ void blockHMatrix::buildSparseHBlocked(){
   /*
   curtime=clock()-curtime;
   std::cout<<"Matrix construction took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
-  exit(1);
   */
 }
 
@@ -189,12 +190,14 @@ arcomplex<double> blockHMatrix::HEffEntry(int const si, int const aim, int const
 // Function used as an interface to the projector class used in the computation of excited states.
 //---------------------------------------------------------------------------------------------------//
 
-void blockHMatrix::excitedStateProject(arcomplex<double> *v, int const i){
-  arcomplex<double> *vExpanded=new arcomplex<double>[d*lDR*lDL];
-  storageExpand(v,vExpanded);
-  P->project(v,i);
-  storageCompress(vExpanded,v);
-  delete[] vExpanded;
+void blockHMatrix::excitedStateProject(arcomplex<double> *v){
+  if(P->nEigen()){
+    arcomplex<double> *vExpanded=new arcomplex<double>[d*lDR*lDL];
+    storageExpand(v,vExpanded);
+    P->project(v,i);
+    storageCompress(vExpanded,v);
+    delete[] vExpanded;
+  }
 }
 
 //---------------------------------------------------------------------------------------------------//

@@ -11,9 +11,17 @@ mps::mps():stateArray()
 mps::mps(dimensionTable &dimInfoIn, std::vector<quantumNumber> *conservedQNsin){
   stateArray::initialize(dimInfoIn);
   conservedQNs=conservedQNsin;
+  if(conservedQNs){
+    nQNs=(*conservedQNs).size();
+  }
+  else{
+    nQNs=0;
+  }
+  if(nQNs){
+    indexTable.initialize(dimInfo,conservedQNs);
+    indexTable.generateQNIndexTables();
+  }
   createInitialState();
-  indexTable.initialize(dimInfo,conservedQNs);
-  indexTable.generateQNIndexTables();
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -27,9 +35,16 @@ void mps::generate(dimensionTable &dimInfoIn, std::vector<quantumNumber> *conser
   int direction;
   stateArray::generate(dimInfoIn);
   conservedQNs=conservedQNsin;
-  nQNs=(*conservedQNs).size();
-  indexTable.initialize(dimInfo,conservedQNs);
-  indexTable.generateQNIndexTables();
+  if(conservedQNs){
+    nQNs=(*conservedQNs).size();
+  }
+  else{
+    nQNs=0;
+  }
+  if(nQNs){
+    indexTable.initialize(dimInfo,conservedQNs);
+    indexTable.generateQNIndexTables();
+  }
   createInitialState();
 }
 
@@ -59,12 +74,24 @@ void mps::createInitialState(){
 	lBlockSize=indexTable.lBlockSizeLP(i,iBlock);
 	for(int j=0;j<rBlockSize;++j){
 	  for(int k=0;k<lBlockSize;++k){
-	    state_array_access_structure[i][indexTable.siBlockIndexLP(i,iBlock,k)][indexTable.aiBlockIndexLP(i,iBlock,j)][indexTable.aimBlockIndexLP(i,iBlock,k)]=1;
+	    state_array_access_structure[i][indexTable.siBlockIndexLP(i,iBlock,k)][indexTable.aiBlockIndexLP(i,iBlock,j)][indexTable.aimBlockIndexLP(i,iBlock,k)]=exactGroundStateEntry(i,indexTable.siBlockIndexLP(i,iBlock,k),indexTable.aiBlockIndexLP(i,iBlock,j),indexTable.aimBlockIndexLP(i,iBlock,k));
 	  }
 	}
       }
     }
   }
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+lapack_complex_double mps::exactGroundStateEntry(int const i, int const si, int const ai, int const aim){
+  if(si==0 || si==2){
+    return 1.0;
+  }
+  if((*conservedQNs)[1].QNLabel(i-1,aim)==1){
+    return 1.0;
+  }
+  return -1.0;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -332,23 +359,4 @@ void mps::restoreQN(int const i){
       }
     }
   }
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-lapack_complex_double mps::exactGroundStateEntry(int const i, int const si, int const ai, int const aim){
-  int exponent;
-  if(nQNs!=2){
-    return 0.0;
-  }
-  if((*conservedQNs)[1].QNLabel(si)!=-1){
-    exponent=0;
-  }
-  else{
-    exponent=1;
-  }
-  if(i!=L-1){
-    return pow(-1,exponent);
-  }
-  return 0.5*pow(-1,exponent);
 }
