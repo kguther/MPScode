@@ -58,12 +58,19 @@ void baseMeasurement::calcCtrIterRightBase(int const i, lapack_complex_double *t
   lapack_complex_double simpleContainer;
   lapack_complex_double *sourcePctr;
   lapack_complex_double *siteMatrixState, *siteMatrixH;
+  int *biIndices, *bimIndices, *siIndices, *sipIndices;
+  int const sparseSize=MPOperator->numEls(i+1);
+  int biS, bimS, siS, sipS;
   Rctr.subContractionStart(sourcePctr,i+1);
-  (*MPState).subMatrixStart(siteMatrixState,i+1);
-  (*MPOperator).subMatrixStart(siteMatrixH,i+1);
+  MPState->subMatrixStart(siteMatrixState,i+1);
+  MPOperator->sparseSubMatrixStart(siteMatrixH,i+1);
+  MPOperator->biSubIndexArrayStart(biIndices,i+1);
+  MPOperator->bimSubIndexArrayStart(bimIndices,i+1);
+  MPOperator->siSubIndexArrayStart(siIndices,i+1);
+  MPOperator->sipSubIndexArrayStart(sipIndices,i+1);
   getLocalDimensions(i+1);
   tmpContainer<lapack_complex_double> innercontainer(ld,lDwR,lDR,lDL);
-  tmpContainer<lapack_complex_double> outercontainer(ld,lDwL,lDL,lDR);
+  tmpContainer<lapack_complex_double> outercontainer(lDL,lDR,ld,lDwL);
   for(int sip=0;sip<ld;++sip){                                                       
     for(int bi=0;bi<lDwR;++bi){
       for(int ai=0;ai<lDR;++ai){
@@ -77,18 +84,19 @@ void baseMeasurement::calcCtrIterRightBase(int const i, lapack_complex_double *t
       }
     }
   }
-  for(int si=0;si<ld;++si){
-    for(int bim=0;bim<lDwL;++bim){
-      for(int aimp=0;aimp<lDL;++aimp){
-	for(int ai=0;ai<lDR;++ai){
-	  simpleContainer=0;
-	  for(int sip=0;sip<ld;++sip){
-	    for(int bi=0;bi<lDwR;++bi){
-	      simpleContainer+=siteMatrixH[operatorIndex(si,sip,bi,bim)]*innercontainer.global_access(sip,bi,ai,aimp);
-	    }
-	  }
-	  outercontainer.global_access(si,bim,aimp,ai)=simpleContainer;
+  for(int aimp=0;aimp<lDL;++aimp){
+    for(int ai=0;ai<lDR;++ai){
+      for(int si=0;si<ld;++si){
+	for(int bim=0;bim<lDwL;++bim){
+	  outercontainer.global_access(aimp,ai,si,bim)=0;
 	}
+      }
+      for(int nSparse=0;nSparse<sparseSize;++nSparse){
+	biS=biIndices[nSparse];
+	bimS=bimIndices[nSparse];
+	siS=siIndices[nSparse];
+	sipS=sipIndices[nSparse];
+	outercontainer.global_access(aimp,ai,siS,bimS)=siteMatrixH[operatorIndex(siS,sipS,biS,bimS)]*innercontainer.global_access(sipS,biS,ai,aimp);
       }
     }
   }
@@ -98,7 +106,7 @@ void baseMeasurement::calcCtrIterRightBase(int const i, lapack_complex_double *t
 	simpleContainer=0;
 	for(int si=0;si<ld;++si){
 	  for(int ai=0;ai<lDR;++ai){
-	    simpleContainer+=conj(siteMatrixState[stateIndex(si,ai,aim)])*outercontainer.global_access(si,bim,aimp,ai);
+	    simpleContainer+=conj(siteMatrixState[stateIndex(si,ai,aim)])*outercontainer.global_access(aimp,ai,si,bim);
 	  }
 	}
 	targetPctr[pctrIndex(aim,bim,aimp)]=simpleContainer;
