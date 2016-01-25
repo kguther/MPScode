@@ -141,6 +141,10 @@ int quantumNumber::QNLabel(int const i, int const ai){
 */
 
 //---------------------------------------------------------------------------------------------------//
+// For our specific system, we use a dedicated minimal labeling, which is hardcoded. Might be improved
+// later on, it might even be neccessary to do so, but for now, it is enough. Plus, since it is minimal,
+// the number of nonzero matrix elements of the MPO matrices is bound by 4*D, which is really great.
+//---------------------------------------------------------------------------------------------------//
 
 void quantumNumber::initializeLabelList(){
   delete[] leftLabel;

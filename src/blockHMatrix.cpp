@@ -36,6 +36,11 @@ blockHMatrix::~blockHMatrix(){
 }
 
 //---------------------------------------------------------------------------------------------------//
+// In contrast to the case without QN conservation, when using blocked MPS matrices, it is much faster
+// to use a sparse matrix-vector multiplication instead of the cached approach. We use our own matrix-
+// vector multiplication to implement the projection on the excited state, which is carried out in 
+// the unblocked matrix (currently).
+//---------------------------------------------------------------------------------------------------//
 
 void blockHMatrix::MultMvBlocked(arcomplex<double> *v, arcomplex<double> *w){
   lapack_complex_double *proxy=new lapack_complex_double[dimension];
@@ -170,10 +175,15 @@ void blockHMatrix::buildSparseHBlocked(){
 }
 
 //---------------------------------------------------------------------------------------------------//
+// This function computes the entry of the local effective Hamiltonian. While this is only used implicitly
+// in the normal algorithm, in the presence of conserved QNs, it is more efficient to explicitly 
+// calculate the matrix elements.
+//---------------------------------------------------------------------------------------------------//
 
 arcomplex<double> blockHMatrix::HEffEntry(int const si, int const aim, int const ai, int const sip, int const aimp, int const aip){
   arcomplex<double> simpleContainer=0.0;
   for(int bi=0;bi<lDwR;++bi){
+    //Use the canonical form of a local MPO. This only works for nearest-neighbour terms, for longer ranged interactions, a general sparse storage has to be used.
     if(bi==0){
       for(int bim=0;bim<lDwL;++bim){
 	simpleContainer+=Lctr[ctrIndex(aim,bim,aimp)]*Rctr[ctrIndex(ai,bi,aip)]*H[hIndex(si,sip,bi,bim)];

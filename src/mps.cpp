@@ -66,6 +66,7 @@ void mps::createInitialState(){
     }
   }
   else{
+    //This is the exact ground state at the critical point for fixed particle number and subchain parity. It turns out that this is a nice guess for the ground state of the perturbed system (for small perturbations).
     int numBlocks, lBlockSize, rBlockSize;
     for(int i=0;i<L;++i){
       numBlocks=indexTable.numBlocksLP(i);
@@ -188,12 +189,17 @@ void mps::normalizeFinal(int const i){
   cblas_zscal(ld*lcD,&normalization,state_array_access_structure[site][0][0],1);
 }
 
-
+//---------------------------------------------------------------------------------------------------//
+// Now, these two functions also left-/rightnormalize a site matrix, but they use the block structure
+// of the MPS matrices when using conserved QNs. In particular, they only make sense when using conserved
+// QNs. There, the normalization is executed on each block individually, preserving the QN constraint. 
+// IMPORTANT: IN GENERAL, THE BLOCKS ARE NOT SQUARE. THE QN LABELING SCHEME MUST BE DESIGNED SUCH
+// THAT EACH BLOCK CAN BE BROUGHT INTO CANONICAL FORM. THIS IS A NONTRIVIAL CONSTRAINT.
 //---------------------------------------------------------------------------------------------------//
 
 int mps::leftNormalizeStateBlockwise(int const i){
   int ld, lDR, lDL, lDRR;
-  int lBlockSize,rBlockSize, minBlockSize;
+  int lBlockSize,rBlockSize;
   int aiCurrent, siCurrent, aimCurrent, aipCurrent;
   lapack_complex_double *M, *R;
   lapack_complex_double *Rcontainer, *Qcontainer;
@@ -208,11 +214,11 @@ int mps::leftNormalizeStateBlockwise(int const i){
   for(int iBlock=0;iBlock<indexTable.numBlocksLP(i);++iBlock){
     rBlockSize=indexTable.rBlockSizeLP(i,iBlock);
     lBlockSize=indexTable.lBlockSizeLP(i,iBlock);
-    //std::cout<<lBlockSize<<"\t"<<rBlockSize<<std::endl;
     //rBlockSize is required to be smaller than or equal to lBlockSize
-    minBlockSize=(lBlockSize<rBlockSize)?lBlockSize:rBlockSize;
     if(rBlockSize!=0 && lBlockSize!=0){
+      //We do not normalize empty blocks
       M=new lapack_complex_double[lBlockSize*rBlockSize];
+      //First, copy the content of the block to some dummy array
       for(int j=0;j<rBlockSize;++j){
 	for(int k=0;k<lBlockSize;++k){
 	  convertIndicesLP(i,j,k,iBlock,siCurrent,aiCurrent,aimCurrent);
@@ -221,6 +227,7 @@ int mps::leftNormalizeStateBlockwise(int const i){
       }
       Rcontainer=new lapack_complex_double[rBlockSize*rBlockSize];
       Qcontainer=new lapack_complex_double[rBlockSize];
+      //Make a QR decomposition of that dummy array
       info=LAPACKE_zgeqrf(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,M,lBlockSize,Qcontainer);
       if(info){
 	std::cout<<"Error in LAPACKE_zgeqrf: "<<info<<" with block sizes: "<<lBlockSize<<"x"<<rBlockSize<<" at site "<<i<<std::endl;
@@ -232,11 +239,13 @@ int mps::leftNormalizeStateBlockwise(int const i){
 	std::cout<<"Error in LAPACKE_zungqr: "<<info<<" with block sizes: "<<lBlockSize<<"x"<<rBlockSize<<" at site "<<i<<std::endl;
 	exit(1);
       }
+      //Copy the resulting Q-matrix back into the block of the MPS matrix
       for(int j=0;j<rBlockSize;++j){
 	for(int k=0;k<lBlockSize;++k){
 	  convertIndicesLP(i,j,k,iBlock,siCurrent,aiCurrent,aimCurrent);
 	  global_access(i,siCurrent,aiCurrent,aimCurrent)=M[k+j*lBlockSize];
 	}
+	//And the resulting R-matrix into the corresponding elements of a uncompressed matrix R
 	for(int l=0;l<rBlockSize;++l){
 	  aiCurrent=indexTable.aiBlockIndexLP(i,iBlock,j);
 	  aipCurrent=indexTable.aiBlockIndexLP(i,iBlock,l);
@@ -248,6 +257,7 @@ int mps::leftNormalizeStateBlockwise(int const i){
       delete[] M;
     }
   }
+  //Finally, multiply the uncompressed matrix R into the next MPS matrix. Block structure does not need to be adressed explicitly, since they both have the required structure.
   inputA=new lapack_complex_double[lDR*lDRR];
   for(int si=0;si<ld;++si){
     arraycpy(lDRR,lDR,state_array_access_structure[i+1][si][0],inputA);
@@ -262,7 +272,7 @@ int mps::leftNormalizeStateBlockwise(int const i){
 
 int mps::rightNormalizeStateBlockwise(int const i){
   int ld, lDR, lDL, lDLL;
-  int lBlockSize,rBlockSize, minBlockSize;
+  int lBlockSize,rBlockSize;
   int aiCurrent, siCurrent, aimCurrent, aimpCurrent;
   lapack_complex_double *M, *R;
   lapack_complex_double *Rcontainer, *Qcontainer;
@@ -277,9 +287,7 @@ int mps::rightNormalizeStateBlockwise(int const i){
   for(int iBlock=0;iBlock<indexTable.numBlocksRP(i);++iBlock){
     lBlockSize=indexTable.lBlockSizeRP(i,iBlock);
     rBlockSize=indexTable.rBlockSizeRP(i,iBlock);
-    //std::cout<<lBlockSize<<"\t"<<rBlockSize<<std::endl;
     //lBlockSize is required to be smaller than or equal to rBlockSize
-    minBlockSize=(lBlockSize<rBlockSize)?lBlockSize:rBlockSize;
     if(rBlockSize!=0 && lBlockSize!=0){
       M=new lapack_complex_double[lBlockSize*rBlockSize];
       for(int j=0;j<rBlockSize;++j){
@@ -328,6 +336,8 @@ int mps::rightNormalizeStateBlockwise(int const i){
 }
 
 //---------------------------------------------------------------------------------------------------//
+// These functions convert block-internal indices to normal MPS bond indices.
+//---------------------------------------------------------------------------------------------------//
 
 void mps::convertIndicesLP(int const i, int const j, int const k, int const iBlock, int &si, int &ai, int &aim){
   ai=indexTable.aiBlockIndexLP(i,iBlock,j);
@@ -341,6 +351,8 @@ void mps::convertIndicesRP(int const i, int const j, int const k, int const iBlo
   si=indexTable.siBlockIndexRP(i,iBlock,j);
 }
 
+//---------------------------------------------------------------------------------------------------//
+// Outdated function to enforce the QN constraint on some MPS.
 //---------------------------------------------------------------------------------------------------//
 
 void mps::restoreQN(int const i){

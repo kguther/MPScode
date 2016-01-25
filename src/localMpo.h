@@ -9,6 +9,7 @@ class localMpo: public mpo<T>{
  localMpo():mpo(){}
  localMpo(int const din, int const Dwin, int const Lin):mpo<T>(din,Dwin,Lin){}
   void stepRight();
+  int fermionicStringRequired;
 };
 
 template<typename T>

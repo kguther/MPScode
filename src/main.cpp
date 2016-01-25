@@ -38,8 +38,8 @@ void testSolve(){
   double eigVal;
   double const mEl=1;
   int const nEigens=1;
-  int const L=35;
-  int const N=35;
+  int const L=40;
+  int const N=40;
   int const nQuantumNumbers=2;
   int const minimalD=(2*N>4)?2*N:4;
   int hInfo;
@@ -53,7 +53,8 @@ void testSolve(){
   //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack
   simulationParameters simPars(minimalD,1,1,0,1e-4,1e-8,1e-4);
   Qsystem sys(pars,simPars);
-  hInfo=writeHamiltonian(&sys,1,1.05);
+  //The required bond dimension for the perturbed system seems to be greater than that of the unperturbed system
+  hInfo=writeHamiltonian(&sys,1,1);
   if(hInfo){
     std::cout<<"Invalid bond dimension for the construction of H. Terminating process.\n";
     exit(1);

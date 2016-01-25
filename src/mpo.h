@@ -25,7 +25,7 @@ class mpo{
   void bimSubIndexArrayStart(int *&target, int const i){target=bimIndices+i*d*d*Dw*Dw;}
   void siSubIndexArrayStart(int *&target, int const i){target=siIndices+i*d*d*Dw*Dw;}
   void sipSubIndexArrayStart(int *&target, int const i){target=sipIndices+i*d*d*Dw*Dw;}
-  int numEls(int const i) const {return nZero[i];}
+  int numEls(int const i) const {return nNzero[i];}
  private:
   void setUpSiteSparse(int const i);
   int d, Dw, L;
@@ -74,6 +74,7 @@ void mpo<T>::initialize(int const din, int const Dwin, int const Lin){
   bimIndices=0;
   siIndices=0;
   sipIndices=0;
+  setUpSparse();
 }
 
 template<typename T>

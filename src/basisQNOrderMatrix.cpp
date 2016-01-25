@@ -1,6 +1,11 @@
 #include "basisQNOrderMatrix.h"
 #include <iostream>
 
+//---------------------------------------------------------------------------------------------------//
+// There is not really much to see here, a bunch of vectors is supplied which store the indices of 
+// the blocks of the MPS matrices.
+//---------------------------------------------------------------------------------------------------//
+
 basisQNOrderMatrix::basisQNOrderMatrix():
   aiBlockIndicesLP(0),
   siaimBlockIndicesLP(0),
@@ -70,8 +75,8 @@ void basisQNOrderMatrix::generateQNIndexTables(){
   for(int i=0;i<dimInfo.L();++i){
     blockStructure(i,0,aiBlockIndicesLP[i],siaimBlockIndicesLP[i]);
     blockStructure(i,1,aimBlockIndicesRP[i],siaiBlockIndicesRP[i]);
-    splitIndexTables(i);
     if(i==0 && 0){
+      // This part is used to test QN labeling schemes for their useability. It prints out the block indices and their QN labels.
       std::cout<<"Right labels:\n";
       for(int aim=0;aim<dimInfo.locDimL(i+1);++aim){
 	std::cout<<aim<<" with label ("<<(*conservedQNs)[0].QNLabel(i,aim)<<","<<(*conservedQNs)[1].QNLabel(i,aim)<<")"<<std::endl;
@@ -116,6 +121,7 @@ void basisQNOrderMatrix::generateQNIndexTables(){
       cumulativeBlockSize+=lBlockSizeLP(i,iBlock);
     }
     if(cumulativeBlockSize==0){
+      // If the cumulativeBlockSize is zero, then there are no indices fullfilling the QN constraint on this site. That means the right vacuum QN is invalid, for example N=80 for a chain of length 20.
       std::cout<<"Critical error: Invalid quantum number. Terminating process.\n";
       exit(2);
     }
@@ -142,6 +148,7 @@ int basisQNOrderMatrix::blockStructure(int const i, int const direction, std::ve
   int matchBlock;
   int numBlocks;
   multInt cMultInd;
+  //There are two modes for constructing the Blocks: left pairing (LP) and right pairing (RP). The mode indicates whether si is paired with aim (LP) or with ai (RP) to form a new block index. The other index remains unpaired and determines the QN of the block
   if(direction==0){
     lDsingle=dimInfo.locDimR(i);
     lDpaired=dimInfo.locDimL(i);
@@ -152,6 +159,7 @@ int basisQNOrderMatrix::blockStructure(int const i, int const direction, std::ve
     lDpaired=dimInfo.locDimR(i);
     pre=-1;
   }
+  //First, determine the number of blocks and their QNs by counting over the different QNs of the unpaired index.
   qnLabels=new std::vector<int>[nQNs];
   for(int ai=0;ai<lDsingle;++ai){
     isNew=1;
@@ -171,6 +179,7 @@ int basisQNOrderMatrix::blockStructure(int const i, int const direction, std::ve
       }
     }
   }
+  //Now, for each block, collect those pairs of indices from the paired indices that yield the QN of the block
   numBlocks=qnLabels[0].size();
   siaimIndices.resize(numBlocks);
   for(int si=0;si<dimInfo.locd(i);++si){
@@ -190,6 +199,7 @@ int basisQNOrderMatrix::blockStructure(int const i, int const direction, std::ve
       }
     }
   }
+  //And, for each block, collect all unpaired indices with the QN of that block. For a minimal labeling, this is not necessary, but we want to keep it general.
   aiIndices.resize(numBlocks);
   for(int ai=0;ai<lDsingle;++ai){
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
@@ -208,6 +218,10 @@ int basisQNOrderMatrix::blockStructure(int const i, int const direction, std::ve
   return 0;
 }
 
+//---------------------------------------------------------------------------------------------------//
+// Outdated function that splits the paired indices in some weird ways required to build a matrix
+// multiplication based on the block structure. It turned out that this is very inefficient, so it is
+// not used anymore.
 //---------------------------------------------------------------------------------------------------//
 
 void basisQNOrderMatrix::splitIndexTables(int const i){

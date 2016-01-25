@@ -279,7 +279,8 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
   //std::cout<<"Current particle number: "<<spinCheck<<std::endl;
   //std::cout<<"Current subchain parity: "<<parCheck<<std::endl;
 
-  if(pars.nQNs && i!=0 && i!=(L-1) && 1){
+  if(pars.nQNs && i!=0 && i!=(L-1)){
+    //For some obscure reason, ARPACK++ can not handle the boundary problems with reduced dimension. They have to be solved without using the block structure. Since they have a really tiny dimension, this does not matter at all.
     blockHMatrix BMat(RTerm, LTerm,HTerm,networkDimInfo,Dw,i,&(networkState.indexTable),&excitedStateP,shift,&conservedQNs);
     BMat.prepareInput(currentM);
     if(BMat.dim()>1){
