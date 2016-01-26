@@ -147,11 +147,6 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
   if(pars.nQNs || pars.nEigs>1){
     cshift=-100;
   }
-
-  networkH.setUpSparse();
-  check->setUpSparse();
-  checkParity->setUpSparse();
-
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
     pCtr.initialize(&networkH,&networkState);
     std::cout<<"Startung normalization\n";

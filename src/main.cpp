@@ -38,8 +38,8 @@ void testSolve(){
   double eigVal;
   double const mEl=1;
   int const nEigens=1;
-  int const L=40;
-  int const N=40;
+  int const L=10;
+  int const N=10;
   int const D=1;
   int const nQuantumNumbers=2;
   int const minimalD=(2*N>4)?2*N:4;
@@ -66,17 +66,17 @@ void testSolve(){
   mpo<lapack_complex_double> particleNumber(pars.d.maxd(),2,L);
   mpo<lapack_complex_double> subChainParity(pars.d.maxd(),1,L);
   localMpo<lapack_complex_double> greensFunction(pars.d.maxd(),1,L,1,parityQNs);
-  for(int si=0;si<pars.d.maxd();++si){
-    for(int sip=0;sip<pars.d.maxd();++sip){
-      greensFunction.global_access(1,si,sip,0,0)=delta(si,sip)*(delta(si,3)-delta(si,0)+1);
-      greensFunction.global_access(0,si,sip,0,0)=delta(sip,si);
-    }
-  }
-  for(int i=2;i<L;++i){
+  for(int i=0;i<L;++i){
     for(int si=0;si<pars.d.maxd();++si){
       for(int sip=0;sip<pars.d.maxd();++sip){
 	greensFunction.global_access(i,si,sip,0,0)=delta(si,sip);
       }
+    }
+  }
+  for(int si=0;si<pars.d.maxd();++si){
+    for(int sip=0;sip<pars.d.maxd();++sip){
+      greensFunction.global_access(1,si,sip,0,0)=delta(si,sip)*(delta(si,1)+delta(si,3));//bMatrix(sip,si);
+      greensFunction.global_access(0,si,sip,0,0)=delta(si,sip)*(delta(si,1)+delta(si,3));//bMatrix(si,sip);
     }
   }
   for(int i=0;i<L;++i){
@@ -112,13 +112,12 @@ void testSolve(){
   double spinQN;
   sys.TensorNetwork.check=&particleNumber;
   sys.TensorNetwork.checkParity=&subChainParity;
-  //sys.getGroundState();
+  sys.getGroundState();
   cout<<setprecision(21);
   for(int mi=0;mi<nEigens;++mi){
     cout<<"Obtained energy of state "<<mi<<" as: "<<sys.E0[mi]<<endl;
   }
   std::vector<double> gF;
-  greensFunction.setUpSparse();
   sys.TensorNetwork.measureLocalOperators(&greensFunction,gF);
   for(int i=0;i<gF.size();++i){
     std::cout<<gF[i]<<std::endl;

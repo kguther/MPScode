@@ -2,6 +2,7 @@
 #define MPO_CLASS_FOR_LOCAL_OPERATORS
 
 #include "mpo.h"
+#include <iostream>
 
 template<typename T>
 class localMpo: public mpo<T>{
@@ -30,6 +31,8 @@ void localMpo<T>::stepRight(){
       }
     }
   }
+  this->setUpSiteSparse(i);
+  this->setUpSiteSparse(i+1);
   ++i;
 }
 

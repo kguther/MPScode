@@ -28,6 +28,7 @@ void baseMeasurement::initializeBase(mpo<lapack_complex_double> *MPOperatorIn, m
   Dw=(*MPOperator).maxDim();
   D=(*MPState).maxDim();
   Rctr.initialize((*MPOperator).length(),(*MPState).maxDim(),(*MPOperator).maxDim());
+  MPOperator->setUpSparse();
 }
 
 //---------------------------------------------------------------------------------------------------//  
