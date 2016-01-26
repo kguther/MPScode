@@ -147,7 +147,11 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
   if(pars.nQNs || pars.nEigs>1){
     cshift=-100;
   }
+
   networkH.setUpSparse();
+  check->setUpSparse();
+  checkParity->setUpSparse();
+
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
     pCtr.initialize(&networkH,&networkState);
     std::cout<<"Startung normalization\n";
@@ -181,7 +185,9 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
       networkState.normalizeFinal(1);
       //In calcCtrIterRightBase, the second argument has to be a pointer, because it usually is an array. No call-by-reference here.
       pCtr.calcCtrIterRightBase(-1,&expectationValue);
-      convergenceQuality=convergenceCheck();
+      if(iSweep==simPars.nSweeps-1){
+	convergenceQuality=1;//convergenceCheck();
+      }
       if(convergenceQuality<simPars.devAccuracy){
 	nConverged[iEigen]=0;
       }
@@ -386,6 +392,10 @@ void network::calcHSqrExpectationValue(double &ioHsqr){
       }
     }
   }
+  Hsqr.setUpSparse();
+  iterativeMeasurement test;
+  test.initialize(&Hsqr,&networkState);
+  //test.calcCtrFull(-1);
   measure(&Hsqr,ioHsqr);
 }
 

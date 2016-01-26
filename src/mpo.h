@@ -2,6 +2,7 @@
 #define MPO_OPERATOR
 
 #include <vector>
+#include <iostream>
 
 //REMARK: The MPO container consists only of same-sized arrays, even if d is site dependent. In this case, the maximal d has to be used as an input parameter. This creates some unused memory between matrices, but speeds up access to single matrices (which is what we want to do). This works because no matrix operations using external libraries have to be applied to H
 
@@ -26,10 +27,10 @@ class mpo{
   void siSubIndexArrayStart(int *&target, int const i){target=siIndices+i*d*d*Dw*Dw;}
   void sipSubIndexArrayStart(int *&target, int const i){target=sipIndices+i*d*d*Dw*Dw;}
   int numEls(int const i) const {return nNzero[i];}
- private:
+  int *nNzero;
+ protected:
   void setUpSiteSparse(int const i);
   int d, Dw, L;
-  int *nNzero;
   T *Qoperator;
   T* sparseOperator;
   int *siIndices, *sipIndices, *biIndices, *bimIndices;
@@ -74,7 +75,6 @@ void mpo<T>::initialize(int const din, int const Dwin, int const Lin){
   bimIndices=0;
   siIndices=0;
   sipIndices=0;
-  setUpSparse();
 }
 
 template<typename T>
@@ -110,11 +110,13 @@ void mpo<T>::setUpSparse(){
 template<typename T>
 void mpo<T>::setUpSiteSparse(int const i){
   nNzero[i]=0;
+  int const lDwR=locDimR(i);
+  int const lDwL=locDimL(i);
   int threshold=1e-10;
   for(int si=0;si<d;++si){
     for(int sip=0;sip<d;++sip){
-      for(int bi=0;bi<Dw;++bi){
-	for(int bim=0;bim<Dw;++bim){
+      for(int bi=0;bi<lDwR;++bi){
+	for(int bim=0;bim<lDwL;++bim){
 	  if(abs(global_access(i,si,sip,bi,bim))>threshold){
 	    sparseOperator[nNzero[i]+i*Dw*Dw*d*d]=global_access(i,si,sip,bi,bim);
 	    biIndices[nNzero[i]+i*Dw*Dw*d*d]=bi;

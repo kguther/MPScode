@@ -1,6 +1,8 @@
 #include "arrayprocessing.h"
 #include <iostream>
 
+using namespace std;
+
 void upperdiag(int const dim1, int const dim2, lapack_complex_double *arrayin, lapack_complex_double *arrayout, int ldim){
   //for lapack postprocessing: extracts the upper triangular part of some matrix arrayin, pastes it into arrayout and fills up arrayout with zeros
   if(ldim==0){
