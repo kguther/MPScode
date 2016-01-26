@@ -67,7 +67,7 @@ void baseMeasurement::calcCtrIterRightBase(int const i, lapack_complex_double *t
   clock_t curtime;
   Rctr.subContractionStart(sourcePctr,i+1);
   MPState->subMatrixStart(siteMatrixState,i+1);
-  MPOperator->subMatrixStart(siteMatrixH,i+1);
+  MPOperator->sparseSubMatrixStart(siteMatrixH,i+1);
   MPOperator->biSubIndexArrayStart(biIndices,i+1);
   MPOperator->bimSubIndexArrayStart(bimIndices,i+1);
   MPOperator->siSubIndexArrayStart(siIndices,i+1);
@@ -104,7 +104,7 @@ void baseMeasurement::calcCtrIterRightBase(int const i, lapack_complex_double *t
 	bimS=bimIndices[nSparse];
 	siS=siIndices[nSparse];
 	sipS=sipIndices[nSparse];
-	outercontainer.global_access(aimp,bimS,siS,ai)+=siteMatrixH[operatorIndex(siS,sipS,biS,bimS)]*innercontainer.global_access(sipS,biS,ai,aimp);
+	outercontainer.global_access(aimp,bimS,siS,ai)+=siteMatrixH[nSparse]*innercontainer.global_access(sipS,biS,ai,aimp);
       }
     }
   }

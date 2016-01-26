@@ -28,7 +28,7 @@ void iterativeMeasurement::calcCtrIterLeft(int const i){
   int biS, bimS, siS, sipS;
   clock_t curtime;
   MPState->subMatrixStart(siteMatrixState,i-1);
-  MPOperator->subMatrixStart(siteMatrixH,i-1);
+  MPOperator->sparseSubMatrixStart(siteMatrixH,i-1);
   MPOperator->biSubIndexArrayStart(biIndices,i-1);
   MPOperator->bimSubIndexArrayStart(bimIndices,i-1);
   MPOperator->siSubIndexArrayStart(siIndices,i-1);
@@ -69,7 +69,7 @@ void iterativeMeasurement::calcCtrIterLeft(int const i){
 	bimS=bimIndices[nSparse];
 	siS=siIndices[nSparse];
 	sipS=sipIndices[nSparse];
-	outercontainer.global_access(siS,biS,aip,aim)+=siteMatrixH[operatorIndex(siS,sipS,biS,bimS)]*innercontainer.global_access(sipS,bimS,aim,aip);
+	outercontainer.global_access(siS,biS,aip,aim)+=siteMatrixH[nSparse]*innercontainer.global_access(sipS,bimS,aim,aip);
       }
     }
   }
