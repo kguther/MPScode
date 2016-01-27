@@ -17,6 +17,7 @@
 using namespace std;
 
 void testNormalization();
+void sysSolve(int const L, int const N, int const alpha, int const nEigens=1, int const D=1);
 void testSolve();
 void testMatrix();
 
@@ -38,8 +39,8 @@ void testSolve(){
   double eigVal;
   double const mEl=1;
   int const nEigens=1;
-  int const L=40;
-  int const N=40;
+  int const L=30;
+  int const N=30;
   int const D=1;
   int const nQuantumNumbers=2;
   int const minimalD=(2*N>4)?2*N:4;
@@ -62,7 +63,7 @@ void testSolve(){
     exit(1);
   }
   double matEls;
-  int parityQNs[4]={1,1,-1,-1};
+  int parityQNs[4]={1,-1,-1,1};
   mpo<lapack_complex_double> particleNumber(pars.d.maxd(),2,L);
   mpo<lapack_complex_double> subChainParity(pars.d.maxd(),1,L);
   localMpo<lapack_complex_double> greensFunction(pars.d.maxd(),1,L,1,parityQNs);
@@ -117,7 +118,7 @@ void testSolve(){
   for(int mi=0;mi<nEigens;++mi){
     cout<<"Obtained energy of state "<<mi<<" as: "<<sys.E0[mi]<<endl;
   }
-  std::vector<double> gF;
+  std::vector<lapack_complex_double> gF;
   sys.TensorNetwork.measureLocalOperators(&greensFunction,gF);
   for(int i=0;i<gF.size();++i){
     std::cout<<gF[i]<<std::endl;

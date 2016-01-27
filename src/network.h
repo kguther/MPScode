@@ -26,7 +26,7 @@ class network{
   ~network();
   int solve(double *lambda);
   int measure(mpo<lapack_complex_double> *MPOperator, double &expValue);
-  int measureLocalOperators(localMpo<lapack_complex_double> *MPOperator, std::vector<double> &expValue);
+  int measureLocalOperators(localMpo<lapack_complex_double> *MPOperator, std::vector<lapack_complex_double> &expValue);
   void initialize(problemParameters inputpars, simulationParameters inputSimPars);
   void loadNetworkState(mps &source);
   int setSimParameters(simulationParameters newPars);

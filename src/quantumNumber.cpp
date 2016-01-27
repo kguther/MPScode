@@ -220,6 +220,25 @@ int quantumNumber::truncLabel(int const i, int const ai){
 
 //---------------------------------------------------------------------------------------------------//
 
+int quantumNumber::primaryIndex(int const i, int const ai){
+  int const j=i+1;
+  if(j==dimInfo.L() || j==0){
+    return 1;
+  }
+  int minimalLabel, maximalLabel, labelRange;
+  int treshold;
+  minimalLabel=(0>N-2*(dimInfo.L()-j))?0:N-2*(dimInfo.L()-j);
+  maximalLabel=(2*j>N)?N:2*j;
+  labelRange=maximalLabel-minimalLabel;
+  treshold=(2*labelRange>0)?2*labelRange:1;
+  if(ai<treshold){
+    return 1;
+  }
+  return 0;
+}
+
+//---------------------------------------------------------------------------------------------------//
+
 int quantumNumber::integerParity(int const n){
   if(n%2){
     return -1;

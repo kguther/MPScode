@@ -74,6 +74,7 @@ void network::initialize(problemParameters inputpars, simulationParameters input
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
     excitedStateP.storeOrthoState(networkState,iEigen);
   }
+  networkState.setToExactGroundState();
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -180,6 +181,7 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
       networkState.normalizeFinal(1);
       //In calcCtrIterRightBase, the second argument has to be a pointer, because it usually is an array. No call-by-reference here.
       pCtr.calcCtrIterRightBase(-1,&expectationValue);
+      convergenceQuality=1;
       if(iSweep==simPars.nSweeps-1){
 	convergenceQuality=1;//convergenceCheck();
       }
@@ -418,7 +420,7 @@ int network::measure(mpo<lapack_complex_double> *MPOperator, double &lambda){
 
 //---------------------------------------------------------------------------------------------------//
 
-int network::measureLocalOperators(localMpo<lapack_complex_double> *MPOperator, std::vector<double> &lambda){
+int network::measureLocalOperators(localMpo<lapack_complex_double> *MPOperator, std::vector<lapack_complex_double> &lambda){
   localMeasurementSeries currentMeasurement(MPOperator,&networkState);
   currentMeasurement.measureFull(lambda);
   return 0;

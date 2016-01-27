@@ -18,6 +18,7 @@ class quantumNumber{
   int QNLabel(int const i, int const ai);
   int QNLabel(int const si);
   int QNValue() const {return N;}
+  int primaryIndex(int const i, int const ai);
   void setParameterD(int const Dnew);
   int parityType() const {return parityNumber;}
  private:
