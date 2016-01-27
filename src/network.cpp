@@ -67,7 +67,7 @@ void network::initialize(problemParameters inputpars, simulationParameters input
   //Somewhat unelegant way to handle loading of the stored states in the first solve()
   conservedQNs.resize(pars.nQNs);
   for(int iQN=0;iQN<pars.nQNs;++iQN){
-    conservedQNs[iQN].initialize(networkDimInfo,pars.QNconserved[iQN],pars.QNLocalList+iQN*pars.d.maxd(),pars.parityNumber[1],pars.parityNumber[iQN]);
+    conservedQNs[iQN].initialize(networkDimInfo,pars.QNconserved[iQN],pars.QNLocalList+iQN*pars.d.maxd());
   }
   networkState.generate(networkDimInfo,&conservedQNs);
   excitedStateP.initialize(pars.nEigs);
@@ -183,7 +183,7 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
       pCtr.calcCtrIterRightBase(-1,&expectationValue);
       convergenceQuality=1;
       if(iSweep==simPars.nSweeps-1){
-	convergenceQuality=1;//convergenceCheck();
+	convergenceQuality=convergenceCheck();
       }
       if(convergenceQuality<simPars.devAccuracy){
 	nConverged[iEigen]=0;
@@ -500,7 +500,7 @@ int network::checkQN(){
       for(int si=0;si<ld;++si){
 	for(int ai=0;ai<lDR;++ai){
 	  for(int aim=0;aim<lDL;++aim){
-	    if((conservedQNs[iQN].QNLabel(i,ai)-conservedQNs[iQN].QNLabel(i-1,aim)-conservedQNs[iQN].QNLabel(si)) && abs(networkState.global_access(i,si,ai,aim))>0.000001){
+	    if(real((conservedQNs[iQN].QNLabel(i,ai)-conservedQNs[iQN].QNLabel(i-1,aim)-conservedQNs[iQN].QNLabel(si))) && abs(networkState.global_access(i,si,ai,aim))>0.000001){
 	      //if(abs(networkState.global_access(i,si,ai,aim))>0.0001 && (si!=0 || aim!=0)){
 	      std::cout<<"Violation of quantum number constraint at "<<"("<<i<<", "<<si<<", "<<ai<<", "<<aim<<"): "<<networkState.global_access(i,si,ai,aim)<<std::endl;
 	      std::cout<<"QN Labels: "<<conservedQNs[iQN].QNLabel(i,ai)<<", "<<conservedQNs[iQN].QNLabel(i-1,aim)<<", "<<conservedQNs[iQN].QNLabel(si)<<std::endl;

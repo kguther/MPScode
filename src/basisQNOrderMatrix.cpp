@@ -75,24 +75,27 @@ void basisQNOrderMatrix::generateQNIndexTables(){
   for(int i=0;i<dimInfo.L();++i){
     blockStructure(i,0,aiBlockIndicesLP[i],siaimBlockIndicesLP[i]);
     blockStructure(i,1,aimBlockIndicesRP[i],siaiBlockIndicesRP[i]);
-    if(i==0 && 0){
+    if(i==6 && 1){
       // This part is used to test QN labeling schemes for their useability. It prints out the block indices and their QN labels.
       std::cout<<"Right labels:\n";
       for(int aim=0;aim<dimInfo.locDimL(i+1);++aim){
-	std::cout<<aim<<" with label ("<<(*conservedQNs)[0].QNLabel(i,aim)<<","<<(*conservedQNs)[1].QNLabel(i,aim)<<")"<<std::endl;
+	std::cout<<aim<<" with label "<<(*conservedQNs)[0].QNLabel(i,aim)<<std::endl;
       }
-      /*
+      std::cout<<"Left labels:\n";
+      for(int aim=0;aim<dimInfo.locDimL(i);++aim){
+	std::cout<<aim<<" with label "<<(*conservedQNs)[0].QNLabel(i-1,aim)<<std::endl;
+      }
       for(int iBlock=0;iBlock<numBlocksRP(i);++iBlock){
 	std::cout<<"Right indices: "<<std::endl;
 	for(int j=0;j<rBlockSizeRP(i,iBlock);++j){
-	  std::cout<<aiBlockIndexRP(i,iBlock,j)<<" with label ("<<(*conservedQNs)[0].QNLabel(i,aiBlockIndexRP(i,iBlock,j))<<","<<(*conservedQNs)[1].QNLabel(i,aiBlockIndexRP(i,iBlock,j))<<")\t"<<siBlockIndexRP(i,iBlock,j)<<" with label ("<<(*conservedQNs)[0].QNLabel(siBlockIndexRP(i,iBlock,j))<<","<<(*conservedQNs)[1].QNLabel(siBlockIndexRP(i,iBlock,j))<<")"<<std::endl;
+	  std::cout<<aiBlockIndexRP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(i,aiBlockIndexRP(i,iBlock,j))<<"\t"<<siBlockIndexRP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(siBlockIndexRP(i,iBlock,j))<<std::endl;
 	}
 	std::cout<<"Left indices: \n";
 	for(int j=0;j<lBlockSizeRP(i,iBlock);++j){
-	  std::cout<<aimBlockIndexRP(i,iBlock,j)<<" with label ("<<(*conservedQNs)[0].QNLabel(i-1,aimBlockIndexRP(i,iBlock,j))<<","<<(*conservedQNs)[1].QNLabel(i-1,aimBlockIndexRP(i,iBlock,j))<<")"<<std::endl;
+	  std::cout<<aimBlockIndexRP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(i-1,aimBlockIndexRP(i,iBlock,j))<<std::endl;
 	}
       }
-      */
+      
       /*
       for(int iBlock=0;iBlock<numBlocksLP(i);++iBlock){
 	std::cout<<"Left indices: "<<std::endl;
@@ -105,15 +108,6 @@ void basisQNOrderMatrix::generateQNIndexTables(){
 	}
       }
       */
-      /*
-      std::cout<<"aim indices split: \n";
-      for(int j=0;j<aimBlockSizeSplit(i,0);++j){
-	std::cout<<aimBlockIndexSplit(i,0,j);
-	for(int k=0;k<siBlockSizeSplitFixedaim(i,0,j);++k){
-	  std::cout<<"\t"<<siBlockIndexSplitFixedaim(i,0,j,k);
-	}
-	std::cout<<std::endl;
-      }*/
       exit(1);
     }
     cumulativeBlockSize=0;
@@ -139,7 +133,7 @@ int basisQNOrderMatrix::blockStructure(int const i, int const direction, std::ve
   if(nQNs==0){
     return 1;
   }
-  std::vector<int> *qnLabels;
+  std::vector<std::complex<int> > *qnLabels;
   int isNew=1;
   int lDsingle;
   int lDpaired;
@@ -160,7 +154,7 @@ int basisQNOrderMatrix::blockStructure(int const i, int const direction, std::ve
     pre=-1;
   }
   //First, determine the number of blocks and their QNs by counting over the different QNs of the unpaired index.
-  qnLabels=new std::vector<int>[nQNs];
+  qnLabels=new std::vector<std::complex<int> >[nQNs];
   for(int ai=0;ai<lDsingle;++ai){
     isNew=1;
     for(int iBlock=0;iBlock<qnLabels[0].size();++iBlock){
@@ -187,7 +181,7 @@ int basisQNOrderMatrix::blockStructure(int const i, int const direction, std::ve
       for(int iBlock=0;iBlock<numBlocks;++iBlock){
 	matchBlock=1;
 	for(int iQN=0;iQN<nQNs;++iQN){
-	  if(qnCriterium(iQN,i,aim,si,direction,pre)!=qnLabels[iQN][iBlock] || qnLabels[iQN][iBlock]<-2){
+	  if(qnCriterium(iQN,i,aim,si,direction,pre)!=qnLabels[iQN][iBlock] || real(qnLabels[iQN][iBlock])<-2){
 	    matchBlock=0;
 	  }
 	}
@@ -286,9 +280,9 @@ void basisQNOrderMatrix::splitIndexTables(int const i){
 
 //---------------------------------------------------------------------------------------------------//
 
-int basisQNOrderMatrix::qnCriterium(int const iQN, int const i, int const aim, int const si, int const direction, int const pre){
-  if((*conservedQNs)[iQN].parityType()){
-    return (*conservedQNs)[iQN].QNLabel(i-1+direction,aim)*(*conservedQNs)[iQN].QNLabel(si);
-  }
-  return (*conservedQNs)[iQN].QNLabel(i-1+direction,aim)+pre*(*conservedQNs)[iQN].QNLabel(si);
+std::complex<int> basisQNOrderMatrix::qnCriterium(int const iQN, int const i, int const aim, int const si, int const direction, int const pre){
+  std::complex<int> criterium;
+  real(criterium)=real((*conservedQNs)[iQN].QNLabel(i-1+direction,aim))+pre*real((*conservedQNs)[iQN].QNLabel(si));
+  imag(criterium)=imag((*conservedQNs)[iQN].QNLabel(i-1+direction,aim))*imag((*conservedQNs)[iQN].QNLabel(si));
+  return criterium;
 }

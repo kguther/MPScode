@@ -39,25 +39,24 @@ void testSolve(){
   double eigVal;
   double const mEl=1;
   int const nEigens=1;
-  int const L=30;
-  int const N=30;
+  int const L=8;
+  int const N=8;
   int const D=1;
-  int const nQuantumNumbers=2;
+  int const nQuantumNumbers=1;
   int const minimalD=(2*N>4)?2*N:4;
   int const usedD=(D>minimalD)?D:minimalD;
   int hInfo;
-  int QNValue[2]={N,N};
-  int QNList[8]={0,1,1,2,1,1,-1,-1};
+  std::complex<int> QNValue[1]={std::complex<int>(N,1)};
+  std::complex<int> QNList[8]={std::complex<int>(0,1),std::complex<int>(1,1),std::complex<int>(1,-1),std::complex<int>(2,-1)};
   //Due to poor planning, subchain parity QNs work a bit odd. The QNValue has to be the total particle number, while the parityNumber gives the subchain parity, i.e. it is to be set +-1
-  int parityNumber[2]={0,1};
   localHSpaces localHilbertSpaceDims(4);
-  problemParameters pars(localHilbertSpaceDims,L,12,nEigens,nQuantumNumbers,QNValue,QNList,parityNumber);
+  problemParameters pars(localHilbertSpaceDims,L,12,nEigens,nQuantumNumbers,QNValue,QNList);
   //simulationParameters simPars(100,5,2,1e-4,1e-8,1e-9,1e-2);
   //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack
   simulationParameters simPars(usedD,1,1,0,1e-4,1e-8,1e-4);
   Qsystem sys(pars,simPars);
   //The required bond dimension for the perturbed system seems to be greater than that of the unperturbed system
-  hInfo=writeHamiltonian(&sys,1,1);
+  hInfo=writeHamiltonian(&sys,1,1.05);
   if(hInfo){
     std::cout<<"Invalid bond dimension for the construction of H. Terminating process.\n";
     exit(1);

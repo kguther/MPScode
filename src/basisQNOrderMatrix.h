@@ -13,10 +13,12 @@
 // Index functions returning the global MPS index for given block indices are supplied.
 //---------------------------------------------------------------------------------------------------//
 
+
 struct multInt{
   int aim;
   int si;
 };
+
 
 class basisQNOrderMatrix{
  public:
@@ -59,7 +61,7 @@ class basisQNOrderMatrix{
   dimensionTable dimInfo;
   void deleteTables();
   void splitIndexTables(int const i);
-  int qnCriterium(int const iQN, int const i, int const aim, int const si, int const direction, int const pre);
+  std::complex<int> qnCriterium(int const iQN, int const i, int const aim, int const si, int const direction, int const pre);
 };
 
 #endif

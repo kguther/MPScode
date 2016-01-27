@@ -120,7 +120,7 @@ void optHMatrix::projectQN(arcomplex<double> *v){
     for(int ai=0;ai<lDR;++ai){
       for(int aim=0;aim<lDL;++aim){
 	for(int iQN=0;iQN<conservedQNs->size();++iQN){
-	  if((*conservedQNs)[iQN].qnConstraint(i,si,ai,aim) || (*conservedQNs)[0].QNLabel(i,ai)<-2){
+	  if((*conservedQNs)[iQN].qnConstraint(i,si,ai,aim) || real((*conservedQNs)[0].QNLabel(i,ai))<-2){
 	    v[vecIndex(si,ai,aim)]=0;
 	  }
 	  else{

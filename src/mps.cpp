@@ -121,10 +121,10 @@ lapack_complex_double mps::exactGroundStateEntry(int const i, int const si, int 
   if(si==0 || si==2){
     return 1.0;
   }
-  if((*conservedQNs)[1].QNLabel(i-1,aim)==1){
-    return 1.0;
+  if(imag((*conservedQNs)[0].QNLabel(i-1,aim))==-1){
+    return -1.0;
   }
-  return -1.0;
+  return 1.0;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -396,7 +396,7 @@ void mps::restoreQN(int const i){
     for(int si=0;si<ld;++si){
       for(int ai=0;ai<lDR;++ai){
 	for(int aim=0;aim<lDL;++aim){
-	  if(((*conservedQNs)[iQN].QNLabel(i,ai)-(*conservedQNs)[iQN].QNLabel(i-1,aim)-(*conservedQNs)[iQN].QNLabel(si)) && abs(global_access(i,si,ai,aim))>0.000001){
+	  if(real(((*conservedQNs)[iQN].QNLabel(i,ai)-(*conservedQNs)[iQN].QNLabel(i-1,aim)-(*conservedQNs)[iQN].QNLabel(si))) && abs(global_access(i,si,ai,aim))>0.000001){
 	    global_access(i,si,ai,aim)=0;
 	  }
 	}

@@ -1,6 +1,8 @@
 #ifndef QUANTUM_NUMBER_INFO
 #define QUANTUM_NUMBER_INFO
 
+#include <vector>
+#include <complex>
 #include "dimensionTable.h"
 
 //-------------------------------------------------------------------------------------------//
@@ -12,33 +14,26 @@ class quantumNumber{
  public:
   quantumNumber();
   ~quantumNumber();
-  void initialize(dimensionTable &dimInfoin, int const Nin, int *QNlocin, int const Pin=1,  int mult=0);
+  void initialize(dimensionTable &dimInfoin, std::complex<int> const Nin, std::complex<int> *QNlocin);
   int qnConstraint(int const i, int const si, int const ai, int const aim);
-  int qnCriterium(int const i, int const si, int const ai, int const aim);
-  int QNLabel(int const i, int const ai);
-  int QNLabel(int const si);
-  int QNValue() const {return N;}
+  std::complex<int> QNLabel(int const i, int const ai);
+  std::complex<int> QNLabel(int const si);
+  std::complex<int> QNValue() const {return N;}
   int primaryIndex(int const i, int const ai);
   void setParameterD(int const Dnew);
-  int parityType() const {return parityNumber;}
  private:
   dimensionTable dimInfo;
-  int *leftLabel;
-  int N;
-  int iLRSwap;
-  int QNlocMax;
-  int QNlocMin;
-  int parityNumber;
-  int auxiliaryParityNumber;
-  int *QNloc;
+  std::complex<int> *leftLabel;
+  std::vector<std::vector<int> > primaryIndices;
+  std::complex<int> N;
+  std::complex<int> *QNloc;
   void initializeLabelList();
-  int QNLowerCheck(int i, int ai);
-  int QNUpperCheck(int i, int ai);
-  int exactLabel(int const i, int const ai);
-  int truncLabel(int const i, int const ai);
-  int groupOperation(int const label, int const labelp);
-  int groupInverse(int const label);
+  void initializeLabelList(int const i);
+  void gatherBlocks(int const i, std::vector<std::vector<int> > &ai, std::vector<std::vector<int> > &si);
+  std::complex<int> exactLabel(int const i, int const ai);
+  std::complex<int> truncLabel(int const i, int const ai);
   int integerParity(int const n);
+  std::complex<int> groupOperation(std::complex<int> a, std::complex<int> b);
 };
 
 #endif
