@@ -75,7 +75,7 @@ void basisQNOrderMatrix::generateQNIndexTables(){
   for(int i=0;i<dimInfo.L();++i){
     blockStructure(i,0,aiBlockIndicesLP[i],siaimBlockIndicesLP[i]);
     blockStructure(i,1,aimBlockIndicesRP[i],siaiBlockIndicesRP[i]);
-    if(i==6 && 1){
+    if(i==1 && 0){
       // This part is used to test QN labeling schemes for their useability. It prints out the block indices and their QN labels.
       std::cout<<"Right labels:\n";
       for(int aim=0;aim<dimInfo.locDimL(i+1);++aim){
@@ -85,6 +85,7 @@ void basisQNOrderMatrix::generateQNIndexTables(){
       for(int aim=0;aim<dimInfo.locDimL(i);++aim){
 	std::cout<<aim<<" with label "<<(*conservedQNs)[0].QNLabel(i-1,aim)<<std::endl;
       }
+      /*
       for(int iBlock=0;iBlock<numBlocksRP(i);++iBlock){
 	std::cout<<"Right indices: "<<std::endl;
 	for(int j=0;j<rBlockSizeRP(i,iBlock);++j){
@@ -95,8 +96,7 @@ void basisQNOrderMatrix::generateQNIndexTables(){
 	  std::cout<<aimBlockIndexRP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(i-1,aimBlockIndexRP(i,iBlock,j))<<std::endl;
 	}
       }
-      
-      /*
+      */
       for(int iBlock=0;iBlock<numBlocksLP(i);++iBlock){
 	std::cout<<"Left indices: "<<std::endl;
 	for(int j=0;j<lBlockSizeLP(i,iBlock);++j){
@@ -107,7 +107,6 @@ void basisQNOrderMatrix::generateQNIndexTables(){
 	  std::cout<<aiBlockIndexLP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(i,aiBlockIndexLP(i,iBlock,j))<<std::endl;
 	}
       }
-      */
       exit(1);
     }
     cumulativeBlockSize=0;

@@ -24,16 +24,23 @@ class quantumNumber{
  private:
   dimensionTable dimInfo;
   std::complex<int> *leftLabel;
+  std::complex<int> *rightLabel;
+  std::complex<int> *indexLabel;
   std::vector<std::vector<int> > primaryIndices;
   std::complex<int> N;
   std::complex<int> *QNloc;
   void initializeLabelList();
-  void initializeLabelList(int const i);
-  void gatherBlocks(int const i, std::vector<std::vector<int> > &ai, std::vector<std::vector<int> > &si);
+  void initializeLabelListLP();
+  void initializeLabelListRP();
+  int initializeLabelList(int const i, int const direction=-1);
+  void gatherBlocks(int const i, std::vector<std::vector<int> > &ai, std::vector<std::complex<int> > &qnLabels, int const direction);
   std::complex<int> exactLabel(int const i, int const ai);
   std::complex<int> truncLabel(int const i, int const ai);
+  std::complex<int> QNLabelLP(int const i, int const ai);
+  std::complex<int> QNLabelRP(int const i, int const ai);
+  std::complex<int> pre(std::complex<int> a, int const direction);
   int integerParity(int const n);
-  std::complex<int> groupOperation(std::complex<int> a, std::complex<int> b);
+  std::complex<int> groupOperation(std::complex<int> a, std::complex<int> b, int const pre=1);
 };
 
 #endif
