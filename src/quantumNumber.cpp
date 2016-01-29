@@ -66,9 +66,16 @@ void quantumNumber::setParameterD(int const Dnew){
 }
 
 //---------------------------------------------------------------------------------------------------//
-// For our specific system, we use a dedicated minimal labeling, which is hardcoded. Might be improved
-// later on, it might even be neccessary to do so, but for now, it is enough. Plus, since it is minimal,
-// the number of nonzero matrix elements of the MPO matrices is bound by 4*D, which is really great.
+// This is the new, dynamic labeling scheme, where first, starting with the vacuum labels for the 
+// leftmost index, the allowed blocks of the next site are constructed - these are those blocks
+// that allow for fullfilling the QN constraints - for all sites from the left. 
+// This yields an index list, called leftLabel. The same is now done from the right, starting with
+// the final QN as initial labels, such that for each site, a set of indices that are reachable from
+// the right side is generated, called rightLabel. 
+// Now, for each site, those labels are picked that appear in both the left and the right labeling. 
+// These are distributed to the bond indices such that none appears more often than in the either left
+// or right labeling scheme, guaranteeing the normalizability of blocks. Also, each one is used at least
+// once if the bond dimensions is at least equal to the number of labels.
 //---------------------------------------------------------------------------------------------------//
 
 void quantumNumber::initializeLabelList(){
@@ -97,6 +104,11 @@ void quantumNumber::initializeLabelListRP(){
 }
 
 //---------------------------------------------------------------------------------------------------//
+// This is the most sophisticated QN labeling scheme I came up with. It guarantees for maximal
+// usage of indices and does not show unnormalizable blocks. Also, all required labels appear (given
+// a bond dimension of at least the maximal number of required labels) and no label appears more often
+// than in the exact labeling. 
+//---------------------------------------------------------------------------------------------------//
 
 int quantumNumber::initializeLabelList(int const i, int const direction){
   //direction==1 is RP, direction==0 is LP and -1 is final index
@@ -105,10 +117,10 @@ int quantumNumber::initializeLabelList(int const i, int const direction){
   int validBlock, cBlock, allowedBlockSize;
   std::complex<int> *cLabel;
   std::complex<int> label;
-  std::vector<std::vector<int> > aimIndices;
-  std::vector<std::vector<int> > aiIndices;
-  std::vector<std::vector<int> > aiIndicesReordered;
-  std::vector<std::vector<int> > aimIndicesReordered;
+  std::vector<int> aimIndices;
+  std::vector<int> aiIndices;
+  std::vector<int> aiIndicesReordered;
+  std::vector<int> aimIndicesReordered;
   std::vector<std::complex<int> > qnLabels;
   std::vector<std::complex<int> > qnLabelsRP;
   std::vector<std::complex<int> > qnLabelsLP;
@@ -129,9 +141,11 @@ int quantumNumber::initializeLabelList(int const i, int const direction){
   }
   if(i!=0 && i!=dimInfo.L()){
     if(direction!=-1){
+      //First, get the possible indices reachable from those of the last site
       gatherBlocks(i-1+direction,aimIndices,qnLabels,direction);
     }
     else{
+      //After the left and right label lists have been generated, get both, the list of indices reachable from right and from left and take each one that appears in both
       gatherBlocks(i-1,aimIndices,qnLabelsLP,0);
       gatherBlocks(i,aiIndices,qnLabelsRP,1);
       qnLabels.clear();
@@ -140,6 +154,7 @@ int quantumNumber::initializeLabelList(int const i, int const direction){
       for(int iLP=0;iLP<qnLabelsLP.size();++iLP){
 	for(int iRP=0;iRP<qnLabelsRP.size();++iRP){
 	  if(qnLabelsRP[iRP]==qnLabelsLP[iLP]){
+	    //In this scheme, the labels might be reordered, therefore, the blocksizes have to be reordered, too
 	    aimIndicesReordered.push_back(aimIndices[iLP]);
 	    aiIndicesReordered.push_back(aiIndices[iRP]);
 	    qnLabels.push_back(qnLabelsLP[iLP]);
@@ -166,10 +181,10 @@ int quantumNumber::initializeLabelList(int const i, int const direction){
       }
       if(validBlock){
 	if(direction!=-1){
-	  allowedBlockSize=aimIndices[iBlock].size();
+	  allowedBlockSize=aimIndices[iBlock];
 	}
 	if(direction==-1){
-	  allowedBlockSize=(aimIndicesReordered[iBlock].size()>aiIndicesReordered[iBlock].size())?aiIndicesReordered[iBlock].size():aimIndicesReordered[iBlock].size();
+	  allowedBlockSize=(aimIndicesReordered[iBlock]>aiIndicesReordered[iBlock])?aiIndicesReordered[iBlock]:aimIndicesReordered[iBlock];
 	}
 	validQNLabels.push_back(qnLabels[iBlock]);
 	maxBlockSizes.push_back(allowedBlockSize);
@@ -215,93 +230,12 @@ int quantumNumber::initializeLabelList(int const i, int const direction){
 }
 
 //---------------------------------------------------------------------------------------------------//
-// The next function defines the QN Labels in the following way: Every particle number that allows for
-// reaching the left and rigth vacuum QNs appears twice, once with each parity. Only the maximal and
-// minimal particle numbers at a site that are possible appear once, if they have the right parity
-// and not at all if they have the wrong parity.
-//---------------------------------------------------------------------------------------------------//
 
-std::complex<int> quantumNumber::truncLabel(int const i, int const ai){
-  /*
-  int minimalLabel, maximalLabel, labelRange;
-  int aux, treshold, deltaTreshold;
-  minimalLabel=(0>real(N)-2*(dimInfo.L()-i))?0:real(N)-2*(dimInfo.L()-i);
-  maximalLabel=(2*i>real(N))?real(N):2*i;
-  labelRange=maximalLabel-minimalLabel;
-  treshold=(2*labelRange>0)?2*labelRange:1;
-  imag(label)=integerParity(ai);
-  if(i==dimInfo.L()){
-    imag(label)=imag(N);
-  }
-  else{
-    if(ai==0){
-      if(minimalLabel==0){
-	imag(label)=1;
-      }
-      else{
-	imag(label)=integerParity(dimInfo.L()-i)*imag(N);
-      }
-    }
-    else{
-      if(ai==2*labelRange-1){
-	if(maximalLabel==2*i){
-	  imag(label)=integerParity(i);
-	}
-	else{
-	  imag(label)=imag(N);
-	}
-      }
-    }
-  }
-  if(ai==0){
-    std::cout<<treshold*2-2<<std::endl;
-  }
-  aux=ai;
-  real(label)=-100;
-  if(aux<treshold){
-    if(ai==0 && 0==real(N)-2*(dimInfo.L()-i) && integerParity(dimInfo.L()-i)!=imag(N)){
-      real(label)=-100;
-    }
-    else{
-      if(ai==treshold-1 && 2*i==real(N) && integerParity(i)!=imag(N)){
-	real(label)=-100;
-      }
-      else{
-	real(label)=(aux+1)/2+minimalLabel;
-      }
-    }
-  }
-  else{
-  deltaTreshold=2;
-  while(deltaTreshold==2){
-    aux-=treshold;
-    treshold-=deltaTreshold;
-    ++minimalLabel;
-    if(treshold>0 && aux<treshold){
-      real(label)=aux/2+minimalLabel;
-    }
-    if(deltaTreshold==2){
-      deltaTreshold=4;
-    }
-  }
-  }
-  if(i==dimInfo.L()){
-    real(label)=real(N);
-  }
-  if(i==0){
-    real(label)=0;
-  }
-  return label;
-  */
-  return 0;
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-void quantumNumber::gatherBlocks(int const i, std::vector<std::vector<int> > &aimIndices, std::vector<std::complex<int> > &qnLabels, int const direction){
+void quantumNumber::gatherBlocks(int const i, std::vector<int> &aimIndices, std::vector<std::complex<int> > &qnLabels, int const direction){
   //direction==1 is RP, direction==0 is LP
   int isNew, matchBlock;
   int pre, lD;
+  std::vector<std::vector<int> > aimIndexTable;
   qnLabels.clear();
   aimIndices.clear();
   std::complex<int> (quantumNumber::*labelFunction)(int const i, int const ai);
@@ -329,14 +263,18 @@ void quantumNumber::gatherBlocks(int const i, std::vector<std::vector<int> > &ai
     }
   }
   aimIndices.resize(qnLabels.size());
+  aimIndexTable.resize(qnLabels.size());
   for(int si=0;si<dimInfo.locd(i);++si){
     for(int aim=0;aim<lD;++aim){
       for(int iBlock=0;iBlock<qnLabels.size();++iBlock){
 	if((groupOperation((this->*labelFunction)(i-1+direction,aim),QNLabel(si),pre)==qnLabels[iBlock] && real((this->*labelFunction)(i-1+direction,aim))>-2)){
-	  aimIndices[iBlock].push_back(aim);
+	  aimIndexTable[iBlock].push_back(aim);
 	}
       }
     }
+  }
+  for(int iBlock=0;iBlock<qnLabels.size();++iBlock){
+    aimIndices[iBlock]=aimIndexTable[iBlock].size();
   }
 }
 
@@ -374,6 +312,7 @@ int quantumNumber::qnConstraint(int const i, int const si, int const ai, int con
 //---------------------------------------------------------------------------------------------------//
 
 std::complex<int> quantumNumber::exactLabel(int const i, int const ai){
+  //This was the labeling scheme (up to permuations) if one would not truncate the MPS site matrices at all
   int aiReduced=ai;
   std::complex<int> QNSum=0;
   int sigma;
@@ -385,7 +324,10 @@ std::complex<int> quantumNumber::exactLabel(int const i, int const ai){
   return QNSum;
 }
 
+//---------------------------------------------------------------------------------------------------//
+
 std::complex<int> quantumNumber::groupOperation(std::complex<int> a, std::complex<int> b, int const pre){
+  //Defines the real part as the U(1) part and the imaginary as the Z_2 part of a quantum number
   std::complex<int> result;
   real(result)=real(a)+pre*real(b);
   imag(result)=imag(a)*imag(b);

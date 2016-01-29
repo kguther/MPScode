@@ -7,11 +7,19 @@ iterativeMeasurement::iterativeMeasurement(){
 
 //---------------------------------------------------------------------------------------------------//
 
+iterativeMeasurement::iterativeMeasurement(mpo<lapack_complex_double> *MPOperatorIn, mps *MPStateIn):
+  baseMeasurement(MPOperatorIn,MPStateIn)
+{
+  Lctr.initialize(MPOperator->length(),MPState->maxDim(),MPOperator->maxDim());
+}
+
+//---------------------------------------------------------------------------------------------------//
+
 void iterativeMeasurement::initialize(mpo<lapack_complex_double> *MPOperatorIn, mps *MPStateIn){
   MPOperator=MPOperatorIn;
   MPState=MPStateIn;
   initializeBase(MPOperatorIn,MPStateIn);
-  Lctr.initialize((*MPOperator).length(),(*MPState).maxDim(),(*MPOperator).maxDim());
+  Lctr.initialize(MPOperator->length(),MPState->maxDim(),MPOperator->maxDim());
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -20,8 +28,14 @@ void iterativeMeasurement::initialize(mpo<lapack_complex_double> *MPOperatorIn, 
 //---------------------------------------------------------------------------------------------------//
 
 void iterativeMeasurement::calcCtrIterLeft(int const i){
+  lapack_complex_double *targetPctr;
+  Lctr.subContractionStart(targetPctr,i);
+  calcCtrIterLeft(i,targetPctr);
+}
+
+void iterativeMeasurement::calcCtrIterLeft(int const i, lapack_complex_double *targetPctr){
   lapack_complex_double simpleContainer;
-  lapack_complex_double *sourcePctr, *targetPctr;
+  lapack_complex_double *sourcePctr;
   lapack_complex_double *siteMatrixState, *siteMatrixH;
   int *biIndices, *bimIndices, *siIndices, *sipIndices;
   int const sparseSize=MPOperator->numEls(i-1);
@@ -34,7 +48,6 @@ void iterativeMeasurement::calcCtrIterLeft(int const i){
   MPOperator->siSubIndexArrayStart(siIndices,i-1);
   MPOperator->sipSubIndexArrayStart(sipIndices,i-1);
   Lctr.subContractionStart(sourcePctr,i-1);
-  Lctr.subContractionStart(targetPctr,i);
   getLocalDimensions(i-1);
   //container arrays to significantly reduce computational effort by storing intermediate results
   tmpContainer<lapack_complex_double> innercontainer(ld,lDwL,lDL,lDR);

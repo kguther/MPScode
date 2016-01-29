@@ -6,10 +6,11 @@
 #include "mkl_complex_defined.h"
 
 
-blockHMatrix::blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, arcomplex<double> *Hin, dimensionTable &dimInfo, int Dwin, int iIn, basisQNOrderMatrix *indexTablein, projector *excitedStateP, double shift, std::vector<quantumNumber> *conservedQNsin):
+blockHMatrix::blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcomplex<double> > *Hin, dimensionTable &dimInfo, int Dwin, int iIn, basisQNOrderMatrix *indexTablein, projector *excitedStateP, double shift, std::vector<quantumNumber> *conservedQNsin):
   optHMatrix(R,L,Hin,dimInfo,Dwin,iIn,excitedStateP,shift,conservedQNsin),
   indexTable(indexTablein),
-  conservedQNsB(conservedQNsin)
+  conservedQNsB(conservedQNsin),
+  HMPO(Hin)
 {
   int cBlockSize;
   int numBlocks;
@@ -26,7 +27,15 @@ blockHMatrix::blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, arcomplex
   }
   compressedVector=new arcomplex<double>[dimension];
   std::cout<<"Current eigenvalue problem dimension: "<<dimension<<std::endl;
-  buildSparseHBlocked();
+  if(lDR<350 && lDL<350){
+    explicitMv=1;
+  }
+  else{
+    explicitMv=0;
+  }
+  if(explicitMv){
+    buildSparseHBlocked();
+  }
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -43,21 +52,30 @@ blockHMatrix::~blockHMatrix(){
 //---------------------------------------------------------------------------------------------------//
 
 void blockHMatrix::MultMvBlocked(arcomplex<double> *v, arcomplex<double> *w){
-  lapack_complex_double *proxy=new lapack_complex_double[dimension];
-  excitedStateProject(v);
-  arraycpy(dimension,v,proxy);
-  arcomplex<double> simpleContainer;
-  for(int m=0;m<dimension;++m){
-    simpleContainer=0;
-    for(int spIndex=rowPtr[m];spIndex<rowPtr[m+1];++spIndex){
-      simpleContainer+=sparseMatrix[spIndex]*proxy[colIndices[spIndex]];
+  if(explicitMv){
+    lapack_complex_double *proxy=new lapack_complex_double[dimension];
+    excitedStateProject(v);
+    arraycpy(dimension,v,proxy);
+    arcomplex<double> simpleContainer;
+    for(int m=0;m<dimension;++m){
+      simpleContainer=0;
+      for(int spIndex=rowPtr[m];spIndex<rowPtr[m+1];++spIndex){
+	simpleContainer+=sparseMatrix[spIndex]*proxy[colIndices[spIndex]];
+      }
+      w[m]=simpleContainer+shift*proxy[m];
     }
-    w[m]=simpleContainer+shift*proxy[m];
+    excitedStateProject(w);
+    delete[] proxy;
   }
-  excitedStateProject(w);
-  delete[] proxy;
+  else{
+    MultMvBlockedLP(v,w);
+  }
 }
 
+//---------------------------------------------------------------------------------------------------//
+// The previous function is very efficient for low bodn dimension, but scales really poorly. Therefore,
+// for higher bond dimensions (as they are required for excited state search), we return to the cached
+// version of matrix vector multiplication which scales with D^3.
 //---------------------------------------------------------------------------------------------------//
 
 void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
@@ -66,66 +84,77 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
   arcomplex<double> simpleContainer;
   int const numBlocks=indexTable->numBlocksLP(i);
   int const aimBlockSize=indexTable->aimBlockSizeSplit(i,0);
+  int const sparseSize=HMPO->numEls(i);
   int lBlockSize, rBlockSize, siBlockSize, rBlockSizep;
+  int *biIndices, *siIndices, *bimIndices, *sipIndices;
+  HMPO->biSubIndexArrayStart(biIndices,i);
+  HMPO->siSubIndexArrayStart(siIndices,i);
+  HMPO->bimSubIndexArrayStart(bimIndices,i);
+  HMPO->sipSubIndexArrayStart(sipIndices,i);
+  int siB, aiB, aimB, sipS;
   clock_t curtime;
   curtime=clock();
-  //excitedStateProject(v,i);
-  for(int bi=0;bi<lDwR;++bi){
-    for(int iBlock=0;iBlock<numBlocks;++iBlock){
-      for(int iBlockp=0;iBlockp<numBlocks;++iBlockp){
-	lBlockSize=indexTable->lBlockSizeLP(i,iBlock);
-	rBlockSizep=indexTable->rBlockSizeLP(i,iBlockp);
-	rBlockSize=indexTable->rBlockSizeLP(i,iBlock);
-	for(int k=0;k<lBlockSize;++k){
-	  for(int jp=0;jp<rBlockSizep;++jp){
-	    simpleContainer=0;
-	    for(int j=0;j<rBlockSize;++j){
-	      simpleContainer+=Rctr[ctrIndex(indexTable->aiBlockIndexLP(i,iBlockp,jp),bi,indexTable->aiBlockIndexLP(i,iBlock,j))]*v[vecBlockIndexLP(iBlock,j,k)];
-	    }
-	    innerContainer.global_access(indexTable->siBlockIndexLP(i,iBlock,k),indexTable->aimBlockIndexLP(i,iBlock,k),indexTable->aiBlockIndexLP(i,iBlockp,jp),bi)=simpleContainer;
+  excitedStateProject(v);
+  for(int iBlock=0;iBlock<numBlocks;++iBlock){
+    lBlockSize=indexTable->lBlockSizeLP(i,iBlock);
+    rBlockSize=indexTable->rBlockSizeLP(i,iBlock);
+    for(int k=0;k<lBlockSize;++k){
+      siB=indexTable->siBlockIndexLP(i,iBlock,k);
+      aimB=indexTable->aimBlockIndexLP(i,iBlock,k);
+      for(int aip=0;aip<lDR;++aip){
+	for(int bi=0;bi<lDwR;++bi){
+	  simpleContainer=0;
+	  for(int j=0;j<rBlockSize;++j){
+	    simpleContainer+=Rctr[ctrIndex(aip,bi,indexTable->aiBlockIndexLP(i,iBlock,j))]*v[vecBlockIndexLP(iBlock,j,k)];
 	  }
+	  innerContainer.global_access(siB,aimB,aip,bi)=simpleContainer;
 	}
       }
     }
   }
-  for(int bim=0;bim<lDwL;++bim){
-    for(int si=0;si<d;++si){
-      for(int iBlock=0;iBlock<numBlocks;++iBlock){
-	for(int iBlockp=0;iBlockp<numBlocks;++iBlockp){
-	  lBlockSize=indexTable->lBlockSizeLP(i,iBlock);
-	  rBlockSize=indexTable->rBlockSizeLP(i,iBlockp);
-	  for(int kp=0;kp<aimBlockSize;++kp){
-	    siBlockSize=indexTable->siBlockSizeSplitFixedaim(i,iBlock,kp);
-	    for(int jp=0;jp<rBlockSize;++jp){
-	      simpleContainer=0;
-	      for(int k=0;k<siBlockSize;++k){
-		for(int bi=0;bi<lDwR;++bi){
-		  simpleContainer+=H[hIndex(si,indexTable->siBlockIndexSplitFixedaim(i,iBlock,kp,k),bi,bim)]*innerContainer.global_access(indexTable->siBlockIndexSplitFixedaim(i,iBlock,kp,k),indexTable->aimBlockIndexSplit(i,iBlock,kp),indexTable->aiBlockIndexLP(i,iBlockp,jp),bi);
-		}
-	      }
-	      outerContainer.global_access(si,bim,indexTable->aiBlockIndexLP(i,iBlockp,jp),indexTable->aimBlockIndexSplit(i,iBlock,kp))=simpleContainer;
-	    }
-	  }
+  for(int si=0;si<d;++si){
+    for(int bim=0;bim<lDwL;++bim){
+      for(int ai=0;ai<lDR;++ai){
+	for(int aim=0;aim<lDL;++aim){
+	  outerContainer.global_access(si,bim,ai,aim)=0;
 	}
       }
     }
-  }	 
+  }
+  for(int ai=0;ai<lDR;++ai){
+    for(int iBlock=0;iBlock<numBlocks;++iBlock){
+      lBlockSize=indexTable->lBlockSizeLP(i,iBlock);
+      for(int k=0;k<lBlockSize;++k){
+	siB=indexTable->siBlockIndexLP(i,iBlock,k);
+	aimB=indexTable->aimBlockIndexLP(i,iBlock,k);
+	for(int nSparse=0;nSparse<sparseSize;++nSparse){
+	  sipS=sipIndices[nSparse];
+	  if(sipS==siB){
+	    outerContainer.global_access(siIndices[nSparse],bimIndices[nSparse],ai,aimB)+=H[hIndex(siIndices[nSparse],sipS,biIndices[nSparse],bimIndices[nSparse])]*innerContainer.global_access(sipS,aimB,ai,biIndices[nSparse]);
+	  }
+	}
+      }
+    }	 
+  }
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
     lBlockSize=indexTable->lBlockSizeLP(i,iBlock);
     rBlockSize=indexTable->rBlockSizeLP(i,iBlock);
-    for(int j=0;j<rBlockSize;++j){
-      for(int k=0;k<lBlockSize;++k){
+    for(int k=0;k<lBlockSize;++k){
+      siB=indexTable->siBlockIndexLP(i,iBlock,k);
+      aimB=indexTable->aimBlockIndexLP(i,iBlock,k);
+      for(int j=0;j<rBlockSize;++j){
+	aiB=indexTable->aiBlockIndexLP(i,iBlock,j);
 	simpleContainer=0;
 	for(int bim=0;bim<lDwL;++bim){
-	  for(int kp=0;kp<aimBlockSize;++kp){
-	    simpleContainer+=Lctr[ctrIndex(indexTable->aimBlockIndexLP(i,iBlock,k),bim,indexTable->aimBlockIndexSplit(i,iBlock,kp))]*outerContainer.global_access(indexTable->siBlockIndexLP(i,iBlock,k),bim,indexTable->aiBlockIndexLP(i,iBlock,j),indexTable->aimBlockIndexSplit(i,iBlock,kp));
+	  for(int aim=0;aim<lDL;++aim){
+	    simpleContainer+=Lctr[ctrIndex(aimB,bim,aim)]*outerContainer.global_access(siB,bim,aiB,aim);
 	  }
 	}
 	w[vecBlockIndexLP(iBlock,j,k)]=simpleContainer+shift*v[vecBlockIndexLP(iBlock,j,k)];
       }
     }
   }
-  //excitedStateProject(w,i);
+  excitedStateProject(w);
   if(0){
   curtime=clock()-curtime;
   std::cout<<"Matrix multiplication took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
@@ -137,6 +166,7 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
 
 void blockHMatrix::buildSparseHBlocked(){
   clock_t curtime;
+  int siB, aiB, aimB, aimpB, sipB;
   curtime=clock();
   double treshold=1e-12;
   arcomplex<double> currentEntry;
@@ -149,14 +179,19 @@ void blockHMatrix::buildSparseHBlocked(){
     lBlockSize=indexTable->lBlockSizeLP(i,iBlock);
     rBlockSize=indexTable->rBlockSizeLP(i,iBlock);
     for(int j=0;j<rBlockSize;++j){
+      aiB=indexTable->aiBlockIndexLP(i,iBlock,j);
       for(int k=0;k<lBlockSize;++k){
+	siB=indexTable->siBlockIndexLP(i,iBlock,k);
+	aimB=indexTable->aimBlockIndexLP(i,iBlock,k);
 	rowPtr.push_back(sparseMatrix.size());
 	for(int iBlockp=0;iBlockp<numBlocks;++iBlockp){
 	  lBlockSizep=indexTable->lBlockSizeLP(i,iBlockp);
 	  rBlockSizep=indexTable->rBlockSizeLP(i,iBlockp);
-	  for(int jp=0;jp<rBlockSizep;++jp){
-	    for(int kp=0;kp<lBlockSizep;++kp){
-	      currentEntry=HEffEntry(indexTable->siBlockIndexLP(i,iBlock,k),indexTable->aimBlockIndexLP(i,iBlock,k),indexTable->aiBlockIndexLP(i,iBlock,j),indexTable->siBlockIndexLP(i,iBlockp,kp),indexTable->aimBlockIndexLP(i,iBlockp,kp),indexTable->aiBlockIndexLP(i,iBlockp,jp));
+	  for(int kp=0;kp<lBlockSizep;++kp){
+	    sipB=indexTable->siBlockIndexLP(i,iBlockp,kp);
+	    aimpB=indexTable->aimBlockIndexLP(i,iBlockp,kp);
+	    for(int jp=0;jp<rBlockSizep;++jp){
+	      currentEntry=HEffEntry(siB,aimB,aiB,sipB,aimpB,indexTable->aiBlockIndexLP(i,iBlockp,jp));
 	      if(abs(currentEntry)>treshold){
 		sparseMatrix.push_back(currentEntry);
 		colIndices.push_back(vecBlockIndexLP(iBlockp,jp,kp));
@@ -168,10 +203,8 @@ void blockHMatrix::buildSparseHBlocked(){
     }
   }
   rowPtr.push_back(sparseMatrix.size());
-  /*
   curtime=clock()-curtime;
   std::cout<<"Matrix construction took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
-  */
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -203,8 +236,11 @@ arcomplex<double> blockHMatrix::HEffEntry(int const si, int const aim, int const
 void blockHMatrix::excitedStateProject(arcomplex<double> *v){
   if(P->nEigen()){
     arcomplex<double> *vExpanded=new arcomplex<double>[d*lDR*lDL];
+    for(int m=0;m<d*lDR*lDL;++m){
+      vExpanded[m]=0;
+    }
     storageExpand(v,vExpanded);
-    P->project(v,i);
+    P->project(vExpanded,i);
     storageCompress(vExpanded,v);
     delete[] vExpanded;
   }

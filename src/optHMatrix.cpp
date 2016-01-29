@@ -5,16 +5,16 @@
 #include "optHMatrix.h"
 #include "tmpContainer.h"
 
-optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, arcomplex<double> *Hin, dimensionTable &dimInfo, int Dwin, int iIn, projector *excitedStateP, double shiftin, std::vector<quantumNumber> *conservedQNsin):
+optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, mpo<arcomplex<double> > *Hin, dimensionTable &dimInfo, int Dwin, int iIn, projector *excitedStateP, double shiftin, std::vector<quantumNumber> *conservedQNsin):
   Rctr(Rin),
   Lctr(Lin),
-  H(Hin),
   Dw(Dwin),
   i(iIn),
   shift(shiftin),
   P(excitedStateP),
   conservedQNs(conservedQNsin)
 {
+  Hin->subMatrixStart(H,i);
   D=dimInfo.D();
   lDwL=Dw;
   lDwR=Dw;

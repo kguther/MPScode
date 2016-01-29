@@ -14,7 +14,7 @@
 
 class blockHMatrix: public optHMatrix{
  public: 
-  blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, arcomplex<double> *Hin, dimensionTable &dimInfo, int Dwin, int iIn, basisQNOrderMatrix *indexTable, projector *excitedStateP, double shift, std::vector<quantumNumber> *conservedQNsin);
+  blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcomplex<double> > *Hin, dimensionTable &dimInfo, int Dwin, int iIn, basisQNOrderMatrix *indexTable, projector *excitedStateP, double shift, std::vector<quantumNumber> *conservedQNsin);
   ~blockHMatrix();
   void MultMvBlocked(arcomplex<double> *v, arcomplex<double> *w);
   void MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w);
@@ -25,10 +25,12 @@ class blockHMatrix: public optHMatrix{
   arcomplex<double> *compressedVector;
   void buildSparseHBlocked();
  private:
+  int explicitMv;
   std::vector<quantumNumber> *conservedQNsB;
   std::vector<int> blockOffset;
   std::vector<arcomplex<double> > sparseMatrix;
   std::vector<int> rowPtr, colIndices;
+  mpo<arcomplex<double> > *HMPO;
   basisQNOrderMatrix *indexTable;
   int vecBlockIndexLP(int const iBlock, int const j, int const k){return k+j*indexTable->lBlockSizeLP(i,iBlock)+blockOffset[iBlock];}
   void excitedStateProject(arcomplex<double> *v);

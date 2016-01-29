@@ -14,14 +14,12 @@ projector::projector(){
   orthoStates=0;
   scalarProducts=0;
   nCurrentEigen=0;
-  //projectionMatrix=0;
 }
 
 //---------------------------------------------------------------------------------------------------//
 
 projector::~projector(){
   delete[] orthoStates;
-  //delete[] projectionMatrix;
   delete[] scalarProducts;
 }
 

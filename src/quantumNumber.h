@@ -8,6 +8,10 @@
 //-------------------------------------------------------------------------------------------//
 // The quantumNumber class contains the quantum number  labels for the MPS matrix indices and
 // can check whether an entry has to be zero due to QN constraints.
+// We use std::complex<int> as quantum numbers, where the real part can be used as a U(1)-QN
+// and the imaginary part as a Z_2-QN (if either is not desired, assign the physical indices
+// the neutral element). This makes it easier to take interdependencies of number of particles
+// and fermionic parity into account.
 //-------------------------------------------------------------------------------------------//
 
 class quantumNumber{
@@ -33,7 +37,7 @@ class quantumNumber{
   void initializeLabelListLP();
   void initializeLabelListRP();
   int initializeLabelList(int const i, int const direction=-1);
-  void gatherBlocks(int const i, std::vector<std::vector<int> > &ai, std::vector<std::complex<int> > &qnLabels, int const direction);
+  void gatherBlocks(int const i, std::vector<int> &ai, std::vector<std::complex<int> > &qnLabels, int const direction);
   std::complex<int> exactLabel(int const i, int const ai);
   std::complex<int> truncLabel(int const i, int const ai);
   std::complex<int> QNLabelLP(int const i, int const ai);

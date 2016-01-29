@@ -13,11 +13,14 @@
 class iterativeMeasurement: public baseMeasurement{
  public:
   iterativeMeasurement();
+  iterativeMeasurement(mpo<lapack_complex_double> *MPOperator, mps *MPState);
   void initialize(mpo<lapack_complex_double> *MPOperator, mps *MPState);
   int calcCtrFull(int const direction);
   void calcCtrIterLeft(int const i);
   void calcCtrIterRight(int const i);
   pContraction<lapack_complex_double> Lctr;
+ protected:
+  void calcCtrIterLeft(int const i, lapack_complex_double *targetPctr);
 };
 
 #endif
