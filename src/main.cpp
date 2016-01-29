@@ -38,9 +38,9 @@ int main(int argc, char *argv[]){
 void testSolve(){
   double eigVal;
   double const mEl=1;
-  int const nEigens=2;
-  int const L=30;
-  int const N=30;
+  int const nEigens=1;
+  int const L=100;
+  int const N=100;
   int const D=1;
   int const nQuantumNumbers=1;
   int const minimalD=(2*N>4)?2*N:4;
@@ -53,7 +53,7 @@ void testSolve(){
   problemParameters pars(localHilbertSpaceDims,L,12,nEigens,nQuantumNumbers,QNValue,QNList);
   //simulationParameters simPars(100,5,2,1e-4,1e-8,1e-9,1e-2);
   //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack
-  simulationParameters simPars(usedD,8,1,0,1e-4,1e-7,1e-4);
+  simulationParameters simPars(usedD,1,1,0,1e-4,1e-7,1e-4);
   Qsystem sys(pars,simPars);
   //The required bond dimension for the perturbed system seems to be greater than that of the unperturbed system
   hInfo=writeHamiltonian(&sys,1,1);

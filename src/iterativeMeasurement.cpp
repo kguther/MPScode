@@ -53,7 +53,7 @@ void iterativeMeasurement::calcCtrIterLeft(int const i, lapack_complex_double *t
   tmpContainer<lapack_complex_double> innercontainer(ld,lDwL,lDL,lDR);
   tmpContainer<lapack_complex_double> outercontainer(ld,lDwR,lDR,lDL);
   curtime=clock();
-  //horrible construct to efficiently compute the partial contraction, is parallelizable, needs to be parallelized (still huge computational effort) <-- potential for optimization
+  //horrible construct to efficiently compute the partial contraction
   for(int sip=0;sip<ld;++sip){
     for(int bim=0;bim<lDwL;++bim){
       for(int aim=0;aim<lDL;++aim){

@@ -74,7 +74,7 @@ void network::initialize(problemParameters inputpars, simulationParameters input
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
     excitedStateP.storeOrthoState(networkState,iEigen);
   }
-  networkState.setToExactGroundState();
+  //networkState.setToExactGroundState();
 }
 
 //---------------------------------------------------------------------------------------------------//
