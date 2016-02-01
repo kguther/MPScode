@@ -18,7 +18,7 @@ using namespace std;
 
 void testNormalization();
 void sysSolve(int const L, int const N, int const alpha, int const nEigens=1, int const D=1);
-void testSolve();
+void sysSolve();
 void testMatrix();
 
 //-----------------------------------------------------------------//
@@ -26,7 +26,7 @@ void testMatrix();
 //-----------------------------------------------------------------//
 
 int main(int argc, char *argv[]){
-  testSolve();
+  sysSolve();
   return 0;
 }
 
@@ -35,7 +35,7 @@ int main(int argc, char *argv[]){
 // DEBUG FUNCTIONS
 //-------------------------------------------------------------------------------------------//
 
-void testSolve(){
+void sysSolve(){
   double eigVal;
   double const mEl=1;
   int const nEigens=1;
@@ -53,7 +53,7 @@ void testSolve(){
   problemParameters pars(localHilbertSpaceDims,L,12,nEigens,nQuantumNumbers,QNValue,QNList);
   //simulationParameters simPars(100,5,2,1e-4,1e-8,1e-9,1e-2);
   //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack
-  simulationParameters simPars(usedD,1,1,0,1e-4,1e-7,1e-4);
+  simulationParameters simPars(usedD,12,1,0,1e-4,1e-7,1e-4);
   Qsystem sys(pars,simPars);
   //The required bond dimension for the perturbed system seems to be greater than that of the unperturbed system
   hInfo=writeHamiltonian(&sys,1,1);

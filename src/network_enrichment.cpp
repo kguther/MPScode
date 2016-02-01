@@ -178,7 +178,7 @@ void network::rightEnrichment(double const alpha, int const i){
   }
   delete[] diags;
   //From here, Mnew is to be treated as a MNumRows x lDL matrix
-  //Postprocessing: A=Anew*U*S, B=U
+  //Postprocessing: A=Anew*U*S, B=VT
   lapack_complex_double *AStart=new lapack_complex_double[lDLL*MNumRows];
   lapack_complex_double *networkA;
   lapack_complex_double zone=1.0;

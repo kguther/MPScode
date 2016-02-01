@@ -39,7 +39,9 @@ void iterativeMeasurement::calcCtrIterLeft(int const i, lapack_complex_double *t
   lapack_complex_double *siteMatrixState, *siteMatrixH;
   int *biIndices, *bimIndices, *siIndices, *sipIndices;
   int const sparseSize=MPOperator->numEls(i-1);
-  int biS, bimS, siS, sipS;
+  int const numBlocks=MPState->indexTable.numBlocksLP(i-1);
+  int biS, bimS, siS, sipS, aiB, aimB, siB;
+  int lBlockSize, rBlockSize;
   clock_t curtime;
   MPState->subMatrixStart(siteMatrixState,i-1);
   MPOperator->sparseSubMatrixStart(siteMatrixH,i-1);
@@ -50,7 +52,7 @@ void iterativeMeasurement::calcCtrIterLeft(int const i, lapack_complex_double *t
   Lctr.subContractionStart(sourcePctr,i-1);
   getLocalDimensions(i-1);
   //container arrays to significantly reduce computational effort by storing intermediate results
-  tmpContainer<lapack_complex_double> innercontainer(ld,lDwL,lDL,lDR);
+  tmpContainer<lapack_complex_double> innercontainer(ld,lDR,lDwL,lDL);
   tmpContainer<lapack_complex_double> outercontainer(ld,lDwR,lDR,lDL);
   curtime=clock();
   //horrible construct to efficiently compute the partial contraction
@@ -58,47 +60,69 @@ void iterativeMeasurement::calcCtrIterLeft(int const i, lapack_complex_double *t
     for(int bim=0;bim<lDwL;++bim){
       for(int aim=0;aim<lDL;++aim){
 	for(int aip=0;aip<lDR;++aip){
-	  simpleContainer=0;
-	  for(int aimp=0;aimp<lDL;++aimp){
-	    simpleContainer+=sourcePctr[pctrIndex(aim,bim,aimp)]*siteMatrixState[stateIndex(sip,aip,aimp)];
-	  }
-	  innercontainer.global_access(sip,bim,aim,aip)=simpleContainer;
+	  innercontainer.global_access(sip,aip,bim,aim)=0;
 	}
       }
     }
   }
-  curtime=clock()-curtime;
-  //std::cout<<"Inner contraction took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
-  curtime=clock();
-  for(int aim=0;aim<lDL;++aim){
-    for(int aip=0;aip<lDR;++aip){
-      for(int si=0;si<ld;++si){
-	for(int bi=0;bi<lDwR;++bi){
-	      outercontainer.global_access(si,bi,aip,aim)=0;
-	    }
-	  }
-      for(int nSparse=0;nSparse<sparseSize;++nSparse){
-	biS=biIndices[nSparse];
-	bimS=bimIndices[nSparse];
-	siS=siIndices[nSparse];
-	sipS=sipIndices[nSparse];
-	outercontainer.global_access(siS,biS,aip,aim)+=siteMatrixH[nSparse]*innercontainer.global_access(sipS,bimS,aim,aip);
-      }
-    }
-  }
-  curtime=clock()-curtime;
-  //std::cout<<"Inner contraction took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
-  curtime=clock();
-  for(int ai=0;ai<lDR;++ai){
-    for(int bi=0;bi<lDwR;++bi){
-      for(int aip=0;aip<lDR;++aip){
-	simpleContainer=0;
-	for(int si=0;si<ld;++si){
+  for(int iBlock=0;iBlock<numBlocks;++iBlock){
+    lBlockSize=MPState->indexTable.lBlockSizeLP(i-1,iBlock);
+    rBlockSize=MPState->indexTable.rBlockSizeLP(i-1,iBlock);
+    for(int k=0;k<lBlockSize;++k){
+      aimB=MPState->indexTable.aimBlockIndexLP(i-1,iBlock,k);
+      siB=MPState->indexTable.siBlockIndexLP(i-1,iBlock,k);
+      for(int j=0;j<rBlockSize;++j){
+	aiB=MPState->indexTable.aiBlockIndexLP(i-1,iBlock,j);
+	for(int bim=0;bim<lDwL;++bim){
 	  for(int aim=0;aim<lDL;++aim){
-	    simpleContainer+=conj(siteMatrixState[stateIndex(si,ai,aim)])*outercontainer.global_access(si,bi,aip,aim);
+	    innercontainer.global_access(siB,aiB,bim,aim)+=sourcePctr[pctrIndex(aim,bim,aimB)]*siteMatrixState[stateIndex(siB,aiB,aimB)];
 	  }
 	}
-	targetPctr[pctrIndex(ai,bi,aip)]=simpleContainer;
+      }
+    }
+  }
+  curtime=clock()-curtime;
+  //std::cout<<"Inner contraction took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
+  curtime=clock();
+  for(int iBlock=0;iBlock<numBlocks;++iBlock){
+    lBlockSize=MPState->indexTable.lBlockSizeLP(i-1,iBlock);
+    for(int k=0;k<lBlockSize;++k){
+      siB=MPState->indexTable.siBlockIndexLP(i-1,iBlock,k);
+      aimB=MPState->indexTable.aimBlockIndexLP(i-1,iBlock,k);
+      for(int aip=0;aip<lDR;++aip){
+	for(int bi=0;bi<lDwR;++bi){
+	  outercontainer.global_access(siB,bi,aip,aimB)=0;
+	}
+	for(int nSparse=0;nSparse<sparseSize;++nSparse){
+	  siS=siIndices[nSparse];
+	  if(siS==siB){
+	    biS=biIndices[nSparse];
+	    bimS=bimIndices[nSparse];
+	    sipS=sipIndices[nSparse];
+	    outercontainer.global_access(siB,biS,aip,aimB)+=siteMatrixH[nSparse]*innercontainer.global_access(sipS,aip,bimS,aimB);
+	  }
+	}
+      }
+    }
+  }
+  curtime=clock()-curtime;
+  //std::cout<<"Inner contraction took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
+  curtime=clock();
+  for(int iBlock=0;iBlock<numBlocks;++iBlock){
+    lBlockSize=MPState->indexTable.lBlockSizeLP(i-1,iBlock);
+    rBlockSize=MPState->indexTable.rBlockSizeLP(i-1,iBlock);
+    for(int j=0;j<rBlockSize;++j){
+      aiB=MPState->indexTable.aiBlockIndexLP(i-1,iBlock,j);
+      for(int bi=0;bi<lDwR;++bi){
+	for(int aip=0;aip<lDR;++aip){
+	  simpleContainer=0;
+	  for(int k=0;k<lBlockSize;++k){
+	    siB=MPState->indexTable.siBlockIndexLP(i-1,iBlock,k);
+	    aimB=MPState->indexTable.aimBlockIndexLP(i-1,iBlock,k);
+	    simpleContainer+=conj(siteMatrixState[stateIndex(siB,aiB,aimB)])*outercontainer.global_access(siB,bi,aip,aimB);
+	  }
+	  targetPctr[pctrIndex(aiB,bi,aip)]=simpleContainer;
+	}
       }
     }
   }
