@@ -72,10 +72,11 @@ void network::initialize(problemParameters inputpars, simulationParameters input
   }
   networkState.generate(networkDimInfo,&conservedQNs);
   excitedStateP.initialize(pars.nEigs);
-  for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
+  for(int iEigen=1;iEigen<pars.nEigs;++iEigen){
     excitedStateP.storeOrthoState(networkState,iEigen);
   }
   networkState.setToExactGroundState();
+  excitedStateP.storeOrthoState(networkState,0);
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -144,16 +145,17 @@ void network::getLocalDimensions(int const i){
 // corresponding eigenvalue (output).
 //---------------------------------------------------------------------------------------------------//
 
-int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT -> HUGE SPEEDUP
+int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda){  //IMPORTANT TODO: ENHANCE STARTING POINT -> HUGE SPEEDUP
   int maxIter=100000;
   int stepRet;
   int cshift=0;
   int storeShift;
-  double convergenceQuality;
   double alpha;
   double tol;
   double spinCheck=0;
   double parCheck=0;
+  lambda.resize(pars.nEigs);
+  deltaLambda.resize(pars.nEigs);
   alpha=simPars.alpha;
   if(pars.nQNs || pars.nEigs>1){
     cshift=-100;
@@ -192,18 +194,18 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
       networkState.normalizeFinal(1);
       //In calcCtrIterRightBase, the second argument has to be a pointer, because it usually is an array. No call-by-reference here.
       pCtr.calcCtrIterRightBase(-1,&expectationValue);
-      convergenceQuality=1;
+      deltaLambda[iEigen]=1;
       if(iSweep==simPars.nSweeps-1){
-	convergenceQuality=convergenceCheck();
+	deltaLambda[iEigen]=convergenceCheck();
       }
-      if(convergenceQuality<simPars.devAccuracy){
+      if(deltaLambda[iEigen]<simPars.devAccuracy){
 	nConverged[iEigen]=0;
       }
       alpha*=.1;
       if(tol>simPars.tolMin){
 	tol*=pow(simPars.tolMin/simPars.tolInitial,1.0/simPars.nSweeps);
       }
-      std::cout<<"Quality of convergence: "<<convergenceQuality<<"\tRequired accuracy: "<<simPars.devAccuracy<<std::endl<<std::endl;
+      std::cout<<"Quality of convergence: "<<deltaLambda[iEigen]<<"\tRequired accuracy: "<<simPars.devAccuracy<<std::endl<<std::endl;
       excitedStateP.updateScalarProducts(0,-1);
       for(int prev=0;prev<iEigen;++prev){
 	std::cout<<"Overlap with state "<<prev<<" is: "<<excitedStateP.fullOverlap(prev)<<std::endl;

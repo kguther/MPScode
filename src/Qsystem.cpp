@@ -15,15 +15,9 @@ Qsystem::Qsystem(problemParameters &inputpars, simulationParameters &inputsimPar
   simPars.D=stageD(0);
   simPars.nSweeps=stageNSweeps(0);
   simPars.tolInitial=stageTolInitial(0);
-  E0=new double[pars.nEigs];
   TensorNetwork.initialize(pars,simPars);
 }
 
-//---------------------------------------------------------------------------------------------------//
-
-Qsystem::~Qsystem(){
-  delete[] E0;
-}
 
 //---------------------------------------------------------------------------------------------------//
 
@@ -39,7 +33,7 @@ int Qsystem::getGroundState(){
       simPars.tolInitial=stageTolInitial(iStage);
       TensorNetwork.setSimParameters(simPars);
     }
-    converged=TensorNetwork.solve(E0);
+    converged=TensorNetwork.solve(E0,dE);
     if(converged==0){
       std::cout<<"SIMULATION CONVERGED\n";
       break;

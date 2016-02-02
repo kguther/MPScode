@@ -2,7 +2,6 @@
 #define MPO_CLASS_FOR_LOCAL_OPERATORS
 
 #include "mpo.h"
-#include <iostream>
 
 template<typename T>
 class localMpo: public mpo<T>{

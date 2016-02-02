@@ -1,11 +1,12 @@
 #include <fstream>
+#include <iostream>
 #include <sstream>
 #include "simulation.h"
 #include "projector.h"
 #include "globalMeasurement.h"
 #include "localMeasurementSeries.h"
 
-simulation::simulation(problemParameters &parsIn, simulationParameters &simParsIn, double const J, double const g, int pathPoints, std::string &targetFile):
+simulation::simulation(problemParameters &parsIn, simulationParameters &simParsIn, double const J, double const g, int const pathPoints, std::string &targetFile):
   simPars(simParsIn),
   pars(parsIn),
   pathLength(pathPoints),
@@ -15,6 +16,7 @@ simulation::simulation(problemParameters &parsIn, simulationParameters &simParsI
   // simulation class can only use nStages=1 (by choice of algorithm)
   TensorNetwork.initialize(pars,simPars);
   E0.resize(pars.nEigs);
+  dE.resize(pars.nEigs);
   convergedEigens.resize(pars.nEigs);
   double matEls;
   int L=pars.L;
@@ -75,8 +77,7 @@ void simulation::setLocalMeasurement(localMpo<std::complex<double> > &localMPOpe
 //---------------------------------------------------------------------------------------------------//
 
 void simulation::run(){
-  singleRun();
-  for(int nRun=1;nRun<pathLength;++nRun){
+  for(int nRun=1;nRun<pathLength+1;++nRun){
     parDirection*=1.0/(abs(parDirection)*100)*nRun;
     singleRun();
   }
@@ -88,7 +89,6 @@ void simulation::singleRun(){
   int hInfo;
   double J,g;
   projector *stateRep;
-  std::vector<quantumNumber> *QNs;
   mps *measureState;
   std::vector<double> expectationValues;
   std::vector<std::vector<std::complex<double> > > localExpectationValues;
@@ -100,7 +100,7 @@ void simulation::singleRun(){
     std::cout<<"Invalid bond dimension for the construction of H. Terminating process.\n";
     exit(1);
   }
-  TensorNetwork.solve(&E0[0]);
+  TensorNetwork.solve(E0,dE);
   expectationValues.resize(measureTask.size());
   localExpectationValues.resize(localMeasureTask.size());
   std::ofstream ofs;
@@ -108,6 +108,7 @@ void simulation::singleRun(){
   numStrJ<<J;
   numStrg<<g;
   std::string fileName;
+  fileName+="test_results/";
   fileName+=filePrefix;
   fileName+="_J_";
   fileName+=numStrJ.str();
@@ -116,6 +117,7 @@ void simulation::singleRun(){
   fileName+=".txt";
   ofs.open(fileName.c_str());
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
+    ofs<<"Values for state number "<<iEigen<<" with energy "<<E0[iEigen]<<" and energy variance "<<dE[iEigen]<<std::endl;
     if(pars.nEigs==1){
       measureState=0;
     }
@@ -126,11 +128,13 @@ void simulation::singleRun(){
       measure(&measureTask[iM],expectationValues[iM],measureState);
       ofs<<operatorNames[iM]<<"\t";
     }
-    ofs<<std::endl;
+    if(measureTask.size())
+      ofs<<std::endl;
     for(int iM=0;iM<measureTask.size();++iM){
       ofs<<expectationValues[iM]<<"\t";
     }
-    ofs<<std::endl;
+    if(measureTask.size())
+      ofs<<std::endl;
     for(int iM=0;iM<localMeasureTask.size();++iM){
       measureLocal(&localMeasureTask[iM],localExpectationValues[iM],measureState);
       ofs<<localOperatorNames[iM]<<"\t";

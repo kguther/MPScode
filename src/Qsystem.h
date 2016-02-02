@@ -18,7 +18,7 @@ class Qsystem{
   Qsystem(problemParameters &pars, simulationParameters &simPars);
   ~Qsystem();
   network TensorNetwork;
-  double *E0;
+  std::vector<double> E0, dE;
   int getGroundState();
   int measure(mpo<std::complex<double> > *MPOperator, double &expectationValue, mps *MPState=0);
   int measureLocal(localMpo<std::complex<double> > *localMPOperator, std::vector<std::complex<double> > &result, mps *MPState=0);

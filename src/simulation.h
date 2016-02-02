@@ -17,7 +17,7 @@ class simulation{
   void setLocalMeasurement(localMpo<lapack_complex_double> &localMPOperator, std::string &opName);
   std::vector<mpo<std::complex<double> > > measureTask;
   std::vector<localMpo<std::complex<double> > > localMeasureTask;
-  std::vector<double> E0;
+  std::vector<double> E0, dE;
   void run();
  private:
   network TensorNetwork;
