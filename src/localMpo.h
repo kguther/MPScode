@@ -7,8 +7,9 @@
 template<typename T>
 class localMpo: public mpo<T>{
  public:
- localMpo():mpo(){}
+ localMpo():mpo<T>(){}
  localMpo(int const din, int const Dwin, int const Lin, int const initialSite, int *fermionicParities=0):mpo<T>(din,Dwin,Lin),i(initialSite),fermionicSign(fermionicParities){}
+  void initializeLocal(int const din, int const Dwin, int const Lin, int const initialSite, int *fermionicParites=0){this->initialize(din,Dwin,Lin);i=initialSite;fermionicSign=fermionicParites;}
   void stepRight();
   int currentSite()const {return i;}
  private: 

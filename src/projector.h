@@ -29,6 +29,8 @@ class projector{
   int getProjector(int const i);
   void project(lapack_complex_double *vec, int const i);
   void storeCurrentState(mps &source);
+  void getStoredState(mps *target, int const iEigen);
+  int loadNextState(mps &target, int const iEigen);
   int loadNextState(mps &target);
   void storeOrthoState(mps &source, int const iEigen);
   lapack_complex_double fullOverlap(int const k);

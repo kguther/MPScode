@@ -56,6 +56,7 @@ void network::initialize(problemParameters inputpars, simulationParameters input
   Dw=inputpars.Dw;
   simPars=inputsimPars;
   networkDimInfo.initialize(D,L,pars.d);
+  delete[] nConverged;
   nConverged=new int[pars.nEigs];
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
     nConverged[iEigen]=1;
@@ -74,13 +75,21 @@ void network::initialize(problemParameters inputpars, simulationParameters input
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
     excitedStateP.storeOrthoState(networkState,iEigen);
   }
-  //networkState.setToExactGroundState();
+  networkState.setToExactGroundState();
 }
 
 //---------------------------------------------------------------------------------------------------//
 
 void network::loadNetworkState(mps &source){
   networkState.mpsCpy(source);
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void network::resetConvergence(){
+  for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
+    nConverged[iEigen]=1;
+  }
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -149,6 +158,7 @@ int network::solve(double *lambda){  //IMPORTANT TODO: ENHANCE STARTING POINT ->
   if(pars.nQNs || pars.nEigs>1){
     cshift=-100;
   }
+  excitedStateP.loadNextState(networkState,0);
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
     pCtr.initialize(&networkH,&networkState);
     std::cout<<"Startung normalization\n";

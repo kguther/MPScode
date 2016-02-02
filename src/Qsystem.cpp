@@ -5,7 +5,7 @@
 #include "network.h"
 #include "parameters.h"
 
-Qsystem::Qsystem(problemParameters inputpars, simulationParameters inputsimPars):
+Qsystem::Qsystem(problemParameters &inputpars, simulationParameters &inputsimPars):
   pars(inputpars),
   simPars(inputsimPars),
   DMax(simPars.D),
@@ -15,8 +15,8 @@ Qsystem::Qsystem(problemParameters inputpars, simulationParameters inputsimPars)
   simPars.D=stageD(0);
   simPars.nSweeps=stageNSweeps(0);
   simPars.tolInitial=stageTolInitial(0);
-  TensorNetwork.initialize(pars,simPars);
   E0=new double[pars.nEigs];
+  TensorNetwork.initialize(pars,simPars);
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -80,6 +80,12 @@ double Qsystem::stageTolInitial(int const nStage){
 
 //---------------------------------------------------------------------------------------------------//
 
-int Qsystem::measure(mpo<lapack_complex_double> &MPOperator, double &expectationValue){
-  return TensorNetwork.measure(&MPOperator,expectationValue);
+int Qsystem::measure(mpo<lapack_complex_double> *MPOperator, double &expectationValue, mps *MPState){
+  return TensorNetwork.measure(MPOperator,expectationValue);
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+int Qsystem::measureLocal(localMpo<lapack_complex_double> *localMPOperator, std::vector<std::complex<double> > &result, mps *MPState){
+  return TensorNetwork.measureLocalOperators(localMPOperator,result);
 }

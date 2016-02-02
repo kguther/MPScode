@@ -49,6 +49,8 @@ class basisQNOrderMatrix{
   int numBlocksLP(int const i){return aiBlockIndicesLP[i].size();}
   int numBlocksRP(int const i){return aimBlockIndicesRP[i].size();}
  private:
+  basisQNOrderMatrix(basisQNOrderMatrix const &source);
+  basisQNOrderMatrix& operator=(basisQNOrderMatrix const &source);
   std::vector<quantumNumber> *conservedQNs;
   std::vector<std::vector<int> > *aiBlockIndicesLP;
   std::vector<std::vector<multInt> > *siaimBlockIndicesLP;

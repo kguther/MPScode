@@ -11,11 +11,15 @@ class mpo{
  public:
   mpo();
   mpo(int const din, int const Dwin, int const Lin);
+  mpo(mpo<T> const &source);
   ~mpo();
+  mpo& operator=(mpo<T> const &source);
+  T& global_read(int const i, int const si, int const sip, int const bi, int const bip) const{return Qoperator[bip+bi*Dw+sip*Dw*Dw+si*Dw*Dw*d+i*Dw*Dw*d*d];}
   T& global_access(int const i, int const si, int const sip, int const bi, int const bip){return Qoperator[bip+bi*Dw+sip*Dw*Dw+si*Dw*Dw*d+i*Dw*Dw*d*d];}
   int locDimL(int const i);
   int locDimR(int const i);
   int maxDim() const{return Dw;}
+  int maxlocd() const{return d;}
   int length() const{return L;}
   void shift(T const delta);
   void subMatrixStart(T *&pStart, int const i, int const si=0, int const sip=0);
@@ -30,6 +34,7 @@ class mpo{
   int *nNzero;
  protected:
   void setUpSiteSparse(int const i);
+  void mpoCpy(mpo<T> const &source);
   int d, Dw, L;
   T *Qoperator;
   T* sparseOperator;
@@ -50,6 +55,34 @@ mpo<T>::mpo(){
 template<typename T>
 mpo<T>::mpo(int const din, int const Dwin, int const Lin){
   initialize(din,Dwin,Lin);
+}
+
+template<typename T>
+mpo<T>::mpo(mpo<T> const  &source){
+  mpoCpy(source);
+}
+
+template<typename T>
+mpo<T>& mpo<T>::operator=(mpo<T> const  &source){
+  mpoCpy(source);
+  return *this;
+}
+
+template<typename T>
+void mpo<T>::mpoCpy(mpo<T> const &source){
+  initialize(source.maxlocd(),source.maxDim(),source.length());
+  for(int i=0;i<L;++i){
+    for(int si=0;si<d;++si){
+      for(int sip=0;sip<d;++sip){
+	for(int bi=0;bi<locDimR(i);++bi){
+	  for(int bim=0;bim<locDimL(i);++bim){
+	    global_access(i,si,sip,bi,bim)=source.global_read(i,si,sip,bi,bim);
+	  }
+	}
+      }
+    }
+  }
+  setUpSparse();
 }
 
 template<typename T>

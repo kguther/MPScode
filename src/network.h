@@ -4,6 +4,7 @@
 #include <complex>
 #include <arcomp.h>
 #include <vector>
+#include <string>
 #include "mkl_complex_defined.h"
 #include "parameters.h"
 #include "mpo.h"
@@ -29,6 +30,10 @@ class network{
   int measureLocalOperators(localMpo<lapack_complex_double> *MPOperator, std::vector<lapack_complex_double> &expValue);
   void initialize(problemParameters inputpars, simulationParameters inputSimPars);
   void loadNetworkState(mps &source);
+  void resetConvergence();
+  void getProjector(projector *target){target=&excitedStateP;}
+  void quantumNumberVec(std::vector<quantumNumber> *target){target=&conservedQNs;}
+  dimensionTable& dimTable() {return networkDimInfo;}
   int setSimParameters(simulationParameters newPars);
   //MPO needs to be initialized externally
   mpo<lapack_complex_double> networkH;

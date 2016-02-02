@@ -59,9 +59,6 @@ void stateArray::initialize(dimensionTable &dimInfoIn){
 //---------------------------------------------------------------------------------------------------//
 
 int stateArray::setParameterD(int Dnew){
-  if(Dnew<D){
-    return -1;
-  }
   lapack_complex_double ****newNetworkState;
   dimensionTable backupDimInfo=dimInfo;
   //Copy the content of the current state into the larger array (which is initialized with zero)
@@ -75,7 +72,12 @@ int stateArray::setParameterD(int Dnew){
     for(int si=0;si<ld;++si){
       for(int ai=0;ai<lDR;++ai){
 	for(int aim=0;aim<lDL;++aim){
-	  newNetworkState[i][si][ai][aim]=state_array_access_structure[i][si][ai][aim];
+	  if(Dnew<D){
+	    newNetworkState[i][si][ai][aim]=0;
+	  }
+	  else{
+	    newNetworkState[i][si][ai][aim]=state_array_access_structure[i][si][ai][aim];
+	  }
 	}
       }
     }

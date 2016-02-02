@@ -12,13 +12,13 @@
 #include "Qsystem.h"
 #include "localHSpaces.h"
 #include "problemOperators.h"
-#include "delta.h"
+#include "simulation.h"
 
 using namespace std;
 
 void testNormalization();
 void sysSolve(int const L, int const N, int const alpha, int const nEigens=1, int const D=1);
-void sysSolve();
+void sysSolve(int const J, int const g);
 void testMatrix();
 
 //-----------------------------------------------------------------//
@@ -26,7 +26,10 @@ void testMatrix();
 //-----------------------------------------------------------------//
 
 int main(int argc, char *argv[]){
-  sysSolve();
+  int J,g;
+  J=-1;
+  g=0;
+  sysSolve(J,g);
   return 0;
 }
 
@@ -35,38 +38,34 @@ int main(int argc, char *argv[]){
 // DEBUG FUNCTIONS
 //-------------------------------------------------------------------------------------------//
 
-void sysSolve(){
+void sysSolve(int const J, int const g){
   double eigVal;
+  std::string fileName="testRun";
   double const mEl=1;
   int const nEigens=1;
-  int const L=100;
-  int const N=100;
+  int const L=9;
+  int const N=8;
   int const D=1;
+  int const numPts=4;
   int const nQuantumNumbers=1;
   int const minimalD=(2*N>4)?2*N:4;
   int const usedD=(D>minimalD)?D:minimalD;
   int hInfo;
-  std::complex<int> QNValue[1]={std::complex<int>(N,-1)};
+  std::complex<int> QNValue[1]={std::complex<int>(N,1)};
   std::complex<int> QNList[8]={std::complex<int>(0,1),std::complex<int>(1,1),std::complex<int>(1,-1),std::complex<int>(2,-1)};
   //Due to poor planning, subchain parity QNs work a bit odd. The QNValue has to be the total particle number, while the parityNumber gives the subchain parity, i.e. it is to be set +-1
   localHSpaces localHilbertSpaceDims(4);
   problemParameters pars(localHilbertSpaceDims,L,12,nEigens,nQuantumNumbers,QNValue,QNList);
   //simulationParameters simPars(100,5,2,1e-4,1e-8,1e-9,1e-2);
   //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack
-  simulationParameters simPars(usedD,12,1,0,1e-4,1e-7,1e-4);
-  Qsystem sys(pars,simPars);
-  //The required bond dimension for the perturbed system seems to be greater than that of the unperturbed system
-  hInfo=writeHamiltonian(&sys,1,1);
-  if(hInfo){
-    std::cout<<"Invalid bond dimension for the construction of H. Terminating process.\n";
-    exit(1);
-  }
-  double matEls;
+  simulationParameters simPars(usedD,1,1,0,1e-4,1e-7,1e-4);
+  simulation sim(pars,simPars,J,g,numPts,fileName);
   int parityQNs[4]={1,-1,-1,1};
-  mpo<lapack_complex_double> particleNumber(pars.d.maxd(),2,L);
-  mpo<lapack_complex_double> subChainParity(pars.d.maxd(),1,L);
+  //The required bond dimension for the perturbed system seems to be greater than that of the unperturbed system
   localMpo<lapack_complex_double> greensFunction(pars.d.maxd(),1,L,1,parityQNs);
   localMpo<lapack_complex_double> densityCorrelation(pars.d.maxd(),1,L,1,0);
+  std::string gFName="Intrachain correlation";
+  std::string dCName="Intrachain density correlation";
   for(int i=0;i<L;++i){
     for(int si=0;si<pars.d.maxd();++si){
       for(int sip=0;sip<pars.d.maxd();++sip){
@@ -83,7 +82,7 @@ void sysSolve(){
   for(int i=0;i<L;++i){
     for(int si=0;si<pars.d.maxd();++si){
       for(int sip=0;sip<pars.d.maxd();++sip){
-	densityCorrelation.global_access(i,si,sip,0,0)=delta(si,sip);
+        densityCorrelation.global_access(i,si,sip,0,0)=delta(si,sip);
       }
     }
   }
@@ -93,55 +92,11 @@ void sysSolve(){
       densityCorrelation.global_access(0,si,sip,0,0)=delta(si,sip)*(delta(si,1)+delta(si,3));
     }
   }
-  for(int i=0;i<L;++i){
-    for(int bi=0;bi<1;++bi){
-      for(int bim=0;bim<1;++bim){
-	for(int si=0;si<pars.d.maxd();++si){
-	  for(int sip=0;sip<pars.d.maxd();++sip){
-	    matEls=delta(si,sip)*(delta(si,1)+delta(si,0)-delta(si,2)-delta(si,3));
-	    subChainParity.global_access(i,si,sip,bi,bim)=matEls;
-	  }
-	}
-      }
-    }
-  }
-  for(int i=0;i<L;++i){
-    for(int bi=0;bi<2;++bi){
-      for(int bim=0;bim<2;++bim){
-	for(int si=0;si<pars.d.maxd();++si){
-	  for(int sip=0;sip<pars.d.maxd();++sip){
-	    matEls=delta(si,sip);
-	    if(i!=0 && i!=L-1 && bi==1 && bim==0){
-	      matEls=0;
-	    }
-	    if(bi==0 && bim==particleNumber.locDimL(i)-1){
-	      matEls*=(delta(si,1)+delta(si,2)+2*delta(si,3));
-	    }
-	    particleNumber.global_access(i,si,sip,bi,bim)=matEls;
-	  }
-	}
-      }
-    }
-  }
-  double spinQN;
-  sys.TensorNetwork.check=&particleNumber;
-  sys.TensorNetwork.checkParity=&subChainParity;
-  sys.getGroundState();
+  sim.setLocalMeasurement(greensFunction,gFName);
+  sim.setLocalMeasurement(densityCorrelation,dCName);
+  sim.run();
   cout<<setprecision(21);
   for(int mi=0;mi<nEigens;++mi){
-    cout<<"Obtained energy of state "<<mi<<" as: "<<sys.E0[mi]<<endl;
+    cout<<"Obtained energy of state "<<mi<<" as: "<<sim.E0[mi]<<endl;
   }
-  std::vector<lapack_complex_double> gF;
-  sys.TensorNetwork.measureLocalOperators(&greensFunction,gF);
-  for(int i=0;i<gF.size();++i){
-    std::cout<<gF[i]<<std::endl;
-  }
-  std::vector<lapack_complex_double> dC;
-  sys.TensorNetwork.measureLocalOperators(&densityCorrelation,dC);
-  std::cout<<"Density correlation:\n";
-  for(int i=0;i<dC.size();++i){
-    std::cout<<dC[i]<<std::endl;
-  }
-  //sys.measure(particleNumber,spinQN);
-  //cout<<"Final total particle number: "<<spinQN<<endl;
 }

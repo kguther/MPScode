@@ -36,7 +36,7 @@ void mps::generate(dimensionTable &dimInfoIn, std::vector<quantumNumber> *conser
   stateArray::generate(dimInfoIn);
   conservedQNs=conservedQNsin;
   if(conservedQNs){
-    nQNs=(*conservedQNs).size();
+    nQNs=conservedQNs->size();
   }
   else{
     nQNs=0;

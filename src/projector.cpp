@@ -83,6 +83,19 @@ void projector::storeCurrentState(mps &source){
 
 //---------------------------------------------------------------------------------------------------//
 
+void projector::getStoredState(mps *target, int const iEigen){
+  target=orthoStates+iEigen;
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+int projector::loadNextState(mps &target, int const iEigen){
+  target.mpsCpy(orthoStates[iEigen]);
+  return 0;
+}
+
+//---------------------------------------------------------------------------------------------------//
+
 int projector::loadNextState(mps &target){
   if(nCurrentEigen<(nEigs-1)){
     target.mpsCpy(orthoStates[nCurrentEigen+1]);
