@@ -11,7 +11,7 @@ class stateArray{
   stateArray();
   stateArray(dimensionTable &dimInfoIn);
   ~stateArray();
-  void mpsCpy(stateArray &source);
+  virtual void mpsCpy(stateArray &source);
   int setParameterD(int Dnew);
   lapack_complex_double& global_access(int const i, int const si, int const ai, int const aim){return state_array_access_structure[i][si][ai][aim];}
   void subMatrixStart(lapack_complex_double *&pStart, int const i, int const si=0){pStart=state_array_access_structure[i][si][0];}

@@ -50,10 +50,10 @@ void sysSolve(int const J, int const g){
   std::string fileName="testRun";
   double const mEl=1;
   int const nEigens=1;
-  int const L=100;
-  int const N=L;
+  int const L=9;
+  int const N=18;
   int const D=1;
-  int const numPts=5;
+  int const numPts=1;
   int const nQuantumNumbers=1;
   int const minimalD=(2*N>4)?2*N:4;
   int const usedD=(D>minimalD)?D:minimalD;
@@ -64,7 +64,7 @@ void sysSolve(int const J, int const g){
   problemParameters pars(localHilbertSpaceDims,L,12,nEigens,nQuantumNumbers,QNValue,QNList);
   //simulationParameters simPars(100,5,2,1e-4,1e-8,1e-9,1e-2);
   //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack
-  simulationParameters simPars(usedD,1,1,0,1e-4,1e-7,1e-4);
+  simulationParameters simPars(usedD,6,1,1e-4,1e-4,1e-7,1e-4);
 
   simulation sim(pars,simPars,J,g,numPts,fileName);
   int parityQNs[4]={1,-1,-1,1};

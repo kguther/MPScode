@@ -3,18 +3,12 @@
 #include "quantumNumber.h"
 #include "math.h"
 
-quantumNumber::quantumNumber():
-  leftLabel(0),
-  rightLabel(0),
-  indexLabel(0)
-{}
+quantumNumber::quantumNumber(){
+}
 
 //---------------------------------------------------------------------------------------------------//
 
 quantumNumber::~quantumNumber(){
-  delete[] leftLabel;
-  delete[] rightLabel;
-  delete[] indexLabel;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -23,13 +17,13 @@ void quantumNumber::initialize(dimensionTable &dimInfoin, std::complex<int> cons
   int violation;
   N=Nin;
   dimInfo=dimInfoin;
-  QNloc=QNlocin;
-  delete[] leftLabel;
-  delete[] rightLabel;
-  delete[] indexLabel;
-  leftLabel=new std::complex<int>[dimInfo.D()*(dimInfo.L()+1)];
-  rightLabel=new std::complex<int>[dimInfo.D()*(dimInfo.L()+1)];
-  indexLabel=new std::complex<int>[dimInfo.D()*(dimInfo.L()+1)];
+  QNloc.resize(dimInfo.d());
+  for(int si=0;si<dimInfo.d();++si){
+    QNloc[si]=QNlocin[si];
+  }
+  leftLabel.resize(dimInfo.D()*(dimInfo.L()+1));
+  rightLabel.resize(dimInfo.D()*(dimInfo.L()+1));
+  indexLabel.resize(dimInfo.D()*(dimInfo.L()+1));
   initializeLabelList();
 }
 
@@ -115,7 +109,7 @@ int quantumNumber::initializeLabelList(int const i, int const direction){
   int minimalLabel, maximalLabel;
   int blockCounter=0;
   int validBlock, cBlock, allowedBlockSize;
-  std::complex<int> *cLabel;
+  std::vector<std::complex<int> > *cLabel;
   std::complex<int> label;
   std::vector<int> aimIndices;
   std::vector<int> aiIndices;
@@ -130,13 +124,13 @@ int quantumNumber::initializeLabelList(int const i, int const direction){
   minimalLabel=(0>real(N)-2*(dimInfo.L()-i))?0:real(N)-2*(dimInfo.L()-i);
   maximalLabel=(2*i>real(N))?real(N):2*i;
   if(direction==1){
-    cLabel=rightLabel;
+    cLabel=&rightLabel;
   }
   if(direction==0){
-    cLabel=leftLabel;
+    cLabel=&leftLabel;
   }
   if(direction==-1){
-    cLabel=indexLabel;
+    cLabel=&indexLabel;
     primaryIndices[i].clear();
   }
   if(i!=0 && i!=dimInfo.L()){
@@ -198,7 +192,7 @@ int quantumNumber::initializeLabelList(int const i, int const direction){
       for(int iBlock=0;iBlock<validQNLabels.size();++iBlock){
 	cBlock=(blockCounter+iBlock)%(validQNLabels.size());
 	if(blockOccupations[cBlock]<maxBlockSizes[cBlock]){
-	  cLabel[aim+i*dimInfo.D()]=validQNLabels[cBlock];
+	  (*cLabel)[aim+i*dimInfo.D()]=validQNLabels[cBlock];
 	  if(blockOccupations[cBlock]==0 && direction==-1){
 	    primaryIndices[i].push_back(aim);
 	  }
@@ -206,7 +200,7 @@ int quantumNumber::initializeLabelList(int const i, int const direction){
 	  break;
 	}
 	if(iBlock==validQNLabels.size()-1){
-	  cLabel[aim+i*dimInfo.D()]=std::complex<int>(-100,1);
+	  (*cLabel)[aim+i*dimInfo.D()]=std::complex<int>(-100,1);
 	}
       }
       blockCounter=(blockCounter+1)%(validQNLabels.size());
@@ -215,13 +209,13 @@ int quantumNumber::initializeLabelList(int const i, int const direction){
   if(i==0){
     imag(label)=1;
     real(label)=0;
-    cLabel[i*dimInfo.D()]=label;
+    (*cLabel)[i*dimInfo.D()]=label;
     if(direction==-1){
       primaryIndices[i].push_back(0);
     }
   }
   if(i==dimInfo.L()){
-    cLabel[i*dimInfo.D()]=N;
+    (*cLabel)[i*dimInfo.D()]=N;
     if(direction==-1){
       primaryIndices[i].push_back(0);
     }

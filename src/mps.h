@@ -12,6 +12,7 @@ class mps: public stateArray{
   mps(dimensionTable &dimInfoIn, std::vector<quantumNumber> *conservedQNsin);
   ~mps();
   void generate(dimensionTable &dimInfoIn, std::vector<quantumNumber> *conservedQNsin);
+  void mpsCpy(mps &source);
   void setToExactGroundState();
   int leftNormalizeState(int const i);
   int rightNormalizeState(int const i);
@@ -22,6 +23,7 @@ class mps: public stateArray{
   int nQNs;
   std::vector<quantumNumber> *conservedQNs;
   void createInitialState();
+  void setUpQNs(std::vector<quantumNumber> *conservedQNs);
   int leftNormalizeStateBlockwise(int const i);
   int rightNormalizeStateBlockwise(int const i);
   void convertIndicesLP(int const i, int const j, int const k, int const iBlock, int &si, int &ai, int &aim);

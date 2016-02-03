@@ -69,6 +69,8 @@ class network{
   void sweep(double const maxIter, double const tol, double const alpha ,double &lambda);
   void leftEnrichment(double const alpha, int const i);
   void rightEnrichment(double const alpha, int const i);
+  void leftEnrichmentBlockwise(double const alpha, int const i);
+  void rightEnrichmentBlockwise(double const alpha, int const i);
   void calcHSqrExpectationValue(double &ioHsqr);
   void getPExpressionLeft(int const i, lapack_complex_double *pExpr);
   void getPExpressionRight(int const i, lapack_complex_double *pExpr);

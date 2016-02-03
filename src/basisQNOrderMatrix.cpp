@@ -75,7 +75,7 @@ void basisQNOrderMatrix::generateQNIndexTables(){
   for(int i=0;i<dimInfo.L();++i){
     blockStructure(i,0,aiBlockIndicesLP[i],siaimBlockIndicesLP[i]);
     blockStructure(i,1,aimBlockIndicesRP[i],siaiBlockIndicesRP[i]);
-    if(i==2 && 0){
+    if(i==0 && 1){
       // This part is used to test QN labeling schemes for their useability. It prints out the block indices and their QN labels.
       std::cout<<"Right labels:\n";
       for(int aim=0;aim<dimInfo.locDimL(i+1);++aim){
@@ -115,7 +115,7 @@ void basisQNOrderMatrix::generateQNIndexTables(){
     }
     if(cumulativeBlockSize==0){
       // If the cumulativeBlockSize is zero, then there are no indices fullfilling the QN constraint on this site. That means the right vacuum QN is invalid, for example N=80 for a chain of length 20.
-      std::cout<<"Critical error: Invalid quantum number. Terminating process.\n";
+      std::cout<<"At site "<<i<<": critical error: Invalid quantum number. Terminating process.\n";
       exit(2);
     }
   }

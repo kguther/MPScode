@@ -32,8 +32,14 @@ mps::~mps(){
 //---------------------------------------------------------------------------------------------------//
 
 void mps::generate(dimensionTable &dimInfoIn, std::vector<quantumNumber> *conservedQNsin){
-  int direction;
   stateArray::generate(dimInfoIn);
+  setUpQNs(conservedQNsin);
+  createInitialState();
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void mps::setUpQNs(std::vector<quantumNumber> *conservedQNsin){
   conservedQNs=conservedQNsin;
   if(conservedQNs){
     nQNs=conservedQNs->size();
@@ -45,7 +51,13 @@ void mps::generate(dimensionTable &dimInfoIn, std::vector<quantumNumber> *conser
     indexTable.initialize(dimInfo,conservedQNs);
     indexTable.generateQNIndexTables();
   }
-  createInitialState();
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void mps::mpsCpy(mps &source){
+  setUpQNs(source.conservedQNs);
+  stateArray::mpsCpy(source);
 }
 
 //---------------------------------------------------------------------------------------------------//

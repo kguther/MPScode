@@ -27,12 +27,12 @@ class quantumNumber{
   void setParameterD(int const Dnew);
  private:
   dimensionTable dimInfo;
-  std::complex<int> *leftLabel;
-  std::complex<int> *rightLabel;
-  std::complex<int> *indexLabel;
+  std::vector<std::complex<int> > leftLabel;
+  std::vector<std::complex<int> > rightLabel;
+  std::vector<std::complex<int> > indexLabel;
   std::vector<std::vector<int> > primaryIndices;
   std::complex<int> N;
-  std::complex<int> *QNloc;
+  std::vector<std::complex<int> > QNloc;
   void initializeLabelList();
   void initializeLabelListLP();
   void initializeLabelListRP();

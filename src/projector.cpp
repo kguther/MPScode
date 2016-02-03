@@ -70,6 +70,12 @@ void projector::updateScalarProducts(int const i, int const direction){
 }
 
 //---------------------------------------------------------------------------------------------------//
+// Besides featuring the obvious functionality of projecting out already obtained states, the projector
+// class also serves as a storage for the MPS representations of the states obtained when searching
+// excited states (since the network only has a single state). These functions grant access to the
+// stored states in various ways.
+//---------------------------------------------------------------------------------------------------//
+
 
 void projector::storeOrthoState(mps &source, int const iEigen){
   orthoStates[iEigen].mpsCpy(source);
@@ -84,7 +90,7 @@ void projector::storeCurrentState(mps &source){
 //---------------------------------------------------------------------------------------------------//
 
 void projector::getStoredState(mps *target, int const iEigen){
-  target=orthoStates+iEigen;
+  target=&(orthoStates[iEigen]);
 }
 
 //---------------------------------------------------------------------------------------------------//

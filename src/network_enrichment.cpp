@@ -19,7 +19,7 @@ void network::leftEnrichment(double const alpha, int const i){
   getLocalDimensions(i);
   lDRR=networkState.locDimR(i+1);
   ldp=locd(i+1);
-  int MNumCols=lDR*(1+lDwL);
+  int MNumCols=lDR*(1+lDwR);
   int MNumRows=ld*lDL;
   int maxDim=(MNumRows>MNumCols)?MNumRows:MNumCols;
   //Allocate the memory needed for the output of ZUNGBR which is more than the original matrix - also prevents possible segfault when copying (size of target is given for the same reason)
@@ -52,7 +52,7 @@ void network::leftEnrichment(double const alpha, int const i){
     }
   }
   delete[] pExpression;
-  //Singular Value Decomposition of Mnew=U*S*V
+  //Singular Value Decomposition of Mnew=U*S*VT
   int containerDim=(MNumRows>MNumCols)?MNumCols:MNumRows;
   double *diags=new double[containerDim];
   lapack_complex_double *VT=new lapack_complex_double[maxDim*maxDim];
@@ -65,7 +65,8 @@ void network::leftEnrichment(double const alpha, int const i){
   //Truncation is carried out implicitly by only adressing part of the matrix
   for(int mi=0;mi<MNumCols;++mi){
     for(int ai=0;ai<lDR;++ai){
-      VT[ai+lDR*mi]*=diags[ai];
+      //I think this is correct, not the original lDR as leading dimension
+      VT[ai+MNumCols*mi]*=diags[ai];
     }
   }
   delete[] diags;
@@ -217,6 +218,111 @@ void network::rightEnrichment(double const alpha, int const i){
   delete[] VT;
   delete[] Mnew;
 }
+
+//---------------------------------------------------------------------------------------------------//
+
+void network::leftEnrichmentBlockwise(double const alpha, int const i){
+  lapack_complex_double *Mnew;
+  lapack_complex_double *Bnew, *R, *BStart, *networkB;
+  lapack_complex_double *pExpression;
+  lapack_complex_double *U, *VT;
+  double *diags;
+  int blockDimR, blockDimL, maxDim;
+  int containerDim;
+  int lDRR, ldp;
+  int siCurrent, aiCurrent, aimCurrent, aipCurrent;
+  int numBlocks, lBlockSize, rBlockSize;
+  getLocalDimensions(i);
+  int const MNumCols=lDR*(1+lDwR);
+  int const MNumRows=lDL*ld;
+  lDRR=networkState.locDimR(i+1);
+  ldp=locd(i+1);
+  R=new lapack_complex_double[lDR*lDR*(1+lDwR)];
+  pExpression=new lapack_complex_double[ld*lDL*lDR*lDwR];
+  getPExpressionLeft(i,pExpression);
+  numBlocks=networkState.indexTable.numBlocksLP(i);
+  for(int iBlock=0;iBlock<numBlocks;++iBlock){
+    lBlockSize=networkState.indexTable.lBlockSizeLP(i,iBlock);
+    rBlockSize=networkState.indexTable.rBlockSizeLP(i,iBlock);
+    blockDimL=lBlockSize;
+    blockDimR=rBlockSize*(1+lDwR);
+    maxDim=(blockDimL>blockDimR)?blockDimL:blockDimR;
+    if(lBlockSize!=0 && rBlockSize!=0){
+      Mnew=new lapack_complex_double[lBlockSize*rBlockSize*(1+lDwR)];
+      for(int j=0;j<rBlockSize;++j){
+	aiCurrent=networkState.indexTable.aiBlockIndexLP(i,iBlock,j);
+      	for(int k=0;k<lBlockSize;++k){
+	  aimCurrent=networkState.indexTable.aimBlockIndexLP(i,iBlock,k);
+	  siCurrent=networkState.indexTable.siBlockIndexLP(i,iBlock,k);
+	  Mnew[k+j*lBlockSize]=networkState.global_access(i,siCurrent,aiCurrent,aimCurrent);
+	  for(int bi=0;bi<lDwR;++bi){
+	    Mnew[k+j*lBlockSize+(bi+1)*lBlockSize*rBlockSize]=alpha*pExpression[aimCurrent+lDL*siCurrent+bi*lDL*ld*lDR+aiCurrent*lDL*ld];
+	    // This is some kind of voodoo
+	    if(Mnew[k+j*lBlockSize+(bi+1)*lBlockSize*rBlockSize]==1e100){
+	      //std::cout<<"Debug\n";
+	    }
+	  }
+	}
+      }
+      containerDim=(lBlockSize>(rBlockSize*(1+lDwR)))?rBlockSize*(1+lDwR):lBlockSize;
+      diags=new double[containerDim];
+      U=new lapack_complex_double[blockDimL*blockDimL];
+      VT=new lapack_complex_double[blockDimR*blockDimR];
+      LAPACKE_zgesdd(LAPACK_COL_MAJOR,'A',blockDimL,blockDimR,Mnew,blockDimL,diags,U,blockDimL,VT,blockDimR);
+      delete[] Mnew;
+      for(int mi=0;mi<blockDimR;++mi){
+	for(int j=0;j<rBlockSize;++j){
+	  //It should be blockDimR as leading dimension, since this is the structure of VT
+	  VT[j+mi*blockDimR]*=diags[j];
+	}
+      }
+      delete[] diags;
+      for(int b=0;b<(1+lDwR);++b){
+	for(int jp=0;jp<rBlockSize;++jp){
+	  aipCurrent=networkState.indexTable.aiBlockIndexLP(i,iBlock,jp);
+	  for(int j=0;j<rBlockSize;++j){
+	    aiCurrent=networkState.indexTable.aiBlockIndexLP(i,iBlock,j);
+	    R[aiCurrent+lDR*aipCurrent+lDR*lDR*b]=VT[j+blockDimR*jp+blockDimR*rBlockSize*b];
+	  }
+	}
+      }
+      delete[] VT;
+      for(int j=0;j<rBlockSize;++j){
+	aiCurrent=networkState.indexTable.aiBlockIndexLP(i,iBlock,j);
+	for(int k=0;k<lBlockSize;++k){
+	  aimCurrent=networkState.indexTable.aimBlockIndexLP(i,iBlock,k);
+	  siCurrent=networkState.indexTable.siBlockIndexLP(i,iBlock,k);
+	  networkState.global_access(i,siCurrent,aiCurrent,aimCurrent)=U[k+lBlockSize*j];
+	}
+      }
+      delete[] U;
+    }
+  }
+  Bnew=new lapack_complex_double[ldp*lDRR*lDR*(1+lDwR)];
+  for(int si=0;si<ldp;++si){
+    for(int air=0;air<lDRR;++air){
+      for(int ai=0;ai<lDR;++ai){
+	Bnew[ai+air*MNumCols+si*lDRR*MNumCols]=networkState.global_access(i+1,si,air,ai);
+      }
+      for(int ai=lDR;ai<MNumCols;++ai){
+	Bnew[ai+air*MNumCols+si*lDRR*MNumCols]=0;
+      }
+    }
+  }
+  lapack_complex_double zone=1.0;
+  lapack_complex_double zzero=0.0;
+  for(int si=0;si<ldp;++si){
+    networkState.subMatrixStart(networkB,i+1,si);
+    BStart=Bnew+si*lDRR*MNumCols;
+    cblas_zgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,lDR,lDRR,lDR*(1+lDwR),&zone,R,lDR,BStart,lDR*(1+lDwR),&zzero,networkB,lDR);
+  }
+  delete[] Bnew;
+  delete[] pExpression;
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+
 
 //---------------------------------------------------------------------------------------------------//
 // Auxiliary functions to determine the heuristic expansion term for the enrichment step.
