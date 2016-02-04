@@ -75,7 +75,7 @@ void basisQNOrderMatrix::generateQNIndexTables(){
   for(int i=0;i<dimInfo.L();++i){
     blockStructure(i,0,aiBlockIndicesLP[i],siaimBlockIndicesLP[i]);
     blockStructure(i,1,aimBlockIndicesRP[i],siaiBlockIndicesRP[i]);
-    if(i==0 && 1){
+    if(i==0 && 0){
       // This part is used to test QN labeling schemes for their useability. It prints out the block indices and their QN labels.
       std::cout<<"Right labels:\n";
       for(int aim=0;aim<dimInfo.locDimL(i+1);++aim){

@@ -2,6 +2,7 @@
 #include "arrayprocessing.h"
 #include "tmpContainer.h"
 #include "network.h"
+#include "optHMatrix.h"
 #include <iostream>
 
 //---------------------------------------------------------------------------------------------------//
@@ -257,10 +258,6 @@ void network::leftEnrichmentBlockwise(double const alpha, int const i){
 	  Mnew[k+j*lBlockSize]=networkState.global_access(i,siCurrent,aiCurrent,aimCurrent);
 	  for(int bi=0;bi<lDwR;++bi){
 	    Mnew[k+j*lBlockSize+(bi+1)*lBlockSize*rBlockSize]=alpha*pExpression[aimCurrent+lDL*siCurrent+bi*lDL*ld*lDR+aiCurrent*lDL*ld];
-	    // This is some kind of voodoo
-	    if(Mnew[k+j*lBlockSize+(bi+1)*lBlockSize*rBlockSize]==1e100){
-	      //std::cout<<"Debug\n";
-	    }
 	  }
 	}
       }
@@ -318,11 +315,108 @@ void network::leftEnrichmentBlockwise(double const alpha, int const i){
   }
   delete[] Bnew;
   delete[] pExpression;
+  delete[] R;
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-
+void network::rightEnrichmentBlockwise(double const alpha, int const i){
+  /*
+  lapack_complex_double *Mnew;
+  lapack_complex_double *Anew, *R, *AStart, *networkA;
+  lapack_complex_double *pExpression;
+  lapack_complex_double *U, *VT;
+  double *diags;
+  int blockDimR, blockDimL, maxDim;
+  int containerDim;
+  int lDLL, ldm;
+  int siCurrent, aiCurrent, aimCurrent, aimpCurrent;
+  int numBlocks, lBlockSize, rBlockSize;
+  getLocalDimensions(i);
+  int const MNumCols=lDR*ld;
+  int const MNumRows=lDL*(1+lDwL);
+  lDRR=networkState.locDimL(i-1);
+  ldp=locd(i-1);
+  R=new lapack_complex_double[lDL*lDL*(1+lDwR)];
+  pExpression=new lapack_complex_double[ld*lDL*lDR*lDwL];
+  getPExpressionRight(i,pExpression);
+  numBlocks=networkState.indexTable.numBlocksRP(i);
+  for(int iBlock=0;iBlock<numBlocks;++iBlock){
+    lBlockSize=networkState.indexTable.lBlockSizeRP(i,iBlock);
+    rBlockSize=networkState.indexTable.rBlockSizeRP(i,iBlock);
+    blockDimL=lBlockSize*(1+lDwL);
+    blockDimR=rBlockSize;
+    maxDim=(blockDimL>blockDimR)?blockDimL:blockDimR;
+    if(lBlockSize!=0 && rBlockSize!=0){
+      Mnew=new lapack_complex_double[lBlockSize*rBlockSize*(1+lDwR)];
+      for(int j=0;j<rBlockSize;++j){
+	aiCurrent=networkState.indexTable.aiBlockIndexRP(i,iBlock,j);
+	siCurrent=networkState.indexTable.siBlockIndexRP(i,iBlock,j);
+      	for(int k=0;k<lBlockSize;++k){
+	  aimCurrent=networkState.indexTable.aimBlockIndexLP(i,iBlock,k);
+	  Mnew[k+j*blockDimL]=networkState.global_access(i,siCurrent,aiCurrent,aimCurrent);
+	  for(int bim=0;bim<lDwL;++bim){
+	    Mnew[k+j*blockDimL+(bim+1)*lBlockSize]=alpha*pExpression[aimCurrent*lDwL+lDR*lDwL*lDL*siCurrent+bim+aiCurrent*lDL*lDwL];
+	  }
+	}
+      }
+      containerDim=(blockDimL>blockDimR)?blockDimR:blockDimL;
+      diags=new double[containerDim];
+      U=new lapack_complex_double[blockDimL*blockDimL];
+      VT=new lapack_complex_double[blockDimR*blockDimR];
+      LAPACKE_zgesdd(LAPACK_COL_MAJOR,'A',blockDimL,blockDimR,Mnew,blockDimL,diags,U,blockDimL,VT,blockDimR);
+      delete[] Mnew;
+      for(int mi=0;mi<blockDimL;++mi){
+	for(int k=0;k<lBlockSize;++k){
+	  //It should be blockDimR as leading dimension, since this is the structure of VT
+	  U[mi+k*blockDimL]*=diags[k];
+	}
+      }
+      delete[] diags;
+      for(int b=0;b<(1+lDwL);++b){
+	for(int kp=0;kp<lBlockSize;++kp){
+	  aimpCurrent=networkState.indexTable.aimBlockIndexRP(i,iBlock,kp);
+	  for(int k=0;k<lBlockSize;++k){
+	    aimCurrent=networkState.indexTable.aimBlockIndexRP(i,iBlock,k);
+	    R[aimCurrent+(1+lDwL)*lDR*aipCurrent+lDR*b]=U[k+blockDimL*kp+lBlockSize*b];
+	  }
+	}
+      }
+      delete[] U;
+      for(int j=0;j<rBlockSize;++j){
+	aiCurrent=networkState.indexTable.aiBlockIndexRP(i,iBlock,j);
+	siCurrent=networkState.indexTable.siBlockIndexRP(i,iBlock,j);
+	for(int k=0;k<lBlockSize;++k){
+	  aimCurrent=networkState.indexTable.aimBlockIndexRP(i,iBlock,k);
+	  networkState.global_access(i,siCurrent,aiCurrent,aimCurrent)=VT[k+blockDimL*j];
+	}
+      }
+      delete[] VT;
+    }
+  }
+  Anew=new lapack_complex_double[ldp*lDLL*lDL*(1+lDwL)];
+  for(int si=0;si<ldp;++si){
+    for(int air=0;air<lDRR;++air){
+      for(int ai=0;ai<lDR;++ai){
+	Bnew[ai+air*MNumCols+si*lDRR*MNumCols]=networkState.global_access(i+1,si,air,ai);
+      }
+      for(int ai=lDR;ai<MNumCols;++ai){
+	Bnew[ai+air*MNumCols+si*lDRR*MNumCols]=0;
+      }
+    }
+  }
+  lapack_complex_double zone=1.0;
+  lapack_complex_double zzero=0.0;
+  for(int si=0;si<ldp;++si){
+    networkState.subMatrixStart(networkB,i+1,si);
+    AStart=Anew+si*lDRR*MNumCols;
+    cblas_zgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,lDR,lDRR,lDR*(1+lDwR),&zone,R,lDR,BStart,lDR*(1+lDwR),&zzero,networkB,lDR);
+  }
+  delete[] Bnew;
+  delete[] pExpression;
+  delete[] R;
+  */
+}
 
 //---------------------------------------------------------------------------------------------------//
 // Auxiliary functions to determine the heuristic expansion term for the enrichment step.
@@ -399,3 +493,35 @@ void network::getPExpressionRight(int const i, lapack_complex_double *pExpr){
   }
 }
 
+//---------------------------------------------------------------------------------------------------//
+// Another auxiliary function to determine the current energy value for estimation of a new alpha
+//---------------------------------------------------------------------------------------------------//
+
+double network::getCurrentEnergy(int const i){
+  lapack_complex_double simpleContainer=0;
+  lapack_complex_double *siteMatrixContainer=new lapack_complex_double [ld*lDR*lDL];
+  lapack_complex_double *currentM, *LTerm, *RTerm;
+  pCtr.Lctr.subContractionStart(LTerm,i);
+  pCtr.Rctr.subContractionStart(RTerm,i);
+  networkState.subMatrixStart(currentM,i);
+  optHMatrix gather(RTerm,LTerm,&networkH,networkDimInfo,networkH.maxDim(),i,0,0,0);
+  gather.MultMv(currentM,siteMatrixContainer);
+  getLocalDimensions(i);
+  for(int si=0;si<ld;++si){
+    for(int ai=0;ai<lDR;++ai){
+      for(int aim=0;aim<lDL;++aim){
+	simpleContainer+=conj(currentM[aim+ai*lDL+si*lDR*lDL])*siteMatrixContainer[aim+ai*lDL+si*lDR*lDL];
+      }
+    }
+  }
+  delete[] siteMatrixContainer;
+  return real(simpleContainer);
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+double network::getNewAlpha(int const i, double const lambda){
+  double lambdap=getCurrentEnergy(i);
+  lambdap-=lambda;
+  return 0;
+}

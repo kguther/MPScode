@@ -56,8 +56,8 @@ void mps::setUpQNs(std::vector<quantumNumber> *conservedQNsin){
 //---------------------------------------------------------------------------------------------------//
 
 void mps::mpsCpy(mps &source){
-  setUpQNs(source.conservedQNs);
   stateArray::mpsCpy(source);
+  setUpQNs(source.conservedQNs);
 }
 
 //---------------------------------------------------------------------------------------------------//

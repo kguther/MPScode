@@ -75,7 +75,7 @@ void network::initialize(problemParameters inputpars, simulationParameters input
   for(int iEigen=1;iEigen<pars.nEigs;++iEigen){
     excitedStateP.storeOrthoState(networkState,iEigen);
   }
-  //networkState.setToExactGroundState();
+  networkState.setToExactGroundState();
   excitedStateP.storeOrthoState(networkState,0);
 }
 
@@ -191,6 +191,7 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
       for(int i=L-1;i>0;--i){
       	normalize(i,0,0);
       }
+      std::cout<<"Calculating final normalizations\n";
       networkState.normalizeFinal(1);
       //In calcCtrIterRightBase, the second argument has to be a pointer, because it usually is an array. No call-by-reference here.
       pCtr.calcCtrIterRightBase(-1,&expectationValue);
@@ -250,13 +251,12 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
     errRet=optimize(i,maxIter,tol,lambda);
     curtime=clock()-curtime;
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
-    measure(check,spinCheck);
-    measure(checkParity,parCheck);
-    std::cout<<"Current particle number (nrm): "<<spinCheck<<std::endl;
-    std::cout<<"Current subchain parity (nrm): "<<parCheck<<std::endl;
+    std::cout<<"Normalizing state\n";
     normalize(i,1,alpha);
     //Here, the scalar products with lower lying states are updated
+    std::cout<<"Updating projector\n";
     excitedStateP.updateScalarProducts(i,1);
+    std::cout<<"Calculating next partial contraction\n";
     pCtr.calcCtrIterLeft(i+1);
   }
   networkState.normalizeFinal(0);
@@ -301,12 +301,12 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
   //Using the current site matrix as a starting point allows for much faster convergence as it has already been optimized in previous sweeps (except for the first sweep, this is where a good starting point has to be guessed
   networkState.subMatrixStart(currentM,i);
 
-  
+  /*
   measure(check,spinCheck);
   measure(checkParity,parCheck);
   std::cout<<"Current particle number (opt): "<<spinCheck<<std::endl;
   std::cout<<"Current subchain parity (opt): "<<parCheck<<std::endl;
-  
+  */
 
   if(pars.nQNs && i!=0 && i!=(L-1)){
     //For some obscure reason, ARPACK++ can not handle the boundary problems with reduced dimension. They have to be solved without using the block structure. Since they have a really tiny dimension, this does not matter at all.
