@@ -7,7 +7,7 @@
 
 //---------------------------------------------------------------------------------------------------//
 // The implementation of the enrichment is very ugly and might still contain severe bugs which
-// are irrelevant to the current testing system (Heisenberg chain). It does however, improve convergence
+// are irrelevant to the testing system (Heisenberg chain). It does however, improve convergence
 // speed and avoids local minima (at least thats what I expect, there are no problems with local 
 // minima till now).
 //---------------------------------------------------------------------------------------------------//
@@ -85,15 +85,6 @@ void network::leftEnrichment(double const alpha, int const i){
   }
   delete[] VT;
   delete[] Bnew;
-  /*unity=new lapack_complex_double[MNumRows*MNumRows];
-  for(int ai=0;ai<MNumRows;++ai){
-    for(int aip=0;aip<MNumRows;++aip){
-      unity[ai+aip*MNumRows]=(ai==aip)?-1:0;
-    }
-  }
-  cblas_zgemm(CblasColMajor,CblasConjTrans,CblasNoTrans,MNumRows,MNumRows,MNumRows,&zone,U,MNumRows,U,MNumRows,&zone,unity,MNumRows);
-  std::cout<<"Verification of U: "<<cblas_dznrm2(MNumRows*MNumRows,unity,1)<<std::endl;
-  delete[] unity;*/
   networkState.subMatrixStart(networkB,i);
   for(int si=0;si<ld;++si){
     for(int ai=0;ai<lDR;++ai){
@@ -102,20 +93,6 @@ void network::leftEnrichment(double const alpha, int const i){
       }
     }
   }
-  unity=new lapack_complex_double[lDR*lDR];
-  for(int ai=0;ai<lDR;++ai){
-    for(int aip=0;aip<lDR;++aip){
-      unity[ai+aip*lDR]=(ai==aip)?-1:0;
-    }
-  }
-  for(int si=0;si<ld;++si){
-    transp(lDR,lDL,networkB+si*lDL*lDR);
-  }
-  cblas_zgemm(CblasRowMajor,CblasConjTrans,CblasNoTrans,lDR,lDR,ld*lDL,&zone,networkB,lDR,networkB,lDR,&zone,unity,lDR);
-  for(int si=0;si<ld;++si){
-    transp(lDL,lDR,networkB+si*lDL*lDR);
-  }
-  std::cout<<"Verification: "<<cblas_dznrm2(lDR*lDR,unity,1)<<std::endl;
   delete[] unity;
   delete[] Mnew;
   delete[] U;
@@ -198,7 +175,7 @@ void network::rightEnrichment(double const alpha, int const i){
   delete[] AStart;
   delete[] U;
   delete[] Anew;
-  //Store the remaining U into B
+  //Store the remaining VT into B
   for(int si=0;si<ld;++si){
     for(int ai=0;ai<lDR;++ai){
       for(int aim=0;aim<lDL;++aim){
@@ -206,20 +183,15 @@ void network::rightEnrichment(double const alpha, int const i){
       }
     }
   }
-  lapack_complex_double *unity=new lapack_complex_double[lDL*lDL];
-  for(int ai=0;ai<lDL;++ai){
-    for(int aip=0;aip<lDL;++aip){
-      unity[ai+aip*lDL]=(ai==aip)?-1:0;
-    }
-  }
-  networkState.subMatrixStart(networkA,i);
-  cblas_zgemm(CblasColMajor,CblasNoTrans,CblasConjTrans,lDL,lDL,ld*lDR,&zone,networkA,lDL,networkA,lDL,&zone,unity,lDL);
-  std::cout<<"Verification: "<<cblas_dznrm2(lDL*lDL,unity,1)<<std::endl;
-  delete[] unity;
   delete[] VT;
   delete[] Mnew;
 }
 
+//---------------------------------------------------------------------------------------------------//
+// If you think these functions were obscure, wait for the QN conserving variant.
+// They do essentially the same thing, but expand and decompose the matrices blockwise, thus preserving
+// the block structure. In principle, therefore, the expansion term P is also modified. It is unknown
+// if the truncated P is as useful as the heuristic ansatz by Hubig
 //---------------------------------------------------------------------------------------------------//
 
 void network::leftEnrichmentBlockwise(double const alpha, int const i){
@@ -321,9 +293,8 @@ void network::leftEnrichmentBlockwise(double const alpha, int const i){
 //---------------------------------------------------------------------------------------------------//
 
 void network::rightEnrichmentBlockwise(double const alpha, int const i){
-  /*
   lapack_complex_double *Mnew;
-  lapack_complex_double *Anew, *R, *AStart, *networkA;
+  lapack_complex_double *Anew, *R, *networkA;
   lapack_complex_double *pExpression;
   lapack_complex_double *U, *VT;
   double *diags;
@@ -335,9 +306,9 @@ void network::rightEnrichmentBlockwise(double const alpha, int const i){
   getLocalDimensions(i);
   int const MNumCols=lDR*ld;
   int const MNumRows=lDL*(1+lDwL);
-  lDRR=networkState.locDimL(i-1);
-  ldp=locd(i-1);
-  R=new lapack_complex_double[lDL*lDL*(1+lDwR)];
+  lDLL=networkState.locDimL(i-1);
+  ldm=locd(i-1);
+  R=new lapack_complex_double[lDL*lDL*(1+lDwL)];
   pExpression=new lapack_complex_double[ld*lDL*lDR*lDwL];
   getPExpressionRight(i,pExpression);
   numBlocks=networkState.indexTable.numBlocksRP(i);
@@ -348,12 +319,12 @@ void network::rightEnrichmentBlockwise(double const alpha, int const i){
     blockDimR=rBlockSize;
     maxDim=(blockDimL>blockDimR)?blockDimL:blockDimR;
     if(lBlockSize!=0 && rBlockSize!=0){
-      Mnew=new lapack_complex_double[lBlockSize*rBlockSize*(1+lDwR)];
+      Mnew=new lapack_complex_double[lBlockSize*rBlockSize*(1+lDwL)];
       for(int j=0;j<rBlockSize;++j){
 	aiCurrent=networkState.indexTable.aiBlockIndexRP(i,iBlock,j);
 	siCurrent=networkState.indexTable.siBlockIndexRP(i,iBlock,j);
       	for(int k=0;k<lBlockSize;++k){
-	  aimCurrent=networkState.indexTable.aimBlockIndexLP(i,iBlock,k);
+	  aimCurrent=networkState.indexTable.aimBlockIndexRP(i,iBlock,k);
 	  Mnew[k+j*blockDimL]=networkState.global_access(i,siCurrent,aiCurrent,aimCurrent);
 	  for(int bim=0;bim<lDwL;++bim){
 	    Mnew[k+j*blockDimL+(bim+1)*lBlockSize]=alpha*pExpression[aimCurrent*lDwL+lDR*lDwL*lDL*siCurrent+bim+aiCurrent*lDL*lDwL];
@@ -368,7 +339,7 @@ void network::rightEnrichmentBlockwise(double const alpha, int const i){
       delete[] Mnew;
       for(int mi=0;mi<blockDimL;++mi){
 	for(int k=0;k<lBlockSize;++k){
-	  //It should be blockDimR as leading dimension, since this is the structure of VT
+	  //It should be blockDimL as leading dimension, since this is the structure of U
 	  U[mi+k*blockDimL]*=diags[k];
 	}
       }
@@ -378,7 +349,7 @@ void network::rightEnrichmentBlockwise(double const alpha, int const i){
 	  aimpCurrent=networkState.indexTable.aimBlockIndexRP(i,iBlock,kp);
 	  for(int k=0;k<lBlockSize;++k){
 	    aimCurrent=networkState.indexTable.aimBlockIndexRP(i,iBlock,k);
-	    R[aimCurrent+(1+lDwL)*lDR*aipCurrent+lDR*b]=U[k+blockDimL*kp+lBlockSize*b];
+	    R[aimCurrent+lDL*(1+lDwL)*aimpCurrent+lDL*b]=U[k+blockDimL*kp+lBlockSize*b];
 	  }
 	}
       }
@@ -388,34 +359,39 @@ void network::rightEnrichmentBlockwise(double const alpha, int const i){
 	siCurrent=networkState.indexTable.siBlockIndexRP(i,iBlock,j);
 	for(int k=0;k<lBlockSize;++k){
 	  aimCurrent=networkState.indexTable.aimBlockIndexRP(i,iBlock,k);
-	  networkState.global_access(i,siCurrent,aiCurrent,aimCurrent)=VT[k+blockDimL*j];
+	  networkState.global_access(i,siCurrent,aiCurrent,aimCurrent)=VT[k+blockDimR*j];
 	}
       }
       delete[] VT;
     }
   }
-  Anew=new lapack_complex_double[ldp*lDLL*lDL*(1+lDwL)];
-  for(int si=0;si<ldp;++si){
-    for(int air=0;air<lDRR;++air){
-      for(int ai=0;ai<lDR;++ai){
-	Bnew[ai+air*MNumCols+si*lDRR*MNumCols]=networkState.global_access(i+1,si,air,ai);
+  delete[] pExpression;
+  Anew=new lapack_complex_double[ldm*lDLL*lDL*(1+lDwL)];
+  for(int si=0;si<ldm;++si){
+    for(int aimm=0;aimm<lDLL;++aimm){
+      for(int aim=0;aim<lDL;++aim){
+	Anew[aim*lDLL*ldm+aimm+si*lDLL]=networkState.global_access(i-1,si,aim,aimm);
       }
-      for(int ai=lDR;ai<MNumCols;++ai){
-	Bnew[ai+air*MNumCols+si*lDRR*MNumCols]=0;
+      for(int aim=lDL;aim<MNumRows;++aim){
+	Anew[aim*ldm*lDLL+aimm+si*lDLL]=0;
       }
     }
   }
   lapack_complex_double zone=1.0;
   lapack_complex_double zzero=0.0;
-  for(int si=0;si<ldp;++si){
-    networkState.subMatrixStart(networkB,i+1,si);
-    AStart=Anew+si*lDRR*MNumCols;
-    cblas_zgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,lDR,lDRR,lDR*(1+lDwR),&zone,R,lDR,BStart,lDR*(1+lDwR),&zzero,networkB,lDR);
+  lapack_complex_double *AStart=new lapack_complex_double[lDLL*MNumRows];
+  for(int si=0;si<ldm;++si){
+    networkState.subMatrixStart(networkA,i-1,si);
+    for(int mi=0;mi<MNumRows;++mi){
+      for(int aimm=0;aimm<lDLL;++aimm){
+	AStart[aimm+mi*lDLL]=Anew[aimm+si*lDLL+mi*ld*lDLL];
+      }
+    }
+    cblas_zgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,lDLL,lDL,MNumRows,&zone,AStart,lDLL,R,MNumRows,&zzero,networkA,lDLL);
   }
-  delete[] Bnew;
-  delete[] pExpression;
+  delete[] AStart;
+  delete[] Anew;
   delete[] R;
-  */
 }
 
 //---------------------------------------------------------------------------------------------------//

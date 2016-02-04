@@ -67,7 +67,7 @@ class network{
   double convergenceCheck();
   double getCurrentEnergy(int const i);
   double getNewAlpha(int const i, double const lambda);
-  void normalize(int const i, int const direction, double const alpha=0);
+  void normalize(int const i, int const direction, double const alpha=0, int const enrichment=0);
   void sweep(double const maxIter, double const tol, double const alpha ,double &lambda);
   void leftEnrichment(double const alpha, int const i);
   void rightEnrichment(double const alpha, int const i);

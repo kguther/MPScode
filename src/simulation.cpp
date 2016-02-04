@@ -93,8 +93,8 @@ void simulation::singleRun(){
   std::vector<double> expectationValues;
   std::vector<std::vector<std::complex<double> > > localExpectationValues;
   TensorNetwork.getProjector(stateRep);
-  J=1+parDirection.real();
-  g=1+parDirection.imag();
+  J=1;//+parDirection.real();
+  g=1;//+parDirection.imag();
   hInfo=writeHamiltonian(TensorNetwork,J,g);
   if(hInfo){
     std::cout<<"Invalid bond dimension for the construction of H. Terminating process.\n";

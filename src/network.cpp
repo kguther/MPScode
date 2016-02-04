@@ -75,7 +75,7 @@ void network::initialize(problemParameters inputpars, simulationParameters input
   for(int iEigen=1;iEigen<pars.nEigs;++iEigen){
     excitedStateP.storeOrthoState(networkState,iEigen);
   }
-  networkState.setToExactGroundState();
+  //networkState.setToExactGroundState();
   excitedStateP.storeOrthoState(networkState,0);
 }
 
@@ -162,7 +162,7 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
   }
   excitedStateP.loadNextState(networkState,0);
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
-    pCtr.initialize(&networkH,&networkState);
+    pCtr.initialize(&networkH,&networkState);  
     std::cout<<"Startung normalization\n";
     for(int i=L-1;i>0;--i){
       normalize(i,0,0);
@@ -188,13 +188,15 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
       }
       //actual sweep is executed here
       sweep(maxIter,tol,alpha,lambda[iEigen]);
+      //In calcCtrIterRightBase, the second argument has to be a pointer, because it usually is an array. No call-by-reference here.
+      pCtr.calcCtrIterRightBase(-1,&expectationValue);
+      /*
       for(int i=L-1;i>0;--i){
       	normalize(i,0,0);
       }
       std::cout<<"Calculating final normalizations\n";
       networkState.normalizeFinal(1);
-      //In calcCtrIterRightBase, the second argument has to be a pointer, because it usually is an array. No call-by-reference here.
-      pCtr.calcCtrIterRightBase(-1,&expectationValue);
+      */
       deltaLambda[iEigen]=1;
       if(iSweep==simPars.nSweeps-1){
 	deltaLambda[iEigen]=convergenceCheck();
@@ -211,12 +213,6 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
       for(int prev=0;prev<iEigen;++prev){
 	std::cout<<"Overlap with state "<<prev<<" is: "<<excitedStateP.fullOverlap(prev)<<std::endl;
       }
-
-      measure(check,spinCheck);
-      measure(checkParity,parCheck);
-      std::cout<<"Current particle number: "<<spinCheck<<std::endl;
-      std::cout<<"Current subchain parity: "<<parCheck<<std::endl;
-
     }
     stepRet=gotoNextEigen();
     if(!stepRet){
@@ -240,9 +236,12 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
 void network::sweep(double const maxIter, double const tol, double const alpha, double &lambda){
   clock_t curtime;
   int errRet;
+  int const expFlag=1;
   double spinCheck=0;
   double parCheck=0;
   lapack_complex_double stateNorm;
+  overlap test;
+  test.loadMPS(&networkState,&networkState);
   std::cout<<"STARTING RIGHTSWEEP\n\n";
   for(int i=0;i<(L-1);++i){
     //Step of leftsweep
@@ -251,24 +250,22 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
     errRet=optimize(i,maxIter,tol,lambda);
     curtime=clock()-curtime;
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
-    std::cout<<"Normalizing state\n";
-    normalize(i,1,alpha);
+    normalize(i,1,alpha,expFlag);
     //Here, the scalar products with lower lying states are updated
-    std::cout<<"Updating projector\n";
     excitedStateP.updateScalarProducts(i,1);
-    std::cout<<"Calculating next partial contraction\n";
     pCtr.calcCtrIterLeft(i+1);
   }
   networkState.normalizeFinal(0);
   std::cout<<"STARTING LEFTSWEEP\n\n";
   for(int i=L-1;i>0;--i){
     //Step of rightsweep
+    std::cout<<"Norm of state: "<<test.getFullOverlap()<<std::endl;
     std::cout<<"Optimizing site matrix"<<std::endl;    
     curtime=clock();
     errRet=optimize(i,maxIter,tol,lambda);
     curtime=clock()-curtime;
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
-    normalize(i,0,alpha);
+    normalize(i,0,alpha,expFlag);
     //same as above for the scalar products with lower lying states
     excitedStateP.updateScalarProducts(i,-1);
     pCtr.calcCtrIterRight(i-1);
@@ -349,14 +346,15 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
 // expansion
 //---------------------------------------------------------------------------------------------------//
 
-void network::normalize(int const i, int const direction, double const alpha){
-  int enrichment=0;
-  if(!pars.nQNs && alpha>1e-20){
-    enrichment=1;
-  }
+void network::normalize(int const i, int const direction, double const alpha, int const enrichment){
   if(direction){
-    if(enrichment || 1){
-      leftEnrichmentBlockwise(alpha,i);
+    if(enrichment){
+      if(pars.nQNs){
+	leftEnrichmentBlockwise(alpha,i);
+      }
+      else{
+	leftEnrichment(alpha,i);
+      }
     }
     else{
       networkState.leftNormalizeState(i);
@@ -364,7 +362,12 @@ void network::normalize(int const i, int const direction, double const alpha){
   }
   else{
     if(enrichment){
-      rightEnrichment(alpha,i);
+      if(pars.nQNs){
+	rightEnrichmentBlockwise(alpha,i);
+      }
+      else{
+	rightEnrichment(alpha,i);
+      }
     }
     else{
       networkState.rightNormalizeState(i);
@@ -416,9 +419,6 @@ void network::calcHSqrExpectationValue(double &ioHsqr){
     }
   }
   Hsqr.setUpSparse();
-  iterativeMeasurement test;
-  test.initialize(&Hsqr,&networkState);
-  //test.calcCtrFull(-1);
   measure(&Hsqr,ioHsqr);
 }
 
