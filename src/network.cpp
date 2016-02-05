@@ -150,7 +150,6 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
   int stepRet;
   int cshift=0;
   int storeShift;
-  double alpha;
   double tol;
   double spinCheck=0;
   double parCheck=0;
@@ -181,13 +180,14 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
 
     pCtr.calcCtrIterRightBase(-1,&expectationValue);
     std::cout<<"Initial energy: "<<expectationValue<<std::endl;
-
+    lambda[iEigen]=real(expectationValue);
+    
     for(int iSweep=0;iSweep<simPars.nSweeps;++iSweep){
       if(!nConverged[iEigen]){
 	break;
       }
       //actual sweep is executed here
-      sweep(maxIter,tol,alpha,lambda[iEigen]);
+      sweep(maxIter,tol,lambda[iEigen]);
       //In calcCtrIterRightBase, the second argument has to be a pointer, because it usually is an array. No call-by-reference here.
       pCtr.calcCtrIterRightBase(-1,&expectationValue);
       /*
@@ -204,7 +204,6 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
       if(deltaLambda[iEigen]<simPars.devAccuracy){
 	nConverged[iEigen]=0;
       }
-      alpha*=.1;
       if(tol>simPars.tolMin){
 	tol*=pow(simPars.tolMin/simPars.tolInitial,1.0/simPars.nSweeps);
       }
@@ -213,6 +212,12 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
       for(int prev=0;prev<iEigen;++prev){
 	std::cout<<"Overlap with state "<<prev<<" is: "<<excitedStateP.fullOverlap(prev)<<std::endl;
       }
+
+      measure(check,spinCheck);
+      measure(checkParity,parCheck);
+      std::cout<<"Current particle number (final): "<<spinCheck<<std::endl;
+      std::cout<<"Current subchain parity (final): "<<parCheck<<std::endl;
+
     }
     stepRet=gotoNextEigen();
     if(!stepRet){
@@ -233,24 +238,29 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
 
 //---------------------------------------------------------------------------------------------------//
 
-void network::sweep(double const maxIter, double const tol, double const alpha, double &lambda){
+void network::sweep(double const maxIter, double const tol, double &lambda){
   clock_t curtime;
   int errRet;
-  int const expFlag=1;
+  // By default enrichment is used whenever conserved QNs are used
+  int const expFlag=pars.nQNs;
   double spinCheck=0;
   double parCheck=0;
-  lapack_complex_double stateNorm;
-  overlap test;
-  test.loadMPS(&networkState,&networkState);
+  double lambdaCont;
+
   std::cout<<"STARTING RIGHTSWEEP\n\n";
   for(int i=0;i<(L-1);++i){
     //Step of leftsweep
     std::cout<<"Optimizing site matrix"<<std::endl;
+    lambdaCont=lambda;
     curtime=clock();
     errRet=optimize(i,maxIter,tol,lambda);
     curtime=clock()-curtime;
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
-    normalize(i,1,alpha,expFlag);
+    //Execute left-sided enrichment step and update the coefficient of the expansion term
+    normalize(i,1,expFlag);
+    if(expFlag){
+      getNewAlpha(i,lambda,lambdaCont);
+    }
     //Here, the scalar products with lower lying states are updated
     excitedStateP.updateScalarProducts(i,1);
     pCtr.calcCtrIterLeft(i+1);
@@ -259,13 +269,17 @@ void network::sweep(double const maxIter, double const tol, double const alpha, 
   std::cout<<"STARTING LEFTSWEEP\n\n";
   for(int i=L-1;i>0;--i){
     //Step of rightsweep
-    std::cout<<"Norm of state: "<<test.getFullOverlap()<<std::endl;
     std::cout<<"Optimizing site matrix"<<std::endl;    
+    lambdaCont=lambda;
     curtime=clock();
     errRet=optimize(i,maxIter,tol,lambda);
     curtime=clock()-curtime;
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
-    normalize(i,0,alpha,expFlag);
+    //Execute right-sided enrichment step and update the coefficient of the expansion term
+    normalize(i,0,expFlag);
+    if(expFlag){
+      getNewAlpha(i,lambda,lambdaCont);
+    }
     //same as above for the scalar products with lower lying states
     excitedStateP.updateScalarProducts(i,-1);
     pCtr.calcCtrIterRight(i-1);
@@ -346,14 +360,14 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
 // expansion
 //---------------------------------------------------------------------------------------------------//
 
-void network::normalize(int const i, int const direction, double const alpha, int const enrichment){
+void network::normalize(int const i, int const direction, int const enrichment){
   if(direction){
     if(enrichment){
       if(pars.nQNs){
-	leftEnrichmentBlockwise(alpha,i);
+	leftEnrichmentBlockwise(i);
       }
       else{
-	leftEnrichment(alpha,i);
+	leftEnrichment(i);
       }
     }
     else{
@@ -363,10 +377,10 @@ void network::normalize(int const i, int const direction, double const alpha, in
   else{
     if(enrichment){
       if(pars.nQNs){
-	rightEnrichmentBlockwise(alpha,i);
+	rightEnrichmentBlockwise(i);
       }
       else{
-	rightEnrichment(alpha,i);
+	rightEnrichment(i);
       }
     }
     else{

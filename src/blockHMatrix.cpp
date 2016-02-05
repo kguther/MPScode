@@ -6,7 +6,7 @@
 #include "mkl_complex_defined.h"
 
 
-blockHMatrix::blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcomplex<double> > *Hin, dimensionTable &dimInfo, int Dwin, int iIn, basisQNOrderMatrix *indexTablein, projector *excitedStateP, double shift, std::vector<quantumNumber> *conservedQNsin):
+blockHMatrix::blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcomplex<double> > *Hin, dimensionTable &dimInfo, int Dwin, int iIn, basisQNOrderMatrix *indexTablein, projector *excitedStateP, double shift, std::vector<quantumNumber> *conservedQNsin, int const cached):
   optHMatrix(R,L,Hin,dimInfo,Dwin,iIn,excitedStateP,shift,conservedQNsin),
   indexTable(indexTablein),
   conservedQNsB(conservedQNsin),
@@ -27,7 +27,7 @@ blockHMatrix::blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcom
   }
   compressedVector=new arcomplex<double>[dimension];
   std::cout<<"Current eigenvalue problem dimension: "<<dimension<<std::endl;
-  if(lDR<350 && lDL<350){
+  if(lDR<350 && lDL<350 && !cached){
     explicitMv=1;
   }
   else{
@@ -234,15 +234,17 @@ arcomplex<double> blockHMatrix::HEffEntry(int const si, int const aim, int const
 //---------------------------------------------------------------------------------------------------//
 
 void blockHMatrix::excitedStateProject(arcomplex<double> *v){
-  if(P->nEigen()){
-    arcomplex<double> *vExpanded=new arcomplex<double>[d*lDR*lDL];
-    for(int m=0;m<d*lDR*lDL;++m){
-      vExpanded[m]=0;
+  if(P){
+    if(P->nEigen()){
+      arcomplex<double> *vExpanded=new arcomplex<double>[d*lDR*lDL];
+      for(int m=0;m<d*lDR*lDL;++m){
+	vExpanded[m]=0;
+      }
+      storageExpand(v,vExpanded);
+      P->project(vExpanded,i);
+      storageCompress(vExpanded,v);
+      delete[] vExpanded;
     }
-    storageExpand(v,vExpanded);
-    P->project(vExpanded,i);
-    storageCompress(vExpanded,v);
-    delete[] vExpanded;
   }
 }
 

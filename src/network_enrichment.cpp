@@ -3,6 +3,7 @@
 #include "tmpContainer.h"
 #include "network.h"
 #include "optHMatrix.h"
+#include "blockHMatrix.h"
 #include <iostream>
 
 //---------------------------------------------------------------------------------------------------//
@@ -12,7 +13,7 @@
 // minima till now).
 //---------------------------------------------------------------------------------------------------//
 
-void network::leftEnrichment(double const alpha, int const i){
+void network::leftEnrichment(int const i){
   lapack_complex_double *Mnew;
   lapack_complex_double *Bnew;
   lapack_complex_double *pExpression, *unity;
@@ -100,7 +101,7 @@ void network::leftEnrichment(double const alpha, int const i){
 
 //---------------------------------------------------------------------------------------------------//
 
-void network::rightEnrichment(double const alpha, int const i){
+void network::rightEnrichment(int const i){
   lapack_complex_double *Mnew;
   lapack_complex_double *Anew;
   lapack_complex_double *pExpression;
@@ -194,7 +195,7 @@ void network::rightEnrichment(double const alpha, int const i){
 // if the truncated P is as useful as the heuristic ansatz by Hubig
 //---------------------------------------------------------------------------------------------------//
 
-void network::leftEnrichmentBlockwise(double const alpha, int const i){
+void network::leftEnrichmentBlockwise(int const i){
   lapack_complex_double *Mnew;
   lapack_complex_double *Bnew, *R, *BStart, *networkB;
   lapack_complex_double *pExpression;
@@ -292,7 +293,7 @@ void network::leftEnrichmentBlockwise(double const alpha, int const i){
 
 //---------------------------------------------------------------------------------------------------//
 
-void network::rightEnrichmentBlockwise(double const alpha, int const i){
+void network::rightEnrichmentBlockwise(int const i){
   lapack_complex_double *Mnew;
   lapack_complex_double *Anew, *R, *networkA;
   lapack_complex_double *pExpression;
@@ -399,34 +400,22 @@ void network::rightEnrichmentBlockwise(double const alpha, int const i){
 //---------------------------------------------------------------------------------------------------//
 
 void network::getPExpressionLeft(int const i, lapack_complex_double *pExpr){
-  lapack_complex_double simpleContainer;
+  int const numBlocks=networkState.indexTable.numBlocksLP(i);
+  int lBlockSize, rBlockSize;
+  int aiCurrent, siCurrent, aimCurrent;
   getLocalDimensions(i);
-  tmpContainer<lapack_complex_double> innerContainer(ld,lDL,lDR,lDwL);
-  for(int si=0;si<ld;++si){
-    for(int aim=0;aim<lDL;++aim){
-      for(int ai=0;ai<lDR;++ai){
-	for(int bim=0;bim<lDwL;++bim){
-	  simpleContainer=0;
-	  for(int aimp=0;aimp<lDL;++aimp){
-	    simpleContainer+=pCtr.Lctr.global_access(i,aim,bim,aimp)*networkState.global_access(i,si,ai,aimp);
-	  }
-	  innerContainer.global_access(si,aim,ai,bim)=simpleContainer;
-	}
-      }
-    }
-  }
-  for(int si=0;si<ld;++si){
-    for(int ai=0;ai<lDR;++ai){
-      for(int bi=0;bi<lDwR;++bi){
-	for(int aim=0;aim<lDL;++aim){
-	  //BEWARE: IM UNSURE WHETHER bi OR ai IS THE OUTERMOST INDEX - FORGET IT, ITS bi
-	  simpleContainer=0;
-	  for(int sip=0;sip<ld;++sip){
-	    for(int bim=0;bim<lDwL;++bim){
-	      simpleContainer+=networkH.global_access(i,si,sip,bi,bim)*innerContainer.global_access(sip,aim,ai,bim);
-	    }
-	  }
-	  pExpr[aim+lDL*si+bi*lDL*ld*lDR+ai*lDL*ld]=simpleContainer;    
+  tmpContainer<lapack_complex_double> outerContainer(ld,lDwR,lDR,lDL);
+  pCtr.calcOuterContainerLeft(i+1,outerContainer);
+  for(int iBlock=0;iBlock<numBlocks;++iBlock){
+    lBlockSize=networkState.indexTable.lBlockSizeLP(i,iBlock);
+    rBlockSize=networkState.indexTable.rBlockSizeLP(i,iBlock);
+    for(int k=0;k<lBlockSize;++k){
+      aimCurrent=networkState.indexTable.aimBlockIndexLP(i,iBlock,k);
+      siCurrent=networkState.indexTable.siBlockIndexLP(i,iBlock,k);
+      for(int j=0;j<rBlockSize;++j){
+	aiCurrent=networkState.indexTable.aiBlockIndexLP(i,iBlock,j);
+	for(int bi=0;bi<lDwR;++bi){
+	  pExpr[aimCurrent+lDL*siCurrent+bi*lDL*ld*lDR+aiCurrent*lDL*ld]=outerContainer.global_access(siCurrent,bi,aiCurrent,aimCurrent);
 	}
       }
     }
@@ -436,33 +425,22 @@ void network::getPExpressionLeft(int const i, lapack_complex_double *pExpr){
 //---------------------------------------------------------------------------------------------------//
 
 void network::getPExpressionRight(int const i, lapack_complex_double *pExpr){
-  lapack_complex_double simpleContainer;
+  int const numBlocks=networkState.indexTable.numBlocksRP(i);
+  int lBlockSize, rBlockSize;
+  int aiCurrent, siCurrent, aimCurrent;
   getLocalDimensions(i);
-  tmpContainer<lapack_complex_double> innerContainer(ld,lDL,lDR,lDwR);
-  for(int si=0;si<ld;++si){
-    for(int aim=0;aim<lDL;++aim){
-      for(int ai=0;ai<lDR;++ai){
-	for(int bi=0;bi<lDwR;++bi){
-	  simpleContainer=0;
-	  for(int aip=0;aip<lDR;++aip){
-	    simpleContainer+=pCtr.Rctr.global_access(i,ai,bi,aip)*networkState.global_access(i,si,aip,aim);
-	  }
-	  innerContainer.global_access(si,aim,ai,bi)=simpleContainer;
-	}
-      }
-    }
-  }
-  for(int si=0;si<ld;++si){
-    for(int ai=0;ai<lDR;++ai){
-      for(int bim=0;bim<lDwL;++bim){
-	for(int aim=0;aim<lDL;++aim){
-	  simpleContainer=0;
-	  for(int sip=0;sip<ld;++sip){
-	    for(int bi=0;bi<lDwR;++bi){
-	      simpleContainer+=networkH.global_access(i,si,sip,bi,bim)*innerContainer.global_access(sip,aim,ai,bi);
-	    }
-	  }
-	  pExpr[aim*lDwL+bim+ai*lDL*lDwL+si*lDL*lDwL*lDR]=simpleContainer;
+  tmpContainer<lapack_complex_double> outerContainer(lDL,lDwL,ld,lDR);
+  pCtr.calcOuterContainerRight(i-1,outerContainer);
+  for(int iBlock=0;iBlock<numBlocks;++iBlock){
+    lBlockSize=networkState.indexTable.lBlockSizeRP(i,iBlock);
+    rBlockSize=networkState.indexTable.rBlockSizeRP(i,iBlock);
+    for(int j=0;j<rBlockSize;++j){
+      aiCurrent=networkState.indexTable.aiBlockIndexRP(i,iBlock,j);
+      siCurrent=networkState.indexTable.siBlockIndexRP(i,iBlock,j);
+      for(int k=0;k<lBlockSize;++k){
+	aimCurrent=networkState.indexTable.aimBlockIndexRP(i,iBlock,k);
+	for(int bim=0;bim<lDwL;++bim){
+	  pExpr[aimCurrent*lDwL+lDR*lDwL*lDL*siCurrent+bim+aiCurrent*lDL*lDwL]=outerContainer.global_access(aimCurrent,bim,siCurrent,aiCurrent);
 	}
       }
     }
@@ -480,13 +458,40 @@ double network::getCurrentEnergy(int const i){
   pCtr.Lctr.subContractionStart(LTerm,i);
   pCtr.Rctr.subContractionStart(RTerm,i);
   networkState.subMatrixStart(currentM,i);
-  optHMatrix gather(RTerm,LTerm,&networkH,networkDimInfo,networkH.maxDim(),i,0,0,0);
-  gather.MultMv(currentM,siteMatrixContainer);
-  getLocalDimensions(i);
-  for(int si=0;si<ld;++si){
-    for(int ai=0;ai<lDR;++ai){
-      for(int aim=0;aim<lDL;++aim){
-	simpleContainer+=conj(currentM[aim+ai*lDL+si*lDR*lDL])*siteMatrixContainer[aim+ai*lDL+si*lDR*lDL];
+  if(i==0 || i==L-1 || !pars.nQNs){
+    optHMatrix gather(RTerm,LTerm,&networkH,networkDimInfo,networkH.maxDim(),i,0,0,0);
+    gather.MultMv(currentM,siteMatrixContainer);
+  }
+  else{
+    blockHMatrix BMat(RTerm,LTerm,&networkH,networkDimInfo,Dw,i,&(networkState.indexTable),0,0,&conservedQNs,1);
+    BMat.prepareInput(currentM);
+    BMat.MultMvBlockedLP(BMat.compressedVector,BMat.compressedVector);
+    BMat.readOutput(siteMatrixContainer);
+  }
+  if(pars.nQNs){
+    int const numBlocks=networkState.indexTable.numBlocksLP(i);
+    int lBlockSize, rBlockSize;
+    int siCurrent, aiCurrent, aimCurrent;
+    for(int iBlock=0;iBlock<numBlocks;++iBlock){
+      lBlockSize=networkState.indexTable.lBlockSizeLP(i,iBlock);
+      rBlockSize=networkState.indexTable.rBlockSizeLP(i,iBlock);
+      for(int k=0;k<lBlockSize;++k){
+	aimCurrent=networkState.indexTable.aimBlockIndexLP(i,iBlock,k);
+	siCurrent=networkState.indexTable.siBlockIndexLP(i,iBlock,k);
+	for(int j=0;j<rBlockSize;++j){
+	  aiCurrent=networkState.indexTable.aiBlockIndexLP(i,iBlock,j);
+	  simpleContainer+=conj(currentM[aimCurrent+aiCurrent*lDL+siCurrent*lDR*lDL])*siteMatrixContainer[aimCurrent+aiCurrent*lDL+siCurrent*lDL*lDR];
+	}
+      }
+    }
+  }
+  else{
+    getLocalDimensions(i);
+    for(int si=0;si<ld;++si){
+      for(int ai=0;ai<lDR;++ai){
+	for(int aim=0;aim<lDL;++aim){
+	  simpleContainer+=conj(currentM[aim+ai*lDL+si*lDR*lDL])*siteMatrixContainer[aim+ai*lDL+si*lDR*lDL];
+	}
       }
     }
   }
@@ -496,8 +501,23 @@ double network::getCurrentEnergy(int const i){
 
 //---------------------------------------------------------------------------------------------------//
 
-double network::getNewAlpha(int const i, double const lambda){
-  double lambdap=getCurrentEnergy(i);
-  lambdap-=lambda;
-  return 0;
+void network::getNewAlpha(int const i, double const lambda, double const prevLambda){
+  /*
+  double dET=getCurrentEnergy(i);
+  double dE0=abs(prevLambda-lambda);
+  double const pre=1.2;
+  dET-=lambda;
+  if(dET<0){
+    alpha*=pre;
+  }
+  else{
+    if(abs(dET/dE0)<0.3){
+      alpha*=pre;
+    }
+    else{
+      alpha/=pre;
+    }
+  }
+  */
+  alpha*=0.9765;
 }

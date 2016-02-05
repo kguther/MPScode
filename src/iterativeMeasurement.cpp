@@ -35,25 +35,55 @@ void iterativeMeasurement::calcCtrIterLeft(int const i){
 
 void iterativeMeasurement::calcCtrIterLeft(int const i, lapack_complex_double *targetPctr){
   lapack_complex_double simpleContainer;
-  lapack_complex_double *sourcePctr;
-  lapack_complex_double *siteMatrixState, *siteMatrixH;
-  int *biIndices, *bimIndices, *siIndices, *sipIndices;
-  int const sparseSize=MPOperator->numEls(i-1);
+  lapack_complex_double *siteMatrixState;
   int const numBlocks=MPState->indexTable.numBlocksLP(i-1);
-  int biS, bimS, siS, sipS, aiB, aimB, siB;
+  int aiB, aimB, siB;
   int lBlockSize, rBlockSize;
   clock_t curtime;
   MPState->subMatrixStart(siteMatrixState,i-1);
+  getLocalDimensions(i-1);
+  //container arrays to significantly reduce computational effort by storing intermediate results
+  tmpContainer<lapack_complex_double> outercontainer(ld,lDwR,lDR,lDL);
+  calcOuterContainerLeft(i,outercontainer);
+  for(int iBlock=0;iBlock<numBlocks;++iBlock){
+    lBlockSize=MPState->indexTable.lBlockSizeLP(i-1,iBlock);
+    rBlockSize=MPState->indexTable.rBlockSizeLP(i-1,iBlock);
+    for(int j=0;j<rBlockSize;++j){
+      aiB=MPState->indexTable.aiBlockIndexLP(i-1,iBlock,j);
+      for(int bi=0;bi<lDwR;++bi){
+	for(int aip=0;aip<lDR;++aip){
+	  simpleContainer=0;
+	  for(int k=0;k<lBlockSize;++k){
+	    siB=MPState->indexTable.siBlockIndexLP(i-1,iBlock,k);
+	    aimB=MPState->indexTable.aimBlockIndexLP(i-1,iBlock,k);
+	    simpleContainer+=conj(siteMatrixState[stateIndex(siB,aiB,aimB)])*outercontainer.global_access(siB,bi,aip,aimB);
+	  }
+	  targetPctr[pctrIndex(aiB,bi,aip)]=simpleContainer;
+	}
+      }
+    }
+  }
+  curtime=clock()-curtime;
+  //std::cout<<"Total left contraction took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
+}
+
+void iterativeMeasurement::calcOuterContainerLeft(int const i, tmpContainer<lapack_complex_double> &outercontainer){
+  int *biIndices, *bimIndices, *siIndices, *sipIndices;
+  lapack_complex_double *sourcePctr, *siteMatrixH, *siteMatrixState;
+  int biS, bimS, siS, sipS, aiB, aimB, siB;
+  int lBlockSize, rBlockSize;
+  int const sparseSize=MPOperator->numEls(i-1);
+  int const numBlocks=MPState->indexTable.numBlocksLP(i-1);
+  clock_t curtime;
+  MPState->subMatrixStart(siteMatrixState,i-1);
+  getLocalDimensions(i-1);
   MPOperator->sparseSubMatrixStart(siteMatrixH,i-1);
   MPOperator->biSubIndexArrayStart(biIndices,i-1);
   MPOperator->bimSubIndexArrayStart(bimIndices,i-1);
   MPOperator->siSubIndexArrayStart(siIndices,i-1);
   MPOperator->sipSubIndexArrayStart(sipIndices,i-1);
   Lctr.subContractionStart(sourcePctr,i-1);
-  getLocalDimensions(i-1);
-  //container arrays to significantly reduce computational effort by storing intermediate results
   tmpContainer<lapack_complex_double> innercontainer(ld,lDR,lDwL,lDL);
-  tmpContainer<lapack_complex_double> outercontainer(ld,lDwR,lDR,lDL);
   curtime=clock();
   //horrible construct to efficiently compute the partial contraction
   for(int sip=0;sip<ld;++sip){
@@ -108,26 +138,6 @@ void iterativeMeasurement::calcCtrIterLeft(int const i, lapack_complex_double *t
   curtime=clock()-curtime;
   //std::cout<<"Inner contraction took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
   curtime=clock();
-  for(int iBlock=0;iBlock<numBlocks;++iBlock){
-    lBlockSize=MPState->indexTable.lBlockSizeLP(i-1,iBlock);
-    rBlockSize=MPState->indexTable.rBlockSizeLP(i-1,iBlock);
-    for(int j=0;j<rBlockSize;++j){
-      aiB=MPState->indexTable.aiBlockIndexLP(i-1,iBlock,j);
-      for(int bi=0;bi<lDwR;++bi){
-	for(int aip=0;aip<lDR;++aip){
-	  simpleContainer=0;
-	  for(int k=0;k<lBlockSize;++k){
-	    siB=MPState->indexTable.siBlockIndexLP(i-1,iBlock,k);
-	    aimB=MPState->indexTable.aimBlockIndexLP(i-1,iBlock,k);
-	    simpleContainer+=conj(siteMatrixState[stateIndex(siB,aiB,aimB)])*outercontainer.global_access(siB,bi,aip,aimB);
-	  }
-	  targetPctr[pctrIndex(aiB,bi,aip)]=simpleContainer;
-	}
-      }
-    }
-  }
-  curtime=clock()-curtime;
-  //std::cout<<"Total left contraction took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
 }
 
 //---------------------------------------------------------------------------------------------------//

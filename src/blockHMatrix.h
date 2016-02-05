@@ -14,7 +14,7 @@
 
 class blockHMatrix: public optHMatrix{
  public: 
-  blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcomplex<double> > *Hin, dimensionTable &dimInfo, int Dwin, int iIn, basisQNOrderMatrix *indexTable, projector *excitedStateP, double shift, std::vector<quantumNumber> *conservedQNsin);
+  blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcomplex<double> > *Hin, dimensionTable &dimInfo, int Dwin, int iIn, basisQNOrderMatrix *indexTable, projector *excitedStateP, double shift, std::vector<quantumNumber> *conservedQNsin, int const cached=0);
   ~blockHMatrix();
   void MultMvBlocked(arcomplex<double> *v, arcomplex<double> *w);
   void MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w);
