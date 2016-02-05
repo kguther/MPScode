@@ -48,6 +48,7 @@ class basisQNOrderMatrix{
   int aiBlockSizeSplit(int const i, int const iBlock){return aiBlockIndicesSplit[i].size();}
   int numBlocksLP(int const i){return aiBlockIndicesLP[i].size();}
   int numBlocksRP(int const i){return aimBlockIndicesRP[i].size();}
+  int nQNs() const{return conservedQNs->size();}
  private:
   basisQNOrderMatrix(basisQNOrderMatrix const &source);
   basisQNOrderMatrix& operator=(basisQNOrderMatrix const &source);

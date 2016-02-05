@@ -16,7 +16,6 @@
 class baseMeasurement{
  public: 
   //Result of iteration is stored in target
-  void calcCtrIterRightBase(int const i, lapack_complex_double *target);
   void calcOuterContainerLeft(int const i, tmpContainer<lapack_complex_double> &outerContainer);
   pContraction<lapack_complex_double> Lctr;
   void calcCtrIterLeftBase(int const i, lapack_complex_double *targetPctr);
@@ -32,8 +31,8 @@ class baseMeasurement{
   int pctrIndex(int const ai, int const bi, int const aip) {return aip+bi*D+ai*D*Dw;}
   int stateIndex(int const si, int const ai, int const aim) {return aim+ai*lDL+si*lDL*lDR;}
   int operatorIndex(int const si, int const sip, int const bi, int const bim) {return bim+bi*Dw+sip*Dw*Dw+si*ld*Dw*Dw;}
-  void calcCtrIterRightBaseQNOpt(int const i, lapack_complex_double *target);
-  void calcOuterContainerRightQNOpt(int const i, tmpContainer<lapack_complex_double> &outerContainer);
+  void calcCtrIterLeftBaseQNOpt(int const i, lapack_complex_double *targetPctr);
+  void calcOuterContainerLeftQNOpt(int const i, tmpContainer<lapack_complex_double> &outerContainer);
 };
 
 #endif

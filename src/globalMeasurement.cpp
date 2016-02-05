@@ -2,7 +2,7 @@
 #include "globalMeasurement.h"
 
 globalMeasurement::globalMeasurement(mpo<lapack_complex_double> *MPOperatorIn, mps *MPStateIn):
-  iterativeMeasurement(MPOperatorIn,MPStateIn)
+  baseMeasurement(MPOperatorIn,MPStateIn)
 {}
 
 //---------------------------------------------------------------------------------------------------//
@@ -14,9 +14,14 @@ void globalMeasurement::setupMeasurement(mpo<lapack_complex_double> *MPOperatorI
 //---------------------------------------------------------------------------------------------------//
 
 void globalMeasurement::measureFull(double &lambda){
-  calcCtrFull(-1);
+  Lctr.global_access(0,0,0,0)=1.0;
+  lapack_complex_double *targetPctr;
+  for(int i=1;i<MPOperator->length();++i){
+    Lctr.subContractionStart(targetPctr,i);
+    calcCtrIterLeftBase(i,targetPctr);
+  }
   lapack_complex_double result;
-  calcCtrIterLeft(MPOperator->length(),&result);
+  calcCtrIterLeftBase(MPOperator->length(),&result);
   lambda=real(result);
 }
 
