@@ -17,8 +17,9 @@ class baseMeasurement{
  public: 
   //Result of iteration is stored in target
   void calcCtrIterRightBase(int const i, lapack_complex_double *target);
-  void calcOuterContainerRight(int const i, tmpContainer<lapack_complex_double> &outerContainer);
-  pContraction<lapack_complex_double> Rctr;
+  void calcOuterContainerLeft(int const i, tmpContainer<lapack_complex_double> &outerContainer);
+  pContraction<lapack_complex_double> Lctr;
+  void calcCtrIterLeftBase(int const i, lapack_complex_double *targetPctr);
  protected:
   baseMeasurement();
   baseMeasurement(mpo<lapack_complex_double> *MPOperator, mps *MPState);

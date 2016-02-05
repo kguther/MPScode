@@ -18,10 +18,11 @@ class iterativeMeasurement: public baseMeasurement{
   int calcCtrFull(int const direction);
   void calcCtrIterLeft(int const i);
   void calcCtrIterRight(int const i);
-  void calcOuterContainerLeft(int const i, tmpContainer<lapack_complex_double> &outerContainer);
-  pContraction<lapack_complex_double> Lctr;
+  void calcOuterContainerRight(int const i, tmpContainer<lapack_complex_double> &outerContainer);
+  pContraction<lapack_complex_double> Rctr;
  protected:
-  void calcCtrIterLeft(int const i, lapack_complex_double *targetPctr);
+  void calcCtrIterLeftQNOpt(int const i, lapack_complex_double *targetPctr);
+  void calcOuterContainerLeftQNOpt(int const i, tmpContainer<lapack_complex_double> &outerContainer);
 };
 
 #endif

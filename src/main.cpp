@@ -50,8 +50,8 @@ void sysSolve(int const J, int const g){
   std::string fileName="testRun_sE_enabled_check";
   double const mEl=1;
   int const nEigens=1;
-  int const L=14;
-  int const N=7;
+  int const L=20;
+  int const N=20;
   int const D=1;
   int const numPts=1;
   int const nQuantumNumbers=1;

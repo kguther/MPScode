@@ -33,7 +33,7 @@ void iterativeMeasurement::calcCtrIterLeft(int const i){
   calcCtrIterLeft(i,targetPctr);
 }
 
-void iterativeMeasurement::calcCtrIterLeft(int const i, lapack_complex_double *targetPctr){
+void iterativeMeasurement::calcCtrIterLeftBase(int const i, lapack_complex_double *targetPctr){
   lapack_complex_double simpleContainer;
   lapack_complex_double *siteMatrixState;
   int const numBlocks=MPState->indexTable.numBlocksLP(i-1);
