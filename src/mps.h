@@ -9,10 +9,10 @@
 class mps: public stateArray{
  public:
   mps();
-  mps(dimensionTable &dimInfoIn, std::vector<quantumNumber> *conservedQNsin);
+  mps(dimensionTable const &dimInfoIn, std::vector<quantumNumber> *const conservedQNsin);
   ~mps();
-  void generate(dimensionTable &dimInfoIn, std::vector<quantumNumber> *conservedQNsin);
-  void mpsCpy(mps &source);
+  void generate(dimensionTable const &dimInfoIn, std::vector<quantumNumber> *const conservedQNsin);
+  void mpsCpy(mps const &source);
   void setToExactGroundState();
   int leftNormalizeState(int const i);
   int rightNormalizeState(int const i);

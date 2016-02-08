@@ -13,8 +13,8 @@
 class iterativeMeasurement: public baseMeasurement{
  public:
   iterativeMeasurement();
-  iterativeMeasurement(mpo<lapack_complex_double> *MPOperator, mps *MPState);
-  void initialize(mpo<lapack_complex_double> *MPOperator, mps *MPState);
+  iterativeMeasurement(mpo<lapack_complex_double> *const MPOperator, mps *const MPState);
+  void initialize(mpo<lapack_complex_double> *const MPOperator, mps *const MPState);
   int calcCtrFull(int const direction);
   void calcCtrIterRightBase(int const i, lapack_complex_double *target);
   void calcCtrIterLeft(int const i);

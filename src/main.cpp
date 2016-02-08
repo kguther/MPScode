@@ -28,15 +28,13 @@ void testMatrix();
 
 int main(int argc, char *argv[]){
   double J,g;
-  if(argc!=3){
-    J=0;
-    g=-1;
+  if(argc!=2){
+    alpha=0;
   }
   else{
-    J=atof(argv[1]);
-    g=atof(argv[2]);
+    alpha=atof(argv[1]);
   }
-  sysSolve(J,g);
+  sysSolve(alpha);
   return 0;
 }
 
@@ -47,13 +45,13 @@ int main(int argc, char *argv[]){
 
 void sysSolve(int const J, int const g){
   double eigVal;
-  std::string fileName="testRun_sE_enabled_check";
+  std::string fileName="/first/run_1";
   double const mEl=1;
   int const nEigens=1;
-  int const L=20;
-  int const N=20;
-  int const D=1;
-  int const numPts=1;
+  int const L=100;
+  int const N=100;
+  int const D=300;
+  int const numPts=5;
   int const nQuantumNumbers=1;
   int const minimalD=(2*N>4)?2*N:4;
   int const usedD=(D>minimalD)?D:minimalD;
@@ -64,7 +62,7 @@ void sysSolve(int const J, int const g){
   problemParameters pars(localHilbertSpaceDims,L,12,nEigens,nQuantumNumbers,QNValue,QNList);
   //simulationParameters simPars(100,5,2,1e-4,1e-8,1e-9,1e-2);
   //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack
-  simulationParameters simPars(usedD,8,1,1e-3,1e-4,1e-7,1e-4);
+  simulationParameters simPars(usedD,12,1,1e-3,1e-4,1e-7,1e-4);
 
   simulation sim(pars,simPars,J,g,numPts,fileName);
   int parityQNs[4]={1,-1,-1,1};
@@ -82,6 +80,7 @@ void sysSolve(int const J, int const g){
   std::string iCDCName="Interchain density correlation";
   std::string iCCName="Interchain correlation";
   std::string scName="Superconducting order parameter";
+  //Define some interesting operators in MPO representation. These are mostly correlation functions which are product operators and therefore have Dw=1
   for(int i=0;i<L;++i){
     for(int si=0;si<pars.d.maxd();++si){
       for(int sip=0;sip<pars.d.maxd();++sip){
@@ -110,11 +109,13 @@ void sysSolve(int const J, int const g){
     }
   }
   sim.setLocalMeasurement(greensFunction,gFName);
-  sim.setLocalMeasurement(interChainCorrelation,iCCName);
+  //The hamiltonian is subchain parity conserving, thus, the expectation vaue of interChainCorrelation is zero
+  //sim.setLocalMeasurement(interChainCorrelation,iCCName);
   sim.setLocalMeasurement(densityCorrelation,dCName);
   sim.setLocalMeasurement(interChainDensityCorrelation,iCDCName);
   sim.setLocalMeasurement(localDensity,lDName);
-  sim.setLocalMeasurement(superconductingOrder,scName);
+  //The hamiltonian is particle number conserving, thus, the expectation value of superconductingOrder is zero
+  //sim.setLocalMeasurement(superconductingOrder,scName);
   clock_t curtime;
   curtime=clock();
   sim.run();

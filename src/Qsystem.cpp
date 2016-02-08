@@ -74,12 +74,12 @@ double Qsystem::stageTolInitial(int const nStage){
 
 //---------------------------------------------------------------------------------------------------//
 
-int Qsystem::measure(mpo<lapack_complex_double> *MPOperator, double &expectationValue, mps *MPState){
+int Qsystem::measure(mpo<lapack_complex_double> *const MPOperator, double &expectationValue, mps *const MPState){
   return TensorNetwork.measure(MPOperator,expectationValue);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-int Qsystem::measureLocal(localMpo<lapack_complex_double> *localMPOperator, std::vector<std::complex<double> > &result, mps *MPState){
+int Qsystem::measureLocal(localMpo<lapack_complex_double> *const localMPOperator, std::vector<std::complex<double> > &result, mps *const MPState){
   return TensorNetwork.measureLocalOperators(localMPOperator,result);
 }

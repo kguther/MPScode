@@ -75,7 +75,7 @@ void network::initialize(problemParameters inputpars, simulationParameters input
   for(int iEigen=1;iEigen<pars.nEigs;++iEigen){
     excitedStateP.storeOrthoState(networkState,iEigen);
   }
-  //networkState.setToExactGroundState();
+  networkState.setToExactGroundState();
   excitedStateP.storeOrthoState(networkState,0);
 }
 
@@ -212,12 +212,12 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
       for(int prev=0;prev<iEigen;++prev){
 	std::cout<<"Overlap with state "<<prev<<" is: "<<excitedStateP.fullOverlap(prev)<<std::endl;
       }
-
+      /*
       measure(check,spinCheck);
       measure(checkParity,parCheck);
       std::cout<<"Current particle number (final): "<<spinCheck<<std::endl;
       std::cout<<"Current subchain parity (final): "<<parCheck<<std::endl;
-
+      */
     }
     stepRet=gotoNextEigen();
     if(!stepRet){
@@ -452,7 +452,7 @@ int network::gotoNextEigen(){
 // Interface function to compute the expectation value of some operator in MPO representation. 
 //---------------------------------------------------------------------------------------------------//
 
-int network::measure(mpo<lapack_complex_double> *MPOperator, double &lambda){
+int network::measure(mpo<lapack_complex_double> *const MPOperator, double &lambda){
   globalMeasurement currentMeasurement(MPOperator,&networkState);
   currentMeasurement.measureFull(lambda);
   return 0;
@@ -460,7 +460,7 @@ int network::measure(mpo<lapack_complex_double> *MPOperator, double &lambda){
 
 //---------------------------------------------------------------------------------------------------//
 
-int network::measureLocalOperators(localMpo<lapack_complex_double> *MPOperator, std::vector<lapack_complex_double> &lambda){
+int network::measureLocalOperators(localMpo<lapack_complex_double> *const MPOperator, std::vector<lapack_complex_double> &lambda){
   localMeasurementSeries currentMeasurement(MPOperator,&networkState);
   currentMeasurement.measureFull(lambda);
   return 0;

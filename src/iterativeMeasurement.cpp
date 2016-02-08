@@ -7,7 +7,7 @@ iterativeMeasurement::iterativeMeasurement(){
 
 //---------------------------------------------------------------------------------------------------//
 
-iterativeMeasurement::iterativeMeasurement(mpo<lapack_complex_double> *MPOperatorIn, mps *MPStateIn):
+iterativeMeasurement::iterativeMeasurement(mpo<lapack_complex_double> *const MPOperatorIn, mps *const MPStateIn):
   baseMeasurement(MPOperatorIn,MPStateIn)
 {
   Rctr.initialize(MPOperator->length(),MPState->maxDim(),MPOperator->maxDim());
@@ -15,7 +15,7 @@ iterativeMeasurement::iterativeMeasurement(mpo<lapack_complex_double> *MPOperato
 
 //---------------------------------------------------------------------------------------------------//
 
-void iterativeMeasurement::initialize(mpo<lapack_complex_double> *MPOperatorIn, mps *MPStateIn){
+void iterativeMeasurement::initialize(mpo<lapack_complex_double> *const MPOperatorIn, mps *const MPStateIn){
   MPOperator=MPOperatorIn;
   MPState=MPStateIn;
   initializeBase(MPOperatorIn,MPStateIn);

@@ -24,7 +24,7 @@ class projector{
   ~projector();
   void initialize(int const nEigsin);
   void setParameterD(int const Dnew);
-  void loadScalarProducts(mps *variationalState, int const iEigen);
+  void loadScalarProducts(mps *const variationalState, int const iEigen);
   void updateScalarProducts(int const i, int const direction);
   int getProjector(int const i);
   void project(lapack_complex_double *vec, int const i);
@@ -32,7 +32,7 @@ class projector{
   void getStoredState(mps *target, int const iEigen);
   int loadNextState(mps &target, int const iEigen);
   int loadNextState(mps &target);
-  void storeOrthoState(mps &source, int const iEigen);
+  void storeOrthoState(mps const &source, int const iEigen);
   lapack_complex_double fullOverlap(int const k);
   int nEigen()const {return nCurrentEigen;}
  private:

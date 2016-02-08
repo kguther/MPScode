@@ -21,7 +21,7 @@ overlap::~overlap(){
 
 //---------------------------------------------------------------------------------------------------//
 
-void overlap::loadMPS(mps *psiIn, mps *phiIn){
+void overlap::loadMPS(mps *const psiIn, mps *const phiIn){
   phi=phiIn;
   psi=psiIn;
   D=(*psiIn).maxDim();

@@ -405,7 +405,9 @@ void network::getPExpressionLeft(int const i, lapack_complex_double *pExpr){
   int aiCurrent, siCurrent, aimCurrent;
   getLocalDimensions(i);
   tmpContainer<lapack_complex_double> outerContainer(ld,lDwR,lDR,lDL);
+  //Use the measurement class to calculate the p-expression, which is one of the containers used in calculation of partial contractions. 
   pCtr.calcOuterContainerLeft(i+1,outerContainer);
+  //Copying has to be done explicitly for an optimized storage scheme of pExpr
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
     lBlockSize=networkState.indexTable.lBlockSizeLP(i,iBlock);
     rBlockSize=networkState.indexTable.rBlockSizeLP(i,iBlock);
@@ -425,6 +427,7 @@ void network::getPExpressionLeft(int const i, lapack_complex_double *pExpr){
 //---------------------------------------------------------------------------------------------------//
 
 void network::getPExpressionRight(int const i, lapack_complex_double *pExpr){
+  //This works just like the left version, except for the shape of the used storage scheme (and other functions are called to get the right expression)
   int const numBlocks=networkState.indexTable.numBlocksRP(i);
   int lBlockSize, rBlockSize;
   int aiCurrent, siCurrent, aimCurrent;
@@ -449,6 +452,8 @@ void network::getPExpressionRight(int const i, lapack_complex_double *pExpr){
 
 //---------------------------------------------------------------------------------------------------//
 // Another auxiliary function to determine the current energy value for estimation of a new alpha
+// This is quite effortive, so we currently use a guess for alpha and just decrease it continously 
+// after each step
 //---------------------------------------------------------------------------------------------------//
 
 double network::getCurrentEnergy(int const i){
@@ -458,6 +463,7 @@ double network::getCurrentEnergy(int const i){
   pCtr.Lctr.subContractionStart(LTerm,i);
   pCtr.Rctr.subContractionStart(RTerm,i);
   networkState.subMatrixStart(currentM,i);
+  //To compute the current energy, we multiply the current state with H and contract with the current state. This is done locally, the cached partial contractions are used for the rest of the network
   if(i==0 || i==L-1 || !pars.nQNs){
     optHMatrix gather(RTerm,LTerm,&networkH,networkDimInfo,networkH.maxDim(),i,0,0,0);
     gather.MultMv(currentM,siteMatrixContainer);
@@ -468,6 +474,7 @@ double network::getCurrentEnergy(int const i){
     BMat.MultMvBlockedLP(BMat.compressedVector,BMat.compressedVector);
     BMat.readOutput(siteMatrixContainer);
   }
+  //Here, we contract the result with the current state. There is a version with and one without the use of QNs
   if(pars.nQNs){
     int const numBlocks=networkState.indexTable.numBlocksLP(i);
     int lBlockSize, rBlockSize;
@@ -519,5 +526,6 @@ void network::getNewAlpha(int const i, double const lambda, double const prevLam
     }
   }
   */
+  //This is numerically somewhat simpler and works also quite nice.
   alpha*=0.9765;
 }

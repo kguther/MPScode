@@ -15,7 +15,7 @@ baseMeasurement::baseMeasurement(){
 
 //---------------------------------------------------------------------------------------------------//
 
-baseMeasurement::baseMeasurement(mpo<lapack_complex_double> *MPOperatorIn, mps *MPStateIn):
+baseMeasurement::baseMeasurement(mpo<lapack_complex_double> *const MPOperatorIn, mps *const MPStateIn):
   MPOperator(MPOperatorIn),
   MPState(MPStateIn)
 {
@@ -24,7 +24,7 @@ baseMeasurement::baseMeasurement(mpo<lapack_complex_double> *MPOperatorIn, mps *
 
 //---------------------------------------------------------------------------------------------------//
 
-void baseMeasurement::initializeBase(mpo<lapack_complex_double> *MPOperatorIn, mps *MPStateIn){
+void baseMeasurement::initializeBase(mpo<lapack_complex_double> *const MPOperatorIn, mps *const MPStateIn){
   Dw=MPOperator->maxDim();
   D=MPState->maxDim();
   Lctr.initialize((*MPOperator).length(),(*MPState).maxDim(),(*MPOperator).maxDim());
@@ -33,7 +33,7 @@ void baseMeasurement::initializeBase(mpo<lapack_complex_double> *MPOperatorIn, m
 
 //---------------------------------------------------------------------------------------------------//  
 
-void baseMeasurement::setupMeasurement(mpo<lapack_complex_double> *MPOperatorIn, mps *MPStateIn){
+void baseMeasurement::setupMeasurement(mpo<lapack_complex_double> *const MPOperatorIn, mps *const MPStateIn){
   MPOperator=MPOperatorIn;
   MPState=MPStateIn;
   initializeBase(MPOperatorIn,MPStateIn);
@@ -57,7 +57,7 @@ void baseMeasurement::getLocalDimensions(int const i){
 // which will usually be the next subcontraction of Rctr.
 //---------------------------------------------------------------------------------------------------//
 
-void baseMeasurement::calcCtrIterLeftBase(int const i, lapack_complex_double *targetPctr){
+void baseMeasurement::calcCtrIterLeftBase(int const i, lapack_complex_double *const targetPctr){
   calcCtrIterLeftBaseQNOpt(i,targetPctr);
 }
 
@@ -74,7 +74,7 @@ void baseMeasurement::calcOuterContainerLeft(int const i, tmpContainer<lapack_co
 
 //---------------------------------------------------------------------------------------------------//
 
-void baseMeasurement::calcCtrIterLeftBaseQNOpt(int const i, lapack_complex_double *targetPctr){
+void baseMeasurement::calcCtrIterLeftBaseQNOpt(int const i, lapack_complex_double *const targetPctr){
   lapack_complex_double simpleContainer;
   lapack_complex_double *siteMatrixState;
   int const numBlocks=MPState->indexTable.numBlocksLP(i-1);

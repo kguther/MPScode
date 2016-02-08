@@ -93,8 +93,8 @@ void simulation::singleRun(){
   std::vector<double> expectationValues;
   std::vector<std::vector<std::complex<double> > > localExpectationValues;
   TensorNetwork.getProjector(stateRep);
-  J=1;//+parDirection.real();
-  g=1;//+parDirection.imag();
+  J=1+parDirection.real();
+  g=1+parDirection.imag();
   hInfo=writeHamiltonian(TensorNetwork,J,g);
   if(hInfo){
     std::cout<<"Invalid bond dimension for the construction of H. Terminating process.\n";
@@ -109,7 +109,7 @@ void simulation::singleRun(){
   numStrJ<<J;
   numStrg<<g;
   std::string fileName;
-  fileName+="test_results/";
+  fileName+="results/";
   fileName+=filePrefix;
   fileName+="_J_";
   fileName+=numStrJ.str();
@@ -125,6 +125,7 @@ void simulation::singleRun(){
     else{
       stateRep->getStoredState(measureState,iEigen);
     }
+    ofs<<E0[iEigen]<<"\t"<<dE[iEigen]<<std::endl;
     for(int iM=0;iM<measureTask.size();++iM){
       measure(&measureTask[iM],expectationValues[iM],measureState);
       ofs<<operatorNames[iM]<<"\t";
@@ -144,7 +145,7 @@ void simulation::singleRun(){
     if(localExpectationValues.size()>0){
       for(int i=0;i<localExpectationValues[0].size();++i){
 	for(int iM=0;iM<localMeasureTask.size();++iM){
-	  ofs<<localExpectationValues[iM][i]<<"\t";
+	  ofs<<real(localExpectationValues[iM][i])<<"\t";
 	}
 	ofs<<std::endl;
       }
@@ -155,7 +156,7 @@ void simulation::singleRun(){
 
 //---------------------------------------------------------------------------------------------------//
 
-int simulation::measure(mpo<lapack_complex_double> *MPOperator, double &expectationValue, mps *MPState){
+int simulation::measure(mpo<lapack_complex_double> *const MPOperator, double &expectationValue, mps *const MPState){
   if(MPState){
     globalMeasurement currentMeasurement(MPOperator,MPState);
     currentMeasurement.measureFull(expectationValue);
@@ -166,7 +167,7 @@ int simulation::measure(mpo<lapack_complex_double> *MPOperator, double &expectat
 
 //---------------------------------------------------------------------------------------------------//
 
-int simulation::measureLocal(localMpo<lapack_complex_double> *localMPOperator, std::vector<std::complex<double> > &result, mps *MPState){
+int simulation::measureLocal(localMpo<lapack_complex_double> *const localMPOperator, std::vector<std::complex<double> > &result, mps *const MPState){
   if(MPState){
     localMeasurementSeries currentMeasurement(localMPOperator,MPState);
     currentMeasurement.measureFull(result);

@@ -8,7 +8,7 @@ mps::mps():stateArray()
 
 //---------------------------------------------------------------------------------------------------//
 
-mps::mps(dimensionTable &dimInfoIn, std::vector<quantumNumber> *conservedQNsin){
+mps::mps(dimensionTable const &dimInfoIn, std::vector<quantumNumber> *const conservedQNsin){
   stateArray::initialize(dimInfoIn);
   conservedQNs=conservedQNsin;
   if(conservedQNs){
@@ -31,7 +31,7 @@ mps::~mps(){
 
 //---------------------------------------------------------------------------------------------------//
 
-void mps::generate(dimensionTable &dimInfoIn, std::vector<quantumNumber> *conservedQNsin){
+void mps::generate(dimensionTable const &dimInfoIn, std::vector<quantumNumber> *const conservedQNsin){
   stateArray::generate(dimInfoIn);
   setUpQNs(conservedQNsin);
   createInitialState();
@@ -39,7 +39,7 @@ void mps::generate(dimensionTable &dimInfoIn, std::vector<quantumNumber> *conser
 
 //---------------------------------------------------------------------------------------------------//
 
-void mps::setUpQNs(std::vector<quantumNumber> *conservedQNsin){
+void mps::setUpQNs(std::vector<quantumNumber> *const conservedQNsin){
   conservedQNs=conservedQNsin;
   if(conservedQNs){
     nQNs=conservedQNs->size();
@@ -55,7 +55,7 @@ void mps::setUpQNs(std::vector<quantumNumber> *conservedQNsin){
 
 //---------------------------------------------------------------------------------------------------//
 
-void mps::mpsCpy(mps &source){
+void mps::mpsCpy(mps const &source){
   stateArray::mpsCpy(source);
   setUpQNs(source.conservedQNs);
 }

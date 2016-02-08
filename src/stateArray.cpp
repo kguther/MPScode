@@ -9,7 +9,7 @@ stateArray::stateArray(){
 
 //---------------------------------------------------------------------------------------------------//
 
-stateArray::stateArray(dimensionTable &dimInfoIn){
+stateArray::stateArray(dimensionTable const &dimInfoIn){
   initialize(dimInfoIn);
 }
 
@@ -21,7 +21,7 @@ stateArray::~stateArray(){
 
 //---------------------------------------------------------------------------------------------------//
 
-void stateArray::mpsCpy(stateArray &source){
+void stateArray::mpsCpy(stateArray const &source){
   deleteStateArray(&state_array_access_structure);
   initialize(source.dimInfo);
   int lDL, lDR, ld;
@@ -32,7 +32,7 @@ void stateArray::mpsCpy(stateArray &source){
     for(int si=0;si<ld;++si){
       for(int ai=0;ai<lDR;++ai){
 	for(int aim=0;aim<lDL;++aim){
-	  state_array_access_structure[i][si][ai][aim]=source.global_access(i,si,ai,aim);
+	  state_array_access_structure[i][si][ai][aim]=source.global_read(i,si,ai,aim);
 	}
       }
     }
@@ -42,14 +42,14 @@ void stateArray::mpsCpy(stateArray &source){
 
 //---------------------------------------------------------------------------------------------------//
 
-void stateArray::generate(dimensionTable &dimInfoIn){
+void stateArray::generate(dimensionTable const &dimInfoIn){
   deleteStateArray(&state_array_access_structure);
   initialize(dimInfoIn);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-void stateArray::initialize(dimensionTable &dimInfoIn){
+void stateArray::initialize(dimensionTable const &dimInfoIn){
   D=dimInfoIn.D();
   L=dimInfoIn.L();
   dimInfo=dimInfoIn;

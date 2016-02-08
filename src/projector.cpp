@@ -46,7 +46,7 @@ void projector::setParameterD(int const Dnew){
 // which states it shall be orthogonalized.
 //---------------------------------------------------------------------------------------------------//
 
-void projector::loadScalarProducts(mps *variationalState,int const iEigen){
+void projector::loadScalarProducts(mps *const variationalState,int const iEigen){
   //offset marks the beginning of the scalar products with the current state
   for(int k=0;k<iEigen;++k){
     scalarProducts[k].loadMPS(variationalState,&orthoStates[k]);
@@ -77,7 +77,7 @@ void projector::updateScalarProducts(int const i, int const direction){
 //---------------------------------------------------------------------------------------------------//
 
 
-void projector::storeOrthoState(mps &source, int const iEigen){
+void projector::storeOrthoState(mps const &source, int const iEigen){
   orthoStates[iEigen].mpsCpy(source);
 }
 
