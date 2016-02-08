@@ -78,7 +78,7 @@ void mps::createInitialState(){
     }
   }
   else{
-    //This is the exact ground state at the critical point for fixed particle number and subchain parity. It turns out that this is a nice guess for the ground state of the perturbed system (for small perturbations).
+    //This sets all entries with indices fullfilling the QN constraint to 1.
     int numBlocks, lBlockSize, rBlockSize;
     for(int i=0;i<L;++i){
       numBlocks=indexTable.numBlocksLP(i);
@@ -98,6 +98,7 @@ void mps::createInitialState(){
 //---------------------------------------------------------------------------------------------------//
 
 void mps::setToExactGroundState(){
+    //This is the exact ground state at the critical point for fixed particle number and subchain parity. It turns out that this is a nice guess for the ground state of the perturbed system (for small perturbations).
   int ld, lDL, lDR;
   for(int i=0;i<L;++i){
     lDL=locDimL(i);

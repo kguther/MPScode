@@ -69,7 +69,7 @@ void dimensionTable::getIcrit(){
 // Functions returning the local bond dimensions of a MPS with the given parameters at site i.
 //---------------------------------------------------------------------------------------------------//
 
-int dimensionTable::locDimL(int const i){
+int dimensionTable::locDimL(int const i) const{
   if(i<=icrit){
     return locDMax(i-1);
   }
@@ -81,7 +81,7 @@ int dimensionTable::locDimL(int const i){
 
 //---------------------------------------------------------------------------------------------------//
 
-int dimensionTable::locDimR(int const i){
+int dimensionTable::locDimR(int const i) const{
   if(i<icrit){
     return locDMax(i);
   }
@@ -97,12 +97,12 @@ int dimensionTable::locDimR(int const i){
 // returning a fixed dimension.
 //---------------------------------------------------------------------------------------------------//
 
-int dimensionTable::locd(int const i){
+int dimensionTable::locd(int const i) const{
   return dpars.locd(i);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-int dimensionTable::locDMax(int const i){
+int dimensionTable::locDMax(int const i) const{
   return DMaxTable[i+1];
 }

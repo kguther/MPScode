@@ -12,6 +12,8 @@
 // and the imaginary part as a Z_2-QN (if either is not desired, assign the physical indices
 // the neutral element). This makes it easier to take interdependencies of number of particles
 // and fermionic parity into account.
+// IMPORTANT: THE QN CONSTRAINT IS SUFFICIENT, BUT NOT NECESSARY TO HAVE A GOOD QN. THIS IS
+// WHY A QN CONSERVING ALGORITHM IS A BIT TRICKY.
 //-------------------------------------------------------------------------------------------//
 
 class quantumNumber{

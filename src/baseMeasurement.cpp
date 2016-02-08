@@ -27,7 +27,6 @@ baseMeasurement::baseMeasurement(mpo<lapack_complex_double> *const MPOperatorIn,
 void baseMeasurement::initializeBase(mpo<lapack_complex_double> *const MPOperatorIn, mps *const MPStateIn){
   Dw=MPOperator->maxDim();
   D=MPState->maxDim();
-  Lctr.initialize((*MPOperator).length(),(*MPState).maxDim(),(*MPOperator).maxDim());
   MPOperator->setUpSparse();
 }
 
@@ -57,15 +56,15 @@ void baseMeasurement::getLocalDimensions(int const i){
 // which will usually be the next subcontraction of Rctr.
 //---------------------------------------------------------------------------------------------------//
 
-void baseMeasurement::calcCtrIterLeftBase(int const i, lapack_complex_double *const targetPctr){
-  calcCtrIterLeftBaseQNOpt(i,targetPctr);
+void baseMeasurement::calcCtrIterLeftBase(int const i, lapack_complex_double *const source, lapack_complex_double *const targetPctr){
+  calcCtrIterLeftBaseQNOpt(i,source,targetPctr);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-void baseMeasurement::calcOuterContainerLeft(int const i, tmpContainer<lapack_complex_double> &outercontainer){
+void baseMeasurement::calcOuterContainerLeft(int const i, lapack_complex_double *const source, tmpContainer<lapack_complex_double> &outercontainer){
   if(MPState->indexTable.nQNs()){
-    calcOuterContainerLeftQNOpt(i,outercontainer);
+    calcOuterContainerLeftQNOpt(i,source,outercontainer);
   }
   else{
     //If one wanted to use the code without exploiting QNs, this had to be added
@@ -74,7 +73,7 @@ void baseMeasurement::calcOuterContainerLeft(int const i, tmpContainer<lapack_co
 
 //---------------------------------------------------------------------------------------------------//
 
-void baseMeasurement::calcCtrIterLeftBaseQNOpt(int const i, lapack_complex_double *const targetPctr){
+void baseMeasurement::calcCtrIterLeftBaseQNOpt(int const i, lapack_complex_double *const source, lapack_complex_double *const targetPctr){
   lapack_complex_double simpleContainer;
   lapack_complex_double *siteMatrixState;
   int const numBlocks=MPState->indexTable.numBlocksLP(i-1);
@@ -85,7 +84,7 @@ void baseMeasurement::calcCtrIterLeftBaseQNOpt(int const i, lapack_complex_doubl
   getLocalDimensions(i-1);
   //container arrays to significantly reduce computational effort by storing intermediate results
   tmpContainer<lapack_complex_double> outercontainer(ld,lDwR,lDR,lDL);
-  calcOuterContainerLeftQNOpt(i,outercontainer);
+  calcOuterContainerLeftQNOpt(i,source,outercontainer);
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
     lBlockSize=MPState->indexTable.lBlockSizeLP(i-1,iBlock);
     rBlockSize=MPState->indexTable.rBlockSizeLP(i-1,iBlock);
@@ -108,9 +107,9 @@ void baseMeasurement::calcCtrIterLeftBaseQNOpt(int const i, lapack_complex_doubl
   //std::cout<<"Total left contraction took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
 }
 
-void baseMeasurement::calcOuterContainerLeftQNOpt(int const i, tmpContainer<lapack_complex_double> &outercontainer){
+void baseMeasurement::calcOuterContainerLeftQNOpt(int const i, lapack_complex_double *const source, tmpContainer<lapack_complex_double> &outercontainer){
   int *biIndices, *bimIndices, *siIndices, *sipIndices;
-  lapack_complex_double *sourcePctr, *siteMatrixH, *siteMatrixState;
+  lapack_complex_double *siteMatrixH, *siteMatrixState;
   int biS, bimS, siS, sipS, aiB, aimB, siB;
   int lBlockSize, rBlockSize;
   int const sparseSize=MPOperator->numEls(i-1);
@@ -123,7 +122,6 @@ void baseMeasurement::calcOuterContainerLeftQNOpt(int const i, tmpContainer<lapa
   MPOperator->bimSubIndexArrayStart(bimIndices,i-1);
   MPOperator->siSubIndexArrayStart(siIndices,i-1);
   MPOperator->sipSubIndexArrayStart(sipIndices,i-1);
-  Lctr.subContractionStart(sourcePctr,i-1);
   tmpContainer<lapack_complex_double> innercontainer(ld,lDR,lDwL,lDL);
   curtime=clock();
   //horrible construct to efficiently compute the partial contraction
@@ -146,7 +144,7 @@ void baseMeasurement::calcOuterContainerLeftQNOpt(int const i, tmpContainer<lapa
 	aiB=MPState->indexTable.aiBlockIndexLP(i-1,iBlock,j);
 	for(int bim=0;bim<lDwL;++bim){
 	  for(int aim=0;aim<lDL;++aim){
-	    innercontainer.global_access(siB,aiB,bim,aim)+=sourcePctr[pctrIndex(aim,bim,aimB)]*siteMatrixState[stateIndex(siB,aiB,aimB)];
+	    innercontainer.global_access(siB,aiB,bim,aim)+=source[pctrIndex(aim,bim,aimB)]*siteMatrixState[stateIndex(siB,aiB,aimB)];
 	  }
 	}
       }

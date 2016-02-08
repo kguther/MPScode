@@ -8,8 +8,8 @@ class localHSpaces{
   localHSpaces();
   localHSpaces(int const d);
   localHSpaces(std::vector<int> d);
-  int locd(int const i);
-  int maxd();
+  int locd(int const i) const;
+  int maxd() const;
  private:
   std::vector<int> localHDims;
   int constantDimension;

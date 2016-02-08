@@ -19,43 +19,38 @@ using namespace std;
 
 void testNormalization();
 void sysSolve(int const L, int const N, int const alpha, int const nEigens=1, int const D=1);
-void sysSolve(int const J, int const g);
-void testMatrix();
-
-//-----------------------------------------------------------------//
-//HUGE TESTING REALM (CURRENTLY: PERFORMANCE)
-//-----------------------------------------------------------------//
+void sysSolve(double const J, double const g);
+void getScaling(double const J, double const g);
 
 int main(int argc, char *argv[]){
   double J,g;
-  if(argc!=2){
-    alpha=0;
+  if(argc!=3){
+    J=1;
+    g=0;
   }
   else{
-    alpha=atof(argv[1]);
+    J=atof(argv[1]);
+    g=atof(argv[2]);
   }
-  sysSolve(alpha);
+  sysSolve(J,g);
   return 0;
 }
 
 
 //-------------------------------------------------------------------------------------------//
-// DEBUG FUNCTIONS
+// EVALUATION FUNCTIONS
 //-------------------------------------------------------------------------------------------//
 
-void sysSolve(int const J, int const g){
-  double eigVal;
-  std::string fileName="/first/run_1";
-  double const mEl=1;
+void sysSolve(double const J, double const g){
+  std::string fileName="first/run_1";
   int const nEigens=1;
-  int const L=100;
-  int const N=100;
-  int const D=300;
-  int const numPts=5;
+  int const L=20;
+  int const N=20;
+  int const D=1;
+  int const numPts=1;
   int const nQuantumNumbers=1;
   int const minimalD=(2*N>4)?2*N:4;
   int const usedD=(D>minimalD)?D:minimalD;
-  int hInfo;
   std::complex<int> QNValue[1]={std::complex<int>(N,-1)};
   std::complex<int> QNList[8]={std::complex<int>(0,1),std::complex<int>(1,1),std::complex<int>(1,-1),std::complex<int>(2,-1)};
   localHSpaces localHilbertSpaceDims(4);
@@ -124,5 +119,39 @@ void sysSolve(int const J, int const g){
   cout<<setprecision(21);
   for(int mi=0;mi<nEigens;++mi){
     cout<<"Obtained energy of state "<<mi<<" as: "<<sim.E0[mi]<<endl;
+  }
+}
+
+//-------------------------------------------------------------------------------------------//
+
+void getScaling(int const J, int const g, double const rho, int const odd, int const par){
+  std::string fileName="scaling/run_1";
+  std::vector<double> energies, accs;
+  int const nEigens=2;
+  int const L0=30;
+  int const LMax=120;
+  int N=0;
+  int const D=1;
+  int const numPts=1;
+  int const nQuantumNumbers=1;
+  int minimalD=(2*N>4)?2*N:4;
+  int usedD=(D>minimalD)?D:minimalD;
+  std::complex<int> QNValue[1]={std::complex<int>(N,-1)};
+  std::complex<int> QNList[8]={std::complex<int>(0,1),std::complex<int>(1,1),std::complex<int>(1,-1),std::complex<int>(2,-1)};
+  localHSpaces localHilbertSpaceDims(4);
+  problemParameters pars(localHilbertSpaceDims,1,12,nEigens,nQuantumNumbers,QNValue,QNList);
+  //simulationParameters simPars(100,5,2,1e-4,1e-8,1e-9,1e-2);
+  //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack
+  simulationParameters simPars(usedD,12,1,1e-3,1e-4,1e-7,1e-4);
+  simulation sim;
+  for(int L=L0;L<=LMax;L+=5){
+    pars.L=L;
+    N=L*rho+odd;
+    minimalD=(2*N>4)?2*N:4;
+    usedD=(D>minimalD)?D:minimalD;
+    simPars.D=usedD;
+    QNValue[1]=std::complex<int>(N,par);
+    pars.QNconserved=QNValue;
+    sim.generate(pars,simPars,J,g,numPts,fileName);
   }
 }

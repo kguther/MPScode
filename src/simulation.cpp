@@ -6,6 +6,9 @@
 #include "globalMeasurement.h"
 #include "localMeasurementSeries.h"
 
+simulation::simulation(){
+}
+
 simulation::simulation(problemParameters &parsIn, simulationParameters &simParsIn, double const J, double const g, int const pathPoints, std::string &targetFile):
   simPars(simParsIn),
   pars(parsIn),
@@ -13,6 +16,10 @@ simulation::simulation(problemParameters &parsIn, simulationParameters &simParsI
   filePrefix(targetFile),
   parDirection(std::complex<double>(J,g))
 {
+  initialize(parsIn,simParsIn,J,g,pathPoints,targetFile);
+}
+
+void simulation::initialize(problemParameters &parsIn, simulationParameters &simParsIn, double const J, double const g, int const pathPoints, std::string &targetFile){
   // simulation class can only use nStages=1 (by choice of algorithm)
   TensorNetwork.initialize(pars,simPars);
   E0.resize(pars.nEigs);
@@ -22,7 +29,9 @@ simulation::simulation(problemParameters &parsIn, simulationParameters &simParsI
   int L=pars.L;
   measureTask.clear();
   localMeasureTask.clear();
-  parDirection*=1.0/(abs(parDirection)*100);
+  if(abs(parDirection)>1e-20){
+    parDirection*=1.0/(abs(parDirection)*100);
+  }
   particleNumber.initialize(pars.d.maxd(),2,pars.L);
   subChainParity.initialize(pars.d.maxd(),1,pars.L);
   for(int i=0;i<pars.L;++i){
@@ -60,6 +69,15 @@ simulation::simulation(problemParameters &parsIn, simulationParameters &simParsI
   TensorNetwork.checkParity=&subChainParity;
 }
 
+void simulation::generate(problemParameters &parsIn, simulationParameters &simParsIn, double const J, double const g, int const pathPoints, std::string &targetFile){
+  simPars=simParsIn;
+  pars=parsIn;
+  pathLength=pathPoints;
+  filePrefix=targetFile;
+  parDirection=std::complex<double>(J,g);
+  initialize(parsIn,simParsIn,J,g,pathPoints,targetFile);
+}
+
 //---------------------------------------------------------------------------------------------------//
 
 void simulation::setMeasurement(mpo<std::complex<double> > &MPOperator, std::string &operatorName){
@@ -78,7 +96,9 @@ void simulation::setLocalMeasurement(localMpo<std::complex<double> > &localMPOpe
 
 void simulation::run(){
   for(int nRun=1;nRun<pathLength+1;++nRun){
-    parDirection*=1.0/(abs(parDirection)*100)*nRun;
+    if(abs(parDirection)>1e-20){
+      parDirection*=1.0/(abs(parDirection)*100)*nRun;
+    }
     singleRun();
   }
 }

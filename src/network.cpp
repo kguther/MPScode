@@ -132,9 +132,9 @@ int network::setParameterD(int Dnew){
 //---------------------------------------------------------------------------------------------------//
 
 void network::getLocalDimensions(int const i){
-  lDL=networkState.locDimL(i);
-  lDR=networkState.locDimR(i);
-  ld=locd(i);
+  lDL=networkDimInfo.locDimL(i);
+  lDR=networkDimInfo.locDimR(i);
+  ld=networkDimInfo.locd(i);
   lDwR=networkH.locDimR(i);
   lDwL=networkH.locDimL(i);
 }
@@ -149,7 +149,6 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
   int maxIter=100000;
   int stepRet;
   int cshift=0;
-  int storeShift;
   double tol;
   double spinCheck=0;
   double parCheck=0;
@@ -190,15 +189,9 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
       sweep(maxIter,tol,lambda[iEigen]);
       //In calcCtrIterRightBase, the second argument has to be a pointer, because it usually is an array. No call-by-reference here.
       pCtr.calcCtrIterRightBase(-1,&expectationValue);
-      /*
-      for(int i=L-1;i>0;--i){
-      	normalize(i,0,0);
-      }
-      std::cout<<"Calculating final normalizations\n";
-      networkState.normalizeFinal(1);
-      */
       deltaLambda[iEigen]=1;
       if(iSweep==simPars.nSweeps-1){
+	std::cout<<"Calculating quality of convergence\n";
 	deltaLambda[iEigen]=convergenceCheck();
       }
       if(deltaLambda[iEigen]<simPars.devAccuracy){
@@ -240,11 +233,8 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
 
 void network::sweep(double const maxIter, double const tol, double &lambda){
   clock_t curtime;
-  int errRet;
   // By default enrichment is used whenever conserved QNs are used
   int const expFlag=pars.nQNs;
-  double spinCheck=0;
-  double parCheck=0;
   double lambdaCont;
 
   std::cout<<"STARTING RIGHTSWEEP\n\n";
@@ -253,7 +243,7 @@ void network::sweep(double const maxIter, double const tol, double &lambda){
     std::cout<<"Optimizing site matrix"<<std::endl;
     lambdaCont=lambda;
     curtime=clock();
-    errRet=optimize(i,maxIter,tol,lambda);
+    optimize(i,maxIter,tol,lambda);
     curtime=clock()-curtime;
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
     //Execute left-sided enrichment step and update the coefficient of the expansion term
@@ -272,7 +262,7 @@ void network::sweep(double const maxIter, double const tol, double &lambda){
     std::cout<<"Optimizing site matrix"<<std::endl;    
     lambdaCont=lambda;
     curtime=clock();
-    errRet=optimize(i,maxIter,tol,lambda);
+    optimize(i,maxIter,tol,lambda);
     curtime=clock()-curtime;
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
     //Execute right-sided enrichment step and update the coefficient of the expansion term
@@ -298,10 +288,8 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
   arcomplex<double> lambda;
   arcomplex<double> *plambda;
   arcomplex<double> *currentM;
-  arcomplex<double> *RTerm, *LTerm, *HTerm;
+  arcomplex<double> *RTerm, *LTerm;
   void (optHMatrix::*multMv)(arcomplex<double> *v, arcomplex<double> *w);
-  double spinCheck=0;
-  double parCheck=0;
   int nconv;
   //Get the projector onto the space orthogonal to any lower lying states
   //Get the current partial contractions and site matrix of the Hamiltonian
@@ -312,7 +300,10 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
   //Using the current site matrix as a starting point allows for much faster convergence as it has already been optimized in previous sweeps (except for the first sweep, this is where a good starting point has to be guessed
   networkState.subMatrixStart(currentM,i);
 
+  //Check step useful whenever something in the normalization or optimization is adjusted
   /*
+  double spinCheck=0;
+  double parCheck=0;
   measure(check,spinCheck);
   measure(checkParity,parCheck);
   std::cout<<"Current particle number (opt): "<<spinCheck<<std::endl;
@@ -473,13 +464,13 @@ int network::measureLocalOperators(localMpo<lapack_complex_double> *const MPOper
 //---------------------------------------------------------------------------------------------------//
 
 int network::locd(int const i){
-  return networkState.locd(i);
+  return networkDimInfo.locd(i);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
 int network::locDMax(int const i){
-  return networkState.dimInfo.locDMax(i);
+  return networkDimInfo.locDMax(i);
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -521,7 +512,7 @@ void network::leftNormalizationMatrixIter(int i, lapack_complex_double *psi){
 	}
       }
       psi[i*D*D+aim*D+aimp]=psiContainer;
-      if((abs(psiContainer)>1e-7 && aim!=aimp) || (abs(psiContainer-1)>1e-7 && aim==aimp)){
+      if((abs(psiContainer)>1e-7 && aim!=aimp) || (abs(psiContainer-1.0)>1e-7 && aim==aimp)){
 	std::cout<<"Error in normalization procedure\n";
       }
     }
@@ -598,8 +589,6 @@ void network::checkContractions(int const i){
   arcomplex<double> *currentM=new arcomplex<double>[ld*lDL*lDR];
   arcomplex<double> *RTerm, *LTerm, *HTerm;
   arcomplex<double> lambda;
-  double tol=1e-4;
-  double maxIter=4000;
   pCtr.Lctr.subContractionStart(LTerm,i);
   pCtr.Rctr.subContractionStart(RTerm,i);
   networkH.subMatrixStart(HTerm,i);

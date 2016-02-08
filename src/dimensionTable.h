@@ -16,11 +16,11 @@ class dimensionTable{
   int D() const {return Dpar;}
   int L() const {return Lpar;}
   int iCrit() const {return icrit;}
-  localHSpaces const & locdTable() {return dpars;}
-  int locDimR(int const i);
-  int locDimL(int const i);
-  int locDMax(int const i);
-  int locd(int const i);
+  localHSpaces const & locdTable() const {return dpars;}
+  int locDimR(int const i) const;
+  int locDimL(int const i) const;
+  int locDMax(int const i) const;
+  int locd(int const i) const;
   void initialize(int const Din, int const Lin, localHSpaces din);
   void setParameterD(int Dnew);
  private:

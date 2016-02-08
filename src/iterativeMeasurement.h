@@ -19,7 +19,9 @@ class iterativeMeasurement: public baseMeasurement{
   void calcCtrIterRightBase(int const i, lapack_complex_double *target);
   void calcCtrIterLeft(int const i);
   void calcCtrIterRight(int const i);
+  void calcOuterContainerLeft(int const i, tmpContainer<lapack_complex_double> &outerContainer);
   void calcOuterContainerRight(int const i, tmpContainer<lapack_complex_double> &outerContainer);
+  pContraction<lapack_complex_double> Lctr;
   pContraction<lapack_complex_double> Rctr;
  protected:
   void calcCtrIterRightBaseQNOpt(int const i, lapack_complex_double *target);

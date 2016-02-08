@@ -14,15 +14,12 @@ void globalMeasurement::setupMeasurement(mpo<lapack_complex_double> *MPOperatorI
 //---------------------------------------------------------------------------------------------------//
 
 void globalMeasurement::measureFull(double &lambda){
-  Lctr.global_access(0,0,0,0)=1.0;
-  lapack_complex_double *targetPctr;
-  for(int i=1;i<MPOperator->length();++i){
-    Lctr.subContractionStart(targetPctr,i);
-    calcCtrIterLeftBase(i,targetPctr);
+  lapack_complex_double *targetPctr=new lapack_complex_double[MPState->maxDim()*MPState->maxDim()*MPOperator->maxDim()];
+  targetPctr[0]=1.0;
+  for(int i=1;i<=MPOperator->length();++i){
+    calcCtrIterLeftBase(i,targetPctr,targetPctr);
   }
-  lapack_complex_double result;
-  calcCtrIterLeftBase(MPOperator->length(),&result);
-  lambda=real(result);
+  lambda=real(targetPctr[0]);
 }
 
 

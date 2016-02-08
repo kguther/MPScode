@@ -97,13 +97,13 @@ int stateArray::setParameterD(int Dnew){
 // any ending with L is a local column dimension
 //---------------------------------------------------------------------------------------------------//
 
-int stateArray::locDimL(int const i){
+int stateArray::locDimL(int const i) const{
   return dimInfo.locDimL(i);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-int stateArray::locDimR(int const i){
+int stateArray::locDimR(int const i) const{
   return dimInfo.locDimR(i);
 }
 
@@ -113,13 +113,13 @@ int stateArray::locDimR(int const i){
 // returning a fixed dimension.
 //---------------------------------------------------------------------------------------------------//
 
-int stateArray::locd(int const i){
+int stateArray::locd(int const i) const{
   return dimInfo.locd(i);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-int stateArray::locDMax(int const i){
+int stateArray::locDMax(int const i) const{
   return dimInfo.locDMax(i);
 }
 

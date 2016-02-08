@@ -17,9 +17,9 @@ class overlap{
  public:
   overlap();
   ~overlap();
-  //Updates are done with respect to phi, i.e. psi is expected to be constant
-  void loadMPS(mps *const psi, mps *const phi);
   stateArray F;
+  //Updates are done with respect to phi, i.e. psi is expected to be constant during updating
+  void loadMPS(mps *const psi, mps *const phi);
   lapack_complex_double fullOverlap();
   lapack_complex_double getFullOverlap();
   void stepLeft(int const i);
@@ -27,8 +27,8 @@ class overlap{
   lapack_complex_double applyF(lapack_complex_double *vec, int const i);
  private:
   int L, D, d;
-  mps *psi;
-  mps *phi;
+  mps const *psi;
+  mps const *phi;
   lapack_complex_double *Lctr;
   lapack_complex_double *Rctr;
   lapack_complex_double& Lctr_access(int const i, int const aim, int const aimp){return Lctr[aimp+aim*D+i*D*D];}

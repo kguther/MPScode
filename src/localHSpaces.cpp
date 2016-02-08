@@ -14,14 +14,14 @@ localHSpaces::localHSpaces(std::vector<int> d):
   localHDims(d)
 {}
 
-int localHSpaces::locd(int const i){
+int localHSpaces::locd(int const i) const{
   if(constantDimension){
     return localHDims[0];
   }
   return localHDims[i];
 }
 
-int localHSpaces::maxd(){
+int localHSpaces::maxd() const{
   int dmax=1;
   for(int i=0;i<localHDims.size();++i){
     if(localHDims[i]>dmax){

@@ -100,7 +100,7 @@ void optHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
 //---------------------------------------------------------------------------------------------------//
 
 void optHMatrix::MultMvQNConserving(arcomplex<double> *v, arcomplex<double> *w){
-  //TRY MORE SOPHISTICATED QN CONSERVING MULTIPLICATION
+  //FOR MORE SOPHISTICATED QN CONSERVING MULTIPLICATION USE THE blockHMatrix CLASS
   clock_t curtime;
   curtime=clock();
   projectQN(v);
@@ -116,6 +116,7 @@ void optHMatrix::MultMvQNConserving(arcomplex<double> *v, arcomplex<double> *w){
 //---------------------------------------------------------------------------------------------------//
 
 void optHMatrix::projectQN(arcomplex<double> *v){
+  //This just sets all entries forbidden by QN constraint to zero. Important: the QN constraint is sufficient, but not necessary to have a state with some fixed QN.
   for(int si=0;si<d;++si){
     for(int ai=0;ai<lDR;++ai){
       for(int aim=0;aim<lDL;++aim){

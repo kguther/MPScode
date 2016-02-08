@@ -11,6 +11,7 @@ iterativeMeasurement::iterativeMeasurement(mpo<lapack_complex_double> *const MPO
   baseMeasurement(MPOperatorIn,MPStateIn)
 {
   Rctr.initialize(MPOperator->length(),MPState->maxDim(),MPOperator->maxDim());
+  Lctr.initialize(MPOperator->length(),MPState->maxDim(),MPOperator->maxDim());
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -20,6 +21,7 @@ void iterativeMeasurement::initialize(mpo<lapack_complex_double> *const MPOperat
   MPState=MPStateIn;
   initializeBase(MPOperatorIn,MPStateIn);
   Rctr.initialize(MPOperator->length(),MPState->maxDim(),MPOperator->maxDim());
+  Lctr.initialize(MPOperator->length(),MPState->maxDim(),MPOperator->maxDim());
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -28,9 +30,10 @@ void iterativeMeasurement::initialize(mpo<lapack_complex_double> *const MPOperat
 //---------------------------------------------------------------------------------------------------//
 
 void iterativeMeasurement::calcCtrIterLeft(int const i){
-  lapack_complex_double *targetPctr;
+  lapack_complex_double *targetPctr, *sourcePctr;
+  Lctr.subContractionStart(sourcePctr,i-1);
   Lctr.subContractionStart(targetPctr,i);
-  calcCtrIterLeftBase(i,targetPctr);
+  calcCtrIterLeftBase(i,sourcePctr,targetPctr);
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -113,6 +116,14 @@ void iterativeMeasurement::calcCtrIterRightBase(int const i, lapack_complex_doub
 
 //---------------------------------------------------------------------------------------------------//
 
+void iterativeMeasurement::calcOuterContainerLeft(int const i, tmpContainer<lapack_complex_double> &outercontainer){
+  lapack_complex_double *sourcePctr;
+  Lctr.subContractionStart(sourcePctr,i-1);
+  baseMeasurement::calcOuterContainerLeft(i,sourcePctr,outercontainer);
+}
+
+//---------------------------------------------------------------------------------------------------//
+
 void iterativeMeasurement::calcOuterContainerRight(int const i, tmpContainer<lapack_complex_double> &outercontainer){
   if(MPState->indexTable.nQNs()){
     calcOuterContainerRightQNOpt(i,outercontainer);
@@ -121,6 +132,8 @@ void iterativeMeasurement::calcOuterContainerRight(int const i, tmpContainer<lap
     //If one wanted to use the code without exploiting QNs, this had to be added
   }
 }
+
+//---------------------------------------------------------------------------------------------------//
 
 void iterativeMeasurement::calcCtrIterRightBaseQNOpt(int const i, lapack_complex_double *targetPctr){
   lapack_complex_double simpleContainer;
