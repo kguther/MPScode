@@ -24,13 +24,19 @@ void getScaling(double const J, double const g);
 
 int main(int argc, char *argv[]){
   double J,g;
-  if(argc!=3){
+  if(argc!=3 && argc!=2){
     J=1;
     g=0;
   }
   else{
-    J=atof(argv[1]);
-    g=atof(argv[2]);
+    if(argc==3){
+      J=atof(argv[1]);
+      g=atof(argv[2]);
+    }
+    else{
+      J=cos(atof(argv[1]));
+      g=sin(atof(argv[1]));
+    }
   }
   sysSolve(J,g);
   return 0;
@@ -42,12 +48,12 @@ int main(int argc, char *argv[]){
 //-------------------------------------------------------------------------------------------//
 
 void sysSolve(double const J, double const g){
-  std::string fileName="first/run_1";
+  std::string fileName="run_1";
   int const nEigens=1;
-  int const L=20;
-  int const N=20;
-  int const D=1;
-  int const numPts=1;
+  int const L=100;
+  int const N=100;
+  int const D=300;
+  int const numPts=5;
   int const nQuantumNumbers=1;
   int const minimalD=(2*N>4)?2*N:4;
   int const usedD=(D>minimalD)?D:minimalD;
@@ -73,8 +79,8 @@ void sysSolve(double const J, double const g){
   std::string dCName="Intrachain density correlation";
   std::string lDName="Local density";
   std::string iCDCName="Interchain density correlation";
-  std::string iCCName="Interchain correlation";
-  std::string scName="Superconducting order parameter";
+  std::string iCCName="Interchain hopping correlation";
+  std::string scName="Interchain pairwise correlation";
   //Define some interesting operators in MPO representation. These are mostly correlation functions which are product operators and therefore have Dw=1
   for(int i=0;i<L;++i){
     for(int si=0;si<pars.d.maxd();++si){
@@ -97,20 +103,20 @@ void sysSolve(double const J, double const g){
       interChainDensityCorrelation.global_access(1,si,sip,0,0)=delta(si,sip)*(delta(si,1)+delta(si,3));
       interChainDensityCorrelation.global_access(0,si,sip,0,0)=delta(si,sip)*(delta(si,2)+delta(si,3));
       localDensity.global_access(1,si,sip,0,0)=delta(si,sip)*(delta(si,1)+delta(si,3));
-      interChainCorrelation.global_access(1,si,sip,0,0)=bMatrix(sip,si);
-      interChainCorrelation.global_access(0,si,sip,0,0)=aMatrix(si,sip)*(delta(sip,1)-delta(sip,3));
-      superconductingOrder.global_access(1,si,sip,0,0)=aMatrix(si,sip);
-      superconductingOrder.global_access(0,si,sip,0,0)=aMatrix(si,sip)*(delta(sip,1)-delta(sip,3)); 
+      interChainCorrelation.global_access(1,si,sip,0,0)=delta(si,1)*delta(sip,2);
+      interChainCorrelation.global_access(0,si,sip,0,0)=delta(si,1)*delta(sip,2);
+      superconductingOrder.global_access(1,si,sip,0,0)=delta(si,3)*delta(sip,0);
+      superconductingOrder.global_access(0,si,sip,0,0)=delta(si,0)*delta(sip,3);
     }
   }
   sim.setLocalMeasurement(greensFunction,gFName);
   //The hamiltonian is subchain parity conserving, thus, the expectation vaue of interChainCorrelation is zero
-  //sim.setLocalMeasurement(interChainCorrelation,iCCName);
+  sim.setLocalMeasurement(interChainCorrelation,iCCName);
   sim.setLocalMeasurement(densityCorrelation,dCName);
   sim.setLocalMeasurement(interChainDensityCorrelation,iCDCName);
   sim.setLocalMeasurement(localDensity,lDName);
   //The hamiltonian is particle number conserving, thus, the expectation value of superconductingOrder is zero
-  //sim.setLocalMeasurement(superconductingOrder,scName);
+  sim.setLocalMeasurement(superconductingOrder,scName);
   clock_t curtime;
   curtime=clock();
   sim.run();

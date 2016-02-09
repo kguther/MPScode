@@ -9,7 +9,7 @@ APCK_INCLUDE=-I/usr/include/arpack++
 MKL_INCLUDE=-I$(MKL_INCLUDE_PATH)
 OBJECTS=network.o arrayprocessing.o Qsystem.o optHMatrix.o mps.o globalMeasurement.o baseMeasurement.o iterativeMeasurement.o overlap.o stateArray.o network_enrichment.o projector.o quantumNumber.o dimensionTable.o basisQNOrderMatrix.o blockHMatrix.o localHSpaces.o localMeasurementSeries.o simulation.o problemOperators.o
 TEMPLATES=arraycreation.h mpo.h pContraction.h tmpContainer.h localMpo.h
-NAME=MPScode
+NAME=vMPScode
 
 all: main.o  $(OBJECTS)
 	$(CC) -o $(NAME) $(OBJECTS) main.o $(APCK_LIB) $(CFLAGS) $(LFLAGS)

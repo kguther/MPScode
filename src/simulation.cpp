@@ -106,6 +106,7 @@ void simulation::run(){
 //---------------------------------------------------------------------------------------------------//
 
 void simulation::singleRun(){
+  std::string dir="results/";
   int hInfo;
   double J,g;
   projector *stateRep;
@@ -125,18 +126,17 @@ void simulation::singleRun(){
   localExpectationValues.resize(localMeasureTask.size());
   std::cout<<"Measuring correlation functions\n";
   std::ofstream ofs;
-  std::ostringstream numStrJ, numStrg;
-  numStrJ<<J;
-  numStrg<<g;
-  std::string fileName;
-  fileName+="results/";
-  fileName+=filePrefix;
-  fileName+="_J_";
-  fileName+=numStrJ.str();
-  fileName+="_g_";
-  fileName+=numStrg.str();
-  fileName+=".txt";
-  ofs.open(fileName.c_str());
+  std::ostringstream filename;
+  std::string modifiedFilename;
+  filename<<dir<<filePrefix<<"_J_"<<J<<"_g_"<<g<<".txt";
+  modifiedFilename=filename.str();
+  for(int m=0;m<modifiedFilename.length()-4;++m){
+    if(modifiedFilename[m]=='.'){
+      modifiedFilename.erase(m,1);
+    }
+  }
+  std::cout<<modifiedFilename<<std::endl;
+  ofs.open(modifiedFilename.c_str());
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
     ofs<<"Values for state number "<<iEigen<<" with energy "<<E0[iEigen]<<" and energy variance "<<dE[iEigen]<<std::endl;
     if(pars.nEigs==1){
@@ -145,7 +145,7 @@ void simulation::singleRun(){
     else{
       stateRep->getStoredState(measureState,iEigen);
     }
-    ofs<<E0[iEigen]<<"\t"<<dE[iEigen]<<std::endl;
+    ofs<<J<<"\t"<<g<<"\t"<<E0[iEigen]<<"\t"<<dE[iEigen]<<std::endl;
     for(int iM=0;iM<measureTask.size();++iM){
       measure(&measureTask[iM],expectationValues[iM],measureState);
       ofs<<operatorNames[iM]<<"\t";
@@ -172,6 +172,7 @@ void simulation::singleRun(){
     }
   }
   TensorNetwork.resetConvergence();
+  ofs.close();
 }
 
 //---------------------------------------------------------------------------------------------------//
