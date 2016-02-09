@@ -13,17 +13,13 @@ quantumNumber::~quantumNumber(){
 
 //---------------------------------------------------------------------------------------------------//
 
-void quantumNumber::initialize(dimensionTable &dimInfoin, std::complex<int> const Nin, std::complex<int> *QNlocin){
-  int violation;
+void quantumNumber::initialize(dimensionTable const &dimInfoin, std::complex<int> const Nin, std::complex<int> const *const QNlocin){
   N=Nin;
   dimInfo=dimInfoin;
   QNloc.resize(dimInfo.d());
   for(int si=0;si<dimInfo.d();++si){
     QNloc[si]=QNlocin[si];
   }
-  leftLabel.resize(dimInfo.D()*(dimInfo.L()+1));
-  rightLabel.resize(dimInfo.D()*(dimInfo.L()+1));
-  indexLabel.resize(dimInfo.D()*(dimInfo.L()+1));
   initializeLabelList();
 }
 
@@ -32,7 +28,6 @@ void quantumNumber::initialize(dimensionTable &dimInfoin, std::complex<int> cons
 std::complex<int> quantumNumber::QNLabel(int const si){
   return QNloc[si];
 }
-
 
 //---------------------------------------------------------------------------------------------------//
 
@@ -73,6 +68,9 @@ void quantumNumber::setParameterD(int const Dnew){
 //---------------------------------------------------------------------------------------------------//
 
 void quantumNumber::initializeLabelList(){
+  leftLabel.resize(dimInfo.D()*(dimInfo.L()+1));
+  rightLabel.resize(dimInfo.D()*(dimInfo.L()+1));
+  indexLabel.resize(dimInfo.D()*(dimInfo.L()+1));
   initializeLabelListLP();
   initializeLabelListRP();
   primaryIndices.resize(dimInfo.L()+1);

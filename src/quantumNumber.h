@@ -20,7 +20,7 @@ class quantumNumber{
  public:
   quantumNumber();
   ~quantumNumber();
-  void initialize(dimensionTable &dimInfoin, std::complex<int> const Nin, std::complex<int> *QNlocin);
+  void initialize(dimensionTable const &dimInfoin, std::complex<int> const Nin, std::complex<int> const *const QNlocin);
   int qnConstraint(int const i, int const si, int const ai, int const aim);
   std::complex<int> QNLabel(int const i, int const ai);
   std::complex<int> QNLabel(int const si);

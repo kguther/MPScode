@@ -27,8 +27,11 @@ void dimensionTable::initialize(int const Din, int const Lin, localHSpaces din){
   setParameterD(Din);
 }
 
+//---------------------------------------------------------------------------------------------------//
+
 void dimensionTable::getDMaxTable(){
   int lDM;
+  DMaxTable.clear();
   for(int i=0;i<=Lpar;++i){
     lDM=1;
     if(i<Lpar/2+1){

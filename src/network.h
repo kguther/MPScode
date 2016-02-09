@@ -23,18 +23,18 @@
 class network{
  public:
   network();
-  network(problemParameters inputpars, simulationParameters inputsimPars);
+  network(problemParameters const &inputpars, simulationParameters const &inputsimPars);
   ~network();
   int solve(std::vector<double> &lambda, std::vector<double> &deltaLambda);
   int measure(mpo<lapack_complex_double> *const MPOperator, double &expValue);
   int measureLocalOperators(localMpo<lapack_complex_double> *const MPOperator, std::vector<lapack_complex_double> &expValue);
-  void initialize(problemParameters inputpars, simulationParameters inputSimPars);
-  void loadNetworkState(mps &source);
+  void initialize(problemParameters const &inputpars, simulationParameters const &inputSimPars);
+  void loadNetworkState(mps const &source);
   void resetConvergence();
   void getProjector(projector *target){target=&excitedStateP;}
   void quantumNumberVec(std::vector<quantumNumber> *target){target=&conservedQNs;}
   dimensionTable& dimTable() {return networkDimInfo;}
-  int setSimParameters(simulationParameters newPars);
+  int setSimParameters(simulationParameters const &newPars);
   //MPO needs to be initialized externally
   mpo<lapack_complex_double> networkH;
   int locd(int const i);
@@ -42,7 +42,7 @@ class network{
   void leftNormalizationMatrixFull();
   mpo<lapack_complex_double> *check, *checkParity;
  private:
-  network(network const &cpynet);//Copying and assigning networks is better avoided because it would work in a quite unintuitive way (the content of the array structures had to be copied, but the member itself must not be copied) and would be computationally quite expensive - but might be useful if one wanted to genuinely increase D during run (also: add a delete function for manual deletion)
+  network(network const &cpynet);//Copying networks is better avoided to save memory
   network& operator=(network const &cpynet);//Use the generate function instead, assignment is dangerous for networks with different parameters 
   mps networkState;
   projector excitedStateP;

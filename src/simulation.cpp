@@ -9,6 +9,8 @@
 simulation::simulation(){
 }
 
+//---------------------------------------------------------------------------------------------------//
+
 simulation::simulation(problemParameters &parsIn, simulationParameters &simParsIn, double const J, double const g, int const pathPoints, std::string &targetFile):
   simPars(simParsIn),
   pars(parsIn),
@@ -18,6 +20,8 @@ simulation::simulation(problemParameters &parsIn, simulationParameters &simParsI
 {
   initialize(parsIn,simParsIn,J,g,pathPoints,targetFile);
 }
+
+//---------------------------------------------------------------------------------------------------//
 
 void simulation::initialize(problemParameters &parsIn, simulationParameters &simParsIn, double const J, double const g, int const pathPoints, std::string &targetFile){
   // simulation class can only use nStages=1 (by choice of algorithm)
@@ -69,6 +73,8 @@ void simulation::initialize(problemParameters &parsIn, simulationParameters &sim
   TensorNetwork.checkParity=&subChainParity;
 }
 
+//---------------------------------------------------------------------------------------------------//
+
 void simulation::generate(problemParameters &parsIn, simulationParameters &simParsIn, double const J, double const g, int const pathPoints, std::string &targetFile){
   simPars=simParsIn;
   pars=parsIn;
@@ -95,7 +101,7 @@ void simulation::setLocalMeasurement(localMpo<std::complex<double> > &localMPOpe
 //---------------------------------------------------------------------------------------------------//
 
 void simulation::run(){
-  for(int nRun=1;nRun<pathLength+1;++nRun){
+  for(int nRun=0;nRun<pathLength+1;++nRun){
     if(abs(parDirection)>1e-20){
       parDirection*=1.0/(abs(parDirection)*100)*nRun;
     }

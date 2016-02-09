@@ -54,6 +54,7 @@ mpo<T>::mpo(){
 
 template<typename T>
 mpo<T>::mpo(int const din, int const Dwin, int const Lin){
+  Qoperator=0;
   initialize(din,Dwin,Lin);
 }
 
@@ -101,6 +102,7 @@ void mpo<T>::initialize(int const din, int const Dwin, int const Lin){
   d=din; 
   Dw=Dwin; 
   L=Lin;
+  delete[] Qoperator;
   Qoperator=new T[Lin*d*Dw*d*Dw];
   nNzero=0;
   sparseOperator=0;

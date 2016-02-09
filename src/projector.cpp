@@ -27,6 +27,8 @@ projector::~projector(){
 
 void projector::initialize(int const nEigsin){
   nEigs=nEigsin;
+  delete[] orthoStates;
+  delete[] scalarProducts;
   orthoStates=new mps[nEigs];
   scalarProducts=new overlap[nEigs-1];
 }

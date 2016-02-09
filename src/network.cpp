@@ -35,7 +35,7 @@ network::network():
 
 //---------------------------------------------------------------------------------------------------//
 
-network::network(problemParameters inputpars, simulationParameters inputsimPars){
+network::network(problemParameters const &inputpars, simulationParameters const &inputsimPars){
   initialize(inputpars,inputsimPars);
 }
 
@@ -49,7 +49,7 @@ network::~network(){
 // Auxiliary methods for construction and initialization of network objects
 //---------------------------------------------------------------------------------------------------//
 
-void network::initialize(problemParameters inputpars, simulationParameters inputsimPars){
+void network::initialize(problemParameters const &inputpars, simulationParameters const &inputsimPars){
   pars=inputpars;
   D=inputsimPars.D;
   L=inputpars.L;
@@ -81,7 +81,7 @@ void network::initialize(problemParameters inputpars, simulationParameters input
 
 //---------------------------------------------------------------------------------------------------//
 
-void network::loadNetworkState(mps &source){
+void network::loadNetworkState(mps const &source){
   networkState.mpsCpy(source);
 }
 
@@ -99,7 +99,7 @@ void network::resetConvergence(){
 // updated within the network, but they should be needed only a few times.
 //---------------------------------------------------------------------------------------------------//
 
-int network::setSimParameters(simulationParameters newPars){
+int network::setSimParameters(simulationParameters const &newPars){
   int info;
   simPars=newPars;
   info=setParameterD(simPars.D);
