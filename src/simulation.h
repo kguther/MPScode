@@ -13,7 +13,7 @@
 class simulation{
  public:
   simulation();
-  simulation(problemParameters &pars, simulationParameters &simPars, double const J, double const g, int const pathPoints, std::string &targetFile);
+  simulation(problemParameters &pars, simulationParameters &simPars, double const J, double const g, int const pathPoints, std::string const &targetFile);
   void generate(problemParameters &pars, simulationParameters &simPars, double const J, double const g, int const pathPoints, std::string &targetFile);
   void setMeasurement(mpo<lapack_complex_double> &MPOperator, std::string &opName);
   void setLocalMeasurement(localMpo<lapack_complex_double> &localMPOperator, std::string &opName);
@@ -26,17 +26,17 @@ class simulation{
   simulationParameters simPars;
   problemParameters pars;
   std::vector<double> convergedEigens;
-  std::complex<double> parDirection;
   std::vector<std::string> operatorNames;
   std::vector<std::string> localOperatorNames;
+  int pathLength;
+  std::complex<double> parDirection;
   std::string filePrefix;
   mpo<lapack_complex_double> particleNumber;
   mpo<lapack_complex_double> subChainParity;
-  int pathLength;
   void singleRun();
   int measure(mpo<std::complex<double> > *const MPOperator, double &expectationValue, mps *const MPState=0);
   int measureLocal(localMpo<std::complex<double> > *const localMPOperator, std::vector<std::complex<double> > &result, mps *const MPState=0);
-  void initialize(problemParameters &pars, simulationParameters &simPars, double const J, double const g, int const pathPoints, std::string &targetFile);
+  void initialize(problemParameters &pars, simulationParameters &simPars, double const J, double const g, int const pathPoints, std::string const &targetFile);
 };
 
 #endif

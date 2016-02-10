@@ -11,7 +11,7 @@ simulation::simulation(){
 
 //---------------------------------------------------------------------------------------------------//
 
-simulation::simulation(problemParameters &parsIn, simulationParameters &simParsIn, double const J, double const g, int const pathPoints, std::string &targetFile):
+simulation::simulation(problemParameters &parsIn, simulationParameters &simParsIn, double const J, double const g, int const pathPoints, std::string const &targetFile):
   simPars(simParsIn),
   pars(parsIn),
   pathLength(pathPoints),
@@ -23,7 +23,7 @@ simulation::simulation(problemParameters &parsIn, simulationParameters &simParsI
 
 //---------------------------------------------------------------------------------------------------//
 
-void simulation::initialize(problemParameters &parsIn, simulationParameters &simParsIn, double const J, double const g, int const pathPoints, std::string &targetFile){
+void simulation::initialize(problemParameters &parsIn, simulationParameters &simParsIn, double const J, double const g, int const pathPoints, std::string const &targetFile){
   // simulation class can only use nStages=1 (by choice of algorithm)
   TensorNetwork.initialize(pars,simPars);
   E0.resize(pars.nEigs);
@@ -68,9 +68,10 @@ void simulation::initialize(problemParameters &parsIn, simulationParameters &sim
       }
     }
   }
-  double spinQN;
   TensorNetwork.check=&particleNumber;
   TensorNetwork.checkParity=&subChainParity;
+  localMeasureTask.clear();
+  measureTask.clear();
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -101,7 +102,7 @@ void simulation::setLocalMeasurement(localMpo<std::complex<double> > &localMPOpe
 //---------------------------------------------------------------------------------------------------//
 
 void simulation::run(){
-  for(int nRun=0;nRun<pathLength+1;++nRun){
+  for(int nRun=1;nRun<pathLength+1;++nRun){
     if(abs(parDirection)>1e-20){
       parDirection*=1.0/(abs(parDirection)*100)*nRun;
     }
@@ -112,7 +113,6 @@ void simulation::run(){
 //---------------------------------------------------------------------------------------------------//
 
 void simulation::singleRun(){
-  std::string dir="results/";
   int hInfo;
   double J,g;
   projector *stateRep;
@@ -130,55 +130,57 @@ void simulation::singleRun(){
   TensorNetwork.solve(E0,dE);
   expectationValues.resize(measureTask.size());
   localExpectationValues.resize(localMeasureTask.size());
-  std::cout<<"Measuring correlation functions\n";
-  std::ofstream ofs;
-  std::ostringstream filename;
-  std::string modifiedFilename;
-  filename<<dir<<filePrefix<<"_J_"<<J<<"_g_"<<g<<".txt";
-  modifiedFilename=filename.str();
-  for(int m=0;m<modifiedFilename.length()-4;++m){
-    if(modifiedFilename[m]=='.'){
-      modifiedFilename.erase(m,1);
-    }
-  }
-  std::cout<<modifiedFilename<<std::endl;
-  ofs.open(modifiedFilename.c_str());
-  for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
-    ofs<<"Values for state number "<<iEigen<<" with energy "<<E0[iEigen]<<" and energy variance "<<dE[iEigen]<<std::endl;
-    if(pars.nEigs==1){
-      measureState=0;
-    }
-    else{
-      stateRep->getStoredState(measureState,iEigen);
-    }
-    ofs<<J<<"\t"<<g<<"\t"<<E0[iEigen]<<"\t"<<dE[iEigen]<<std::endl;
-    for(int iM=0;iM<measureTask.size();++iM){
-      measure(&measureTask[iM],expectationValues[iM],measureState);
-      ofs<<operatorNames[iM]<<"\t";
-    }
-    if(measureTask.size())
-      ofs<<std::endl;
-    for(int iM=0;iM<measureTask.size();++iM){
-      ofs<<expectationValues[iM]<<"\t";
-    }
-    if(measureTask.size())
-      ofs<<std::endl;
-    for(int iM=0;iM<localMeasureTask.size();++iM){
-      measureLocal(&localMeasureTask[iM],localExpectationValues[iM],measureState);
-      ofs<<localOperatorNames[iM]<<"\t";
-    }
-    ofs<<std::endl;
-    if(localExpectationValues.size()>0){
-      for(int i=0;i<localExpectationValues[0].size();++i){
-	for(int iM=0;iM<localMeasureTask.size();++iM){
-	  ofs<<real(localExpectationValues[iM][i])<<"\t";
-	}
-	ofs<<std::endl;
+  if(localMeasureTask.size()>0 || measureTask.size()>0){
+    std::cout<<"Measuring correlation functions\n";
+    std::ofstream ofs;
+    std::string finalName;
+    std::ostringstream compositeName;
+    compositeName<<filePrefix<<"_J_"<<J<<"_g_"<<g;
+    finalName=compositeName.str();
+    for(int m=0;m<finalName.length()-4;++m){
+      if(finalName[m]=='.'){
+	finalName.erase(m,1);
       }
     }
+    finalName+=".txt";
+    ofs.open(finalName.c_str());
+    for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
+      ofs<<"Values for state number "<<iEigen<<" with energy "<<E0[iEigen]<<" and energy variance "<<dE[iEigen]<<std::endl;
+      if(pars.nEigs==1){
+	measureState=0;
+      }
+      else{
+	stateRep->getStoredState(measureState,iEigen);
+      }
+      ofs<<J<<"\t"<<g<<"\t"<<E0[iEigen]<<"\t"<<dE[iEigen]<<std::endl;
+      for(int iM=0;iM<measureTask.size();++iM){
+	measure(&measureTask[iM],expectationValues[iM],measureState);
+	ofs<<operatorNames[iM]<<"\t";
+      }
+      if(measureTask.size())
+	ofs<<std::endl;
+      for(int iM=0;iM<measureTask.size();++iM){
+	ofs<<expectationValues[iM]<<"\t";
+      }
+      if(measureTask.size())
+	ofs<<std::endl;
+      for(int iM=0;iM<localMeasureTask.size();++iM){
+	measureLocal(&localMeasureTask[iM],localExpectationValues[iM],measureState);
+	ofs<<localOperatorNames[iM]<<"\t";
+      }
+      ofs<<std::endl;
+      if(localExpectationValues.size()>0){
+	for(int i=0;i<localExpectationValues[0].size();++i){
+	  for(int iM=0;iM<localMeasureTask.size();++iM){
+	    ofs<<real(localExpectationValues[iM][i])<<"\t";
+	  }
+	  ofs<<std::endl;
+	}
+      }
+    }
+    ofs.close();
   }
   TensorNetwork.resetConvergence();
-  ofs.close();
 }
 
 //---------------------------------------------------------------------------------------------------//

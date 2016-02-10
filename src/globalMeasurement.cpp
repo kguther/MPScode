@@ -20,6 +20,7 @@ void globalMeasurement::measureFull(double &lambda){
     calcCtrIterLeftBase(i,targetPctr,targetPctr);
   }
   lambda=real(targetPctr[0]);
+  delete[] targetPctr;
 }
 
 

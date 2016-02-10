@@ -71,6 +71,7 @@ mpo<T>& mpo<T>::operator=(mpo<T> const  &source){
 
 template<typename T>
 void mpo<T>::mpoCpy(mpo<T> const &source){
+  Qoperator=0;
   initialize(source.maxlocd(),source.maxDim(),source.length());
   for(int i=0;i<L;++i){
     for(int si=0;si<d;++si){
