@@ -46,7 +46,12 @@ void interface::provideInterface(){
   std::cout<<"Enter filename ((d) for default file): ";
   std::cin>>fN;
   if(fN=="d"){
-    fN="default.txt";
+    if(parPack.simType){
+      fN="default_scaling.txt";
+    }
+    else{
+      fN="default_correlation.txt";
+    }
   }
   readParFile(fN);
 }

@@ -11,12 +11,14 @@
 #include <vector>
 
 void sysSolve(double J, double g, info parPack, std::string const &fileName);
-
-void getScaling(int L, info parPack, std::vector<double> &results, std::string const &fileName);
+void getScaling(int L, info parPack, double *results, std::string const &fileName);
+//results has to be at least of size 4 (in the sense of a C array)
 
 int main(int argc, char *argv[]){
+  //Here, the parameters are distributed via MPI to the processes. Each process then individuall solves the system for a specific set of parameters - great paralellization.
+  //There are currently two settings: scaling and correlation. The former computes the behaivour of the gap with increasing system size and the latter computes correlations etc across the parameter space for fixed system size
   MPI_Init(&argc,&argv);
-  std::string dir="test_results/";
+  std::string dir="results/";
   std::string type;
   int myrank, commsize;
   info necPars;
@@ -29,6 +31,8 @@ int main(int argc, char *argv[]){
   int L;
   MPI_Datatype apparentTypes[dn],mpiInfo;
   int blockLengths[dn];
+
+  //Defines the MPI_Datatype used for transferring the input parameters
   MPI_Aint displacements[dn], firstAdress, secondAdress;
   MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
   MPI_Comm_size(MPI_COMM_WORLD,&commsize);
@@ -42,6 +46,9 @@ int main(int argc, char *argv[]){
   apparentTypes[1]=MPI_DOUBLE;
   MPI_Type_create_struct(dn,blockLengths,displacements,apparentTypes,&mpiInfo);
   MPI_Type_commit(&mpiInfo);
+
+  //The main process now gets the input and prepares the broadcast of parameters
+  //The interface class mainly reads parameter files
   if(myrank==0){
     interface settings;
     settings.provideInterface();
@@ -52,12 +59,15 @@ int main(int argc, char *argv[]){
       fNBuf[m]=settings.fileName[m];
     }
   }
+  //Here, the parameters are broadcasted
   MPI_Bcast(&necPars,1,mpiInfo,0,MPI_COMM_WORLD);
   MPI_Bcast(&fNBufSize,1,MPI_INT,0,MPI_COMM_WORLD);
   if(myrank!=0){
     fNBuf=new char[fNBufSize];
   }
   MPI_Bcast(fNBuf,fNBufSize,MPI_CHAR,0,MPI_COMM_WORLD);
+  
+  //The output filename is generated
   if(necPars.simType){
     type="_scaling";
   }
@@ -77,15 +87,21 @@ int main(int argc, char *argv[]){
       }
     }
   }
+
+  //Each process calculates its own couplings/system size
   alpha=2*M_PI*(myrank/static_cast<double>(commsize));
   J=cos(alpha);
   g=sin(alpha);
   L=L0+dL*myrank;
+
+  //And evaluates its computation
   if(necPars.simType){
-    std::vector<double> results, energies;
+    double *energies=new double[4*commsize];
+    double results[4];
     getScaling(L,necPars,results,finalName);
-    energies.resize(4*commsize);
-    MPI_Gather(&results[0],4,MPI_DOUBLE,&energies[0],4*commsize,MPI_DOUBLE,0,MPI_COMM_WORLD);
+    //rcvcount is the number of objects recieved PER PROCESS, not in total
+    MPI_Gather(results,4,MPI_DOUBLE,energies,4,MPI_DOUBLE,0,MPI_COMM_WORLD);
+    //For scaling, all results are written in the same file. This is done by the poor man's solution: only the main process writes.
     if(myrank==0){
       std::ofstream ofs;
       ofs.open(finalName.c_str());
@@ -95,6 +111,7 @@ int main(int argc, char *argv[]){
 	ofs<<L0+rk*dL<<"\t"<<energies[4*rk]<<"\t"<<energies[4*rk+1]<<"\t"<<energies[4*rk+2]<<"\t"<<energies[4*rk+3]<<std::endl;
       }
       ofs.close();
+      delete[] energies;
     }
   }
   else{
@@ -106,11 +123,11 @@ int main(int argc, char *argv[]){
 
 //-------------------------------------------------------------------------------------------//
 
-void getScaling(int L, info parPack, std::vector<double> &results, std::string const &fileName){
+void getScaling(int L, info parPack, double *results, std::string const &fileName){
   int const nEigens=2;
   int const N=2*L*parPack.rho+parPack.odd*(static_cast<int>((2*L*parPack.rho+1))%2)+(1-parPack.odd)*static_cast<int>(2*L*parPack.rho)%2;
   int const nQuantumNumbers=1;
-  int minimalD=(2*N>4)?2*N:4;
+  int minimalD=(3*N>4)?3*N:4;
   int usedD=(parPack.D>minimalD)?parPack.D:minimalD;
   std::ofstream ofs;
   std::complex<int> QNValue[1]={std::complex<int>(N,parPack.par)};
@@ -120,13 +137,11 @@ void getScaling(int L, info parPack, std::vector<double> &results, std::string c
   //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack
   simulationParameters simPars(usedD,parPack.nSweeps,1,parPack.alphaInit,1e-4,parPack.arpackTolMin,parPack.arpackTol);
   simulation sim(pars,simPars,parPack.Jsc,parPack.gsc,parPack.numPts,fileName);
-
   sim.run();
-  results.clear();
-  results.push_back(sim.E0[0]);
-  results.push_back(sim.E0[1]);
-  results.push_back(sim.dE[0]);
-  results.push_back(sim.dE[1]);
+  results[0]=sim.E0[0];
+  results[1]=sim.E0[1];
+  results[2]=sim.dE[0];
+  results[3]=sim.dE[1];
 }
 
 //-------------------------------------------------------------------------------------------//
