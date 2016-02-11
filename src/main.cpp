@@ -10,8 +10,8 @@
 #include <mpi.h>
 #include <vector>
 
-void sysSolve(double J, double g, info parPack, std::string const &fileName);
-void getScaling(int L, info parPack, double *results, std::string const &fileName);
+void sysSolve(double J, double g, info const &parPack, std::string const &fileName);
+void getScaling(int L, info const &parPack, double *results, std::string const &fileName);
 //results has to be at least of size 4 (in the sense of a C array)
 
 int main(int argc, char *argv[]){
@@ -87,7 +87,7 @@ int main(int argc, char *argv[]){
       }
     }
   }
-
+  std::cout<<finalName<<std::endl;
   //Each process calculates its own couplings/system size
   alpha=2*M_PI*(myrank/static_cast<double>(commsize));
   J=cos(alpha);
@@ -123,7 +123,7 @@ int main(int argc, char *argv[]){
 
 //-------------------------------------------------------------------------------------------//
 
-void getScaling(int L, info parPack, double *results, std::string const &fileName){
+void getScaling(int L, info const &parPack, double *results, std::string const &fileName){
   int const nEigens=2;
   int const N=2*L*parPack.rho+parPack.odd*(static_cast<int>((2*L*parPack.rho+1))%2)+(1-parPack.odd)*static_cast<int>(2*L*parPack.rho)%2;
   int const nQuantumNumbers=1;
@@ -146,7 +146,7 @@ void getScaling(int L, info parPack, double *results, std::string const &fileNam
 
 //-------------------------------------------------------------------------------------------//
 
-void sysSolve(double J, double g, info parPack, std::string const &fileName){
+void sysSolve(double J, double g, info const &parPack, std::string const &fileName){
   int const L=parPack.L;
   int const nEigens=1;
   int const numPoints=1;

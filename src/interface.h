@@ -3,6 +3,10 @@
 
 #include <string>
 
+//-------------------------------------------------------------------------------------------//
+// The info struct contains all currently setable parameters.
+//-------------------------------------------------------------------------------------------//
+
 struct info{
   int L;
   int D;
@@ -18,6 +22,10 @@ struct info{
   double arpackTolMin;
   double Jsc, gsc;
 };
+
+//-------------------------------------------------------------------------------------------//
+// The interface class is used for input of parameters. This is done via parameter files
+//-------------------------------------------------------------------------------------------//
 
 class interface{
  public: 

@@ -13,6 +13,7 @@
 #include <vector>
 
 interface::interface(){
+  //default parameters which are used if a parameter is not specified in the file
   fileName="testRun";
   parPack.nSweeps=12;
   parPack.alphaInit=1e-3;
@@ -20,6 +21,7 @@ interface::interface(){
   parPack.arpackTolMin=1e-8;
   parPack.L=100;
   parPack.N=parPack.L;
+  //note that D=1 (or any other too small value for D) uses a fixed minimal value instead of 1
   parPack.D=1;
   parPack.par=1;
   parPack.gsc=0;
@@ -34,6 +36,7 @@ interface::interface(){
 
 void interface::provideInterface(){
   char inArg;
+  //choose mode
   std::cout<<"Determine correlations for a broad parameter range (c) or calculate gap scaling (s)? ";
   std::cin>>inArg;
   if(inArg=='c'){

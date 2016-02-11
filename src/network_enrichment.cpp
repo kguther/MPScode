@@ -222,7 +222,7 @@ void network::leftEnrichmentBlockwise(int const i){
     blockDimR=rBlockSize*(1+lDwR);
     maxDim=(blockDimL>blockDimR)?blockDimL:blockDimR;
     if(lBlockSize!=0 && rBlockSize!=0){
-      Mnew=new lapack_complex_double[lBlockSize*rBlockSize*(1+lDwR)];
+      Mnew=new lapack_complex_double[blockDimL*blockDimR];
       for(int j=0;j<rBlockSize;++j){
 	aiCurrent=networkState.indexTable.aiBlockIndexLP(i,iBlock,j);
       	for(int k=0;k<lBlockSize;++k){
@@ -238,7 +238,21 @@ void network::leftEnrichmentBlockwise(int const i){
       diags=new double[containerDim];
       U=new lapack_complex_double[blockDimL*blockDimL];
       VT=new lapack_complex_double[blockDimR*blockDimR];
+      //There seems to be a bug in liblapacke providing a wrong size for the work array, which can lead to a segfault. This bug is not present in the mkl implementation
+#ifdef USE_MKL
       LAPACKE_zgesdd(LAPACK_COL_MAJOR,'A',blockDimL,blockDimR,Mnew,blockDimL,diags,U,blockDimL,VT,blockDimR);
+#endif
+#ifndef USE_MKL
+      int const lwork=containerDim*containerDim+maxDim*containerDim*2;
+      int const lrwork=(containerDim*5+7>2*containerDim+2*maxDim+1)?containerDim*(containerDim*5+7):containerDim*(2*maxDim+2*containerDim+1);
+      int *iwork=new int[8*containerDim];
+      double *rwork=new double[lrwork*4];
+      lapack_complex_double *work=new lapack_complex_double[4*lwork];
+      LAPACKE_zgesdd_work(LAPACK_COL_MAJOR,'A',blockDimL,blockDimR,Mnew,blockDimL,diags,U,blockDimL,VT,blockDimR,work,lwork,rwork,iwork);
+      delete[] iwork;
+      delete[] rwork;
+      delete[] work;
+#endif
       delete[] Mnew;
       for(int mi=0;mi<blockDimR;++mi){
 	for(int j=0;j<rBlockSize;++j){
@@ -336,7 +350,20 @@ void network::rightEnrichmentBlockwise(int const i){
       diags=new double[containerDim];
       U=new lapack_complex_double[blockDimL*blockDimL];
       VT=new lapack_complex_double[blockDimR*blockDimR];
+#ifdef USE_MKL
       LAPACKE_zgesdd(LAPACK_COL_MAJOR,'A',blockDimL,blockDimR,Mnew,blockDimL,diags,U,blockDimL,VT,blockDimR);
+#endif
+#ifndef USE_MKL
+      int const lwork=containerDim*containerDim+maxDim*containerDim*2;
+      int const lrwork=(containerDim*5+7>2*containerDim+2*maxDim+1)?containerDim*(containerDim*5+7):containerDim*(2*maxDim+2*containerDim+1);
+      int *iwork=new int[8*containerDim];
+      double *rwork=new double[lrwork*4];
+      lapack_complex_double *work=new lapack_complex_double[4*lwork];
+      LAPACKE_zgesdd_work(LAPACK_COL_MAJOR,'A',blockDimL,blockDimR,Mnew,blockDimL,diags,U,blockDimL,VT,blockDimR,work,lwork,rwork,iwork);
+      delete[] iwork;
+      delete[] rwork;
+      delete[] work;
+#endif
       delete[] Mnew;
       for(int mi=0;mi<blockDimL;++mi){
 	for(int k=0;k<lBlockSize;++k){

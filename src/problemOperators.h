@@ -2,6 +2,7 @@
 #define COLLECTION_OF_RELEVANT_OPERATORS
 
 #include "network.h"
+#include "delta.h"
 
 //---------------------------------------------------------------------------------------------------//
 // Here, operators relevant for our system are stored. The following functions generate 
@@ -11,7 +12,5 @@
 double aMatrix(int const a, int const b);
 double bMatrix(int const a, int const b);
 int writeHamiltonian(network &sys, double const J, double const g);
-int delta(int const a, int const b);
-
 
 #endif
