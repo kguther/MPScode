@@ -16,6 +16,7 @@ struct info{
   int simType;
   int odd;
   int numPts;
+  double alphaMin, alphaMax;
   double rho;
   double alphaInit;
   double arpackTol;

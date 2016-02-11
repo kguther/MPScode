@@ -152,6 +152,7 @@ void simulation::singleRun(){
       else{
 	stateRep->getStoredState(measureState,iEigen);
       }
+      ofs<<pars.L<<"\t"<<real(*(pars.QNconserved))<<"\t"<<imag(*(pars.QNconserved))<<std::endl;
       ofs<<J<<"\t"<<g<<"\t"<<E0[iEigen]<<"\t"<<dE[iEigen]<<std::endl;
       for(int iM=0;iM<measureTask.size();++iM){
 	measure(&measureTask[iM],expectationValues[iM],measureState);

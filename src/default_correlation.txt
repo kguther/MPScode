@@ -1,10 +1,8 @@
-run_3
-J	-1
-g	0
-L	100
+run_scan
+L	20
 D	1
 p	-1
-N	100
+N	20
 S	12
 n	5
 m	1e-7

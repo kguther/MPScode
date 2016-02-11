@@ -2,6 +2,7 @@
 #include "mpo.h"
 #include "localMpo.h"
 #include "delta.h"
+#include "math.h"
 #include <iostream> 
 
 int writeHamiltonian(network &sys, double const J, double const g){
@@ -133,6 +134,32 @@ int writeHamiltonian(network &sys, double const J, double const g){
 	  }
 	}
       }
+    }
+  }
+  return 0;
+}
+
+//-------------------------------------------------------------------------------------------//
+
+int writePhasedSecondOrder(localMpo<std::complex<double> > &gamma, double theta){
+  std::complex<double> const iUnit=std::complex<double>(0.0,1.0);
+  int const Dw=gamma.maxDim();
+  if(Dw!=1){
+    return 2;
+  }
+  int const L=gamma.length();
+  int lDwL, lDwR;
+  for(int i=0;i<L;++i){
+    for(int si=0;si<gamma.maxlocd();++si){
+      for(int sip=0;sip<gamma.maxlocd();++sip){
+	gamma.global_access(i,si,sip,0,0)=delta(si,sip);
+      }
+    }
+  }
+  for(int si=0;si<gamma.maxlocd();++si){
+    for(int sip=0;sip<gamma.maxlocd();++sip){
+      gamma.global_access(gamma.currentSite(),si,sip,0,0)=(std::exp(iUnit*theta)*delta(si,1)*delta(sip,2)+std::exp(-iUnit*theta)*delta(sip,1)*delta(si,2));
+      gamma.global_access(gamma.currentSite()-1,si,sip,0,0)=(std::exp(iUnit*theta)*delta(si,1)*delta(sip,2)+std::exp(-iUnit*theta)*delta(sip,1)*delta(si,2));
     }
   }
   return 0;

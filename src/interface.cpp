@@ -30,6 +30,8 @@ interface::interface(){
   parPack.rho=0.5;
   parPack.simType=0;
   parPack.numPts=5;
+  parPack.alphaMin=0;
+  parPack.alphaMax=2*M_PI;
 }
 
 //-------------------------------------------------------------------------------------------//
@@ -37,7 +39,7 @@ interface::interface(){
 void interface::provideInterface(){
   char inArg;
   //choose mode
-  std::cout<<"Determine correlations for a broad parameter range (c) or calculate gap scaling (s)? ";
+  std::cout<<"Determine correlations for a broad parameter range (c), for a single point (p) or calculate gap scaling (s)? ";
   std::cin>>inArg;
   if(inArg=='c'){
     parPack.simType=0;
@@ -45,15 +47,21 @@ void interface::provideInterface(){
   if(inArg=='s'){
     parPack.simType=1;
   }
+  if(inArg=='p'){
+    parPack.simType=2;
+  }
   std::string fN;
   std::cout<<"Enter filename ((d) for default file): ";
   std::cin>>fN;
   if(fN=="d"){
-    if(parPack.simType){
+    if(parPack.simType==1){
       fN="default_scaling.txt";
     }
-    else{
+    if(parPack.simType==0){
       fN="default_correlation.txt";
+    }
+    if(parPack.simType==2){
+      fN="default_point.txt";
     }
   }
   readParFile(fN);
@@ -115,6 +123,12 @@ void interface::readParFile(std::string const &fN){
 	}
 	if(inArg=='r'){
 	  parPack.rho=fPar;
+	}
+	if(inArg=='i'){
+	  parPack.alphaMin=fPar;
+	}
+	if(inArg=='f'){
+	  parPack.alphaMax=fPar;
 	}
       }
       ifs.get(inArg);

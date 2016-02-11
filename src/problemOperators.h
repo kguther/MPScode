@@ -1,6 +1,7 @@
 #ifndef COLLECTION_OF_RELEVANT_OPERATORS
 #define COLLECTION_OF_RELEVANT_OPERATORS
 
+#include "localMpo.h"
 #include "network.h"
 #include "delta.h"
 
@@ -11,6 +12,7 @@
 
 double aMatrix(int const a, int const b);
 double bMatrix(int const a, int const b);
+int writePhasedSecondOrder(localMpo<std::complex<double> > &gamma, double theta);
 int writeHamiltonian(network &sys, double const J, double const g);
 
 #endif
