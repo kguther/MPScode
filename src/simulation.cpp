@@ -88,6 +88,7 @@ void simulation::generate(problemParameters &parsIn, simulationParameters &simPa
 //---------------------------------------------------------------------------------------------------//
 
 void simulation::setMeasurement(mpo<std::complex<double> > &MPOperator, std::string &operatorName){
+  //defines a measurement of some global operator MPOperator in MPO representation
   measureTask.push_back(MPOperator);
   operatorNames.push_back(operatorName);
 }
@@ -95,6 +96,7 @@ void simulation::setMeasurement(mpo<std::complex<double> > &MPOperator, std::str
 //---------------------------------------------------------------------------------------------------//
 
 void simulation::setLocalMeasurement(localMpo<std::complex<double> > &localMPOperator, std::string &localOperatorName){
+  //defines a measurement for some operator depending on the site. The expectation value is computed for all sites right to the initial site. 
   localMeasureTask.push_back(localMPOperator);
   localOperatorNames.push_back(localOperatorName);
 }
@@ -102,6 +104,7 @@ void simulation::setLocalMeasurement(localMpo<std::complex<double> > &localMPOpe
 //---------------------------------------------------------------------------------------------------//
 
 void simulation::run(){
+  //Solve the system for different parameters (J,g) along a straight line in radial direction 
   for(int nRun=1;nRun<pathLength+1;++nRun){
     if(abs(parDirection)>1e-20){
       parDirection*=1.0/(abs(parDirection)*100)*nRun;
@@ -113,8 +116,10 @@ void simulation::run(){
 //---------------------------------------------------------------------------------------------------//
 
 void simulation::singleRun(){
+  //Get nEigs eigenstates for a fixed set of parameters J,g of the hamiltonian
   int hInfo;
   double J,g;
+  //Containers for measurements
   projector *stateRep;
   mps *measureState=0;
   std::vector<double> expectationValues;
@@ -127,9 +132,11 @@ void simulation::singleRun(){
     std::cout<<"Invalid bond dimension for the construction of H. Terminating process.\n";
     exit(1);
   }
+  //Actual DMRG
   TensorNetwork.solve(E0,dE);
   expectationValues.resize(measureTask.size());
   localExpectationValues.resize(localMeasureTask.size());
+  //Measure previously set operators and write results into the result file
   if(localMeasureTask.size()>0 || measureTask.size()>0){
     std::cout<<"Measuring correlation functions\n";
     std::ofstream ofs;
@@ -152,12 +159,15 @@ void simulation::singleRun(){
       else{
 	stateRep->getStoredState(measureState,iEigen);
       }
+      //The problem parameters are written into the first lines
       ofs<<pars.L<<"\t"<<real(*(pars.QNconserved))<<"\t"<<imag(*(pars.QNconserved))<<std::endl;
       ofs<<J<<"\t"<<g<<"\t"<<E0[iEigen]<<"\t"<<dE[iEigen]<<std::endl;
+      //First, global measurements are performed (this is used rarely)
       for(int iM=0;iM<measureTask.size();++iM){
 	measure(&measureTask[iM],expectationValues[iM],measureState);
 	ofs<<operatorNames[iM]<<"\t";
       }
+      //Then, all results are written into the result file
       if(measureTask.size())
 	ofs<<std::endl;
       for(int iM=0;iM<measureTask.size();++iM){
@@ -165,15 +175,21 @@ void simulation::singleRun(){
       }
       if(measureTask.size())
 	ofs<<std::endl;
+      //Now, the same is done for the local measurements (this is what is usually interesting)
       for(int iM=0;iM<localMeasureTask.size();++iM){
 	measureLocal(&localMeasureTask[iM],localExpectationValues[iM],measureState);
 	ofs<<localOperatorNames[iM]<<"\t";
+      }
+      //Knowing the initial site is useful to distinguish bulk and edge functions
+      ofs<<std::endl;
+      for(int iM=0;iM<localMeasureTask.size();++iM){
+	ofs<<localMeasureTask[iM].currentSite()<<"\t";
       }
       ofs<<std::endl;
       if(localExpectationValues.size()>0){
 	for(int i=0;i<localExpectationValues[0].size();++i){
 	  for(int iM=0;iM<localMeasureTask.size();++iM){
-	    ofs<<real(localExpectationValues[iM][i])<<"\t";
+	    ofs<<abs(localExpectationValues[iM][i])<<"\t";
 	  }
 	  ofs<<std::endl;
 	}

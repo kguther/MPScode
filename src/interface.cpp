@@ -22,8 +22,9 @@ interface::interface(){
   parPack.L=100;
   parPack.N=parPack.L;
   //note that D=1 (or any other too small value for D) uses a fixed minimal value instead of 1
-  parPack.D=1;
+  parPack.D=280;
   parPack.par=1;
+  parPack.nGs=0;
   parPack.gsc=0;
   parPack.Jsc=-1;
   parPack.odd=0;
@@ -36,7 +37,8 @@ interface::interface(){
 
 //-------------------------------------------------------------------------------------------//
 
-void interface::provideInterface(){
+void interface::provideInterface(char *argv){
+  /*
   char inArg;
   //choose mode
   std::cout<<"Determine correlations for a broad parameter range (c), for a single point (p) or calculate gap scaling (s)? ";
@@ -53,7 +55,12 @@ void interface::provideInterface(){
   std::string fN;
   std::cout<<"Enter filename ((d) for default file): ";
   std::cin>>fN;
-  if(fN=="d"){
+  */
+  std::string fN;
+  if(argv){
+    fN=argv;
+  }
+  if(argv==0){
     if(parPack.simType==1){
       fN="default_scaling.txt";
     }
@@ -80,7 +87,7 @@ void interface::readParFile(std::string const &fN){
   fileName=target;
   while(ifs.get(inArg)){
     if(inArg!=' '){
-      if(inArg=='L' || inArg=='D' || inArg=='S' || inArg=='p' || inArg=='N' || inArg=='n' || inArg=='o'){
+      if(inArg=='L' || inArg=='D' || inArg=='S' || inArg=='p' || inArg=='N' || inArg=='n' || inArg=='o' || inArg=='T' || inArg=='t'){
 	ifs>>intPar;
 	if(inArg=='L'){
 	  parPack.L=intPar;
@@ -102,6 +109,12 @@ void interface::readParFile(std::string const &fN){
 	}
 	if(inArg=='n'){
 	  parPack.numPts=intPar;
+	}
+	if(inArg=='T'){
+	  parPack.simType=intPar;
+	}
+	if(inArg=='t'){
+	  parPack.nGs=intPar;
 	}
       }
       else{
@@ -137,6 +150,10 @@ void interface::readParFile(std::string const &fN){
   ifs.close();
   if(parPack.par!=1 && parPack.par!=-1){
     std::cout<<"Invalid parity supplied. Terminating process\n";
+    exit(3);
+  }
+  if(parPack.N>2*parPack.L || parPack.N<0 || ((parPack.N==0 || parPack.N==2*parPack.L) && parPack.par==-1)){
+    std::cout<<"Invalid particle number supplied. Terminating process\n";
     exit(3);
   }
 }

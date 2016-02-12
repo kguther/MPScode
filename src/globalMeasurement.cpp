@@ -12,6 +12,10 @@ void globalMeasurement::setupMeasurement(mpo<lapack_complex_double> *MPOperatorI
 }
 
 //---------------------------------------------------------------------------------------------------//
+// The global measurement class does not have a full pContraction object to cache intermediate results
+// since this is not necessary. We only compute one full contraction of the network. This is done
+// iteratively, using the results of the last step in the current step.
+//---------------------------------------------------------------------------------------------------//
 
 void globalMeasurement::measureFull(double &lambda){
   lapack_complex_double *targetPctr=new lapack_complex_double[MPState->maxDim()*MPState->maxDim()*MPOperator->maxDim()];

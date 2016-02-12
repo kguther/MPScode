@@ -16,12 +16,13 @@ struct info{
   int simType;
   int odd;
   int numPts;
-  double alphaMin, alphaMax;
+  int nGs;
   double rho;
   double alphaInit;
   double arpackTol;
   double arpackTolMin;
   double Jsc, gsc;
+  double alphaMin, alphaMax;
 };
 
 //-------------------------------------------------------------------------------------------//
@@ -31,7 +32,7 @@ struct info{
 class interface{
  public: 
   interface();
-  void provideInterface();
+  void provideInterface(char *argv);
   void getScalingSerial(double J, double g);
   info parPack;
   std::string fileName;

@@ -6,10 +6,13 @@ localMeasurementSeries::localMeasurementSeries(localMpo<lapack_complex_double> *
   localMPOperator(MPOperator)
 {}
 
+//---------------------------------------------------------------------------------------------------//
+
 void localMeasurementSeries::measureFull(std::vector<lapack_complex_double> &lambda){
   int const L=MPOperator->length();
   lapack_complex_double result;
   MPOperator->setUpSparse();
+  //The input operator is stored since the measure sweep destroys its form
   localMpo<lapack_complex_double> backup=*localMPOperator;
   calcCtrFull(1);
   lambda.clear();
@@ -19,13 +22,17 @@ void localMeasurementSeries::measureFull(std::vector<lapack_complex_double> &lam
   for(int i=1;i<=localMPOperator->currentSite();++i){
     calcCtrIterLeft(i);
   }
+  //Beginning from the initial site, we sweep to the right and compute the expectation value on each site, using the unchanged partial contractions as intermediate results.
   for(int i=localMPOperator->currentSite();i<L-1;++i){
     localMPOperator->stepRight();
     calcCtrIterLeft(i+1);
     getCurrentValue(lambda,localMPOperator->currentSite());
   }
+  //Here, the input operator is restored to its original form
   *localMPOperator=backup;
 }
+
+//---------------------------------------------------------------------------------------------------//
 
 void localMeasurementSeries::getCurrentValue(std::vector<lapack_complex_double> &lambda, int const i){
   lapack_complex_double simpleContainer=0.0;
@@ -34,6 +41,7 @@ void localMeasurementSeries::getCurrentValue(std::vector<lapack_complex_double> 
   Rctr.subContractionStart(RTerm,i);
   Lctr.subContractionStart(LTerm,i);
   MPState->subMatrixStart(currentM,i);
+  //Only the current site has to be contracted explicitly, the rest is stored in the partial contraction. Explicit contraction is carried out using the optHMatrix class multiplication.
   lapack_complex_double *siteMatrixContainer=new lapack_complex_double [ld*lDR*lDL];
   optHMatrix gather(RTerm,LTerm,MPOperator,MPState->dimInfo,MPOperator->maxDim(),i,0,0,0);
   gather.MultMv(currentM,siteMatrixContainer);

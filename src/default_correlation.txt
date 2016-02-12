@@ -1,10 +1,11 @@
-run_scan
+testRun
+T	0
 L	20
 D	1
 p	-1
 N	20
-S	12
-n	5
+S	1
+n	2
 m	1e-7
 t	1e-4
 a	1e-3

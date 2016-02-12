@@ -1,4 +1,5 @@
-run_scale
+testRun
+T	1
 J	-1
 g	-1
 D	1

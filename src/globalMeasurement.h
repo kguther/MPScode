@@ -5,7 +5,8 @@
 
 //---------------------------------------------------------------------------------------------------//
 // The global measurement can be used to compute the expectation value of some operator MPOperator
-// when in some state MPState. It is quite straightforward.
+// when in some state MPState. It is quite straightforward. The main applciation is to check for
+// fixed QNs and to get the variance of energy.
 //---------------------------------------------------------------------------------------------------//
 
 class globalMeasurement: public baseMeasurement{

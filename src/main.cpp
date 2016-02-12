@@ -13,7 +13,7 @@
 void sysSolve(info const &parPack, std::string const &fileName);
 void sysScan(double J, double g, info const &parPack, std::string const &fileName);
 void getScaling(int L, info const &parPack, double *results, std::string const &fileName);
-void sysSetMeasurements(simulation &sim, int bulkStart, int d, int L);
+void sysSetMeasurements(simulation &sim, int d, int L);
 //results has to be at least of size 4 (in the sense of a C array)
 
 int main(int argc, char *argv[]){
@@ -38,7 +38,7 @@ int main(int argc, char *argv[]){
   MPI_Aint displacements[dn], firstAdress, secondAdress;
   MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
   MPI_Comm_size(MPI_COMM_WORLD,&commsize);
-  blockLengths[0]=8;
+  blockLengths[0]=9;
   blockLengths[1]=8;
   MPI_Get_address(&necPars.L,&firstAdress);
   MPI_Get_address(&necPars.rho,&secondAdress);
@@ -53,21 +53,28 @@ int main(int argc, char *argv[]){
   //The interface class mainly reads parameter files
   if(myrank==0){
     interface settings;
-    settings.provideInterface();
+    if(argc==2){
+      settings.provideInterface(argv[1]);
+    }
+    else{
+      settings.provideInterface(0);
+    }
     necPars=settings.parPack;
     fNBufSize=settings.fileName.size();
-    fNBuf=new char[fNBufSize];
+    fNBuf=new char[fNBufSize+1];
     for(int m=0;m<fNBufSize;++m){
       fNBuf[m]=settings.fileName[m];
     }
+    //C-strings are null-terminated. This is really necessary, strange names can be given if omitted.
+    fNBuf[fNBufSize]='\0';
   }
   //Here, the parameters are broadcasted
   MPI_Bcast(&necPars,1,mpiInfo,0,MPI_COMM_WORLD);
   MPI_Bcast(&fNBufSize,1,MPI_INT,0,MPI_COMM_WORLD);
   if(myrank!=0){
-    fNBuf=new char[fNBufSize];
+    fNBuf=new char[fNBufSize+1];
   }
-  MPI_Bcast(fNBuf,fNBufSize,MPI_CHAR,0,MPI_COMM_WORLD);
+  MPI_Bcast(fNBuf,fNBufSize+1,MPI_CHAR,0,MPI_COMM_WORLD);
   
   //The output filename is generated
   if(necPars.simType==1){
@@ -98,7 +105,6 @@ int main(int argc, char *argv[]){
   J=cos(alpha);
   g=sin(alpha);
   L=L0+dL*myrank;
-
   //And evaluates its computation
   if(necPars.simType==1){
     double *energies=new double[4*commsize];
@@ -136,7 +142,7 @@ void getScaling(int L, info const &parPack, double *results, std::string const &
   int const nEigens=2;
   int const N=2*L*parPack.rho+parPack.odd*(static_cast<int>((2*L*parPack.rho+1))%2)+(1-parPack.odd)*static_cast<int>(2*L*parPack.rho)%2;
   int const nQuantumNumbers=1;
-  int minimalD=(3*N>4)?3*N:4;
+  int minimalD=(2*N>4)?2*N:4;
   int usedD=(parPack.D>minimalD)?parPack.D:minimalD;
   std::ofstream ofs;
   std::complex<int> QNValue[1]={std::complex<int>(N,parPack.par)};
@@ -170,19 +176,9 @@ void sysScan(double J, double g, info const &parPack, std::string const &fileNam
   //simulationParameters simPars(100,5,2,1e-4,1e-8,1e-9,1e-2);
   //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack
   simulationParameters simPars(usedD,parPack.nSweeps,1,parPack.alphaInit,1e-8,parPack.arpackTolMin,parPack.arpackTol);
-
   simulation sim(pars,simPars,J,g,numPoints,fileName);
-  int const bulkStart=parPack.L/3;
-  sysSetMeasurements(sim,bulkStart,pars.d.maxd(),parPack.L);
-  clock_t curtime;
-  curtime=clock();
-  sim.run();
-  curtime=clock()-curtime;
-  std::cout<<"\nTotal simulation took "<<(float)curtime/CLOCKS_PER_SEC<<" seconds\n\n";
-  cout<<setprecision(21);
-  for(int mi=0;mi<nEigens;++mi){
-    std::cout<<"Obtained energy of state "<<mi<<" as: "<<sim.E0[mi]<<std::endl;
-  }
+
+  sysSetMeasurements(sim,pars.d.maxd(),L);
 }
 
 //-------------------------------------------------------------------------------------------//
@@ -191,8 +187,8 @@ void sysSolve(info const &parPack, std::string const &fileName){
   int const nEigens=1;
   int const nQuantumNumbers=1;
   int const numPoints=1;
-  int const nGs=4;
-  int minimalD=(3*parPack.N>4)?3*parPack.N:4;
+  int const nGs=parPack.nGs;
+  int minimalD=(2*parPack.N>4)?2*parPack.N:4;
   int usedD=(parPack.D>minimalD)?parPack.D:minimalD;
   std::complex<int> QNValue[1]={std::complex<int>(parPack.N,parPack.par)};
   std::complex<int> QNList[8]={std::complex<int>(0,1),std::complex<int>(1,1),std::complex<int>(1,-1),std::complex<int>(2,-1)};
@@ -201,26 +197,30 @@ void sysSolve(info const &parPack, std::string const &fileName){
   //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack
   simulationParameters simPars(usedD,parPack.nSweeps,1,parPack.alphaInit,1e-4,parPack.arpackTolMin,parPack.arpackTol);
   simulation sim(pars,simPars,parPack.Jsc,parPack.gsc,numPoints,fileName);
-  int const bulkStart=pars.L/3;
-  sysSetMeasurements(sim,bulkStart,pars.d.maxd(),pars.L);
-  localMpo<lapack_complex_double> gamma(pars.d.maxd(),1,pars.L,bulkStart,0);
+
+  int const d=pars.d.maxd();
+  int const L=parPack.L;
+  localMpo<lapack_complex_double> gamma(d,1,L,L/4,0);
   std::string gammaName="Second Order ";
   std::string fName;
   std::ostringstream cGName;
   double theta;
   for(int m=0;m<nGs;++m){
     theta=m*2*M_PI/static_cast<double>(nGs);
+    std::cout<<theta<<std::endl;
     writePhasedSecondOrder(gamma,theta);
     cGName<<gammaName<<theta;
     fName=cGName.str();
     sim.setLocalMeasurement(gamma,fName);
+    cGName.str("");
   }
-  sim.run();
+  sysSetMeasurements(sim,d,L);
 }
 
 //-------------------------------------------------------------------------------------------//
 
-void sysSetMeasurements(simulation &sim, int bulkStart, int d, int L){
+void sysSetMeasurements(simulation &sim, int d, int L){
+  int const bulkStart=L/4;
   int parityQNs[4]={1,-1,-1,1};
   localMpo<lapack_complex_double> greensFunction(d,1,L,1,parityQNs);
   localMpo<lapack_complex_double> densityCorrelation(d,1,L,1,0);
@@ -301,4 +301,5 @@ void sysSetMeasurements(simulation &sim, int bulkStart, int d, int L){
   sim.setLocalMeasurement(bulkDensityCorrelation,bdCName);
   sim.setLocalMeasurement(bulkInterChainDensityCorrelation,biCDCName);
   sim.setLocalMeasurement(bulkSuperconductingOrder,bscName);
+  sim.run();
 }
