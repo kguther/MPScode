@@ -1,0 +1,33 @@
+The scMPScode takes a parameter file as an input argument. If no input argument is given all parameters are assigned their default values. Therefore, for serious calculations, always supply a parameter file. They work really simple: 
+The first line always (!) contains the name of the run, under which results are stored. Then you may specify some parameters in arbitrary order in the form 
+<parameter shortcut> <tab> <parameter value>
+For example:
+g	1
+sets the coupling constant g to 1 (only referred in type 1 and type 2 runs). Any nonappearing parameters are given default values.
+There are currently 17 settable parameters, with shortcuts:
+T	type of simulation. 0 scans the parameters J,g, 1 scans the parameter L and 2 uses only the specified parameters for a single run. Default: 0
+L	number of sites. Only referred for T==0 or T==2. Default: 100
+N	total particle number. Only referred for T==0 or T==2. Default: 100
+S	number of sweeps. Default: 12
+D	bond dimension. If smaller than 2*N, 2*N is used as bond dimension. Default: 1
+p	total subchain parity (+1 or -1). Default: 1
+o	total particle number modulo 2. Only referred for T==1 to determine the particle number for different L. Default: 0
+n	number of subsequent runs for different parameters J,g. Only referred for T==0 or T==2. Default: 5
+s	total number of angles for measurement of composite second order correlator. Only referred for T==2. Default: 0
+a	initial value of the enrichment parameter alpha. Default: 1e-3
+m	minimal tolerance for the arpack eigensolver. Default: 1e-8
+t	initial tolerance for the arpack eigensolver. Default: 1e-4
+J	intrachain coupling constant of the perturbation. Note that the total perturbation (J,g) is normalized internally. Default: -1
+g	interchain coupling constant of the perturbation. Default: 0
+r	filling. Only referred if T==1. Default: 0.5
+i	initial phase of J+i*g for scan of (J,g). Only referred for T==0. Default: 0
+f	final phase of J+i*g for scan of (J,g). Only referred for T==0. Default: 2*pi
+
+An example file could look like this:
+myname
+J	0
+g	1
+N	45
+L	80
+p	-1
+S	17

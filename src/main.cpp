@@ -225,7 +225,7 @@ void sysSetMeasurements(simulation &sim, int d, int L){
   localMpo<lapack_complex_double> greensFunction(d,1,L,1,parityQNs);
   localMpo<lapack_complex_double> densityCorrelation(d,1,L,1,0);
   localMpo<lapack_complex_double> localDensity(d,1,L,1,0);
-  localMpo<lapack_complex_double> localDensityB(d,1,L,1,0);
+  localMpo<lapack_complex_double> localDensityProd(d,1,L,1,0);
   localMpo<lapack_complex_double> interChainCorrelation(d,1,L,1,parityQNs);
   localMpo<lapack_complex_double> superconductingOrder(d,1,L,1,parityQNs);
   localMpo<lapack_complex_double> interChainDensityCorrelation(d,1,L,1,0);
@@ -237,6 +237,7 @@ void sysSetMeasurements(simulation &sim, int d, int L){
   std::string gFName="Intrachain correlation";
   std::string dCName="Intrachain density correlation";
   std::string lDName="Local density";
+  std::string lDPName="Local density product";
   std::string iCDCName="Interchain density correlation";
   std::string iCCName="Interchain hopping correlation";
   std::string scName="Interchain pairwise correlation";
@@ -260,6 +261,7 @@ void sysSetMeasurements(simulation &sim, int d, int L){
 	bulkInterChainCorrelation.global_access(i,si,sip,0,0)=delta(si,sip);
 	bulkSuperconductingOrder.global_access(i,si,sip,0,0)=delta(si,sip);
 	bulkInterChainDensityCorrelation.global_access(i,si,sip,0,0)=delta(si,sip);
+	localDensityProd.global_access(i,si,sip,0,0)=delta(si,sip);
       }
     }
   }
@@ -286,11 +288,13 @@ void sysSetMeasurements(simulation &sim, int d, int L){
       bulkInterChainCorrelation.global_access(bulkStart-1,si,sip,0,0)=delta(si,1)*delta(sip,2);
       bulkSuperconductingOrder.global_access(bulkStart,si,sip,0,0)=delta(si,3)*delta(sip,0);
       bulkSuperconductingOrder.global_access(bulkStart-1,si,sip,0,0)=delta(si,0)*delta(sip,3);
+      localDensityProd.global_access(1,si,sip,0,0)=delta(si,sip)*delta(si,3);
     }
   }
   //The hamiltonian is subchain parity conserving, thus, the expectation vaue of interChainCorrelation is zero
   //The hamiltonian is particle number conserving, thus, the expectation value of superconductingOrder is zero
   sim.setLocalMeasurement(localDensity,lDName);
+  sim.setLocalMeasurement(localDensityProd,lDPName);
   sim.setLocalMeasurement(greensFunction,gFName);
   sim.setLocalMeasurement(interChainCorrelation,iCCName);
   sim.setLocalMeasurement(densityCorrelation,dCName);

@@ -57,9 +57,6 @@ void interface::provideInterface(char *argv){
   std::cin>>fN;
   */
   std::string fN;
-  if(argv){
-    fN=argv;
-  }
   if(argv==0){
     if(parPack.simType==1){
       fN="default_scaling.txt";
@@ -70,8 +67,8 @@ void interface::provideInterface(char *argv){
     if(parPack.simType==2){
       fN="default_point.txt";
     }
-  }
   readParFile(fN);
+  }
 }
 
 //-------------------------------------------------------------------------------------------//
@@ -87,7 +84,7 @@ void interface::readParFile(std::string const &fN){
   fileName=target;
   while(ifs.get(inArg)){
     if(inArg!=' '){
-      if(inArg=='L' || inArg=='D' || inArg=='S' || inArg=='p' || inArg=='N' || inArg=='n' || inArg=='o' || inArg=='T' || inArg=='t'){
+      if(inArg=='L' || inArg=='D' || inArg=='S' || inArg=='p' || inArg=='N' || inArg=='n' || inArg=='o' || inArg=='T' || inArg=='s'){
 	ifs>>intPar;
 	if(inArg=='L'){
 	  parPack.L=intPar;
@@ -113,7 +110,7 @@ void interface::readParFile(std::string const &fN){
 	if(inArg=='T'){
 	  parPack.simType=intPar;
 	}
-	if(inArg=='t'){
+	if(inArg=='s'){
 	  parPack.nGs=intPar;
 	}
       }

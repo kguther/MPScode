@@ -1,12 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import sys
 
 filelist=os.listdir(os.getcwd())
 if 'plots' not in filelist:
     os.mkdir('plots')
 
-taskname="run_1"
+taskname=sys.argv[1]
 
 writepd=False
 
