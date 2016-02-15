@@ -165,7 +165,6 @@ void getScaling(int L, info const &parPack, double *results, std::string const &
 void sysScan(double J, double g, info const &parPack, std::string const &fileName){
   int const L=parPack.L;
   int const nEigens=1;
-  int const numPoints=1;
   //The required bond dimension for the perturbed system seems to be greater than that of the unperturbed system
   int const nQuantumNumbers=1;
   int const minimalD=(2*parPack.N>4)?2*parPack.N:4;
@@ -177,7 +176,7 @@ void sysScan(double J, double g, info const &parPack, std::string const &fileNam
   //simulationParameters simPars(100,5,2,1e-4,1e-8,1e-9,1e-2);
   //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack
   simulationParameters simPars(usedD,parPack.nSweeps,1,parPack.alphaInit,1e-8,parPack.arpackTolMin,parPack.arpackTol);
-  simulation sim(pars,simPars,J,g,numPoints,fileName);
+  simulation sim(pars,simPars,J,g,parPack.numPts,fileName);
 
   sysSetMeasurements(sim,pars.d.maxd(),L);
 }
@@ -215,6 +214,7 @@ void sysSolve(info const &parPack, std::string const &fileName){
     sim.setLocalMeasurement(gamma,fName);
     cGName.str("");
   }
+  sim.setEntanglementMeasurement();
   sysSetMeasurements(sim,d,L);
 }
 

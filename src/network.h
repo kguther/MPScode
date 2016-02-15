@@ -26,12 +26,12 @@ class network{
   network(problemParameters const &inputpars, simulationParameters const &inputsimPars);
   ~network();
   int solve(std::vector<double> &lambda, std::vector<double> &deltaLambda);
-  int measure(mpo<lapack_complex_double> *const MPOperator, double &expValue);
-  int measureLocalOperators(localMpo<lapack_complex_double> *const MPOperator, std::vector<lapack_complex_double> &expValue);
+  int measure(mpo<lapack_complex_double> *const MPOperator, double &expValue, int iEigen=0);
+  int measureLocalOperators(localMpo<lapack_complex_double> *const MPOperator, std::vector<lapack_complex_double> &expValue, int iEigen=0);
+  void getEntanglement(std::vector<double> &S, std::vector<std::vector<double> > &spectrum, int iEigen=0);
   void initialize(problemParameters const &inputpars, simulationParameters const &inputSimPars);
   void loadNetworkState(mps const &source);
   void resetConvergence();
-  void getProjector(projector *target){target=&excitedStateP;}
   void quantumNumberVec(std::vector<quantumNumber> *target){target=&conservedQNs;}
   dimensionTable& dimTable() {return networkDimInfo;}
   int setSimParameters(simulationParameters const &newPars);

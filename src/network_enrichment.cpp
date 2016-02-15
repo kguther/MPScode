@@ -263,7 +263,7 @@ void network::leftEnrichmentBlockwise(int const i){
       int const lwork=containerDim*containerDim+maxDim*containerDim*2;
       int const lrwork=(containerDim*5+7>2*containerDim+2*maxDim+1)?containerDim*(containerDim*5+7):containerDim*(2*maxDim+2*containerDim+1);
       iworkP.reset(new int[8*containerDim]);
-      rworkP(new double[lrwork*4]);
+      rworkP.reset(new double[lrwork*4]);
       workP.reset(new lapack_complex_double[4*lwork]);
       work=workP.get();
       rwork=rworkP.get();
@@ -386,7 +386,7 @@ void network::rightEnrichmentBlockwise(int const i){
       int const lwork=containerDim*containerDim+maxDim*containerDim*2;
       int const lrwork=(containerDim*5+7>2*containerDim+2*maxDim+1)?containerDim*(containerDim*5+7):containerDim*(2*maxDim+2*containerDim+1);
       iworkP.reset(new int[8*containerDim]);
-      rworkP(new double[lrwork*4]);
+      rworkP.reset(new double[lrwork*4]);
       workP.reset(new lapack_complex_double[4*lwork]);
       work=workP.get();
       rwork=rworkP.get();

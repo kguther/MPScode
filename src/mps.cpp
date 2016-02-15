@@ -440,12 +440,10 @@ void mps::getEntanglementSpectrum(int i, std::vector<double> &spectrum, double &
   subMatrixStart(currentM,i);
   arraycpy(ld*lDL*lDR,currentM,Anew);
   LAPACKE_zgesdd(LAPACK_COL_MAJOR,'N',ld*lDL,lDR,Anew,ld*lDL,diags,0,1,0,1);
-  delete[] Anew;
   spectrum.clear();
   for(int m=0;m<lDR;++m){
     spectrum.push_back(diags[m]);
   }
-  delete[] diags;
   S=0;
   for(int m=0;m<spectrum.size();++m){
     S+=spectrum[m]*spectrum[m]*log(spectrum[m]*spectrum[m]);

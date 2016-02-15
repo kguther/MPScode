@@ -16,6 +16,7 @@ simulation::simulation(problemParameters &parsIn, simulationParameters &simParsI
   pars(parsIn),
   pathLength(pathPoints),
   filePrefix(targetFile),
+  measureEE(0),
   parDirection(std::complex<double>(J,g))
 {
   initialize(parsIn,simParsIn,J,g,pathPoints,targetFile);
@@ -103,6 +104,12 @@ void simulation::setLocalMeasurement(localMpo<std::complex<double> > &localMPOpe
 
 //---------------------------------------------------------------------------------------------------//
 
+void simulation::setEntanglementMeasurement(){
+  measureEE=1;
+}
+
+//---------------------------------------------------------------------------------------------------//
+
 void simulation::run(){
   //Solve the system for different parameters (J,g) along a straight line in radial direction 
   for(int nRun=1;nRun<pathLength+1;++nRun){
@@ -120,11 +127,8 @@ void simulation::singleRun(){
   int hInfo;
   double J,g;
   //Containers for measurements
-  projector *stateRep;
-  mps *measureState=0;
   std::vector<double> expectationValues;
   std::vector<std::vector<std::complex<double> > > localExpectationValues;
-  TensorNetwork.getProjector(stateRep);
   J=1+parDirection.real();
   g=1+parDirection.imag();
   hInfo=writeHamiltonian(TensorNetwork,J,g);
@@ -137,7 +141,7 @@ void simulation::singleRun(){
   expectationValues.resize(measureTask.size());
   localExpectationValues.resize(localMeasureTask.size());
   //Measure previously set operators and write results into the result file
-  if(localMeasureTask.size()>0 || measureTask.size()>0){
+  if(localMeasureTask.size()>0 || measureTask.size()>0 || measureEE){
     std::cout<<"Measuring correlation functions\n";
     std::ofstream ofs;
     std::string finalName;
@@ -153,18 +157,12 @@ void simulation::singleRun(){
     ofs.open(finalName.c_str());
     for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
       ofs<<"Values for state number "<<iEigen<<" with energy "<<E0[iEigen]<<" and energy variance "<<dE[iEigen]<<std::endl;
-      if(pars.nEigs==1){
-	measureState=0;
-      }
-      else{
-	stateRep->getStoredState(measureState,iEigen);
-      }
       //The problem parameters are written into the first lines
       ofs<<pars.L<<"\t"<<real(*(pars.QNconserved))<<"\t"<<imag(*(pars.QNconserved))<<std::endl;
       ofs<<J<<"\t"<<g<<"\t"<<E0[iEigen]<<"\t"<<dE[iEigen]<<std::endl;
       //First, global measurements are performed (this is used rarely)
       for(int iM=0;iM<measureTask.size();++iM){
-	measure(&measureTask[iM],expectationValues[iM],measureState);
+	TensorNetwork.measure(&measureTask[iM],expectationValues[iM],iEigen);
 	ofs<<operatorNames[iM]<<"\t";
       }
       //Then, all results are written into the result file
@@ -177,19 +175,34 @@ void simulation::singleRun(){
 	ofs<<std::endl;
       //Now, the same is done for the local measurements (this is what is usually interesting)
       for(int iM=0;iM<localMeasureTask.size();++iM){
-	measureLocal(&localMeasureTask[iM],localExpectationValues[iM],measureState);
+	TensorNetwork.measureLocalOperators(&localMeasureTask[iM],localExpectationValues[iM],iEigen);
 	ofs<<localOperatorNames[iM]<<"\t";
+      }
+      if(measureEE){
+	ofs<<"Entanglement Entropy"<<"\t";
       }
       //Knowing the initial site is useful to distinguish bulk and edge functions
       ofs<<std::endl;
       for(int iM=0;iM<localMeasureTask.size();++iM){
 	ofs<<localMeasureTask[iM].currentSite()<<"\t";
       }
+      if(measureEE){
+	ofs<<0<<std::endl;
+      }
       ofs<<std::endl;
-      if(localExpectationValues.size()>0){
+      std::vector<double> S;
+      std::vector<std::vector<double> > spec;
+      if(measureEE){
+	TensorNetwork.getEntanglement(S,spec,iEigen);
+      }
+      if(localExpectationValues.size()>0 || measureEE){
 	for(int i=0;i<localExpectationValues[0].size();++i){
 	  for(int iM=0;iM<localMeasureTask.size();++iM){
-	    ofs<<abs(localExpectationValues[iM][i])<<"\t";
+	    if(i<localExpectationValues[iM].size())
+	      ofs<<abs(localExpectationValues[iM][i])<<"\t";
+	  }
+	  if(measureEE && i<S.size()){
+	    ofs<<S[i]<<"\t";
 	  }
 	  ofs<<std::endl;
 	}
@@ -198,26 +211,4 @@ void simulation::singleRun(){
     ofs.close();
   }
   TensorNetwork.resetConvergence();
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-int simulation::measure(mpo<lapack_complex_double> *const MPOperator, double &expectationValue, mps *const MPState){
-  if(MPState){
-    globalMeasurement currentMeasurement(MPOperator,MPState);
-    currentMeasurement.measureFull(expectationValue);
-    return 0;
-  }
-  return TensorNetwork.measure(MPOperator,expectationValue);
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-int simulation::measureLocal(localMpo<lapack_complex_double> *const localMPOperator, std::vector<std::complex<double> > &result, mps *const MPState){
-  if(MPState){
-    localMeasurementSeries currentMeasurement(localMPOperator,MPState);
-    currentMeasurement.measureFull(result);
-    return 0;
-  }
-  return TensorNetwork.measureLocalOperators(localMPOperator,result);
 }

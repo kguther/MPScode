@@ -446,18 +446,45 @@ int network::gotoNextEigen(){
 // Interface function to compute the expectation value of some operator in MPO representation. 
 //---------------------------------------------------------------------------------------------------//
 
-int network::measure(mpo<lapack_complex_double> *const MPOperator, double &lambda){
-  globalMeasurement currentMeasurement(MPOperator,&networkState);
+int network::measure(mpo<lapack_complex_double> *const MPOperator, double &lambda, int iEigen){
+  mps *measureState;
+  if(iEigen==0){
+    measureState=&networkState;
+  }
+  else{
+    excitedStateP.getStoredState(measureState,iEigen);
+  }
+  globalMeasurement currentMeasurement(MPOperator,measureState);
   currentMeasurement.measureFull(lambda);
   return 0;
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-int network::measureLocalOperators(localMpo<lapack_complex_double> *const MPOperator, std::vector<lapack_complex_double> &lambda){
-  localMeasurementSeries currentMeasurement(MPOperator,&networkState);
+int network::measureLocalOperators(localMpo<lapack_complex_double> *const MPOperator, std::vector<lapack_complex_double> &lambda, int iEigen){
+  mps *measureState;
+  if(iEigen==0){
+    measureState=&networkState;
+  }
+  else{
+    excitedStateP.getStoredState(measureState,iEigen);
+  }
+  localMeasurementSeries currentMeasurement(MPOperator,measureState);
   currentMeasurement.measureFull(lambda);
   return 0;
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void network::getEntanglement(std::vector<double> &S, std::vector<std::vector<double> > &spectrum, int iEigen){
+  mps *measureState;
+  if(iEigen==0){
+    measureState=&networkState;
+  }
+  else{
+    excitedStateP.getStoredState(measureState,iEigen);
+  }
+  measureState->getEntanglementEntropy(S,spectrum);
 }
 
 //---------------------------------------------------------------------------------------------------//
