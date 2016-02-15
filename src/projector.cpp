@@ -191,10 +191,14 @@ int projector::getProjector(int const i){
     lapack_complex_double zone=1.0;
     lapack_complex_double zzero=0.0;
     lapack_int info;
-    gram=new lapack_complex_double[nCurrentEigen*nCurrentEigen];
-    gramEigenvecs=new lapack_complex_double[nCurrentEigen*nCurrentEigen];
-    suppZ=new lapack_int[2*nCurrentEigen];
-    gramEigens=new double[nCurrentEigen];
+    std::auto_ptr<lapack_complex_double> gramP(new lapack_complex_double[nCurrentEigen*nCurrentEigen]);
+    std::auto_ptr<lapack_complex_double> gramEigenvecsP(new lapack_complex_double[nCurrentEigen*nCurrentEigen]);
+    std::auto_ptr<lapack_int> suppZP(new lapack_int[2*nCurrentEigen]);
+    std::auto_ptr<double> gramEigensP(new double[nCurrentEigen]);
+    gram=gramP.get();
+    gramEigenvecsP.get();
+    suppZ=suppZP.get();
+    gramEigens=gramEigensP.get();
     getGramMatrix(gram,i);
     lapack_int gramDim=nCurrentEigen;
     info=LAPACKE_zheevr(LAPACK_COL_MAJOR,'V','A','U',gramDim,gram,gramDim,0.0,0.0,0,0,1e-5,&nGramEigens,gramEigens,gramEigenvecs,gramDim,suppZ);
@@ -220,10 +224,6 @@ int projector::getProjector(int const i){
 	cblas_zaxpy(ld*lDR*lDL,&zFactor,Fki,1,workingMatrix,1);
       }
     }
-    delete[] gram;
-    delete[] suppZ;
-    delete[] gramEigenvecs;
-    delete[] gramEigens;
     if(info){
       return 1;
     }
@@ -244,7 +244,8 @@ void projector::getGramMatrix(lapack_complex_double *gram, int const i){
     lapack_complex_double *matrixContainer, *Fki, *Fkpi;
     lapack_complex_double zone=1.0;
     lapack_complex_double zzero=0.0;
-    matrixContainer=new lapack_complex_double[ld*lDR*ld*lDR];
+    std::auto_ptr<lapack_complex_double> matrixContainerP(new lapack_complex_double[ld*lDR*ld*lDR]);
+    matrixContainer=matrixContainerP.get();
     for(int kp=0;kp<nCurrentEigen;++kp){
       scalarProducts[kp].F.subMatrixStart(Fkpi,i);
       for(int k=0;k<nCurrentEigen;++k){

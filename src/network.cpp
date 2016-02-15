@@ -57,6 +57,7 @@ void network::initialize(problemParameters const &inputpars, simulationParameter
   simPars=inputsimPars;
   networkDimInfo.initialize(D,L,pars.d);
   delete[] nConverged;
+  nConverged=0;
   nConverged=new int[pars.nEigs];
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
     nConverged[iEigen]=1;
@@ -244,10 +245,6 @@ void network::sweep(double const maxIter, double const tol, double &lambda){
     lambdaCont=lambda;
     curtime=clock();
     optimize(i,maxIter,tol,lambda);
-
-    measure(&networkH,lambdaCont);
-    std::cout<<"Current Energy:"<<lambdaCont<<std::endl;
-
     curtime=clock()-curtime;
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
     //Execute left-sided enrichment step and update the coefficient of the expansion term
@@ -337,13 +334,7 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
     ARCompStdEig<double, optHMatrix> eigProblem(HMat.dim(),1,&HMat,multMv,"SR",0,tol,maxIter,currentM);
     //One should avoid to hit the maximum number of iterations since this can lead into a suboptimal site matrix, increasing the current energy (although usually not by a lot)
     //So far it seems that the eigensolver either converges quite fast or not at all (i.e. very slow, such that the maximum number of iterations is hit) depending strongly on the tolerance
-    measure(&networkH,lambdaCont);
-    std::cout<<"Current Energy:"<<lambdaCont<<std::endl;
-
     nconv=eigProblem.EigenValVectors(currentM,plambda);
-
-    measure(&networkH,lambdaCont);
-    std::cout<<"Current Energy:"<<lambdaCont<<std::endl;
   }
   if(nconv!=1){
     std::cout<<"Failed to converge in iterative eigensolver, number of Iterations taken: "<<maxIter<<" With tolerance "<<tol<<std::endl;

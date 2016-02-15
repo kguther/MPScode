@@ -197,8 +197,10 @@ int mps::rightNormalizeState(int i){
   ld=locd(i);
   lapack_complex_double *Rcontainer, *Qcontainer;
   const lapack_complex_double zone=1.0;
-  Qcontainer=new lapack_complex_double[ld*D1];
-  Rcontainer=new lapack_complex_double[D2*D2];
+  std::auto_ptr<lapack_complex_double> QP(new lapack_complex_double[ld*D1]);
+  std::auto_ptr<lapack_complex_double> RP(new lapack_complex_double[D2*D2]);
+  Qcontainer=QP.get();
+  Rcontainer=RP.get();
   //Thats how zgerqf works: the last D2 columns contain the upper trigonal matrix R, to adress them, move D2 from the end
   info=LAPACKE_zgerqf(LAPACK_COL_MAJOR,D2,ld*D1,state_array_access_structure[i][0][0],D2,Qcontainer);
   //lowerdiag does get an upper trigonal matrix in column major ordering, dont get confused
@@ -211,8 +213,6 @@ int mps::rightNormalizeState(int i){
   for(int si=0;si<ld;++si){
     cblas_ztrmm(CblasColMajor,CblasRight,CblasUpper,CblasNoTrans,CblasNonUnit,D3,D2,&zone,Rcontainer,D2,state_array_access_structure[i-1][si][0],D3);
   }                                                //POSSIBLE TESTS: TEST FOR R*Q - DONE: WORKS THE WAY INTENDED
-  delete[] Rcontainer;
-  delete[] Qcontainer;
   return 0;  //TODO: Add exception throw
 }
 
@@ -257,14 +257,17 @@ int mps::leftNormalizeStateBlockwise(int i){
   lDR=locDimR(i);
   lDRR=locDimR(i+1);
   ld=locd(i);
-  R=new lapack_complex_double[lDR*lDR];
+  std::auto_ptr<lapack_complex_double> RP(new lapack_complex_double[lDR*lDR]);
+  std::auto_ptr<lapack_complex_double> MP, QP, RcP;
+  R=RP.get();
   for(int iBlock=0;iBlock<indexTable.numBlocksLP(i);++iBlock){
     rBlockSize=indexTable.rBlockSizeLP(i,iBlock);
     lBlockSize=indexTable.lBlockSizeLP(i,iBlock);
     //rBlockSize is required to be smaller than or equal to lBlockSize
     if(rBlockSize!=0 && lBlockSize!=0){
       //We do not normalize empty blocks
-      M=new lapack_complex_double[lBlockSize*rBlockSize];
+      MP.reset(new lapack_complex_double[lBlockSize*rBlockSize]);
+      M=MP.get();
       //First, copy the content of the block to some dummy array
       for(int j=0;j<rBlockSize;++j){
 	for(int k=0;k<lBlockSize;++k){
@@ -272,8 +275,10 @@ int mps::leftNormalizeStateBlockwise(int i){
 	  M[k+j*lBlockSize]=global_access(i,siCurrent,aiCurrent,aimCurrent);
 	}
       }
-      Rcontainer=new lapack_complex_double[rBlockSize*rBlockSize];
-      Qcontainer=new lapack_complex_double[rBlockSize];
+      RcP.reset(new lapack_complex_double[rBlockSize*rBlockSize]);
+      QP.reset(new lapack_complex_double[rBlockSize]);
+      Rcontainer=RcP.get();
+      Qcontainer=QP.get();
       //Make a QR decomposition of that dummy array
       info=LAPACKE_zgeqrf(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,M,lBlockSize,Qcontainer);
       if(info){
@@ -299,19 +304,15 @@ int mps::leftNormalizeStateBlockwise(int i){
 	  R[aipCurrent+aiCurrent*lDR]=Rcontainer[l+j*rBlockSize];
 	}
       }
-      delete[] Rcontainer;
-      delete[] Qcontainer;
-      delete[] M;
     }
   }
   //Finally, multiply the uncompressed matrix R into the next MPS matrix. Block structure does not need to be adressed explicitly, since they both have the required structure.
-  inputA=new lapack_complex_double[lDR*lDRR];
+  std::auto_ptr<lapack_complex_double> inputAP(new lapack_complex_double[lDR*lDRR]);
+  inputA=inputAP.get();
   for(int si=0;si<ld;++si){
     arraycpy(lDRR,lDR,state_array_access_structure[i+1][si][0],inputA);
     cblas_zgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,lDR,lDRR,lDR,&zone,R,lDR,inputA,lDR,&zzero,state_array_access_structure[i+1][si][0],lDR);
   }
-  delete[] inputA;
-  delete[] R;
   return 0;
 }
 
@@ -330,21 +331,26 @@ int mps::rightNormalizeStateBlockwise(int i){
   lDR=locDimR(i);
   lDLL=locDimL(i-1);
   ld=locd(i);
-  R=new lapack_complex_double[lDL*lDL];
+  std::auto_ptr<lapack_complex_double> RP(new lapack_complex_double[lDL*lDL]);
+  std::auto_ptr<lapack_complex_double> MP, RcP, QP;
+  R=RP.get();
   for(int iBlock=0;iBlock<indexTable.numBlocksRP(i);++iBlock){
     lBlockSize=indexTable.lBlockSizeRP(i,iBlock);
     rBlockSize=indexTable.rBlockSizeRP(i,iBlock);
     //lBlockSize is required to be smaller than or equal to rBlockSize
     if(rBlockSize!=0 && lBlockSize!=0){
-      M=new lapack_complex_double[lBlockSize*rBlockSize];
+      MP.reset(new lapack_complex_double[lBlockSize*rBlockSize]);
+      M=MP.get();
       for(int j=0;j<rBlockSize;++j){
 	for(int k=0;k<lBlockSize;++k){
 	  convertIndicesRP(i,j,k,iBlock,siCurrent,aiCurrent,aimCurrent);
 	  M[k+j*lBlockSize]=global_access(i,siCurrent,aiCurrent,aimCurrent);
 	}
       }
-      Rcontainer=new lapack_complex_double[lBlockSize*lBlockSize];
-      Qcontainer=new lapack_complex_double[rBlockSize];
+      RcP.reset(new lapack_complex_double[lBlockSize*lBlockSize]);
+      QP.reset(new lapack_complex_double[rBlockSize]);
+      Rcontainer=RcP.get();
+      Qcontainer=QP.get();
       info=LAPACKE_zgerqf(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,M,lBlockSize,Qcontainer);
       if(info){
 	std::cout<<"Error in LAPACKE_zgerqf: "<<info<<" with block sizes: "<<lBlockSize<<"x"<<rBlockSize<<" at site "<<i<<std::endl;
@@ -367,18 +373,14 @@ int mps::rightNormalizeStateBlockwise(int i){
 	  R[aimpCurrent+aimCurrent*lDL]=Rcontainer[l+j*lBlockSize];
 	}
       }
-      delete[] Qcontainer;
-      delete[] Rcontainer;
-      delete[] M;
     }
   }
-  inputA=new lapack_complex_double[lDL*lDLL];
+  std::auto_ptr<lapack_complex_double> inputAP(new lapack_complex_double[lDL*lDLL]);
+  inputA=inputAP.get();
   for(int si=0;si<ld;++si){
     arraycpy(lDLL*lDL,state_array_access_structure[i-1][si][0],inputA);
     cblas_zgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,lDLL,lDL,lDL,&zone,inputA,lDLL,R,lDL,&zzero,state_array_access_structure[i-1][si][0],lDLL);
   }
-  delete[] inputA;
-  delete[] R;
   return 0;
 }
 
@@ -431,8 +433,10 @@ void mps::getEntanglementSpectrum(int i, std::vector<double> &spectrum, double &
   lDL=locDimL(i);
   lDR=locDimR(i);
   lapack_complex_double *currentM;
-  double *diags=new double[lDR];
-  lapack_complex_double *Anew=new lapack_complex_double[lDL*lDR*ld];
+  std::auto_ptr<double> diagsP(new double[lDR]);
+  double *diags=diagsP.get();
+  std::auto_ptr<lapack_complex_double> AnewP(new lapack_complex_double[lDL*lDR*ld]);
+  lapack_complex_double *Anew=AnewP.get();
   subMatrixStart(currentM,i);
   arraycpy(ld*lDL*lDR,currentM,Anew);
   LAPACKE_zgesdd(LAPACK_COL_MAJOR,'N',ld*lDL,lDR,Anew,ld*lDL,diags,0,1,0,1);
