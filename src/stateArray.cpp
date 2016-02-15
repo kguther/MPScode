@@ -2,7 +2,9 @@
 #include "arrayprocessing.h"
 #include "arraycreation.h"
 
-stateArray::stateArray(){
+stateArray::stateArray():
+  state_array_access_structure(0)
+{
   dimInfo.initialize(1,1,1);
   createStateArray(1,1,&state_array_access_structure);
 }

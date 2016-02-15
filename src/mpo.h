@@ -16,8 +16,8 @@ class mpo{
   mpo& operator=(mpo<T> const &source);
   T& global_read(int const i, int const si, int const sip, int const bi, int const bip) const{return Qoperator[bip+bi*Dw+sip*Dw*Dw+si*Dw*Dw*d+i*Dw*Dw*d*d];}
   T& global_access(int const i, int const si, int const sip, int const bi, int const bip){return Qoperator[bip+bi*Dw+sip*Dw*Dw+si*Dw*Dw*d+i*Dw*Dw*d*d];}
-  int locDimL(int const i);
-  int locDimR(int const i);
+  int locDimL(int const i) const;
+  int locDimR(int const i) const;
   int maxDim() const{return Dw;}
   int maxlocd() const{return d;}
   int length() const{return L;}
@@ -127,11 +127,17 @@ void mpo<T>::shift(T const delta){
 template<typename T>
 void mpo<T>::setUpSparse(){
   delete[] sparseOperator;
+  sparseOperator=0;
   delete[] biIndices;
+  biIndices=0;
   delete[] bimIndices;
+  bimIndices=0;
   delete[] siIndices;
+  siIndices=0;
   delete[] sipIndices;
+  sipIndices=0;
   delete[] nNzero;
+  nNzero=0;
   nNzero=new int[L];
   sparseOperator=new T[L*Dw*Dw*d*d];
   biIndices=new int[L*Dw*Dw*d*d];
@@ -173,7 +179,7 @@ void mpo<T>::subMatrixStart(T *&pStart, int const i, int const si, int const sip
 }
 
 template<typename T>
-int mpo<T>::locDimL(int const i){
+int mpo<T>::locDimL(int const i) const{
   if(i==0){
     return 1;
   }
@@ -181,7 +187,7 @@ int mpo<T>::locDimL(int const i){
 }
 
 template<typename T>
-int mpo<T>::locDimR(int const i){
+int mpo<T>::locDimR(int const i) const{
   if(i==(L-1)){
     return 1;
   }

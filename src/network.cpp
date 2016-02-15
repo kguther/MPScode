@@ -244,6 +244,10 @@ void network::sweep(double const maxIter, double const tol, double &lambda){
     lambdaCont=lambda;
     curtime=clock();
     optimize(i,maxIter,tol,lambda);
+
+    measure(&networkH,lambdaCont);
+    std::cout<<"Current Energy:"<<lambdaCont<<std::endl;
+
     curtime=clock()-curtime;
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
     //Execute left-sided enrichment step and update the coefficient of the expansion term
@@ -309,7 +313,7 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
   std::cout<<"Current particle number (opt): "<<spinCheck<<std::endl;
   std::cout<<"Current subchain parity (opt): "<<parCheck<<std::endl;
   */
-
+  double lambdaCont;
   if(pars.nQNs && i!=0 && i!=(L-1)){
     //For some obscure reason, ARPACK++ can not handle the boundary problems with reduced dimension. They have to be solved without using the block structure. Since they have a really tiny dimension, this does not matter at all.
     blockHMatrix BMat(RTerm, LTerm,&networkH,networkDimInfo,Dw,i,&(networkState.indexTable),&excitedStateP,shift,&conservedQNs);
@@ -333,7 +337,13 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
     ARCompStdEig<double, optHMatrix> eigProblem(HMat.dim(),1,&HMat,multMv,"SR",0,tol,maxIter,currentM);
     //One should avoid to hit the maximum number of iterations since this can lead into a suboptimal site matrix, increasing the current energy (although usually not by a lot)
     //So far it seems that the eigensolver either converges quite fast or not at all (i.e. very slow, such that the maximum number of iterations is hit) depending strongly on the tolerance
+    measure(&networkH,lambdaCont);
+    std::cout<<"Current Energy:"<<lambdaCont<<std::endl;
+
     nconv=eigProblem.EigenValVectors(currentM,plambda);
+
+    measure(&networkH,lambdaCont);
+    std::cout<<"Current Energy:"<<lambdaCont<<std::endl;
   }
   if(nconv!=1){
     std::cout<<"Failed to converge in iterative eigensolver, number of Iterations taken: "<<maxIter<<" With tolerance "<<tol<<std::endl;
@@ -355,6 +365,7 @@ void network::normalize(int const i, int const direction, int const enrichment){
   if(direction){
     if(enrichment){
       if(pars.nQNs){
+	std::cout<<"Using enrichment\n";
 	leftEnrichmentBlockwise(i);
       }
       else{
@@ -368,6 +379,7 @@ void network::normalize(int const i, int const direction, int const enrichment){
   else{
     if(enrichment){
       if(pars.nQNs){
+	std::cout<<"Using enrichment\n";
 	rightEnrichmentBlockwise(i);
       }
       else{

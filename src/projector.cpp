@@ -1,4 +1,5 @@
 #include <float.h>
+#include <memory>
 #include "projector.h"
 #include "siteArray.h"
 #include "mps.h"
@@ -28,7 +29,9 @@ projector::~projector(){
 void projector::initialize(int const nEigsin){
   nEigs=nEigsin;
   delete[] orthoStates;
+  orthoStates=0;
   delete[] scalarProducts;
+  scalarProducts=0;
   orthoStates=new mps[nEigs];
   scalarProducts=new overlap[nEigs-1];
 }
@@ -144,8 +147,10 @@ void projector::project(lapack_complex_double *vec, int const i){
     lapack_complex_double zone=1.0;
     lapack_complex_double zzero=0.0;
     getLocalDimensions(i);
-    vecContainer=new lapack_complex_double[ld*lDR*lDL];
-    trContainer=new lapack_complex_double[ld*lDR*ld*lDR];
+    std::auto_ptr<lapack_complex_double> vecP(new lapack_complex_double[ld*lDR*lDL]);
+    std::auto_ptr<lapack_complex_double> trP(new lapack_complex_double[ld*lDR*ld*lDR]);
+    vecContainer=vecP.get();
+    trContainer=trP.get();
     //Initialization is required (i.e. it is as fast as any other way)
     for(int mi=0;mi<ld*lDR*lDL;++mi){
       vecContainer[mi]=0;
@@ -164,8 +169,6 @@ void projector::project(lapack_complex_double *vec, int const i){
     for(int mi=0;mi<ld*lDR*lDL;++mi){
       vec[mi]-=vecContainer[mi];
     }
-    delete[] trContainer;
-    delete[] vecContainer;
   }
 }
 

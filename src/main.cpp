@@ -92,6 +92,7 @@ int main(int argc, char *argv[]){
     compositeName<<"_J_"<<necPars.Jsc<<"_g_"<<necPars.gsc<<".txt";
   }
   std::string finalName=compositeName.str();
+  //Only type-1 runs do not use the simulation output, where the filename is generated. There, the name is generated here
   if(necPars.simType==1){
     for(int m=0;m<finalName.length()-4;++m){
       if(finalName[m]=='.'){

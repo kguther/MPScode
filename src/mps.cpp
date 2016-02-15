@@ -1,7 +1,9 @@
 #include "mps.h"
 #include "arrayprocessing.h"
 #include "arraycreation.h"
+#include <cmath>
 #include <iostream>
+#include <memory>
 
 mps::mps():stateArray()
 {}
@@ -130,7 +132,7 @@ void mps::setToExactGroundState(){
 
 //---------------------------------------------------------------------------------------------------//
 
-lapack_complex_double mps::exactGroundStateEntry(int const i, int const si, int const ai, int const aim){
+lapack_complex_double mps::exactGroundStateEntry(int i, int si, int ai, int aim){
   if(si==0 || si==2){
     return 1.0;
   }
@@ -145,7 +147,7 @@ lapack_complex_double mps::exactGroundStateEntry(int const i, int const si, int 
 // optimization and multiplying the remainder to the matrices of the site to the left/right.
 //---------------------------------------------------------------------------------------------------//
 
-int mps::leftNormalizeState(int const i){
+int mps::leftNormalizeState(int i){
   if(nQNs){
     return leftNormalizeStateBlockwise(i);
   }
@@ -158,8 +160,10 @@ int mps::leftNormalizeState(int const i){
   ld=locd(i);
   lapack_complex_double *Rcontainer, *Qcontainer;
   const lapack_complex_double zone=1.0;
-  Qcontainer=new lapack_complex_double[D2];//Used for storage of lapack-internal matrices
-  Rcontainer=new lapack_complex_double[D2*D2];//Used for storage of R from RQ decomposition
+  std::auto_ptr<lapack_complex_double> Qp(new lapack_complex_double[D2]);
+  Qcontainer=Qp.get();//Used for storage of lapack-internal matrices
+  std::auto_ptr<lapack_complex_double> Rp(new lapack_complex_double[D2*D2]);//Used for storage of R from RQ decomposition
+  Rcontainer=Rp.get();
   //Enable use of LAPACK_ROW_MAJOR which is necessary here due to the applied storage scheme
   for(int si=0;si<ld;++si){
     transp(D2,D1,state_array_access_structure[i][si][0]);
@@ -175,14 +179,12 @@ int mps::leftNormalizeState(int const i){
     cblas_ztrmm(CblasColMajor,CblasLeft,CblasUpper,CblasNoTrans,CblasNonUnit,D2,D3,&zone,Rcontainer,D2,state_array_access_structure[i+1][si][0],D2);
     //here, R is packed into the matrices of the next site
   }                                                //POSSIBLE TESTS: TEST FOR Q*R - DONE: WORKS THE WAY INTENDED
-  delete[] Rcontainer;
-  delete[] Qcontainer;
   return 0;  //TODO: Add exception throw
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-int mps::rightNormalizeState(int const i){
+int mps::rightNormalizeState(int i){
   if(nQNs){
     return rightNormalizeStateBlockwise(i);
   }
@@ -216,7 +218,7 @@ int mps::rightNormalizeState(int const i){
 
 //---------------------------------------------------------------------------------------------------//
 
-void mps::normalizeFinal(int const i){
+void mps::normalizeFinal(int i){
   lapack_complex_double normalization;
   int site, lcD,ld;
   if(i){
@@ -242,7 +244,7 @@ void mps::normalizeFinal(int const i){
 // THAT EACH BLOCK CAN BE BROUGHT INTO CANONICAL FORM. THIS IS A NONTRIVIAL CONSTRAINT.
 //---------------------------------------------------------------------------------------------------//
 
-int mps::leftNormalizeStateBlockwise(int const i){
+int mps::leftNormalizeStateBlockwise(int i){
   int ld, lDR, lDL, lDRR;
   int lBlockSize,rBlockSize;
   int aiCurrent, siCurrent, aimCurrent, aipCurrent;
@@ -315,7 +317,7 @@ int mps::leftNormalizeStateBlockwise(int const i){
 
 //---------------------------------------------------------------------------------------------------//
 
-int mps::rightNormalizeStateBlockwise(int const i){
+int mps::rightNormalizeStateBlockwise(int i){
   int ld, lDR, lDL, lDLL;
   int lBlockSize,rBlockSize;
   int aiCurrent, siCurrent, aimCurrent, aimpCurrent;
@@ -384,13 +386,13 @@ int mps::rightNormalizeStateBlockwise(int const i){
 // These functions convert block-internal indices to normal MPS bond indices.
 //---------------------------------------------------------------------------------------------------//
 
-void mps::convertIndicesLP(int const i, int const j, int const k, int const iBlock, int &si, int &ai, int &aim){
+void mps::convertIndicesLP(int i, int j, int k, int iBlock, int &si, int &ai, int &aim){
   ai=indexTable.aiBlockIndexLP(i,iBlock,j);
   aim=indexTable.aimBlockIndexLP(i,iBlock,k);
   si=indexTable.siBlockIndexLP(i,iBlock,k);
 }
 
-void mps::convertIndicesRP(int const i, int const j, int const k, int const iBlock, int &si, int &ai, int &aim){
+void mps::convertIndicesRP(int i, int j, int k, int iBlock, int &si, int &ai, int &aim){
   aim=indexTable.aimBlockIndexRP(i,iBlock,k);
   ai=indexTable.aiBlockIndexRP(i,iBlock,j);
   si=indexTable.siBlockIndexRP(i,iBlock,j);
@@ -400,7 +402,7 @@ void mps::convertIndicesRP(int const i, int const j, int const k, int const iBlo
 // Outdated function to enforce the QN constraint on some MPS.
 //---------------------------------------------------------------------------------------------------//
 
-void mps::restoreQN(int const i){
+void mps::restoreQN(int i){
   int lDL, lDR, ld;
   for(int iQN=0;iQN<nQNs;++iQN){
     ld=locd(i);
@@ -415,5 +417,47 @@ void mps::restoreQN(int const i){
 	}
       }
     }
+  }
+}
+
+//---------------------------------------------------------------------------------------------------//
+// Functions for obtaining the entanglement spectrum and entropy of the MPS
+//---------------------------------------------------------------------------------------------------//
+
+void mps::getEntanglementSpectrum(int i, std::vector<double> &spectrum, double &S){
+  //compute the entanglement spectrum at some site
+  int ld, lDR, lDL;
+  ld=locd(i);
+  lDL=locDimL(i);
+  lDR=locDimR(i);
+  lapack_complex_double *currentM;
+  double *diags=new double[lDR];
+  lapack_complex_double *Anew=new lapack_complex_double[lDL*lDR*ld];
+  subMatrixStart(currentM,i);
+  arraycpy(ld*lDL*lDR,currentM,Anew);
+  LAPACKE_zgesdd(LAPACK_COL_MAJOR,'N',ld*lDL,lDR,Anew,ld*lDL,diags,0,1,0,1);
+  delete[] Anew;
+  spectrum.clear();
+  for(int m=0;m<lDR;++m){
+    spectrum.push_back(diags[m]);
+  }
+  delete[] diags;
+  S=0;
+  for(int m=0;m<spectrum.size();++m){
+    S+=spectrum[m]*spectrum[m]*log(spectrum[m]*spectrum[m]);
+  }
+  S*=-1;
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void mps::getEntanglementEntropy(std::vector<double> &S, std::vector<std::vector<double> > &spectra){
+  //compute the entanglement spectrum and entropy at all sites
+  S.clear();
+  S.resize(L);
+  spectra.clear();
+  spectra.resize(L);
+  for(int i=0;i<L;++i){
+    getEntanglementSpectrum(i,spectra[i],S[i]);
   }
 }

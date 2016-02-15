@@ -16,14 +16,8 @@ optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, mpo<arcom
 {
   Hin->subMatrixStart(H,i);
   D=dimInfo.D();
-  lDwL=Dw;
-  lDwR=Dw;
-  if(i==0){
-    lDwL=1;
-  }
-  if(i==(L-1)){
-    lDwR=1;
-  }
+  lDwR=Hin->locDimR(i);
+  lDwL=Hin->locDimL(i);
   lDR=dimInfo.locDimR(i);
   lDL=dimInfo.locDimL(i);
   d=dimInfo.locd(i);
@@ -121,14 +115,8 @@ void optHMatrix::projectQN(arcomplex<double> *v){
     for(int ai=0;ai<lDR;++ai){
       for(int aim=0;aim<lDL;++aim){
 	for(int iQN=0;iQN<conservedQNs->size();++iQN){
-	  if((*conservedQNs)[iQN].qnConstraint(i,si,ai,aim) || real((*conservedQNs)[0].QNLabel(i,ai))<-2){
+	  if((*conservedQNs)[iQN].qnConstraint(i,si,ai,aim)){
 	    v[vecIndex(si,ai,aim)]=0;
-	  }
-	  else{
-	    if(i==129){
-	    std::cout<<"Nonzero element at ("<<i<<", "<<si<<", "<<ai<<", "<<aim<<")\n";
-	    std::cout<<"QN Labels: "<<(*conservedQNs)[0].QNLabel(i,ai)<<", "<<(*conservedQNs)[0].QNLabel(i-1,aim)<<", "<<(*conservedQNs)[0].QNLabel(si)<<std::endl;
-	    }
 	  }
 	}
       }

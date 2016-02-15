@@ -14,21 +14,23 @@ class mps: public stateArray{
   void generate(dimensionTable const &dimInfoIn, std::vector<quantumNumber> *const conservedQNsin);
   void mpsCpy(mps const &source);
   void setToExactGroundState();
-  int leftNormalizeState(int const i);
-  int rightNormalizeState(int const i);
-  void normalizeFinal(int const i);
-  void restoreQN(int const i);
+  int leftNormalizeState(int i);
+  int rightNormalizeState(int i);
+  void normalizeFinal(int i);
+  void restoreQN(int i);
+  void getEntanglementSpectrum(int i, std::vector<double> &spectrum, double &S);
+  void getEntanglementEntropy(std::vector<double> &S, std::vector<std::vector<double> > &spectra);
   basisQNOrderMatrix indexTable;
  private:
   int nQNs;
   std::vector<quantumNumber> *conservedQNs;
   void createInitialState();
   void setUpQNs(std::vector<quantumNumber> *conservedQNs);
-  int leftNormalizeStateBlockwise(int const i);
-  int rightNormalizeStateBlockwise(int const i);
-  void convertIndicesLP(int const i, int const j, int const k, int const iBlock, int &si, int &ai, int &aim);
-  void convertIndicesRP(int const i, int const j, int const k, int const iBlock, int &si, int &ai, int &aim);
-  lapack_complex_double exactGroundStateEntry(int const i, int const si, int const ai, int const aim);
+  int leftNormalizeStateBlockwise(int  i);
+  int rightNormalizeStateBlockwise(int i);
+  void convertIndicesLP(int i, int j, int k, int iBlock, int &si, int &ai, int &aim);
+  void convertIndicesRP(int i, int j, int k, int iBlock, int &si, int &ai, int &aim);
+  lapack_complex_double exactGroundStateEntry(int i, int si, int ai, int aim);
 };
 
 #endif

@@ -104,10 +104,18 @@ template<typename T> void delete3D(T ****array){
 }
 
 template <typename T> void delete4D(T *****array){
-  delete[] (*array)[0][0][0];
-  delete[] (*array)[0][0];
-  delete[] (*array)[0];
-  delete *array;
+  if(*array){
+    if(**array){
+      if(***array){
+	if(****array){
+	  delete[] (*array)[0][0][0];
+	}
+	delete[] (*array)[0][0];
+      }
+      delete[] (*array)[0];
+    }
+    delete *array;
+  }
 }
 
 template <typename T> void delete5D(T ******array){

@@ -1,5 +1,5 @@
 The scMPScode takes a parameter file as an input argument. If no input argument is given all parameters are assigned their default values. Therefore, for serious calculations, always supply a parameter file. They work really simple: 
-The first line always (!) contains the name of the run, under which results are stored. Then you may specify some parameters in arbitrary order in the form 
+The first line always (!) contains the name of the run, under which results are stored. The default name is "testRun", but it is only used when no parameter file is supplied. Then you may specify some parameters in arbitrary order in the form 
 <parameter shortcut> <tab> <parameter value>
 For example:
 g	1

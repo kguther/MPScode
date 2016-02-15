@@ -22,7 +22,7 @@ interface::interface(){
   parPack.L=100;
   parPack.N=parPack.L;
   //note that D=1 (or any other too small value for D) uses a fixed minimal value instead of 1
-  parPack.D=280;
+  parPack.D=1;
   parPack.par=1;
   parPack.nGs=0;
   parPack.gsc=0;
@@ -57,17 +57,9 @@ void interface::provideInterface(char *argv){
   std::cin>>fN;
   */
   std::string fN;
-  if(argv==0){
-    if(parPack.simType==1){
-      fN="default_scaling.txt";
-    }
-    if(parPack.simType==0){
-      fN="default_correlation.txt";
-    }
-    if(parPack.simType==2){
-      fN="default_point.txt";
-    }
-  readParFile(fN);
+  if(argv){
+    fN=argv;
+    readParFile(fN);
   }
 }
 
