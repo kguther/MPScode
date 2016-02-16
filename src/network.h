@@ -38,7 +38,7 @@ class network{
   //MPO needs to be initialized externally
   mpo<lapack_complex_double> networkH;
   int locd(int const i);
-  //This one is only for consistency checks
+  //This is only for consistency checks
   void leftNormalizationMatrixFull();
   mpo<lapack_complex_double> *check, *checkParity;
  private:

@@ -5,6 +5,17 @@
 #include <iostream>
 #include <memory>
 
+int nancheck(lapack_complex_double *array, int size){
+  for(int m=0;m<size;++m){
+    if(array[m]!=array[m]){
+      std::cout<<"nan in MPS"<<std::endl;
+      return 1;
+    }
+  }
+  std::cout<<"MPS nan-clear\n";
+  return 0;
+}
+
 mps::mps():stateArray()
 {}
 
@@ -426,8 +437,8 @@ void mps::restoreQN(int i){
 // Functions for obtaining the entanglement spectrum and entropy of the MPS
 //---------------------------------------------------------------------------------------------------//
 
-void mps::getEntanglementSpectrum(int i, std::vector<double> &spectrum, double &S){
-  //compute the entanglement spectrum at some site
+void mps::getEntanglementSpectrumOC(int i, double &S, std::vector<double> &spectrum){
+  //compute the entanglement spectrum at some site - this requires the site to be the orthogonality center
   int ld, lDR, lDL;
   ld=locd(i);
   lDL=locDimL(i);
@@ -446,7 +457,9 @@ void mps::getEntanglementSpectrum(int i, std::vector<double> &spectrum, double &
   }
   S=0;
   for(int m=0;m<spectrum.size();++m){
-    S+=spectrum[m]*spectrum[m]*log(spectrum[m]*spectrum[m]);
+    if(abs(spectrum[m])>1e-12){
+      S+=spectrum[m]*spectrum[m]*log(spectrum[m]*spectrum[m]);
+    }
   }
   S*=-1;
 }
@@ -455,11 +468,28 @@ void mps::getEntanglementSpectrum(int i, std::vector<double> &spectrum, double &
 
 void mps::getEntanglementEntropy(std::vector<double> &S, std::vector<std::vector<double> > &spectra){
   //compute the entanglement spectrum and entropy at all sites
-  S.clear();
   S.resize(L);
-  spectra.clear();
   spectra.resize(L);
-  for(int i=0;i<L;++i){
-    getEntanglementSpectrum(i,spectra[i],S[i]);
+  for(int i=L-1;i>0;--i){
+    rightNormalizeState(i);
   }
+  normalizeFinal(1);
+  for(int i=0;i<L;++i){
+    getEntanglementSpectrumOC(i,S[i],spectra[i]);
+    if(i<L-1)
+      leftNormalizeState(i);
+  }
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void mps::getEntanglementSpectrum(int i, double &S, std::vector<double> &spectra){
+  for(int j=L-1;j>0;--j){
+    rightNormalizeState(j);
+  }
+  normalizeFinal(1);
+  for(int j=0;j<i;++j){
+    leftNormalizeState(j);
+  }
+  getEntanglementSpectrumOC(i,S,spectra);
 }

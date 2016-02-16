@@ -18,7 +18,7 @@ class mps: public stateArray{
   int rightNormalizeState(int i);
   void normalizeFinal(int i);
   void restoreQN(int i);
-  void getEntanglementSpectrum(int i, std::vector<double> &spectrum, double &S);
+  void getEntanglementSpectrum(int i, double &S, std::vector<double> &spectrum);
   void getEntanglementEntropy(std::vector<double> &S, std::vector<std::vector<double> > &spectra);
   basisQNOrderMatrix indexTable;
  private:
@@ -31,6 +31,7 @@ class mps: public stateArray{
   void convertIndicesLP(int i, int j, int k, int iBlock, int &si, int &ai, int &aim);
   void convertIndicesRP(int i, int j, int k, int iBlock, int &si, int &ai, int &aim);
   lapack_complex_double exactGroundStateEntry(int i, int si, int ai, int aim);
+  void getEntanglementSpectrumOC(int i, double &S, std::vector<double> &spectrum);
 };
 
 #endif

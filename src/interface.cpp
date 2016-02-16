@@ -21,6 +21,7 @@ interface::interface(){
   parPack.arpackTolMin=1e-8;
   parPack.L=100;
   parPack.N=parPack.L;
+  parPack.scaling=100;
   //note that D=1 (or any other too small value for D) uses a fixed minimal value instead of 1
   parPack.D=1;
   parPack.par=1;
@@ -76,7 +77,7 @@ void interface::readParFile(std::string const &fN){
   fileName=target;
   while(ifs.get(inArg)){
     if(inArg!=' '){
-      if(inArg=='L' || inArg=='D' || inArg=='S' || inArg=='p' || inArg=='N' || inArg=='n' || inArg=='o' || inArg=='T' || inArg=='s'){
+      if(inArg=='L' || inArg=='D' || inArg=='S' || inArg=='p' || inArg=='N' || inArg=='n' || inArg=='o' || inArg=='T' || inArg=='s' || inArg=='z'){
 	ifs>>intPar;
 	if(inArg=='L'){
 	  parPack.L=intPar;
@@ -104,6 +105,9 @@ void interface::readParFile(std::string const &fN){
 	}
 	if(inArg=='s'){
 	  parPack.nGs=intPar;
+	}
+	if(inArg=='z'){
+	  parPack.scaling=intPar;
 	}
       }
       else{
@@ -176,7 +180,7 @@ void interface::getScalingSerial(double J, double g){
     QNValue[0]=std::complex<int>(N,parPack.par);
     pars.QNconserved=QNValue;
     pars.L=L;
-    sim.generate(pars,simPars,parPack.Jsc,parPack.gsc,parPack.numPts,fileName);
+    sim.generate(pars,simPars,parPack.Jsc,parPack.gsc,parPack.numPts,parPack.scaling,fileName);
     sim.run();
     sizes.push_back(L);
     energiesGs.push_back(sim.E0[0]);

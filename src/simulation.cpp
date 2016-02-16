@@ -11,12 +11,14 @@ simulation::simulation(){
 
 //---------------------------------------------------------------------------------------------------//
 
-simulation::simulation(problemParameters &parsIn, simulationParameters &simParsIn, double const J, double const g, int const pathPoints, std::string const &targetFile):
+simulation::simulation(problemParameters &parsIn, simulationParameters &simParsIn, double J, double g, int pathPoints, int stepSize, std::string const &targetFile):
   simPars(simParsIn),
   pars(parsIn),
   pathLength(pathPoints),
   filePrefix(targetFile),
   measureEE(0),
+  measureES(0),
+  scaling(stepSize),
   parDirection(std::complex<double>(J,g))
 {
   initialize(parsIn,simParsIn,J,g,pathPoints,targetFile);
@@ -24,7 +26,7 @@ simulation::simulation(problemParameters &parsIn, simulationParameters &simParsI
 
 //---------------------------------------------------------------------------------------------------//
 
-void simulation::initialize(problemParameters &parsIn, simulationParameters &simParsIn, double const J, double const g, int const pathPoints, std::string const &targetFile){
+void simulation::initialize(problemParameters &parsIn, simulationParameters &simParsIn, double J, double g, int pathPoints, std::string const &targetFile){
   // simulation class can only use nStages=1 (by choice of algorithm)
   TensorNetwork.initialize(pars,simPars);
   E0.resize(pars.nEigs);
@@ -35,7 +37,7 @@ void simulation::initialize(problemParameters &parsIn, simulationParameters &sim
   measureTask.clear();
   localMeasureTask.clear();
   if(abs(parDirection)>1e-20){
-    parDirection*=1.0/(abs(parDirection)*100);
+    parDirection*=1.0/(abs(parDirection)*scaling);
   }
   particleNumber.initialize(pars.d.maxd(),2,pars.L);
   subChainParity.initialize(pars.d.maxd(),1,pars.L);
@@ -77,11 +79,12 @@ void simulation::initialize(problemParameters &parsIn, simulationParameters &sim
 
 //---------------------------------------------------------------------------------------------------//
 
-void simulation::generate(problemParameters &parsIn, simulationParameters &simParsIn, double const J, double const g, int const pathPoints, std::string &targetFile){
+void simulation::generate(problemParameters &parsIn, simulationParameters &simParsIn, double J, double g, int pathPoints, int stepSize, std::string &targetFile){
   simPars=simParsIn;
   pars=parsIn;
   pathLength=pathPoints;
   filePrefix=targetFile;
+  scaling=stepSize;
   parDirection=std::complex<double>(J,g);
   initialize(parsIn,simParsIn,J,g,pathPoints,targetFile);
 }
@@ -110,11 +113,18 @@ void simulation::setEntanglementMeasurement(){
 
 //---------------------------------------------------------------------------------------------------//
 
+void simulation::setEntanglementSpectrumMeasurement(){
+  measureEE=1;
+  measureES=1;
+}
+
+//---------------------------------------------------------------------------------------------------//
+
 void simulation::run(){
   //Solve the system for different parameters (J,g) along a straight line in radial direction 
   for(int nRun=1;nRun<pathLength+1;++nRun){
     if(abs(parDirection)>1e-20){
-      parDirection*=1.0/(abs(parDirection)*100)*nRun;
+      parDirection*=1.0/(abs(parDirection)*scaling)*nRun;
     }
     singleRun();
   }
@@ -144,18 +154,25 @@ void simulation::singleRun(){
   if(localMeasureTask.size()>0 || measureTask.size()>0 || measureEE){
     std::cout<<"Measuring correlation functions\n";
     std::ofstream ofs;
-    std::string finalName;
+    std::string finalName, fileName;
     std::ostringstream compositeName;
     compositeName<<filePrefix<<"_J_"<<J<<"_g_"<<g;
     finalName=compositeName.str();
-    for(int m=0;m<finalName.length()-4;++m){
+    for(int m=0;m<finalName.length();++m){
       if(finalName[m]=='.'){
 	finalName.erase(m,1);
       }
     }
-    finalName+=".txt";
-    ofs.open(finalName.c_str());
     for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
+      if(iEigen>0){
+	compositeName.str("");
+	compositeName<<(iEigen+1);
+	fileName=finalName+"_state_"+compositeName.str()+".txt";
+      }
+      else{
+	fileName=finalName+".txt";
+      }
+      ofs.open(fileName.c_str());
       ofs<<"Values for state number "<<iEigen<<" with energy "<<E0[iEigen]<<" and energy variance "<<dE[iEigen]<<std::endl;
       //The problem parameters are written into the first lines
       ofs<<pars.L<<"\t"<<real(*(pars.QNconserved))<<"\t"<<imag(*(pars.QNconserved))<<std::endl;
@@ -196,7 +213,7 @@ void simulation::singleRun(){
 	TensorNetwork.getEntanglement(S,spec,iEigen);
       }
       if(localExpectationValues.size()>0 || measureEE){
-	for(int i=0;i<localExpectationValues[0].size();++i){
+	for(int i=0;i<pars.L;++i){
 	  for(int iM=0;iM<localMeasureTask.size();++iM){
 	    if(i<localExpectationValues[iM].size())
 	      ofs<<abs(localExpectationValues[iM][i])<<"\t";
@@ -207,8 +224,30 @@ void simulation::singleRun(){
 	  ofs<<std::endl;
 	}
       }
+      if(measureES){
+	if(iEigen>0){
+	  compositeName.str("");
+	  compositeName<<(iEigen+1);
+	  fileName=finalName+"_state_"+compositeName.str()+"_ES.txt";
+	}
+	else{
+	  fileName=finalName+"_ES.txt";
+	}
+	ofs.close();
+	ofs.open(fileName.c_str());
+	for(int i=0;i<spec.size();++i){
+	  ofs<<i<<"\t";
+	}
+	ofs<<std::endl;
+	for(int i=0;i<spec.size();++i){
+	  for(int m=0;m<spec[i].size();++m){
+	    ofs<<spec[i][m]<<"\t";
+	  }
+	  ofs<<std::endl;
+	}
+      }
+      ofs.close();
     }
-    ofs.close();
   }
   TensorNetwork.resetConvergence();
 }

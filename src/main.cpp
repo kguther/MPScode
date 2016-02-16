@@ -38,7 +38,7 @@ int main(int argc, char *argv[]){
   MPI_Aint displacements[dn], firstAdress, secondAdress;
   MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
   MPI_Comm_size(MPI_COMM_WORLD,&commsize);
-  blockLengths[0]=9;
+  blockLengths[0]=10;
   blockLengths[1]=8;
   MPI_Get_address(&necPars.L,&firstAdress);
   MPI_Get_address(&necPars.rho,&secondAdress);
@@ -87,9 +87,12 @@ int main(int argc, char *argv[]){
     type="_point";
   }
   std::ostringstream compositeName;
-  compositeName<<dir<<fNBuf<<type<<"_rho_"<<necPars.rho<<"_par_"<<necPars.par<<"_odd_"<<necPars.odd;
+  compositeName<<dir<<fNBuf<<type;
   if(necPars.simType==1){
-    compositeName<<"_J_"<<necPars.Jsc<<"_g_"<<necPars.gsc<<".txt";
+    compositeName<<"_rho_"<<necPars.rho<<"_par_"<<necPars.par<<"_odd_"<<necPars.odd<<"_J_"<<necPars.Jsc<<"_g_"<<necPars.gsc<<".txt";
+  }
+  else{
+    compositeName<<"_L_"<<necPars.L<<"_N_"<<necPars.N;
   }
   std::string finalName=compositeName.str();
   //Only type-1 runs do not use the simulation output, where the filename is generated. There, the name is generated here
@@ -152,7 +155,7 @@ void getScaling(int L, info const &parPack, double *results, std::string const &
   problemParameters pars(localHilbertSpaceDims,L,12,nEigens,nQuantumNumbers,QNValue,QNList);
   //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack
   simulationParameters simPars(usedD,parPack.nSweeps,1,parPack.alphaInit,1e-4,parPack.arpackTolMin,parPack.arpackTol);
-  simulation sim(pars,simPars,parPack.Jsc,parPack.gsc,parPack.numPts,fileName);
+  simulation sim(pars,simPars,parPack.Jsc,parPack.gsc,parPack.numPts,parPack.scaling,fileName);
   sim.run();
   results[0]=sim.E0[0];
   results[1]=sim.E0[1];
@@ -176,7 +179,7 @@ void sysScan(double J, double g, info const &parPack, std::string const &fileNam
   //simulationParameters simPars(100,5,2,1e-4,1e-8,1e-9,1e-2);
   //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack
   simulationParameters simPars(usedD,parPack.nSweeps,1,parPack.alphaInit,1e-8,parPack.arpackTolMin,parPack.arpackTol);
-  simulation sim(pars,simPars,J,g,parPack.numPts,fileName);
+  simulation sim(pars,simPars,J,g,parPack.numPts,parPack.scaling,fileName);
 
   sysSetMeasurements(sim,pars.d.maxd(),L);
 }
@@ -196,7 +199,7 @@ void sysSolve(info const &parPack, std::string const &fileName){
   problemParameters pars(localHilbertSpaceDims,parPack.L,12,nEigens,nQuantumNumbers,QNValue,QNList);
   //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack
   simulationParameters simPars(usedD,parPack.nSweeps,1,parPack.alphaInit,1e-4,parPack.arpackTolMin,parPack.arpackTol);
-  simulation sim(pars,simPars,parPack.Jsc,parPack.gsc,numPoints,fileName);
+  simulation sim(pars,simPars,parPack.Jsc,parPack.gsc,numPoints,parPack.scaling,fileName);
 
   int const d=pars.d.maxd();
   int const L=parPack.L;
@@ -214,7 +217,7 @@ void sysSolve(info const &parPack, std::string const &fileName){
     sim.setLocalMeasurement(gamma,fName);
     cGName.str("");
   }
-  sim.setEntanglementMeasurement();
+  sim.setEntanglementSpectrumMeasurement();
   sysSetMeasurements(sim,d,L);
 }
 
@@ -306,5 +309,6 @@ void sysSetMeasurements(simulation &sim, int d, int L){
   sim.setLocalMeasurement(bulkDensityCorrelation,bdCName);
   sim.setLocalMeasurement(bulkInterChainDensityCorrelation,biCDCName);
   sim.setLocalMeasurement(bulkSuperconductingOrder,bscName);
+  sim.setEntanglementMeasurement();
   sim.run();
 }

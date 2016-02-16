@@ -16,6 +16,7 @@ struct info{
   int simType;
   int odd;
   int numPts;
+  int scaling;
   int nGs;
   double rho;
   double alphaInit;

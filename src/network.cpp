@@ -356,7 +356,6 @@ void network::normalize(int const i, int const direction, int const enrichment){
   if(direction){
     if(enrichment){
       if(pars.nQNs){
-	std::cout<<"Using enrichment\n";
 	leftEnrichmentBlockwise(i);
       }
       else{
@@ -370,7 +369,6 @@ void network::normalize(int const i, int const direction, int const enrichment){
   else{
     if(enrichment){
       if(pars.nQNs){
-	std::cout<<"Using enrichment\n";
 	rightEnrichmentBlockwise(i);
       }
       else{
