@@ -34,7 +34,7 @@ void stateArray::mpsCpy(stateArray const &source){
     for(int si=0;si<ld;++si){
       for(int ai=0;ai<lDR;++ai){
 	for(int aim=0;aim<lDL;++aim){
-	  state_array_access_structure[i][si][ai][aim]=source.global_read(i,si,ai,aim);
+	  state_array_access_structure[i][si][ai][aim]=source.global_access(i,si,ai,aim);
 	}
       }
     }
@@ -99,13 +99,13 @@ int stateArray::setParameterD(int Dnew){
 // any ending with L is a local column dimension
 //---------------------------------------------------------------------------------------------------//
 
-int stateArray::locDimL(int const i) const{
+int stateArray::locDimL(int i) const{
   return dimInfo.locDimL(i);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-int stateArray::locDimR(int const i) const{
+int stateArray::locDimR(int i) const{
   return dimInfo.locDimR(i);
 }
 
@@ -115,13 +115,13 @@ int stateArray::locDimR(int const i) const{
 // returning a fixed dimension.
 //---------------------------------------------------------------------------------------------------//
 
-int stateArray::locd(int const i) const{
+int stateArray::locd(int i) const{
   return dimInfo.locd(i);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-int stateArray::locDMax(int const i) const{
+int stateArray::locDMax(int i) const{
   return dimInfo.locDMax(i);
 }
 

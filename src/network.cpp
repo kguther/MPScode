@@ -302,14 +302,14 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
   networkState.subMatrixStart(currentM,i);
 
   //Check step useful whenever something in the normalization or optimization is adjusted
-  
+  /*
   double spinCheck=0;
   double parCheck=0;
   measure(check,spinCheck);
   measure(checkParity,parCheck);
   std::cout<<"Current particle number (opt): "<<spinCheck<<std::endl;
   std::cout<<"Current subchain parity (opt): "<<parCheck<<std::endl;
-  
+  */
   double lambdaCont;
   if(pars.nQNs && i!=0 && i!=(L-1)){
     //For some obscure reason, ARPACK++ can not handle the boundary problems with reduced dimension. They have to be solved without using the block structure. Since they have a really tiny dimension, this does not matter at all.

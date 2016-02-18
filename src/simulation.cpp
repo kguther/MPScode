@@ -177,8 +177,8 @@ void simulation::singleRun(){
       ofs.open(fileName.c_str());
       ofs<<"Values for state number "<<iEigen<<" with energy "<<E0[iEigen]<<" and energy variance "<<dE[iEigen]<<std::endl;
       //The problem parameters are written into the first lines
-      ofs<<pars.L<<"\t"<<real(*(pars.QNconserved))<<"\t"<<imag(*(pars.QNconserved))<<std::endl;
-      ofs<<J<<"\t"<<g<<"\t"<<W<<"\t"<<E0[iEigen]<<"\t"<<dE[iEigen]<<std::endl;
+      ofs<<"L\tN\tsubchain parity\tJ\tg\tW\tE\tvariance of energy\n";
+      ofs<<pars.L<<"\t"<<real(*(pars.QNconserved))<<"\t"<<imag(*(pars.QNconserved))<<J<<"\t"<<g<<"\t"<<W<<"\t"<<E0[iEigen]<<"\t"<<dE[iEigen]<<std::endl;
       //First, global measurements are performed (this is used rarely)
       for(int iM=0;iM<measureTask.size();++iM){
 	TensorNetwork.measure(&measureTask[iM],expectationValues[iM],iEigen);
@@ -217,8 +217,12 @@ void simulation::singleRun(){
       if(localExpectationValues.size()>0 || measureEE){
 	for(int i=0;i<pars.L;++i){
 	  for(int iM=0;iM<localMeasureTask.size();++iM){
-	    if(i<localExpectationValues[iM].size())
+	    if(i<localExpectationValues[iM].size()){
 	      ofs<<abs(localExpectationValues[iM][i])<<"\t";
+	    }
+	    else{
+	      ofs<<"\t";
+	    }
 	  }
 	  if(measureEE && i<S.size()){
 	    ofs<<S[i]<<"\t";

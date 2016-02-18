@@ -8,12 +8,7 @@ quantumNumber::quantumNumber(){
 
 //---------------------------------------------------------------------------------------------------//
 
-quantumNumber::~quantumNumber(){
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-void quantumNumber::initialize(dimensionTable const &dimInfoin, std::complex<int> const Nin, std::complex<int> const *const QNlocin){
+void quantumNumber::initialize(dimensionTable const &dimInfoin, std::complex<int> const &Nin, std::complex<int> const *const QNlocin){
   N=Nin;
   dimInfo=dimInfoin;
   QNloc.resize(dimInfo.d());
@@ -25,31 +20,31 @@ void quantumNumber::initialize(dimensionTable const &dimInfoin, std::complex<int
 
 //---------------------------------------------------------------------------------------------------//
 
-std::complex<int> quantumNumber::QNLabel(int const si){
+std::complex<int> quantumNumber::QNLabel(int si){
   return QNloc[si];
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-std::complex<int> quantumNumber::QNLabel(int const i, int const ai){
+std::complex<int> quantumNumber::QNLabel(int i, int ai){
   return indexLabel[ai+(i+1)*dimInfo.D()];
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-std::complex<int> quantumNumber::QNLabelLP(int const i, int const ai){
+std::complex<int> quantumNumber::QNLabelLP(int i, int ai){
   return leftLabel[ai+(i+1)*dimInfo.D()];
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-std::complex<int> quantumNumber::QNLabelRP(int const i, int const ai){
+std::complex<int> quantumNumber::QNLabelRP(int i, int ai){
   return rightLabel[ai+(i+1)*dimInfo.D()];
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-void quantumNumber::setParameterD(int const Dnew){
+void quantumNumber::setParameterD(int Dnew){
   dimInfo.setParameterD(Dnew);
   initializeLabelList();
 }
@@ -102,7 +97,7 @@ void quantumNumber::initializeLabelListRP(){
 // than in the exact labeling. 
 //---------------------------------------------------------------------------------------------------//
 
-int quantumNumber::initializeLabelList(int const i, int const direction){
+int quantumNumber::initializeLabelList(int i, int direction){
   //direction==1 is RP, direction==0 is LP and -1 is final index
   int minimalLabel, maximalLabel;
   int blockCounter=0;
@@ -223,7 +218,7 @@ int quantumNumber::initializeLabelList(int const i, int const direction){
 
 //---------------------------------------------------------------------------------------------------//
 
-void quantumNumber::gatherBlocks(int const i, std::vector<int> &aimIndices, std::vector<std::complex<int> > &qnLabels, int const direction){
+void quantumNumber::gatherBlocks(int i, std::vector<int> &aimIndices, std::vector<std::complex<int> > &qnLabels, int direction){
   //direction==1 is RP, direction==0 is LP
   int isNew, matchBlock;
   int pre, lD;
@@ -273,7 +268,7 @@ void quantumNumber::gatherBlocks(int const i, std::vector<int> &aimIndices, std:
 
 //---------------------------------------------------------------------------------------------------//
 
-int quantumNumber::primaryIndex(int const i, int const ai){
+int quantumNumber::primaryIndex(int i, int ai){
   for(int aim=0;aim<primaryIndices[i+1].size();++aim){
     if(ai==primaryIndices[i+1][aim]){
       return 1;
@@ -284,7 +279,7 @@ int quantumNumber::primaryIndex(int const i, int const ai){
 
 //---------------------------------------------------------------------------------------------------//
 
-int quantumNumber::integerParity(int const n){
+int quantumNumber::integerParity(int n){
   if(n%2){
     return -1;
   }
@@ -294,7 +289,7 @@ int quantumNumber::integerParity(int const n){
 
 //---------------------------------------------------------------------------------------------------//
 
-int quantumNumber::qnConstraint(int const i, int const si, int const ai, int const aim){
+int quantumNumber::qnConstraint(int i, int si, int ai, int aim){
   if(QNLabel(i,ai)!=groupOperation(QNLabel(i-1,aim),QNLabel(si)) && real(QNLabel(i,ai))>-2){
     return 1;
   }
@@ -303,7 +298,7 @@ int quantumNumber::qnConstraint(int const i, int const si, int const ai, int con
 
 //---------------------------------------------------------------------------------------------------//
 
-std::complex<int> quantumNumber::exactLabel(int const i, int const ai){
+std::complex<int> quantumNumber::exactLabel(int i, int ai){
   //This was the labeling scheme (up to permuations) if one would not truncate the MPS site matrices at all
   int aiReduced=ai;
   std::complex<int> QNSum=0;
@@ -318,7 +313,7 @@ std::complex<int> quantumNumber::exactLabel(int const i, int const ai){
 
 //---------------------------------------------------------------------------------------------------//
 
-std::complex<int> quantumNumber::groupOperation(std::complex<int> a, std::complex<int> b, int const pre){
+std::complex<int> quantumNumber::groupOperation(std::complex<int> const &a, std::complex<int> const &b, int const pre){
   //Defines the real part as the U(1) part and the imaginary as the Z_2 part of a quantum number
   std::complex<int> result;
   real(result)=real(a)+pre*real(b);

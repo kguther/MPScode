@@ -10,7 +10,6 @@ class mps: public stateArray{
  public:
   mps();
   mps(dimensionTable const &dimInfoIn, std::vector<quantumNumber> *const conservedQNsin);
-  ~mps();
   void generate(dimensionTable const &dimInfoIn, std::vector<quantumNumber> *const conservedQNsin);
   void mpsCpy(mps const &source);
   void setToExactGroundState();

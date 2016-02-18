@@ -39,11 +39,6 @@ mps::mps(dimensionTable const &dimInfoIn, std::vector<quantumNumber> *const cons
 
 //---------------------------------------------------------------------------------------------------//
 
-mps::~mps(){
-}
-
-//---------------------------------------------------------------------------------------------------//
-
 void mps::generate(dimensionTable const &dimInfoIn, std::vector<quantumNumber> *const conservedQNsin){
   stateArray::generate(dimInfoIn);
   setUpQNs(conservedQNsin);

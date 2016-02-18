@@ -46,16 +46,15 @@ for filename in filelist:
             print filename
             with open(filename) as readCaption:
                 readCaption.readline()
-                sysp=readCaption.readline()
-                pars=readCaption.readline()
+                readCaption.readline()
+                parsR=readCaption.readline()
                 names=readCaption.readline()
-            syspars=sysp.split('\t')
             datanames=names.split('\t')
-            parVals=pars.split('\t')
+            pars=parsR.split('\t')
             n=len(datanames)
-            L=syspars[0]
-            np=syspars[1]
-            parity=syspars[2][0:(len(syspars[2])-1)]
+            L=pars[0]
+            np=pars[1]
+            parity=pars[2]
             if filename==filelist[0]:
                 if writeK:
                     with open('decay_pars_L_'+L+'_N_'+np+'_p_'+parity+'.txt','w') as kp:
@@ -85,7 +84,7 @@ for filename in filelist:
                             fpars, acc=so.curve_fit(f,xeff,data[int(L)/10:len(data)],p0)
                 if (tasknum(datanames[i])==4 and writepd):
                     phase=min(data)/max(data)
-                    point=parVals[0]+'\t'+parVals[1]+'\t'+str(phase)+'\n'
+                    point=pars[3]+'\t'+pars[4]+'\t'+str(phase)+'\n'
                     with open('phasediagram_L_'+L+'_N_'+np+'_p_'+parity+'.txt','a') as pd:
                         pd.write(point)
                 plt.figure()
@@ -101,8 +100,7 @@ for filename in filelist:
                 plt.xlabel('distance i')
                 plt.ylabel(tasklabel)
                 tname=datanames[i].replace('.','_')
-                print tname
-                plt.title('J='+parVals[0]+' g='+parVals[1]+' E='+parVals[2]+' $\\Delta E$='+parVals[3])
+                plt.title('J='+pars[3]+' g='+pars[4]+' W= '+pars[5]+' E='+pars[6]+' $\\Delta E$='+pars[7].strip())
                 plt.savefig('plots/'+filename[0:len(filename)-4]+'_'+tname.replace(' ','_')+'.pdf')
                 plt.close()
 

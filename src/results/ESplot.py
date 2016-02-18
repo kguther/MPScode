@@ -32,13 +32,11 @@ for filename in filelist:
             with open(filename,'r') as lbf:
                 print filename
                 lbf.readline()
-                qnsr=lbf.readline()
+                lbf.readline()
                 hparsr=lbf.readline()
-                qnsr=qnsr[0:(len(qnsr)-1)]
                 hparsr=hparsr[0:(len(hparsr)-1)]
-                qns=qnsr.split('\t')
                 hpars=hparsr.split('\t')
-                labels.append(qns+hpars)
+                labels.append(hpars)
 
 plt.figure()
 for i in range(0,len(gather)):
@@ -47,10 +45,10 @@ for i in range(0,len(gather)):
     ydata.sort()
     print ydata
     esplot,=plt.plot(xdata,ydata,'o')
-    legendstring='L='+labels[i][0]+' N='+labels[i][1]+' $\\alpha$='+labels[i][2]+' J='+labels[i][3]+' g='+labels[i][4]
+    legendstring='L='+labels[i][0]+' N='+labels[i][1]+' $\\alpha$='+labels[i][2]+' J='+labels[i][3]+' g='+labels[i][4]+ 'W='+labels[i][5]
     esplot.set_label(legendstring)
 plt.xlabel('j')
 plt.ylabel('$E_j$')
 plt.legend(loc=1)
-#plt.savefig('plots/'+taskname+'_entanglement_spectrum.pdf')
+plt.savefig('plots/'+taskname+'_entanglement_spectrum.pdf')
 plt.close()
