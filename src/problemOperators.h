@@ -13,6 +13,6 @@
 double aMatrix(int const a, int const b);
 double bMatrix(int const a, int const b);
 int writePhasedSecondOrder(localMpo<std::complex<double> > &gamma, double theta);
-int writeHamiltonian(network &sys, double const J, double const g);
+int writeHamiltonian(network &sys, double J, double g, double W);
 
 #endif

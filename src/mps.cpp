@@ -177,16 +177,20 @@ int mps::leftNormalizeState(int i){
   Rcontainer=Rp.get();
   //Enable use of LAPACK_ROW_MAJOR which is necessary here due to the applied storage scheme
   for(int si=0;si<ld;++si){
-    transp(D2,D1,state_array_access_structure[i][si][0]);
+    auxiliary::transp(D2,D1,state_array_access_structure[i][si][0]);
   }
   //Use thin QR decomposition
   info=LAPACKE_zgeqrf(LAPACK_ROW_MAJOR,ld*D1,D2,state_array_access_structure[i][0][0],D2,Qcontainer);
-  upperdiag(D2,D2,state_array_access_structure[i][0][0],Rcontainer);
+  auxiliary::upperdiag(D2,D2,state_array_access_structure[i][0][0],Rcontainer);
   //Only first D2 columns are used -> thin QR (below icrit, this is equivalent to a full QR)
   info=LAPACKE_zungqr(LAPACK_ROW_MAJOR,ld*D1,D2,D2,state_array_access_structure[i][0][0],D2,Qcontainer);
-  transp(D2,D2,Rcontainer);
+  if(info){
+    std::cout<<"Error in LAPACKE_zungqr: "<<info<<" At site: "<<i<<" With dimensions: "<<D2<<"x"<<D1<<" and local Hilbert space dimension: "<<ld<<std::endl;
+    return info;
+  }
+  auxiliary::transp(D2,D2,Rcontainer);
   for(int si=0;si<ld;++si){
-    transp(D1,D2,state_array_access_structure[i][si][0]);
+    auxiliary::transp(D1,D2,state_array_access_structure[i][si][0]);
     cblas_ztrmm(CblasColMajor,CblasLeft,CblasUpper,CblasNoTrans,CblasNonUnit,D2,D3,&zone,Rcontainer,D2,state_array_access_structure[i+1][si][0],D2);
     //here, R is packed into the matrices of the next site
   }                                                //POSSIBLE TESTS: TEST FOR Q*R - DONE: WORKS THE WAY INTENDED
@@ -215,11 +219,11 @@ int mps::rightNormalizeState(int i){
   //Thats how zgerqf works: the last D2 columns contain the upper trigonal matrix R, to adress them, move D2 from the end
   info=LAPACKE_zgerqf(LAPACK_COL_MAJOR,D2,ld*D1,state_array_access_structure[i][0][0],D2,Qcontainer);
   //lowerdiag does get an upper trigonal matrix in column major ordering, dont get confused
-  lowerdiag(D2,D2,state_array_access_structure[i][0][0]+D2*(ld*D1-D2),Rcontainer);
+  auxiliary::lowerdiag(D2,D2,state_array_access_structure[i][0][0]+D2*(ld*D1-D2),Rcontainer);
   info=LAPACKE_zungrq(LAPACK_COL_MAJOR,D2,ld*D1,D2,state_array_access_structure[i][0][0],D2,Qcontainer);
   if(info){
     std::cout<<"ERROR IN LAPACKE_zungrq:"<<info<<" At site: "<<i<<" With dimensions: "<<D2<<"x"<<D1<<" and local Hilbert space dimension: "<<ld<<std::endl;
-    exit(1);
+    return info;
   }
   for(int si=0;si<ld;++si){
     cblas_ztrmm(CblasColMajor,CblasRight,CblasUpper,CblasNoTrans,CblasNonUnit,D3,D2,&zone,Rcontainer,D2,state_array_access_structure[i-1][si][0],D3);
@@ -294,13 +298,13 @@ int mps::leftNormalizeStateBlockwise(int i){
       info=LAPACKE_zgeqrf(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,M,lBlockSize,Qcontainer);
       if(info){
 	std::cout<<"Error in LAPACKE_zgeqrf: "<<info<<" with block sizes: "<<lBlockSize<<"x"<<rBlockSize<<" at site "<<i<<std::endl;
-	exit(1);
+        return info;
       }
-      lowerdiag(rBlockSize,rBlockSize,M,Rcontainer,lBlockSize);
+      auxiliary::lowerdiag(rBlockSize,rBlockSize,M,Rcontainer,lBlockSize);
       info=LAPACKE_zungqr(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,rBlockSize,M,lBlockSize,Qcontainer);
       if(info){
 	std::cout<<"Error in LAPACKE_zungqr: "<<info<<" with block sizes: "<<lBlockSize<<"x"<<rBlockSize<<" at site "<<i<<std::endl;
-	exit(1);
+	return info;
       }
       //Copy the resulting Q-matrix back into the block of the MPS matrix
       for(int j=0;j<rBlockSize;++j){
@@ -321,7 +325,7 @@ int mps::leftNormalizeStateBlockwise(int i){
   std::auto_ptr<lapack_complex_double> inputAP(new lapack_complex_double[lDR*lDRR]);
   inputA=inputAP.get();
   for(int si=0;si<ld;++si){
-    arraycpy(lDRR,lDR,state_array_access_structure[i+1][si][0],inputA);
+    auxiliary::arraycpy(lDRR,lDR,state_array_access_structure[i+1][si][0],inputA);
     cblas_zgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,lDR,lDRR,lDR,&zone,R,lDR,inputA,lDR,&zzero,state_array_access_structure[i+1][si][0],lDR);
   }
   return 0;
@@ -365,13 +369,13 @@ int mps::rightNormalizeStateBlockwise(int i){
       info=LAPACKE_zgerqf(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,M,lBlockSize,Qcontainer);
       if(info){
 	std::cout<<"Error in LAPACKE_zgerqf: "<<info<<" with block sizes: "<<lBlockSize<<"x"<<rBlockSize<<" at site "<<i<<std::endl;
-	exit(1);
+        return info;
       }
-      lowerdiag(lBlockSize,lBlockSize,M+(rBlockSize-lBlockSize)*lBlockSize,Rcontainer);
+      auxiliary::lowerdiag(lBlockSize,lBlockSize,M+(rBlockSize-lBlockSize)*lBlockSize,Rcontainer);
       info=LAPACKE_zungrq(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,lBlockSize,M,lBlockSize,Qcontainer);
       if(info){
 	std::cout<<"Error in LAPACKE_zungrq: "<<info<<" with block sizes: "<<lBlockSize<<"x"<<rBlockSize<<" at site "<<i<<std::endl;
-	exit(1);
+        return info;
       }
       for(int j=0;j<lBlockSize;++j){
 	for(int k=0;k<rBlockSize;++k){
@@ -389,7 +393,7 @@ int mps::rightNormalizeStateBlockwise(int i){
   std::auto_ptr<lapack_complex_double> inputAP(new lapack_complex_double[lDL*lDLL]);
   inputA=inputAP.get();
   for(int si=0;si<ld;++si){
-    arraycpy(lDLL*lDL,state_array_access_structure[i-1][si][0],inputA);
+    auxiliary::arraycpy(lDLL*lDL,state_array_access_structure[i-1][si][0],inputA);
     cblas_zgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,lDLL,lDL,lDL,&zone,inputA,lDLL,R,lDL,&zzero,state_array_access_structure[i-1][si][0],lDLL);
   }
   return 0;
@@ -449,7 +453,7 @@ void mps::getEntanglementSpectrumOC(int i, double &S, std::vector<double> &spect
   std::auto_ptr<lapack_complex_double> AnewP(new lapack_complex_double[lDL*lDR*ld]);
   lapack_complex_double *Anew=AnewP.get();
   subMatrixStart(currentM,i);
-  arraycpy(ld*lDL*lDR,currentM,Anew);
+  auxiliary::arraycpy(ld*lDL*lDR,currentM,Anew);
   LAPACKE_zgesdd(LAPACK_COL_MAJOR,'N',ld*lDL,lDR,Anew,ld*lDL,diags,0,1,0,1);
   spectrum.clear();
   for(int m=0;m<lDR;++m){

@@ -9,6 +9,8 @@ using namespace std; //BEWARE: FOR LAPACK ACCESS ALWAYS USE [0] AS SECOND INDEX 
 // Save for the stateArray functions, none of them is used directly anymore.
 //-----------------------------------------------------------------------------------------------------------------//
 
+namespace auxiliary{
+
 template<typename T> void create2D(const int dim1, const int dim2, T ***array);
 template<typename T> void create3D(const int dim1, const int dim2, const int dim3, T ****array);
 template<typename T> void create4D(const int dim1, const int dim2, const int dim3, const int dim4, T *****array);
@@ -130,4 +132,5 @@ template <typename T> void deleteStateArray(T *****array){
   delete4D(array);
 }
 
+}
 #endif

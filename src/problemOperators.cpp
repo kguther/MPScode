@@ -5,7 +5,7 @@
 #include "math.h"
 #include <iostream> 
 
-int writeHamiltonian(network &sys, double const J, double const g){
+int writeHamiltonian(network &sys, double J, double g, double W){
   int const Dw=sys.networkH.maxDim();
   if(Dw!=12){
     //The minimal bond dimension of our Hamiltonian is 12, so the system better has a Hamiltonian of that bond dimension.
@@ -15,7 +15,7 @@ int writeHamiltonian(network &sys, double const J, double const g){
   int lDwL, lDwR;
   double prefactor;
   //The prefactor pre exists only for consistency checks and is the relative weight of the inter- and intrachain term
-  double pre=1.0;
+  double pre=W;
   for(int i=0;i<L;++i){
     lDwL=sys.networkH.locDimL(i);
     lDwR=sys.networkH.locDimR(i);

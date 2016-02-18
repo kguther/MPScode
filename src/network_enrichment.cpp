@@ -4,6 +4,7 @@
 #include "network.h"
 #include "optHMatrix.h"
 #include "blockHMatrix.h"
+#include <cmath>
 #include <iostream>
 #include <memory>
 
@@ -577,5 +578,6 @@ void network::getNewAlpha(int const i, double const lambda, double const prevLam
   }
   */
   //This is numerically somewhat simpler and works also quite nice.
-  alpha*=0.9765;
+  //alpha*=0.9765;
+  alpha*=pow(0.1,1/static_cast<double>(L));
 }

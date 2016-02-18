@@ -16,14 +16,15 @@ struct info{
   int simType;
   int odd;
   int numPts;
-  int scaling;
+  int nEigens;
   int nGs;
   double rho;
   double alphaInit;
   double arpackTol;
   double arpackTolMin;
-  double Jsc, gsc;
+  double Jsc, gsc, Wsc;
   double alphaMin, alphaMax;
+  double scaling;
 };
 
 //-------------------------------------------------------------------------------------------//

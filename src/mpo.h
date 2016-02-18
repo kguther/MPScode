@@ -65,6 +65,8 @@ mpo<T>::mpo(mpo<T> const  &source){
 
 template<typename T>
 mpo<T>& mpo<T>::operator=(mpo<T> const  &source){
+  if(this==&source)
+    return *this;
   mpoCpy(source);
   return *this;
 }

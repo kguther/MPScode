@@ -2,6 +2,7 @@
 #include <iostream>
 
 using namespace std;
+namespace auxiliary{
 
 void upperdiag(int const dim1, int const dim2, lapack_complex_double *arrayin, lapack_complex_double *arrayout, int ldim){
   //for lapack postprocessing: extracts the upper triangular part of some matrix arrayin, pastes it into arrayout and fills up arrayout with zeros
@@ -107,4 +108,6 @@ void lapackSVD(int MNumCols, int MNumRows, lapack_complex_double *Mnew, lapack_c
   delete[] PContainer;
   info=LAPACKE_zbdsqr(LAPACK_COL_MAJOR,uplo,containerDim,MNumCols,MNumRows,0,diags,offdiags,Mnewcpy,MNumCols,Mnew,MNumRows,0,1);
   delete[] offdiags;
+}
+
 }

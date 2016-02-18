@@ -18,13 +18,13 @@ stateArray::stateArray(dimensionTable const &dimInfoIn){
 //---------------------------------------------------------------------------------------------------//
 
 stateArray::~stateArray(){
-  deleteStateArray(&state_array_access_structure);
+  auxiliary::deleteStateArray(&state_array_access_structure);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
 void stateArray::mpsCpy(stateArray const &source){
-  deleteStateArray(&state_array_access_structure);
+  auxiliary::deleteStateArray(&state_array_access_structure);
   initialize(source.dimInfo);
   int lDL, lDR, ld;
   for(int i=0;i<L;++i){
@@ -45,7 +45,7 @@ void stateArray::mpsCpy(stateArray const &source){
 //---------------------------------------------------------------------------------------------------//
 
 void stateArray::generate(dimensionTable const &dimInfoIn){
-  deleteStateArray(&state_array_access_structure);
+  auxiliary::deleteStateArray(&state_array_access_structure);
   initialize(dimInfoIn);
 }
 
@@ -85,7 +85,7 @@ int stateArray::setParameterD(int Dnew){
     }
   }
   //Replace the current state
-  deleteStateArray(&state_array_access_structure);
+  auxiliary::deleteStateArray(&state_array_access_structure);
   state_array_access_structure=newNetworkState;
   D=Dnew;
   return 0;

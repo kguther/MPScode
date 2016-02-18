@@ -22,26 +22,26 @@ class projector{
  public:
   projector();
   ~projector();
-  void initialize(int const nEigsin);
-  void setParameterD(int const Dnew);
-  void loadScalarProducts(mps *const variationalState, int const iEigen);
-  void updateScalarProducts(int const i, int const direction);
-  int getProjector(int const i);
-  void project(lapack_complex_double *vec, int const i);
-  void storeCurrentState(mps &source);
-  void getStoredState(mps *target, int const iEigen);
-  int loadNextState(mps &target, int const iEigen);
+  void initialize(int nEigsin);
+  void setParameterD(int Dnew);
+  void loadScalarProducts(mps *const variationalState, int iEigen);
+  void updateScalarProducts(int i, int direction);
+  int getProjector(int i);
+  void project(lapack_complex_double *vec, int i);
+  void storeCurrentState(mps const &source);
+  void getStoredState(mps *&target, int iEigen);
+  int loadNextState(mps &target, int iEigen);
   int loadNextState(mps &target);
-  void storeOrthoState(mps const &source, int const iEigen);
-  lapack_complex_double fullOverlap(int const k);
+  void storeOrthoState(mps const &source, int iEigen);
+  lapack_complex_double fullOverlap(int k);
   int nEigen()const {return nCurrentEigen;}
  private:
   mps *orthoStates;
   overlap *scalarProducts;
   int nCurrentEigen;
   siteArray<lapack_complex_double> auxiliaryMatrix;
-  void getGramMatrix(lapack_complex_double *gram, int const i);
-  void getLocalDimensions(int const i);
+  void getGramMatrix(lapack_complex_double *gram, int i);
+  void getLocalDimensions(int i);
   int ld, lDL, lDR;
   int nEigs, nRelevantEigens;
   //lapack_complex_double *projectionMatrix;

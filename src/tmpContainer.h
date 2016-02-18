@@ -17,6 +17,10 @@ class tmpContainer{
   int L, D1, D2, D3;
   T *container;
   void initializeContainer(int Lin, int D1in, int D2in, int D3in){L=Lin; D1=D1in; D2=D2in; D3=D3in; container=new T[Lin*D1in*D2in*D3in];}
+ private:
+  //Copying tmpContainers in a meaningful way can easily lead to a memory overflow, therefore, it is forbidden.
+  tmpContainer(tmpContainer<T> const &doNot);
+  tmpContainer& operator=(tmpContainer<T> const &doNot);
 };
 
 //---------------------------------------------------------------------------------------------------//

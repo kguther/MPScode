@@ -26,7 +26,7 @@ projector::~projector(){
 
 //---------------------------------------------------------------------------------------------------//
 
-void projector::initialize(int const nEigsin){
+void projector::initialize(int nEigsin){
   nEigs=nEigsin;
   delete[] orthoStates;
   orthoStates=0;
@@ -40,7 +40,7 @@ void projector::initialize(int const nEigsin){
 // When adjusting the simulation parameter D, all stored states are updated
 //---------------------------------------------------------------------------------------------------//
 
-void projector::setParameterD(int const Dnew){
+void projector::setParameterD(int Dnew){
   for(int iEigen=0;iEigen<nEigs;++iEigen){
     orthoStates[iEigen].setParameterD(Dnew);
   }
@@ -51,7 +51,7 @@ void projector::setParameterD(int const Dnew){
 // which states it shall be orthogonalized.
 //---------------------------------------------------------------------------------------------------//
 
-void projector::loadScalarProducts(mps *const variationalState,int const iEigen){
+void projector::loadScalarProducts(mps *const variationalState,int iEigen){
   //offset marks the beginning of the scalar products with the current state
   for(int k=0;k<iEigen;++k){
     scalarProducts[k].loadMPS(variationalState,&orthoStates[k]);
@@ -61,7 +61,7 @@ void projector::loadScalarProducts(mps *const variationalState,int const iEigen)
 
 //---------------------------------------------------------------------------------------------------//
 
-void projector::updateScalarProducts(int const i, int const direction){
+void projector::updateScalarProducts(int i, int direction){
   if(nCurrentEigen>0){
     for(int k=0;k<nCurrentEigen;++k){
       if(direction==1){
@@ -82,25 +82,25 @@ void projector::updateScalarProducts(int const i, int const direction){
 //---------------------------------------------------------------------------------------------------//
 
 
-void projector::storeOrthoState(mps const &source, int const iEigen){
+void projector::storeOrthoState(mps const &source, int iEigen){
   orthoStates[iEigen].mpsCpy(source);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-void projector::storeCurrentState(mps &source){
+void projector::storeCurrentState(mps const &source){
   orthoStates[nCurrentEigen].mpsCpy(source);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-void projector::getStoredState(mps *target, int const iEigen){
+void projector::getStoredState(mps *&target, int iEigen){
   target=&(orthoStates[iEigen]);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-int projector::loadNextState(mps &target, int const iEigen){
+int projector::loadNextState(mps &target, int iEigen){
   target.mpsCpy(orthoStates[iEigen]);
   return 0;
 }
@@ -117,7 +117,7 @@ int projector::loadNextState(mps &target){
 
 //---------------------------------------------------------------------------------------------------//
 
-void projector::getLocalDimensions(int const i){
+void projector::getLocalDimensions(int i){
   //Note that it is required for all stored states to have the same bond dimension
   if(nEigs>0){
     ld=orthoStates[0].locd(i);
@@ -128,7 +128,7 @@ void projector::getLocalDimensions(int const i){
 
 //---------------------------------------------------------------------------------------------------//
 
-lapack_complex_double projector::fullOverlap(int const k){
+lapack_complex_double projector::fullOverlap(int k){
   return scalarProducts[k].fullOverlap();
 }
 
@@ -137,7 +137,7 @@ lapack_complex_double projector::fullOverlap(int const k){
 // for the current site before using project to ensure the auxiliary matrix is set.
 //---------------------------------------------------------------------------------------------------//
 
-void projector::project(lapack_complex_double *vec, int const i){
+void projector::project(lapack_complex_double *vec, int i){
   //vec is required to be of dimension lDL x ld*lDR
   if(nCurrentEigen>0){
     lapack_complex_double *trContainer;
@@ -177,7 +177,7 @@ void projector::project(lapack_complex_double *vec, int const i){
 // gram matrix
 //---------------------------------------------------------------------------------------------------//
 
-int projector::getProjector(int const i){
+int projector::getProjector(int i){
   //Only apply getProjector on the site next (in direction of sweep) to the last updated
   //The gram matrix is used in constructing the projector onto the space orthogonal to the lower lying states (if any). This allows for computation of excited states.
   if(nCurrentEigen>0){
@@ -196,7 +196,7 @@ int projector::getProjector(int const i){
     std::auto_ptr<lapack_int> suppZP(new lapack_int[2*nCurrentEigen]);
     std::auto_ptr<double> gramEigensP(new double[nCurrentEigen]);
     gram=gramP.get();
-    gramEigenvecsP.get();
+    gramEigenvecs=gramEigenvecsP.get();
     suppZ=suppZP.get();
     gramEigens=gramEigensP.get();
     getGramMatrix(gram,i);
@@ -236,7 +236,7 @@ int projector::getProjector(int const i){
 //---------------------------------------------------------------------------------------------------//
 
 
-void projector::getGramMatrix(lapack_complex_double *gram, int const i){
+void projector::getGramMatrix(lapack_complex_double *gram, int i){
   //Input has to be a nCurrentEigen x nCurrentEigen array
   if(nCurrentEigen>0){
     getLocalDimensions(i);
@@ -258,6 +258,5 @@ void projector::getGramMatrix(lapack_complex_double *gram, int const i){
 	gram[k+kp*nCurrentEigen]=simpleContainer;
       }
     }
-    delete[] matrixContainer;
   }
 }

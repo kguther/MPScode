@@ -38,8 +38,8 @@ int main(int argc, char *argv[]){
   MPI_Aint displacements[dn], firstAdress, secondAdress;
   MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
   MPI_Comm_size(MPI_COMM_WORLD,&commsize);
-  blockLengths[0]=10;
-  blockLengths[1]=8;
+  blockLengths[0]=9;
+  blockLengths[1]=10;
   MPI_Get_address(&necPars.L,&firstAdress);
   MPI_Get_address(&necPars.rho,&secondAdress);
   displacements[0]=(MPI_Aint)0;
@@ -155,7 +155,7 @@ void getScaling(int L, info const &parPack, double *results, std::string const &
   problemParameters pars(localHilbertSpaceDims,L,12,nEigens,nQuantumNumbers,QNValue,QNList);
   //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack
   simulationParameters simPars(usedD,parPack.nSweeps,1,parPack.alphaInit,1e-4,parPack.arpackTolMin,parPack.arpackTol);
-  simulation sim(pars,simPars,parPack.Jsc,parPack.gsc,parPack.numPts,parPack.scaling,fileName);
+  simulation sim(pars,simPars,parPack.Jsc,parPack.gsc,parPack.Wsc,parPack.numPts,parPack.scaling,fileName);
   sim.run();
   results[0]=sim.E0[0];
   results[1]=sim.E0[1];
@@ -167,7 +167,7 @@ void getScaling(int L, info const &parPack, double *results, std::string const &
 
 void sysScan(double J, double g, info const &parPack, std::string const &fileName){
   int const L=parPack.L;
-  int const nEigens=1;
+  int const nEigens=parPack.nEigens;
   //The required bond dimension for the perturbed system seems to be greater than that of the unperturbed system
   int const nQuantumNumbers=1;
   int const minimalD=(2*parPack.N>4)?2*parPack.N:4;
@@ -179,7 +179,7 @@ void sysScan(double J, double g, info const &parPack, std::string const &fileNam
   //simulationParameters simPars(100,5,2,1e-4,1e-8,1e-9,1e-2);
   //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack
   simulationParameters simPars(usedD,parPack.nSweeps,1,parPack.alphaInit,1e-8,parPack.arpackTolMin,parPack.arpackTol);
-  simulation sim(pars,simPars,J,g,parPack.numPts,parPack.scaling,fileName);
+  simulation sim(pars,simPars,J,g,parPack.Wsc,parPack.numPts,parPack.scaling,fileName);
 
   sysSetMeasurements(sim,pars.d.maxd(),L);
 }
@@ -187,7 +187,7 @@ void sysScan(double J, double g, info const &parPack, std::string const &fileNam
 //-------------------------------------------------------------------------------------------//
 
 void sysSolve(info const &parPack, std::string const &fileName){
-  int const nEigens=1;
+  int const nEigens=parPack.nEigens;
   int const nQuantumNumbers=1;
   int const numPoints=1;
   int const nGs=parPack.nGs;
@@ -199,7 +199,7 @@ void sysSolve(info const &parPack, std::string const &fileName){
   problemParameters pars(localHilbertSpaceDims,parPack.L,12,nEigens,nQuantumNumbers,QNValue,QNList);
   //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack
   simulationParameters simPars(usedD,parPack.nSweeps,1,parPack.alphaInit,1e-4,parPack.arpackTolMin,parPack.arpackTol);
-  simulation sim(pars,simPars,parPack.Jsc,parPack.gsc,numPoints,parPack.scaling,fileName);
+  simulation sim(pars,simPars,parPack.Jsc,parPack.gsc,parPack.Wsc,numPoints,parPack.scaling,fileName);
 
   int const d=pars.d.maxd();
   int const L=parPack.L;
@@ -228,7 +228,7 @@ void sysSetMeasurements(simulation &sim, int d, int L){
   int parityQNs[4]={1,-1,-1,1};
   localMpo<lapack_complex_double> greensFunction(d,1,L,1,parityQNs);
   localMpo<lapack_complex_double> densityCorrelation(d,1,L,1,0);
-  localMpo<lapack_complex_double> localDensity(d,1,L,1,0);
+  localMpo<lapack_complex_double> localDensity(d,1,L,0,0);
   localMpo<lapack_complex_double> localDensityProd(d,1,L,1,0);
   localMpo<lapack_complex_double> interChainCorrelation(d,1,L,1,parityQNs);
   localMpo<lapack_complex_double> superconductingOrder(d,1,L,1,parityQNs);
@@ -277,7 +277,7 @@ void sysSetMeasurements(simulation &sim, int d, int L){
       densityCorrelation.global_access(0,si,sip,0,0)=delta(si,sip)*(delta(si,1)+delta(si,3));
       interChainDensityCorrelation.global_access(1,si,sip,0,0)=delta(si,sip)*(delta(si,1)+delta(si,3));
       interChainDensityCorrelation.global_access(0,si,sip,0,0)=delta(si,sip)*(delta(si,2)+delta(si,3));
-      localDensity.global_access(1,si,sip,0,0)=delta(si,sip)*(delta(si,1)+delta(si,3));
+      localDensity.global_access(0,si,sip,0,0)=delta(si,sip)*(delta(si,1)+delta(si,3));
       interChainCorrelation.global_access(1,si,sip,0,0)=delta(si,1)*delta(sip,2);
       interChainCorrelation.global_access(0,si,sip,0,0)=delta(si,1)*delta(sip,2);
       superconductingOrder.global_access(1,si,sip,0,0)=delta(si,3)*delta(sip,0);

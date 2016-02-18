@@ -14,8 +14,8 @@ if 'plots' not in filelist:
 
 taskname=sys.argv[1]
 
-writeK=True
-writepd=False
+writeK=False
+writepd=True
 
 labellist=['$\\left|\\langle a^\dagger_i a_0^{} \\rangle \\right|$','$\\left|\\langle a^\dagger_i b^{}_i a_0^{\dagger} b_0 \\rangle \\right|$','$\\left|\\langle n^{a}_i n_0^{a} \\rangle \\right|$','$\\left|\\langle n^{a}_i n_0^{b} \\rangle \\right|$','$\\left|\\langle n^{a}_i \\rangle \\right|$','$\\left|\\langle a^\dagger_i b^\dagger_i a_0^{} b_0^{} \\rangle \\right|$','$\\left|\\langle \\right|\\rangle$','S','other']
 
@@ -55,7 +55,7 @@ for filename in filelist:
             n=len(datanames)
             L=syspars[0]
             np=syspars[1]
-            parity=syspars[2]
+            parity=syspars[2][0:(len(syspars[2])-1)]
             if filename==filelist[0]:
                 if writeK:
                     with open('decay_pars_L_'+L+'_N_'+np+'_p_'+parity+'.txt','w') as kp:
@@ -63,7 +63,7 @@ for filename in filelist:
                 if writepd:
                     with open('phasediagram_L_'+L+'_N_'+np+'_p_'+parity+'.txt','w') as pd:
                         pd.write('J\tg\tdensity fluctuation\n')
-            for i in range(0,n):
+            for i in range(0,n-1):
                 data=[]
                 lineIndex=0
                 with open(filename) as readData:
@@ -101,6 +101,7 @@ for filename in filelist:
                 plt.xlabel('distance i')
                 plt.ylabel(tasklabel)
                 tname=datanames[i].replace('.','_')
+                print tname
                 plt.title('J='+parVals[0]+' g='+parVals[1]+' E='+parVals[2]+' $\\Delta E$='+parVals[3])
                 plt.savefig('plots/'+filename[0:len(filename)-4]+'_'+tname.replace(' ','_')+'.pdf')
                 plt.close()

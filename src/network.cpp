@@ -302,14 +302,14 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
   networkState.subMatrixStart(currentM,i);
 
   //Check step useful whenever something in the normalization or optimization is adjusted
-  /*
+  
   double spinCheck=0;
   double parCheck=0;
   measure(check,spinCheck);
   measure(checkParity,parCheck);
   std::cout<<"Current particle number (opt): "<<spinCheck<<std::endl;
   std::cout<<"Current subchain parity (opt): "<<parCheck<<std::endl;
-  */
+  
   double lambdaCont;
   if(pars.nQNs && i!=0 && i!=(L-1)){
     //For some obscure reason, ARPACK++ can not handle the boundary problems with reduced dimension. They have to be solved without using the block structure. Since they have a really tiny dimension, this does not matter at all.
@@ -508,7 +508,7 @@ int network::locDMax(int const i){
 
 void network::leftNormalizationMatrixFull(){
   lapack_complex_double ***psi;
-  create3D(L,D,D,&psi);
+  auxiliary::create3D(L,D,D,&psi);
   for(int i=0;i<L;++i){
     for(int ai=0;ai<D;++ai){
       for(int aip=0;aip<D;++aip){
@@ -522,7 +522,7 @@ void network::leftNormalizationMatrixFull(){
     leftNormalizationMatrixIter(i,psi[0][0]);
   }
   std::cout<<"That's it\n";
-  delete3D(&psi);
+  auxiliary::delete3D(&psi);
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -621,7 +621,7 @@ void network::checkContractions(int const i){
   pCtr.Rctr.subContractionStart(RTerm,i);
   networkH.subMatrixStart(HTerm,i);
   networkState.subMatrixStart(direct,i);
-  arraycpy(ld*lDL*lDR,direct,currentM);
+  auxiliary::arraycpy(ld*lDL*lDR,direct,currentM);
   for(int m=0;m<ld*lDL*lDR;++m){
     target[m]=0;
   }
@@ -685,5 +685,3 @@ int network::checkEqualWeightState(){
   std::cout<<test.getFullOverlap()<<std::endl;
   exit(1);    
 }
-
-

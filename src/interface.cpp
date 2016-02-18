@@ -22,7 +22,7 @@ interface::interface(){
   parPack.L=100;
   parPack.N=parPack.L;
   parPack.scaling=100;
-  //note that D=1 (or any other too small value for D) uses a fixed minimal value instead of 1
+  //note that D=1 (or any other too small value for D) uses a fixed minimal value instead
   parPack.D=1;
   parPack.par=1;
   parPack.nGs=0;
@@ -31,9 +31,11 @@ interface::interface(){
   parPack.odd=0;
   parPack.rho=0.5;
   parPack.simType=0;
+  parPack.nEigens=1;
   parPack.numPts=5;
   parPack.alphaMin=0;
   parPack.alphaMax=2*M_PI;
+  parPack.Wsc=1;
 }
 
 //-------------------------------------------------------------------------------------------//
@@ -77,7 +79,7 @@ void interface::readParFile(std::string const &fN){
   fileName=target;
   while(ifs.get(inArg)){
     if(inArg!=' '){
-      if(inArg=='L' || inArg=='D' || inArg=='S' || inArg=='p' || inArg=='N' || inArg=='n' || inArg=='o' || inArg=='T' || inArg=='s' || inArg=='z'){
+      if(inArg=='L' || inArg=='D' || inArg=='S' || inArg=='p' || inArg=='N' || inArg=='n' || inArg=='o' || inArg=='T' || inArg=='s' || inArg=='E'){
 	ifs>>intPar;
 	if(inArg=='L'){
 	  parPack.L=intPar;
@@ -106,8 +108,8 @@ void interface::readParFile(std::string const &fN){
 	if(inArg=='s'){
 	  parPack.nGs=intPar;
 	}
-	if(inArg=='z'){
-	  parPack.scaling=intPar;
+	if(inArg=='E'){
+	  parPack.nEigens=intPar;
 	}
       }
       else{
@@ -135,6 +137,12 @@ void interface::readParFile(std::string const &fN){
 	}
 	if(inArg=='f'){
 	  parPack.alphaMax=fPar;
+	}
+	if(inArg=='z'){
+	  parPack.scaling=fPar;
+	}
+	if(inArg=='W'){
+	  parPack.scaling=fPar;
 	}
       }
       ifs.get(inArg);
@@ -180,7 +188,7 @@ void interface::getScalingSerial(double J, double g){
     QNValue[0]=std::complex<int>(N,parPack.par);
     pars.QNconserved=QNValue;
     pars.L=L;
-    sim.generate(pars,simPars,parPack.Jsc,parPack.gsc,parPack.numPts,parPack.scaling,fileName);
+    sim.generate(pars,simPars,parPack.Jsc,parPack.gsc,parPack.Wsc,parPack.numPts,parPack.scaling,fileName);
     sim.run();
     sizes.push_back(L);
     energiesGs.push_back(sim.E0[0]);

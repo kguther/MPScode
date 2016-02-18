@@ -10,7 +10,7 @@ class stateArray{
  public:
   stateArray();
   stateArray(dimensionTable const &dimInfoIn);
-  ~stateArray();
+  virtual ~stateArray();
   virtual void mpsCpy(stateArray const &source);
   int setParameterD(int Dnew);
   lapack_complex_double& global_access(int const i, int const si, int const ai, int const aim){return state_array_access_structure[i][si][ai][aim];}

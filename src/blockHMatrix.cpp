@@ -55,7 +55,7 @@ void blockHMatrix::MultMvBlocked(arcomplex<double> *v, arcomplex<double> *w){
   if(explicitMv){
     lapack_complex_double *proxy=new lapack_complex_double[dimension];
     excitedStateProject(v);
-    arraycpy(dimension,v,proxy);
+    auxiliary::arraycpy(dimension,v,proxy);
     arcomplex<double> simpleContainer;
     for(int m=0;m<dimension;++m){
       simpleContainer=0;

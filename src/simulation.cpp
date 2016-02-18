@@ -11,9 +11,10 @@ simulation::simulation(){
 
 //---------------------------------------------------------------------------------------------------//
 
-simulation::simulation(problemParameters &parsIn, simulationParameters &simParsIn, double J, double g, int pathPoints, int stepSize, std::string const &targetFile):
+simulation::simulation(problemParameters &parsIn, simulationParameters &simParsIn, double J, double g, double WIn, int pathPoints, double stepSize, std::string const &targetFile):
   simPars(simParsIn),
   pars(parsIn),
+  W(WIn),
   pathLength(pathPoints),
   filePrefix(targetFile),
   measureEE(0),
@@ -37,7 +38,7 @@ void simulation::initialize(problemParameters &parsIn, simulationParameters &sim
   measureTask.clear();
   localMeasureTask.clear();
   if(abs(parDirection)>1e-20){
-    parDirection*=1.0/(abs(parDirection)*scaling);
+    parDirection*=1.0/(scaling);
   }
   particleNumber.initialize(pars.d.maxd(),2,pars.L);
   subChainParity.initialize(pars.d.maxd(),1,pars.L);
@@ -79,7 +80,7 @@ void simulation::initialize(problemParameters &parsIn, simulationParameters &sim
 
 //---------------------------------------------------------------------------------------------------//
 
-void simulation::generate(problemParameters &parsIn, simulationParameters &simParsIn, double J, double g, int pathPoints, int stepSize, std::string &targetFile){
+void simulation::generate(problemParameters &parsIn, simulationParameters &simParsIn, double J, double g, double W, int pathPoints, double stepSize, std::string &targetFile){
   simPars=simParsIn;
   pars=parsIn;
   pathLength=pathPoints;
@@ -124,7 +125,7 @@ void simulation::run(){
   //Solve the system for different parameters (J,g) along a straight line in radial direction 
   for(int nRun=1;nRun<pathLength+1;++nRun){
     if(abs(parDirection)>1e-20){
-      parDirection*=1.0/(abs(parDirection)*scaling)*nRun;
+      parDirection*=nRun;
     }
     singleRun();
   }
@@ -141,7 +142,8 @@ void simulation::singleRun(){
   std::vector<std::vector<std::complex<double> > > localExpectationValues;
   J=1+parDirection.real();
   g=1+parDirection.imag();
-  hInfo=writeHamiltonian(TensorNetwork,J,g);
+  std::cout<<J<<" "<<g<<std::endl;
+  hInfo=writeHamiltonian(TensorNetwork,J,g,W);
   if(hInfo){
     std::cout<<"Invalid bond dimension for the construction of H. Terminating process.\n";
     exit(1);
@@ -176,7 +178,7 @@ void simulation::singleRun(){
       ofs<<"Values for state number "<<iEigen<<" with energy "<<E0[iEigen]<<" and energy variance "<<dE[iEigen]<<std::endl;
       //The problem parameters are written into the first lines
       ofs<<pars.L<<"\t"<<real(*(pars.QNconserved))<<"\t"<<imag(*(pars.QNconserved))<<std::endl;
-      ofs<<J<<"\t"<<g<<"\t"<<E0[iEigen]<<"\t"<<dE[iEigen]<<std::endl;
+      ofs<<J<<"\t"<<g<<"\t"<<W<<"\t"<<E0[iEigen]<<"\t"<<dE[iEigen]<<std::endl;
       //First, global measurements are performed (this is used rarely)
       for(int iM=0;iM<measureTask.size();++iM){
 	TensorNetwork.measure(&measureTask[iM],expectationValues[iM],iEigen);
