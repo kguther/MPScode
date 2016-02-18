@@ -19,16 +19,6 @@ dimensionTable::dimensionTable(int const Din, int const Lin, localHSpaces din):
 
 //---------------------------------------------------------------------------------------------------//
 
-void dimensionTable::initialize(int const Din, int const Lin, localHSpaces din){
-  dpars=din;
-  Lpar=Lin;
-  dpar=dpars.maxd();
-  getDMaxTable();
-  setParameterD(Din);
-}
-
-//---------------------------------------------------------------------------------------------------//
-
 void dimensionTable::getDMaxTable(){
   int lDM;
   DMaxTable.clear();

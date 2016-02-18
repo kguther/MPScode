@@ -14,7 +14,6 @@ class simulation{
  public:
   simulation();
   simulation(problemParameters &pars, simulationParameters &simPars, double J, double g, double W, int pathPoints, double stepSize, std::string const &targetFile);
-  void generate(problemParameters &pars, simulationParameters &simPars, double J, double g, double W, int pathPoints, double stepSize, std::string &targetFile);
   void setMeasurement(mpo<lapack_complex_double> &MPOperator, std::string &opName);
   void setLocalMeasurement(localMpo<lapack_complex_double> &localMPOperator, std::string &opName);
   void setEntanglementMeasurement();
@@ -24,9 +23,9 @@ class simulation{
   std::vector<double> E0, dE;
   void run();
  private:
-  network TensorNetwork;
-  simulationParameters simPars;
   problemParameters pars;
+  simulationParameters simPars;
+  network TensorNetwork;
   std::vector<double> convergedEigens;
   std::vector<std::string> operatorNames;
   std::vector<std::string> localOperatorNames;
@@ -38,7 +37,6 @@ class simulation{
   mpo<lapack_complex_double> particleNumber;
   mpo<lapack_complex_double> subChainParity;
   void singleRun();
-  void initialize(problemParameters &pars, simulationParameters &simPars, double J, double g, int pathPoints, std::string const &targetFile);
 };
 
 #endif

@@ -20,16 +20,12 @@ simulation::simulation(problemParameters &parsIn, simulationParameters &simParsI
   measureEE(0),
   measureES(0),
   scaling(stepSize),
-  parDirection(std::complex<double>(J,g))
+  parDirection(std::complex<double>(J,g)),
+  TensorNetwork(network(pars,simPars)),
+  particleNumber(mpo<lapack_complex_double>(pars.d.maxd(),2,pars.L)),
+  subChainParity(mpo<lapack_complex_double>(pars.d.maxd(),1,pars.L))
 {
-  initialize(parsIn,simParsIn,J,g,pathPoints,targetFile);
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-void simulation::initialize(problemParameters &parsIn, simulationParameters &simParsIn, double J, double g, int pathPoints, std::string const &targetFile){
-  // simulation class can only use nStages=1 (by choice of algorithm)
-  TensorNetwork.initialize(pars,simPars);
+ // simulation class can only use nStages=1 (by choice of algorithm)
   E0.resize(pars.nEigs);
   dE.resize(pars.nEigs);
   convergedEigens.resize(pars.nEigs);
@@ -40,8 +36,6 @@ void simulation::initialize(problemParameters &parsIn, simulationParameters &sim
   if(abs(parDirection)>1e-20){
     parDirection*=1.0/(scaling);
   }
-  particleNumber.initialize(pars.d.maxd(),2,pars.L);
-  subChainParity.initialize(pars.d.maxd(),1,pars.L);
   for(int i=0;i<pars.L;++i){
     for(int bi=0;bi<1;++bi){
       for(int bim=0;bim<1;++bim){
@@ -76,18 +70,6 @@ void simulation::initialize(problemParameters &parsIn, simulationParameters &sim
   TensorNetwork.checkParity=&subChainParity;
   localMeasureTask.clear();
   measureTask.clear();
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-void simulation::generate(problemParameters &parsIn, simulationParameters &simParsIn, double J, double g, double W, int pathPoints, double stepSize, std::string &targetFile){
-  simPars=simParsIn;
-  pars=parsIn;
-  pathLength=pathPoints;
-  filePrefix=targetFile;
-  scaling=stepSize;
-  parDirection=std::complex<double>(J,g);
-  initialize(parsIn,simParsIn,J,g,pathPoints,targetFile);
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -178,7 +160,7 @@ void simulation::singleRun(){
       ofs<<"Values for state number "<<iEigen<<" with energy "<<E0[iEigen]<<" and energy variance "<<dE[iEigen]<<std::endl;
       //The problem parameters are written into the first lines
       ofs<<"L\tN\tsubchain parity\tJ\tg\tW\tE\tvariance of energy\n";
-      ofs<<pars.L<<"\t"<<real(*(pars.QNconserved))<<"\t"<<imag(*(pars.QNconserved))<<J<<"\t"<<g<<"\t"<<W<<"\t"<<E0[iEigen]<<"\t"<<dE[iEigen]<<std::endl;
+      ofs<<pars.L<<"\t"<<real(pars.QNconserved[0])<<"\t"<<imag(pars.QNconserved[0])<<J<<"\t"<<g<<"\t"<<W<<"\t"<<E0[iEigen]<<"\t"<<dE[iEigen]<<std::endl;
       //First, global measurements are performed (this is used rarely)
       for(int iM=0;iM<measureTask.size();++iM){
 	TensorNetwork.measure(&measureTask[iM],expectationValues[iM],iEigen);

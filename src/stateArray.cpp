@@ -3,9 +3,9 @@
 #include "arraycreation.h"
 
 stateArray::stateArray():
-  state_array_access_structure(0)
+  state_array_access_structure(0),
+  dimInfo(dimensionTable(1,1,localHSpaces(1)))
 {
-  dimInfo.initialize(1,1,1);
   createStateArray(1,1,&state_array_access_structure);
 }
 

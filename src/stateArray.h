@@ -13,6 +13,9 @@ class stateArray{
   virtual ~stateArray();
   virtual void mpsCpy(stateArray const &source);
   int setParameterD(int Dnew);
+  const lapack_complex_double& operator() (int i, int si, int ai, int aim) const{return state_array_access_structure[i][si][ai][aim];}
+  lapack_complex_double& operator()(int i, int si, int ai, int aim){return state_array_access_structure[i][si][ai][aim];}
+  lapack_complex_double* operator()(int i, int si=0){return state_array_access_structure[i][si][0];}
   lapack_complex_double& global_access(int i, int si, int ai, int aim){return state_array_access_structure[i][si][ai][aim];}
   const lapack_complex_double& global_access(int i, int si, int ai, int aim) const {return state_array_access_structure[i][si][ai][aim];}
   void subMatrixStart(lapack_complex_double *&pStart, int i, int si=0){pStart=state_array_access_structure[i][si][0];}

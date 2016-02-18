@@ -14,6 +14,9 @@ class mpo{
   mpo(mpo<T> const &source);
   ~mpo();
   mpo& operator=(mpo<T> const &source);
+  const T& operator()(int i, int si, int sip, int bi, int bip)const{return Qoperator[bip+bi*Dw+sip*Dw*Dw+si*Dw*Dw*d+i*Dw*Dw*d*d];}
+  T& operator()(int i, int si, int sip, int bi, int bip){return Qoperator[bip+bi*Dw+sip*Dw*Dw+si*Dw*Dw*d+i*Dw*Dw*d*d];}
+  T* operator()(int i, int si=0, int sip=0){return Qoperator+i*Dw*Dw*d*d+sip*Dw*Dw+si*Dw*Dw*d;}
   T& global_read(int const i, int const si, int const sip, int const bi, int const bip) const{return Qoperator[bip+bi*Dw+sip*Dw*Dw+si*Dw*Dw*d+i*Dw*Dw*d*d];}
   T& global_access(int const i, int const si, int const sip, int const bi, int const bip){return Qoperator[bip+bi*Dw+sip*Dw*Dw+si*Dw*Dw*d+i*Dw*Dw*d*d];}
   int locDimL(int const i) const;
@@ -23,7 +26,6 @@ class mpo{
   int length() const{return L;}
   void shift(T const delta);
   void subMatrixStart(T *&pStart, int const i, int const si=0, int const sip=0);
-  void initialize(int const din, int const Dwin, int const Lin);
   void setUpSparse();
   void sparseSubMatrixStart(T *&pStart, int const i){pStart=sparseOperator+i*d*d*Dw*Dw;}
   void biSubIndexArrayStart(int *&target, int const i){target=biIndices+i*d*d*Dw*Dw;}
@@ -31,20 +33,20 @@ class mpo{
   void siSubIndexArrayStart(int *&target, int const i){target=siIndices+i*d*d*Dw*Dw;}
   void sipSubIndexArrayStart(int *&target, int const i){target=sipIndices+i*d*d*Dw*Dw;}
   int numEls(int const i) const {return nNzero[i];}
-  int *nNzero;
  protected:
   void setUpSiteSparse(int const i);
   void mpoCpy(mpo<T> const &source);
   int d, Dw, L;
+  std::vector<int> nNzero;
   T *Qoperator;
   T* sparseOperator;
   int *siIndices, *sipIndices, *biIndices, *bimIndices;
+  void initialize(int const din, int const Dwin, int const Lin);
 };
 
 template<typename T>
 mpo<T>::mpo(){
   Qoperator=0;
-  nNzero=0;
   sparseOperator=0;
   biIndices=0;
   bimIndices=0;
@@ -92,7 +94,6 @@ void mpo<T>::mpoCpy(mpo<T> const &source){
 template<typename T>
 mpo<T>::~mpo(){
   delete[] Qoperator;
-  delete[] nNzero;
   delete[] sparseOperator;
   delete[] biIndices;
   delete[] bimIndices;
@@ -107,7 +108,6 @@ void mpo<T>::initialize(int const din, int const Dwin, int const Lin){
   L=Lin;
   delete[] Qoperator;
   Qoperator=new T[Lin*d*Dw*d*Dw];
-  nNzero=0;
   sparseOperator=0;
   biIndices=0;
   bimIndices=0;
@@ -138,9 +138,7 @@ void mpo<T>::setUpSparse(){
   siIndices=0;
   delete[] sipIndices;
   sipIndices=0;
-  delete[] nNzero;
-  nNzero=0;
-  nNzero=new int[L];
+  nNzero.resize(L);
   sparseOperator=new T[L*Dw*Dw*d*d];
   biIndices=new int[L*Dw*Dw*d*d];
   bimIndices=new int[L*Dw*Dw*d*d];

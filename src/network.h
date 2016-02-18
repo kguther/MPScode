@@ -24,12 +24,10 @@ class network{
  public:
   network();
   network(problemParameters const &inputpars, simulationParameters const &inputsimPars);
-  ~network();
   int solve(std::vector<double> &lambda, std::vector<double> &deltaLambda);
   int measure(mpo<lapack_complex_double> *const MPOperator, double &expValue, int iEigen=0);
   int measureLocalOperators(localMpo<lapack_complex_double> *const MPOperator, std::vector<lapack_complex_double> &expValue, int iEigen=0);
   void getEntanglement(std::vector<double> &S, std::vector<std::vector<double> > &spectrum, int iEigen=0);
-  void initialize(problemParameters const &inputpars, simulationParameters const &inputSimPars);
   void loadNetworkState(mps const &source);
   void resetConvergence();
   void quantumNumberVec(std::vector<quantumNumber> *target){target=&conservedQNs;}
@@ -42,16 +40,14 @@ class network{
   void leftNormalizationMatrixFull();
   mpo<lapack_complex_double> *check, *checkParity;
  private:
-  network(network const &cpynet);//Copying networks is better avoided to save memory
-  network& operator=(network const &cpynet);//Use the generate function instead, assignment is dangerous for networks with different parameters 
-  mps networkState;
-  projector excitedStateP;
   problemParameters pars;
   simulationParameters simPars;
+  int D,L,Dw;
+  projector excitedStateP;
   dimensionTable networkDimInfo;
-  int D,L,Dw,icrit;
   int lDL, lDR, ld, lDwR, lDwL;
-  int *nConverged;
+  mps networkState;
+  std::vector<int> nConverged;
   double shift, alpha;
   std::vector<quantumNumber> conservedQNs;
   iterativeMeasurement pCtr;

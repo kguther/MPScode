@@ -28,51 +28,34 @@
 // Constructors and similar stuff for the basic network class
 //---------------------------------------------------------------------------------------------------//
 
-network::network():
-  nConverged(0)
+network::network()
   //Empty networks dont do much, use the generate function to fill them - this allows for separation of declaration and assignment
 {}
 
 //---------------------------------------------------------------------------------------------------//
 
-network::network(problemParameters const &inputpars, simulationParameters const &inputsimPars){
-  initialize(inputpars,inputsimPars);
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-network::~network(){
-  delete[] nConverged;
-}
-
-//---------------------------------------------------------------------------------------------------//
-// Auxiliary methods for construction and initialization of network objects
-//---------------------------------------------------------------------------------------------------//
-
-void network::initialize(problemParameters const &inputpars, simulationParameters const &inputsimPars){
-  pars=inputpars;
-  D=inputsimPars.D;
-  L=inputpars.L;
-  Dw=inputpars.Dw;
-  simPars=inputsimPars;
-  networkDimInfo.initialize(D,L,pars.d);
-  delete[] nConverged;
-  nConverged=0;
-  nConverged=new int[pars.nEigs];
-  for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
+network::network(problemParameters const &inputpars, simulationParameters const &inputsimPars):
+  pars(inputpars),
+  D(inputsimPars.D),
+  L(inputpars.L),
+  Dw(inputpars.Dw),
+  simPars(inputsimPars),
+  excitedStateP(projector(pars.nEigs)),
+  networkDimInfo(dimensionTable(D,L,pars.d))
+  //Allocation of Hamiltonian MPO - square matrices are used since no library matrix functions have to be applied - this allows for faster access
+{
+  networkH=mpo<lapack_complex_double>(pars.d.maxd(),Dw,L);
+  nConverged.resize(pars.nEigs);
+  for(int iEigen=0;iEigen<nConverged.size();++iEigen){
     nConverged[iEigen]=1;
   }
-  //Allocation of Hamiltonian MPO - square matrices are used since no library matrix functions have to be applied - this allows for faster access
-  networkH.initialize(pars.d.maxd(),Dw,L);
+  for(int iQN=0;iQN<pars.nQNs;++iQN){
+    conservedQNs.push_back(quantumNumber(networkDimInfo,pars.QNconserved[iQN],pars.QNLocalList[iQN]));
+  }
   //Allocation of MPS - memory of the matrices has to be allocated exactly matching the dimension to use them with lapack and cblas
+  networkState.generate(networkDimInfo,conservedQNs);
   //All states have to be stored, for reusability in later solve() with other simulation parameters
   //Somewhat unelegant way to handle loading of the stored states in the first solve()
-  conservedQNs.resize(pars.nQNs);
-  for(int iQN=0;iQN<pars.nQNs;++iQN){
-    conservedQNs[iQN].initialize(networkDimInfo,pars.QNconserved[iQN],pars.QNLocalList+iQN*pars.d.maxd());
-  }
-  networkState.generate(networkDimInfo,&conservedQNs);
-  excitedStateP.initialize(pars.nEigs);
   for(int iEigen=1;iEigen<pars.nEigs;++iEigen){
     excitedStateP.storeOrthoState(networkState,iEigen);
   }
@@ -80,6 +63,8 @@ void network::initialize(problemParameters const &inputpars, simulationParameter
   excitedStateP.storeOrthoState(networkState,0);
 }
 
+//---------------------------------------------------------------------------------------------------//
+// Auxiliary methods for management of multiple runs
 //---------------------------------------------------------------------------------------------------//
 
 void network::loadNetworkState(mps const &source){
@@ -659,7 +644,8 @@ void network::checkContractions(int const i){
 //---------------------------------------------------------------------------------------------------//
 
 int network::checkEqualWeightState(){
-  mps productState(networkState.dimInfo,0);
+  std::vector<quantumNumber> dummy;
+  mps productState(networkState.dimInfo,dummy);
   for(int i=0;i<L;++i){
     getLocalDimensions(i);
     for(int si=0;si<ld;++si){

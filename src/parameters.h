@@ -1,21 +1,23 @@
 #ifndef PARAMETER_CLASSES
 #define PARAMETER_CLASSES
 
+#include <vector>
+#include <complex>
 #include "localHSpaces.h"
 
 class problemParameters{
  public:
   problemParameters(){}
- problemParameters(localHSpaces din, int Lin, int Dwin, int nEigsin=1, int NumberQNs=0, std::complex<int> *QNconservedin=0, std::complex<int> *QNListin=0): d(din),L(Lin),Dw(Dwin),nEigs(nEigsin),nQNs(NumberQNs),QNconserved(QNconservedin),QNLocalList(QNListin){}
+  problemParameters(localHSpaces const &din, int Lin, int Dwin, int nEigsin=1, int NumberQNs=0, std::complex<int> *QNconservedin=0, std::complex<int> * QNListin=0);
   localHSpaces d;
   int L, Dw, nEigs,nQNs;
-  std::complex<int> *QNconserved;
-  std::complex<int> *QNLocalList;
+  std::vector<std::complex<int> > QNconserved;
+  std::vector<std::vector<std::complex<int> > > QNLocalList;
 };
 
 //---------------------------------------------------------------------------------------------------//
 
-//THE CONVERGENCE CHECK MAY OR MAY NOT FAIL FOR EXCITED STATES, SINCE THEY CAN CONTAIN NOTABLE FROM THE GROUND STATE AT SOME POINT IN THE ALGORITHM. 
+//THE CONVERGENCE CHECK MAY OR MAY NOT FAIL FOR EXCITED STATES, SINCE THEY CAN CONTAIN NOTABLE CONTRIBUTIONS FROM THE GROUND STATE AT SOME POINT IN THE ALGORITHM, LEADING TO A FALSE POSITIVE.
 //THEREFORE, SET accin=0 (OR SOME VERY LOW VALUE) FOR EXCITED STATE SEARCH UNTIL FIXED
 //POSSIBLE FIX: THRESHOLD VALUE FOR OVERLAP WITH GROUNDSTATE -> EXCLUDES STATES TOO SIMILAR TO THE GROUND STATE
 

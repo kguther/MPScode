@@ -35,7 +35,6 @@ class interface{
  public: 
   interface();
   void provideInterface(char *argv);
-  void getScalingSerial(double J, double g);
   info parPack;
   std::string fileName;
  private:

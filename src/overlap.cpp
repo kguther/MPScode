@@ -10,6 +10,14 @@
 overlap::overlap(){
   Lctr=0;
   Rctr=0;
+  psi=0;
+  phi=0;
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+overlap::overlap(overlap const &source){
+  ovCpy(source);
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -21,16 +29,33 @@ overlap::~overlap(){
 
 //---------------------------------------------------------------------------------------------------//
 
-void overlap::loadMPS(mps *const psiIn, mps *const phiIn){
+overlap& overlap::operator=(overlap const &source){
+  ovCpy(source);
+  return *this;
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void overlap::loadMPS(mps const*const psiIn, mps const*const phiIn){
   phi=phiIn;
   psi=psiIn;
   D=psiIn->maxDim();
   L=psiIn->length();
   d=psiIn->siteDim();
+  delete[] Lctr;
+  delete[] Rctr;
   Lctr=new lapack_complex_double[L*D*D];
   Rctr=new lapack_complex_double[L*D*D];
   F.generate(psiIn->dimInfo);
   getF();
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void overlap::ovCpy(overlap const &source){
+  if(source.psi && source.phi){
+    loadMPS(source.psi,source.phi);
+  }
 }
 
 //---------------------------------------------------------------------------------------------------//

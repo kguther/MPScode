@@ -11,8 +11,8 @@ class localHSpaces{
   int locd(int const i) const;
   int maxd() const;
  private:
-  std::vector<int> localHDims;
   int constantDimension;
+  std::vector<int> localHDims;
 };
 
 #endif

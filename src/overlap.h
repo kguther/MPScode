@@ -16,10 +16,12 @@
 class overlap{
  public:
   overlap();
+  overlap(overlap const &source);
   ~overlap();
+  overlap& operator=(overlap const &source);
   stateArray F;
   //Updates are done with respect to phi, i.e. psi is expected to be constant during updating
-  void loadMPS(mps *const psi, mps *const phi);
+  void loadMPS(mps const*const psi, mps const*const phi);
   lapack_complex_double fullOverlap();
   lapack_complex_double getFullOverlap();
   void stepLeft(int const i);
@@ -40,6 +42,7 @@ class overlap{
   void getF();
   //Important: During sweeping, only the F matrix of the last updated site can be used, and only the mps site matrices of the last updated site should be manipulated. This ensures that the overlap is always up to date. Of course, use the corresponding step for updating (i.e. update the correct direction)
   void updateF(int const i);
+  void ovCpy(overlap const &source);
   int pCtrLocalIndex(int const aip, int const ai){return aip+D*ai;} 
 };
 

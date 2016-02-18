@@ -21,7 +21,6 @@ class dimensionTable{
   int locDimL(int const i) const;
   int locDMax(int const i) const;
   int locd(int const i) const;
-  void initialize(int const Din, int const Lin, localHSpaces din);
   void setParameterD(int Dnew);
  private:
   int dpar, Dpar, Lpar;

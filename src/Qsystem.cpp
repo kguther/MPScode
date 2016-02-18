@@ -10,12 +10,12 @@ Qsystem::Qsystem(problemParameters &inputpars, simulationParameters &inputsimPar
   simPars(inputsimPars),
   DMax(simPars.D),
   nSweepsMax(simPars.nSweeps),
-  tolInitialMax(simPars.tolInitial)
+  tolInitialMax(simPars.tolInitial),
+  TensorNetwork(network(pars,simPars))
 {
   simPars.D=stageD(0);
   simPars.nSweeps=stageNSweeps(0);
   simPars.tolInitial=stageTolInitial(0);
-  TensorNetwork.initialize(pars,simPars);
 }
 
 

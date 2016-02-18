@@ -20,9 +20,11 @@
 
 class projector{
  public:
-  projector();
+  projector(){}
+  projector(int nEigsin);
+  projector(projector const &source);
   ~projector();
-  void initialize(int nEigsin);
+  projector& operator=(projector const &source);
   void setParameterD(int Dnew);
   void loadScalarProducts(mps *const variationalState, int iEigen);
   void updateScalarProducts(int i, int direction);
@@ -42,6 +44,7 @@ class projector{
   siteArray<lapack_complex_double> auxiliaryMatrix;
   void getGramMatrix(lapack_complex_double *gram, int i);
   void getLocalDimensions(int i);
+  void pCpy(projector const &source);
   int ld, lDL, lDR;
   int nEigs, nRelevantEigens;
   //lapack_complex_double *projectionMatrix;

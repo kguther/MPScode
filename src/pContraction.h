@@ -13,6 +13,7 @@ class pContraction: public tmpContainer<T>{
  public:
   pContraction();
   pContraction(int const Lin, int const Din, int const Dwin);
+  T* operator()(int i){return this->container+i*this->D1*this->D3*this->D2;}
   void subContractionStart(T *&pStart, int const i);
   void initialize(int const Lin, int const Din, int const Dwin);
 };

@@ -8,13 +8,11 @@ quantumNumber::quantumNumber(){
 
 //---------------------------------------------------------------------------------------------------//
 
-void quantumNumber::initialize(dimensionTable const &dimInfoin, std::complex<int> const &Nin, std::complex<int> const *const QNlocin){
-  N=Nin;
-  dimInfo=dimInfoin;
-  QNloc.resize(dimInfo.d());
-  for(int si=0;si<dimInfo.d();++si){
-    QNloc[si]=QNlocin[si];
-  }
+quantumNumber::quantumNumber(dimensionTable const &dimInfoin, std::complex<int> const &Nin, std::vector<std::complex<int> > const &QNlocin):
+  N(Nin),
+  dimInfo(dimInfoin),
+  QNloc(QNlocin)
+{
   initializeLabelList();
 }
 
@@ -72,6 +70,8 @@ void quantumNumber::initializeLabelList(){
   for(int i=0;i<=dimInfo.L();++i){
     initializeLabelList(i);
   }
+  leftLabel.clear();
+  rightLabel.clear();
 }
 
 //---------------------------------------------------------------------------------------------------//

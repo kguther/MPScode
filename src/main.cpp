@@ -150,7 +150,7 @@ void getScaling(int L, info const &parPack, double *results, std::string const &
   int usedD=(parPack.D>minimalD)?parPack.D:minimalD;
   std::ofstream ofs;
   std::complex<int> QNValue[1]={std::complex<int>(N,parPack.par)};
-  std::complex<int> QNList[8]={std::complex<int>(0,1),std::complex<int>(1,1),std::complex<int>(1,-1),std::complex<int>(2,-1)};
+  std::complex<int> QNList[4]={std::complex<int>(0,1),std::complex<int>(1,1),std::complex<int>(1,-1),std::complex<int>(2,-1)};
   localHSpaces localHilbertSpaceDims(4);
   problemParameters pars(localHilbertSpaceDims,L,12,nEigens,nQuantumNumbers,QNValue,QNList);
   //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack

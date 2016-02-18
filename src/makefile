@@ -20,7 +20,7 @@ MPI_LINK_FLAGS=$(shell mpic++ --showme:link)
 CFLAGS=-Wall -O3 $(MKL_INCLUDE)
 APCK_INCLUDE=-I/usr/include/arpack++
 MKL_INCLUDE=-I$(MKL_INCLUDE_PATH)
-OBJECTS=network.o arrayprocessing.o Qsystem.o optHMatrix.o mps.o globalMeasurement.o baseMeasurement.o iterativeMeasurement.o overlap.o stateArray.o network_enrichment.o projector.o quantumNumber.o dimensionTable.o basisQNOrderMatrix.o blockHMatrix.o localHSpaces.o localMeasurementSeries.o simulation.o problemOperators.o interface.o main.o
+OBJECTS=network.o arrayprocessing.o Qsystem.o optHMatrix.o mps.o globalMeasurement.o baseMeasurement.o iterativeMeasurement.o overlap.o stateArray.o network_enrichment.o projector.o quantumNumber.o dimensionTable.o basisQNOrderMatrix.o blockHMatrix.o localHSpaces.o localMeasurementSeries.o simulation.o problemOperators.o interface.o main.o parameters.o
 TEMPLATES=arraycreation.h mpo.h pContraction.h tmpContainer.h localMpo.h
 NAME=scMPScode
 

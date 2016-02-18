@@ -9,8 +9,10 @@
 class mps: public stateArray{
  public:
   mps();
-  mps(dimensionTable const &dimInfoIn, std::vector<quantumNumber> *const conservedQNsin);
-  void generate(dimensionTable const &dimInfoIn, std::vector<quantumNumber> *const conservedQNsin);
+  mps(dimensionTable const &dimInfoIn, std::vector<quantumNumber> const &conservedQNsin);
+  mps(mps const &source);
+  mps& operator=(mps const &source);
+  void generate(dimensionTable const &dimInfoIn, std::vector<quantumNumber> const &conservedQNsin);
   void mpsCpy(mps const &source);
   void setToExactGroundState();
   int leftNormalizeState(int i);
@@ -22,9 +24,9 @@ class mps: public stateArray{
   basisQNOrderMatrix indexTable;
  private:
   int nQNs;
-  std::vector<quantumNumber> *conservedQNs;
+  std::vector<quantumNumber> conservedQNs;
   void createInitialState();
-  void setUpQNs(std::vector<quantumNumber> *conservedQNs);
+  void setUpQNs(std::vector<quantumNumber> const &conservedQNs);
   int leftNormalizeStateBlockwise(int  i);
   int rightNormalizeStateBlockwise(int i);
   void convertIndicesLP(int i, int j, int k, int iBlock, int &si, int &ai, int &aim);

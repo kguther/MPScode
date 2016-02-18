@@ -21,17 +21,17 @@ mps::mps():stateArray()
 
 //---------------------------------------------------------------------------------------------------//
 
-mps::mps(dimensionTable const &dimInfoIn, std::vector<quantumNumber> *const conservedQNsin){
+mps::mps(dimensionTable const &dimInfoIn, std::vector<quantumNumber> const &conservedQNsin){
   stateArray::initialize(dimInfoIn);
   conservedQNs=conservedQNsin;
-  if(conservedQNs){
-    nQNs=(*conservedQNs).size();
+  if(conservedQNs.size()){
+    nQNs=conservedQNs.size();
   }
   else{
     nQNs=0;
   }
   if(nQNs){
-    indexTable.initialize(dimInfo,conservedQNs);
+    indexTable.initialize(dimInfo,&conservedQNs);
     indexTable.generateQNIndexTables();
   }
   createInitialState();
@@ -39,7 +39,20 @@ mps::mps(dimensionTable const &dimInfoIn, std::vector<quantumNumber> *const cons
 
 //---------------------------------------------------------------------------------------------------//
 
-void mps::generate(dimensionTable const &dimInfoIn, std::vector<quantumNumber> *const conservedQNsin){
+mps::mps(mps const &source){
+  mpsCpy(source);
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+mps& mps::operator=(mps const &source){
+  mpsCpy(source);
+  return *this;
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void mps::generate(dimensionTable const &dimInfoIn, std::vector<quantumNumber> const &conservedQNsin){
   stateArray::generate(dimInfoIn);
   setUpQNs(conservedQNsin);
   createInitialState();
@@ -47,16 +60,16 @@ void mps::generate(dimensionTable const &dimInfoIn, std::vector<quantumNumber> *
 
 //---------------------------------------------------------------------------------------------------//
 
-void mps::setUpQNs(std::vector<quantumNumber> *const conservedQNsin){
+void mps::setUpQNs(std::vector<quantumNumber> const &conservedQNsin){
   conservedQNs=conservedQNsin;
-  if(conservedQNs){
-    nQNs=conservedQNs->size();
+  if(conservedQNs.size()){
+    nQNs=conservedQNs.size();
   }
   else{
     nQNs=0;
   }
   if(nQNs){
-    indexTable.initialize(dimInfo,conservedQNs);
+    indexTable.initialize(dimInfo,&conservedQNs);
     indexTable.generateQNIndexTables();
   }
 }
@@ -126,7 +139,7 @@ void mps::setToExactGroundState(){
       lBlockSize=indexTable.lBlockSizeLP(i,iBlock);
       for(int j=0;j<rBlockSize;++j){
 	for(int k=0;k<lBlockSize;++k){
-	  if((*conservedQNs)[0].primaryIndex(i,indexTable.aiBlockIndexLP(i,iBlock,j)) && (*conservedQNs)[0].primaryIndex(i-1,indexTable.aimBlockIndexLP(i,iBlock,k))){
+	  if(conservedQNs[0].primaryIndex(i,indexTable.aiBlockIndexLP(i,iBlock,j)) && conservedQNs[0].primaryIndex(i-1,indexTable.aimBlockIndexLP(i,iBlock,k))){
 	    state_array_access_structure[i][indexTable.siBlockIndexLP(i,iBlock,k)][indexTable.aiBlockIndexLP(i,iBlock,j)][indexTable.aimBlockIndexLP(i,iBlock,k)]=exactGroundStateEntry(i,indexTable.siBlockIndexLP(i,iBlock,k),indexTable.aiBlockIndexLP(i,iBlock,j),indexTable.aimBlockIndexLP(i,iBlock,k));
 	  }
 	}
@@ -142,7 +155,7 @@ lapack_complex_double mps::exactGroundStateEntry(int i, int si, int ai, int aim)
   if(si==0 || si==2){
     return 1.0;
   }
-  if(imag((*conservedQNs)[0].QNLabel(i-1,aim))==-1){
+  if(imag(conservedQNs[0].QNLabel(i-1,aim))==-1){
     return -1.0;
   }
   return 1.0;
@@ -423,7 +436,7 @@ void mps::restoreQN(int i){
     for(int si=0;si<ld;++si){
       for(int ai=0;ai<lDR;++ai){
 	for(int aim=0;aim<lDL;++aim){
-	  if(real(((*conservedQNs)[iQN].QNLabel(i,ai)-(*conservedQNs)[iQN].QNLabel(i-1,aim)-(*conservedQNs)[iQN].QNLabel(si))) && abs(global_access(i,si,ai,aim))>0.000001){
+	  if(real((conservedQNs[iQN].QNLabel(i,ai)-conservedQNs[iQN].QNLabel(i-1,aim)-conservedQNs[iQN].QNLabel(si))) && abs(global_access(i,si,ai,aim))>0.000001){
 	    global_access(i,si,ai,aim)=0;
 	  }
 	}

@@ -11,10 +11,17 @@
 // whether everything is correct.
 //---------------------------------------------------------------------------------------------------//
 
-projector::projector(){
-  orthoStates=0;
-  scalarProducts=0;
-  nCurrentEigen=0;
+projector::projector(int nEigsin):
+  nEigs(nEigsin)
+{
+  orthoStates=new mps[nEigs];
+  scalarProducts=new overlap[nEigs-1];
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+projector::projector(projector const &source){
+  pCpy(source);
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -26,14 +33,26 @@ projector::~projector(){
 
 //---------------------------------------------------------------------------------------------------//
 
-void projector::initialize(int nEigsin){
-  nEigs=nEigsin;
-  delete[] orthoStates;
-  orthoStates=0;
-  delete[] scalarProducts;
-  scalarProducts=0;
-  orthoStates=new mps[nEigs];
-  scalarProducts=new overlap[nEigs-1];
+projector& projector::operator=(projector const &source){
+  pCpy(source);
+  return *this;
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void projector::pCpy(projector const &source){
+  if(source.nEigs!=nEigs){
+    delete[] orthoStates;
+    delete[] scalarProducts;
+    nEigs=source.nEigs;
+    orthoStates=new mps[nEigs];
+    scalarProducts=new overlap[nEigs-1];
+  }
+  for(int iEigen=0;iEigen<nEigs-1;++iEigen){
+    orthoStates[iEigen]=source.orthoStates[iEigen];
+    scalarProducts[iEigen]=source.scalarProducts[iEigen];
+  }
+  orthoStates[nEigs-1]=source.orthoStates[nEigs-1];
 }
 
 //---------------------------------------------------------------------------------------------------//
