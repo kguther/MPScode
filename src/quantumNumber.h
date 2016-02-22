@@ -48,4 +48,31 @@ class quantumNumber{
   std::complex<int> groupOperation(std::complex<int> const &a, std::complex<int> const &b, int pre=1);
 };
 
+template<typename T>
+void reduceMaximum(std::vector<T> &vec, T const &red){
+  if(!vec.empty()){
+    int pmax=0;
+    for(int m=0;m<vec.size();++m){
+      if(vec[m]>vec[pmax]){
+	pmax=m;
+      }
+    }
+    if(vec[pmax]>red)
+      vec[pmax]-=red;
+  }
+}
+
+template<typename T>
+void enforceSum(std::vector<T> &vec, T const &vsum){
+  if(!vec.empty()){
+    T check=vec[0];
+    for(int m=1;m<vec.size();++m){
+      check+=vec[m];
+    }
+    if(check!=vsum){
+      reduceMaximum(vec,check-vsum);
+    }
+  }
+}
+
 #endif

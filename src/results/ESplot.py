@@ -18,7 +18,7 @@ gather=[]
 labels=[]
 
 for filename in filelist:
-    if filename[0:(len(taskname)+6)]==taskname+'_point':
+    if filename[0:(len(taskname))]==taskname:#+'_point':
         if filename[(len(filename)-6):(len(filename)-4)]=='ES':
             data=[]
             print filename

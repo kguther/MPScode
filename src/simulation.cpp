@@ -34,7 +34,7 @@ simulation::simulation(problemParameters &parsIn, simulationParameters &simParsI
   measureTask.clear();
   localMeasureTask.clear();
   if(abs(parDirection)>1e-20){
-    parDirection*=1.0/(scaling);
+    parDirection*=1.0/(scaling*abs(parDirection));
   }
   for(int i=0;i<pars.L;++i){
     for(int bi=0;bi<1;++bi){
@@ -107,7 +107,7 @@ void simulation::run(){
   //Solve the system for different parameters (J,g) along a straight line in radial direction 
   for(int nRun=1;nRun<pathLength+1;++nRun){
     if(abs(parDirection)>1e-20){
-      parDirection*=nRun;
+      parDirection*=1.0/(scaling*abs(parDirection))*nRun;
     }
     singleRun();
   }
@@ -160,7 +160,7 @@ void simulation::singleRun(){
       ofs<<"Values for state number "<<iEigen<<" with energy "<<E0[iEigen]<<" and energy variance "<<dE[iEigen]<<std::endl;
       //The problem parameters are written into the first lines
       ofs<<"L\tN\tsubchain parity\tJ\tg\tW\tE\tvariance of energy\n";
-      ofs<<pars.L<<"\t"<<real(pars.QNconserved[0])<<"\t"<<imag(pars.QNconserved[0])<<J<<"\t"<<g<<"\t"<<W<<"\t"<<E0[iEigen]<<"\t"<<dE[iEigen]<<std::endl;
+      ofs<<pars.L<<"\t"<<real(pars.QNconserved[0])<<"\t"<<imag(pars.QNconserved[0])<<"\t"<<J<<"\t"<<g<<"\t"<<W<<"\t"<<E0[iEigen]<<"\t"<<dE[iEigen]<<std::endl;
       //First, global measurements are performed (this is used rarely)
       for(int iM=0;iM<measureTask.size();++iM){
 	TensorNetwork.measure(&measureTask[iM],expectationValues[iM],iEigen);

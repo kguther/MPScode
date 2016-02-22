@@ -142,7 +142,7 @@ void interface::readParFile(std::string const &fN){
 	  parPack.scaling=fPar;
 	}
 	if(inArg=='W'){
-	  parPack.scaling=fPar;
+	  parPack.Wsc=fPar;
 	}
       }
       ifs.get(inArg);

@@ -100,7 +100,6 @@ void quantumNumber::initializeLabelListRP(){
 int quantumNumber::initializeLabelList(int i, int direction){
   //direction==1 is RP, direction==0 is LP and -1 is final index
   int minimalLabel, maximalLabel;
-  int blockCounter=0;
   int validBlock, cBlock, allowedBlockSize;
   std::vector<std::complex<int> > *cLabel;
   std::complex<int> label;
@@ -151,6 +150,7 @@ int quantumNumber::initializeLabelList(int i, int direction){
     }
     for(int iBlock=0;iBlock<qnLabels.size();++iBlock){
       validBlock=1;
+      
       if(real(qnLabels[iBlock])>maximalLabel || real(qnLabels[iBlock])<minimalLabel){
 	validBlock=0;
       }
@@ -181,6 +181,7 @@ int quantumNumber::initializeLabelList(int i, int direction){
     for(int j=0;j<validQNLabels.size();++j){
       blockOccupations[j]=0;
     }
+    int blockCounter=0;
     for(int aim=0;aim<dimInfo.locDimL(i);++aim){
       for(int iBlock=0;iBlock<validQNLabels.size();++iBlock){
 	cBlock=(blockCounter+iBlock)%(validQNLabels.size());

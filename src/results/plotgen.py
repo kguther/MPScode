@@ -68,7 +68,7 @@ for filename in filelist:
                 with open(filename) as readData:
                     for line in readData:
                         lineIndex+=1
-                        buf=line.split('\t')
+                        buf=[x if x!='' else '0' for x in line.split('\t')]
                         if len(buf)-1>i and lineIndex>5:
                             data.append(float(buf[i]))
                 x=range(0,len(data))
@@ -100,7 +100,7 @@ for filename in filelist:
                 plt.xlabel('distance i')
                 plt.ylabel(tasklabel)
                 tname=datanames[i].replace('.','_')
-                plt.title('J='+pars[3]+' g='+pars[4]+' W= '+pars[5]+' E='+pars[6]+' $\\Delta E$='+pars[7].strip())
+                plt.title('J='+pars[3]+' g='+pars[4]+' W= '+pars[5]+' E='+pars[6]+' $(\\Delta E)^2$='+pars[7].strip())
                 plt.savefig('plots/'+filename[0:len(filename)-4]+'_'+tname.replace(' ','_')+'.pdf')
                 plt.close()
 

@@ -307,13 +307,13 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
     BMat.readOutput(currentM);
   }
   else{
-    //Generate matrix which is to be passed to ARPACK++
     if(pars.nQNs){
       multMv=&optHMatrix::MultMvQNConserving;
     }
     else{
       multMv=&optHMatrix::MultMv;
     }
+    //Generate matrix which is to be passed to ARPACK++
     optHMatrix HMat(RTerm,LTerm,&networkH,networkDimInfo,Dw,i,&excitedStateP,shift,&conservedQNs);
     //Note that the types given do and have to match the ones in the projector class if more than one eigenvalue is computed
     ARCompStdEig<double, optHMatrix> eigProblem(HMat.dim(),1,&HMat,multMv,"SR",0,tol,maxIter,currentM);
