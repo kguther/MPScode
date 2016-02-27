@@ -224,10 +224,6 @@ void simulation::singleRun(){
 	ofs.close();
 	ofs.open(fileName.c_str());
 	for(int i=0;i<spec.size();++i){
-	  ofs<<i<<"\t";
-	}
-	ofs<<std::endl;
-	for(int i=0;i<spec.size();++i){
 	  for(int m=0;m<spec[i].size();++m){
 	    ofs<<spec[i][m]<<"\t";
 	  }

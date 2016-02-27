@@ -238,6 +238,7 @@ void sysSetMeasurements(simulation &sim, int d, int L){
   localMpo<lapack_complex_double> bulkInterChainCorrelation(d,1,L,bulkStart,parityQNs);
   localMpo<lapack_complex_double> bulkSuperconductingOrder(d,1,L,bulkStart,0);
   localMpo<lapack_complex_double> bulkInterChainDensityCorrelation(d,1,L,bulkStart,0);
+  localMpo<lapack_complex_double> bulkSuperConductingCorrelation(d,1,L,bulkStart,0,2);
   std::string gFName="Intrachain correlation";
   std::string dCName="Intrachain density correlation";
   std::string lDName="Local density";
@@ -251,6 +252,7 @@ void sysSetMeasurements(simulation &sim, int d, int L){
   std::string biCDCName="Bulk interchain density correlation";
   std::string biCCName="Bulk interchain hopping correlation";
   std::string bscName="Bulk interchain pairwise correlation";  
+  std::string pscName="Bulk superconducting corrleation";
   //Define some interesting operators in MPO representation. These are mostly correlation functions which are product operators and therefore have Dw=1
   for(int i=0;i<L;++i){
     for(int si=0;si<d;++si){
@@ -268,6 +270,7 @@ void sysSetMeasurements(simulation &sim, int d, int L){
 	bulkSuperconductingOrder.global_access(i,si,sip,0,0)=delta(si,sip);
 	bulkInterChainDensityCorrelation.global_access(i,si,sip,0,0)=delta(si,sip);
 	localDensityProd.global_access(i,si,sip,0,0)=delta(si,sip);
+	bulkSuperConductingCorrelation.global_access(i,si,sip,0,0)=delta(si,sip);
       }
     }
   }
@@ -296,6 +299,10 @@ void sysSetMeasurements(simulation &sim, int d, int L){
       bulkSuperconductingOrder.global_access(bulkStart,si,sip,0,0)=delta(si,3)*delta(sip,0);
       bulkSuperconductingOrder.global_access(bulkStart-1,si,sip,0,0)=delta(si,0)*delta(sip,3);
       localDensityProd.global_access(1,si,sip,0,0)=delta(si,sip)*delta(si,3);
+      bulkSuperConductingCorrelation.global_access(bulkStart-3,si,sip,0,0)=aMatrix(sip,si)*(delta(sip,0)-delta(sip,2));
+      bulkSuperConductingCorrelation.global_access(bulkStart-2,si,sip,0,0)=aMatrix(sip,si);
+      bulkSuperConductingCorrelation.global_access(bulkStart-1,si,sip,0,0)=aMatrix(si,sip)*(delta(sip,1)-delta(sip,3));
+      bulkSuperConductingCorrelation.global_access(bulkStart,si,sip,0,0)=aMatrix(si,sip);
     }
   }
   //The hamiltonian is subchain parity conserving, thus, the expectation value of interChainCorrelation is zero
@@ -313,6 +320,7 @@ void sysSetMeasurements(simulation &sim, int d, int L){
   sim.setLocalMeasurement(bulkDensityCorrelation,bdCName);
   sim.setLocalMeasurement(bulkInterChainDensityCorrelation,biCDCName);
   sim.setLocalMeasurement(bulkSuperconductingOrder,bscName);
+  sim.setLocalMeasurement(bulkSuperConductingCorrelation,pscName);
   sim.setEntanglementSpectrumMeasurement();
   sim.run();
 }

@@ -16,8 +16,9 @@ taskname=sys.argv[1]
 
 writeK=False
 writepd=True
+newpd=False
 
-labellist=['$\\left|\\langle a^\dagger_i a_0^{} \\rangle \\right|$','$\\left|\\langle a^\dagger_i b^{}_i a_0^{\dagger} b_0 \\rangle \\right|$','$\\left|\\langle n^{a}_i n_0^{a} \\rangle \\right|$','$\\left|\\langle n^{a}_i n_0^{b} \\rangle \\right|$','$\\left|\\langle n^{a}_i \\rangle \\right|$','$\\left|\\langle a^\dagger_i b^\dagger_i a_0^{} b_0^{} \\rangle \\right|$','$\\left|\\langle \\right|\\rangle$','S','other']
+labellist=['$\\left|\\langle a^\dagger_i a_0^{} \\rangle \\right|$','$\\left|\\langle a^\dagger_i b^{}_i a_0^{\dagger} b_0 \\rangle \\right|$','$\\left|\\langle n^{a}_i n_0^{a} \\rangle \\right|$','$\\left|\\langle n^{a}_i n_0^{b} \\rangle \\right|$','$\\left|\\langle n^{a}_i \\rangle \\right|$','$\\left|\\langle a^\dagger_i b^\dagger_i a_0^{} b_0^{} \\rangle \\right|$','$\\left|\\langle \\right|\\rangle$','S','\\left|\\langle n^{a}_i n^{b}_i \\rangle\\right|','\\left|\\langle n^{b}_i\\rangle\\right|','other']
 
 def tasknum(n):
     if n=="Intrachain correlation" or n=="Bulk correlation function":
@@ -28,7 +29,7 @@ def tasknum(n):
         taskindex=2
     elif n=="Interchain density correlation" or n=="Bulk interchain density correlation":
         taskindex=3
-    elif n=="Local density" or n=="Local density B":
+    elif n=="Local density":
         taskindex=4
     elif n=="Interchain pairwise correlation" or n=="Bulk interchain pairwise correlation":
         taskindex=5
@@ -36,8 +37,12 @@ def tasknum(n):
         taskindex=6
     elif n=="Entanglement Entropy":
         taskindex=7
-    else:
+    elif n=="Local density product":
         taskindex=8
+    elif n=="Local density B":
+        taskindex=9
+    else:
+        taskindex=10
     return taskindex
 
 for filename in filelist:
@@ -59,7 +64,7 @@ for filename in filelist:
                 if writeK:
                     with open('decay_pars_L_'+L+'_N_'+np+'_p_'+parity+'.txt','w') as kp:
                         kp.write('J\tg\t')
-                if writepd:
+                if writepd and newpd:
                     with open('phasediagram_L_'+L+'_N_'+np+'_p_'+parity+'.txt','w') as pd:
                         pd.write('J\tg\tdensity fluctuation\n')
             for i in range(0,n-1):
