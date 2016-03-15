@@ -31,8 +31,6 @@ simulation::simulation(problemParameters &parsIn, simulationParameters &simParsI
   convergedEigens.resize(pars.nEigs);
   double matEls;
   int L=pars.L;
-  measureTask.clear();
-  localMeasureTask.clear();
   if(abs(parDirection)>1e-20){
     parDirection*=1.0/(scaling*abs(parDirection));
   }

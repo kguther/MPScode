@@ -29,7 +29,7 @@ blockHMatrix::blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcom
   compressedVector=new arcomplex<double>[dimension];
   std::cout<<"Current eigenvalue problem dimension: "<<dimension<<std::endl;
   if(lDR<350 && lDL<350 && !cached){
-    explicitMv=0;
+    explicitMv=1;
   }
   else{
     explicitMv=0;
@@ -84,7 +84,6 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
   tmpContainer<arcomplex<double> > outerContainer(d,lDwL,lDR,lDL);
   arcomplex<double> simpleContainer;
   int const numBlocks=indexTable->numBlocksLP(i);
-  int const aimBlockSize=indexTable->aimBlockSizeSplit(i,0);
   int const sparseSize=HMPO->numEls(i);
   int lBlockSize, rBlockSize, siBlockSize, rBlockSizep;
   int *biIndices, *siIndices, *bimIndices, *sipIndices;
@@ -113,6 +112,11 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
       }
     }
   }
+  if(i==5){
+  curtime=clock()-curtime;
+  std::cout<<"Inner contraction took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
+  curtime=clock();
+  }
   for(int si=0;si<d;++si){
     for(int bim=0;bim<lDwL;++bim){
       for(int ai=0;ai<lDR;++ai){
@@ -121,6 +125,11 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
 	}
       }
     }
+  }
+  if(i==5){
+  curtime=clock()-curtime;
+  std::cout<<"Container initialization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
+  curtime=clock();
   }
   for(int ai=0;ai<lDR;++ai){
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
@@ -136,6 +145,11 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
 	}
       }
     }	 
+  }
+  if(i==5){
+  curtime=clock()-curtime;
+  std::cout<<"Outer contraction took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
+  curtime=clock();
   }
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
     lBlockSize=indexTable->lBlockSizeLP(i,iBlock);
@@ -156,7 +170,7 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
     }
   }
   excitedStateProject(w);
-  if(0){
+  if(i==5){
   curtime=clock()-curtime;
   std::cout<<"Matrix multiplication took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
   exit(1);

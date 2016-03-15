@@ -23,7 +23,7 @@ class baseMeasurement{
   mpo<lapack_complex_double> *MPOperator;
   mps *MPState;
   void getLocalDimensions(int const i);
-  void initializeBase(mpo<lapack_complex_double> *const MPOperator, mps *const MPState);
+  void initializeBase();
   void setupMeasurement(mpo<lapack_complex_double> *const MPOperator, mps *const MPState);
   int lDwL, lDwR, lDL, lDR, ld, D, Dw;
   int pctrIndex(int const ai, int const bi, int const aip) {return aip+bi*D+ai*D*Dw;}

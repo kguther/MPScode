@@ -31,6 +31,7 @@ mps::mps(dimensionTable const &dimInfoIn, std::vector<quantumNumber> const &cons
     nQNs=0;
   }
   if(nQNs){
+    int cumulativeBlockSize, numBlocks;
     indexTable.initialize(dimInfo,&conservedQNs);
     indexTable.generateQNIndexTables();
   }
@@ -254,9 +255,11 @@ void mps::normalizeFinal(int i){
   }
   ld=locd(site);
   //Normalize last matrices to maintain normalization of state
-  normalization=cblas_dznrm2(ld*lcD,state_array_access_structure[site][0][0],1);
+  lapack_complex_double *finalArray;
+  subMatrixStart(finalArray,site);
+  normalization=cblas_dznrm2(ld*lcD,finalArray,1);
   normalization=1.0/normalization;
-  cblas_zscal(ld*lcD,&normalization,state_array_access_structure[site][0][0],1);
+  cblas_zscal(ld*lcD,&normalization,finalArray,1);
 }
 
 //---------------------------------------------------------------------------------------------------//

@@ -303,6 +303,7 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
     if(BMat.dim()>1){
       ARCompStdEig<double, blockHMatrix> eigProblemBlocked(BMat.dim(),1,&BMat,&blockHMatrix::MultMvBlocked,"SR",0,tol,maxIter,BMat.compressedVector);
       nconv=eigProblemBlocked.EigenValVectors(BMat.compressedVector,plambda);
+    std::cout<<"Number of iterations taken: "<<eigProblemBlocked.GetIter()<<std::endl;
     }
     BMat.readOutput(currentM);
   }

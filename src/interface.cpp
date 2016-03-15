@@ -15,7 +15,7 @@
 interface::interface(){
   //default parameters which are used if a parameter is not specified in the file
   fileName="testRun";
-  parPack.nSweeps=15;
+  parPack.nSweeps=1;
   parPack.alphaInit=1e-3;
   parPack.arpackTol=1e-4;
   parPack.arpackTolMin=1e-8;
@@ -32,7 +32,7 @@ interface::interface(){
   parPack.rho=0.5;
   parPack.simType=0;
   parPack.nEigens=1;
-  parPack.numPts=5;
+  parPack.numPts=1;
   parPack.alphaMin=0;
   parPack.alphaMax=2*M_PI;
   parPack.Wsc=1;

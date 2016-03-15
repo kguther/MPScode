@@ -180,7 +180,6 @@ void sysScan(double J, double g, info const &parPack, std::string const &fileNam
   //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack
   simulationParameters simPars(usedD,parPack.nSweeps,1,parPack.alphaInit,1e-8,parPack.arpackTolMin,parPack.arpackTol);
   simulation sim(pars,simPars,J,g,parPack.Wsc,parPack.numPts,parPack.scaling,fileName);
-
   sysSetMeasurements(sim,pars.d.maxd(),L);
 }
 
@@ -223,7 +222,7 @@ void sysSolve(info const &parPack, std::string const &fileName){
 //-------------------------------------------------------------------------------------------//
 
 void sysSetMeasurements(simulation &sim, int d, int L){
-  int const bulkStart=L/4;
+  int const bulkStart=(L/4>2)?L/4:3;
   int parityQNs[4]={1,-1,-1,1};
   localMpo<lapack_complex_double> greensFunction(d,1,L,1,parityQNs);
   localMpo<lapack_complex_double> densityCorrelation(d,1,L,1,0);
@@ -305,8 +304,6 @@ void sysSetMeasurements(simulation &sim, int d, int L){
       bulkSuperConductingCorrelation.global_access(bulkStart,si,sip,0,0)=aMatrix(si,sip);
     }
   }
-  //The hamiltonian is subchain parity conserving, thus, the expectation value of interChainCorrelation is zero
-  //The hamiltonian is particle number conserving, thus, the expectation value of superconductingOrder is zero
   sim.setLocalMeasurement(localDensity,lDName);
   sim.setLocalMeasurement(localDensityB,lDOName);
   sim.setLocalMeasurement(localDensityProd,lDPName);

@@ -19,12 +19,12 @@ baseMeasurement::baseMeasurement(mpo<lapack_complex_double> *const MPOperatorIn,
   MPOperator(MPOperatorIn),
   MPState(MPStateIn)
 {
-  initializeBase(MPOperatorIn,MPStateIn);
+  initializeBase();
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-void baseMeasurement::initializeBase(mpo<lapack_complex_double> *const MPOperatorIn, mps *const MPStateIn){
+void baseMeasurement::initializeBase(){
   Dw=MPOperator->maxDim();
   D=MPState->maxDim();
   MPOperator->setUpSparse();
@@ -35,7 +35,7 @@ void baseMeasurement::initializeBase(mpo<lapack_complex_double> *const MPOperato
 void baseMeasurement::setupMeasurement(mpo<lapack_complex_double> *const MPOperatorIn, mps *const MPStateIn){
   MPOperator=MPOperatorIn;
   MPState=MPStateIn;
-  initializeBase(MPOperatorIn,MPStateIn);
+  initializeBase();
 }
 
 //---------------------------------------------------------------------------------------------------//  
