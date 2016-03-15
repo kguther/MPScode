@@ -83,6 +83,7 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
   tmpContainer<arcomplex<double> > innerContainer(d,lDL,lDR,lDwR);
   tmpContainer<arcomplex<double> > outerContainer(d,lDwL,lDR,lDL);
   arcomplex<double> simpleContainer;
+  int timing=0;
   int const numBlocks=indexTable->numBlocksLP(i);
   int const sparseSize=HMPO->numEls(i);
   int lBlockSize, rBlockSize, siBlockSize, rBlockSizep;
@@ -112,7 +113,7 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
       }
     }
   }
-  if(i==5){
+  if(timing){
   curtime=clock()-curtime;
   std::cout<<"Inner contraction took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
   curtime=clock();
@@ -126,7 +127,7 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
       }
     }
   }
-  if(i==5){
+  if(timing){
   curtime=clock()-curtime;
   std::cout<<"Container initialization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
   curtime=clock();
@@ -146,7 +147,7 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
       }
     }	 
   }
-  if(i==5){
+  if(timing){
   curtime=clock()-curtime;
   std::cout<<"Outer contraction took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
   curtime=clock();
@@ -170,7 +171,7 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
     }
   }
   excitedStateProject(w);
-  if(i==5){
+  if(timing){
   curtime=clock()-curtime;
   std::cout<<"Matrix multiplication took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
   exit(1);

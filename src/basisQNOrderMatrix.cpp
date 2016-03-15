@@ -10,11 +10,7 @@ basisQNOrderMatrix::basisQNOrderMatrix():
   aiBlockIndicesLP(0),
   siaimBlockIndicesLP(0),
   aimBlockIndicesRP(0),
-  siaiBlockIndicesRP(0),
-  aimBlockIndicesSplit(0),
-  siBlockIndicesSplit(0),
-  siBlockIndicesSplitFixedaim(0),
-  aiBlockIndicesSplit(0)
+  siaiBlockIndicesRP(0)
 {}
 
 //---------------------------------------------------------------------------------------------------//
@@ -25,11 +21,7 @@ basisQNOrderMatrix::basisQNOrderMatrix(dimensionTable &dimin, std::vector<quantu
   aiBlockIndicesLP(0),
   siaimBlockIndicesLP(0),
   aimBlockIndicesRP(0),
-  siaiBlockIndicesRP(0),
-  aimBlockIndicesSplit(0),
-  siBlockIndicesSplit(0),
-  siBlockIndicesSplitFixedaim(0),
-  aiBlockIndicesSplit(0)
+  siaiBlockIndicesRP(0)
 {}
 
 //---------------------------------------------------------------------------------------------------//
@@ -45,10 +37,6 @@ void basisQNOrderMatrix::deleteTables(){
   delete[] siaimBlockIndicesLP;
   delete[] siaiBlockIndicesRP;
   delete[] aimBlockIndicesRP;
-  delete[] aimBlockIndicesSplit;
-  delete[] siBlockIndicesSplit;
-  delete[] siBlockIndicesSplitFixedaim;
-  delete[] aiBlockIndicesSplit;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -68,10 +56,6 @@ void basisQNOrderMatrix::generateQNIndexTables(){
   siaimBlockIndicesLP=new std::vector<std::vector<multInt> >[L];
   aimBlockIndicesRP=new std::vector<std::vector<int> >[L];
   siaiBlockIndicesRP=new std::vector<std::vector<multInt> >[L];
-  siBlockIndicesSplit=new std::vector<int>[L];
-  aimBlockIndicesSplit=new std::vector<int>[L];
-  aiBlockIndicesSplit=new std::vector<int>[L];
-  siBlockIndicesSplitFixedaim=new std::vector<std::vector<int> >[L];
   for(int i=0;i<dimInfo.L();++i){
     blockStructure(i,0,aiBlockIndicesLP[i],siaimBlockIndicesLP[i]);
     blockStructure(i,1,aimBlockIndicesRP[i],siaiBlockIndicesRP[i]);
@@ -117,6 +101,62 @@ void basisQNOrderMatrix::generateQNIndexTables(){
       // If the cumulativeBlockSize is zero, then there are no indices fullfilling the QN constraint on this site. That means the right vacuum QN is invalid, for example N=80 for a chain of length 20.
       std::cout<<"At site "<<i<<": critical error: Invalid quantum number. Terminating process.\n";
       exit(2);
+    }
+  }
+  generateAccessArrays();
+}
+
+//---------------------------------------------------------------------------------------------------//
+// Function to generate arrays that allow for a more efficient accessing of block indices.
+//---------------------------------------------------------------------------------------------------//
+
+void basisQNOrderMatrix::generateAccessArrays(){
+  maxBlockSize=0;
+  maxNumBlocks=0;
+  for(int i=0;i<dimInfo.L();++i){
+    if(numBlocksLP(i)> maxNumBlocks){
+      maxNumBlocks=numBlocksLP(i);
+    }
+    if(numBlocksRP(i)>maxNumBlocks){
+      maxNumBlocks=numBlocksRP(i);
+    }
+    for(int iBlock=0;iBlock<numBlocksLP(i);++iBlock){
+      if(lBlockSizeLP(i,iBlock)>maxBlockSize){
+	maxBlockSize=lBlockSizeLP(i,iBlock);
+      }
+      if(rBlockSizeLP(i,iBlock)>maxBlockSize){
+	maxBlockSize=rBlockSizeLP(i,iBlock);
+      }
+    }
+    for(int iBlock=0;iBlock<numBlocksRP(i);++iBlock){
+      if(lBlockSizeRP(i,iBlock)>maxBlockSize){
+	maxBlockSize=lBlockSizeRP(i,iBlock);
+      }
+      if(rBlockSizeRP(i,iBlock)>maxBlockSize){
+	maxBlockSize=rBlockSizeRP(i,iBlock);
+      }
+    }
+  }
+  aiBlockIndicesLPAccess.resize(maxBlockSize*maxNumBlocks*dimInfo.L());
+  aimBlockIndicesRPAccess.resize(maxBlockSize*maxNumBlocks*dimInfo.L());
+  siaimBlockIndicesLPAccess.resize(maxBlockSize*maxNumBlocks*dimInfo.L());
+  siaiBlockIndicesRPAccess.resize(maxBlockSize*maxNumBlocks*dimInfo.L());
+  for(int i=0;i<dimInfo.L();++i){
+    for(int iBlock=0;iBlock<numBlocksLP(i);++iBlock){
+      for(int k=0;k<lBlockSizeLP(i,iBlock);++k){
+	siaimBlockIndicesLPAccess[reducedIndexFunction(i,iBlock,k)]=siaimBlockIndicesLP[i][iBlock][k];
+      }
+      for(int j=0;j<rBlockSizeLP(i,iBlock);++j){
+	aiBlockIndicesLPAccess[reducedIndexFunction(i,iBlock,j)]=aiBlockIndicesLP[i][iBlock][j];
+      }
+    }
+    for(int iBlock=0;iBlock<numBlocksRP(i);++iBlock){
+      for(int k=0;k<rBlockSizeRP(i,iBlock);++k){
+	siaiBlockIndicesRPAccess[reducedIndexFunction(i,iBlock,k)]=siaiBlockIndicesRP[i][iBlock][k];
+      }
+      for(int j=0;j<lBlockSizeRP(i,iBlock);++j){
+	aimBlockIndicesRPAccess[reducedIndexFunction(i,iBlock,j)]=aimBlockIndicesRP[i][iBlock][j];
+      }
     }
   }
 }
@@ -209,72 +249,6 @@ int basisQNOrderMatrix::blockStructure(int const i, int const direction, std::ve
   }
   delete[] qnLabels;
   return 0;
-}
-
-//---------------------------------------------------------------------------------------------------//
-// Outdated function that splits the paired indices in some weird ways required to build a matrix
-// multiplication based on the block structure. It turned out that this is very inefficient, so it is
-// not used anymore.
-//---------------------------------------------------------------------------------------------------//
-
-void basisQNOrderMatrix::splitIndexTables(int const i){
-  int newIndex;
-  for(int iBlock=0;iBlock<aiBlockIndicesLP[i].size();++iBlock){
-    for(int k=0;k<lBlockSizeLP(i,iBlock);++k){
-      newIndex=1;
-      for(int splitIndex=0;splitIndex<aimBlockIndicesSplit[i].size();++splitIndex){
-	if(aimBlockIndexLP(i,iBlock,k)==aimBlockIndicesSplit[i][splitIndex]){
-	  newIndex=0;
-	}
-      }
-      if(newIndex){
-	aimBlockIndicesSplit[i].push_back(aimBlockIndexLP(i,iBlock,k));
-      }
-    }
-  }
-  siBlockIndicesSplitFixedaim[i].resize(aimBlockSizeSplit(i,0));
-  for(int iBlock=0;iBlock<aiBlockIndicesLP[i].size();++iBlock){
-    for(int k=0;k<aimBlockSizeSplit(i,iBlock);++k){
-      for(int kp=0;kp<lBlockSizeLP(i,iBlock);++kp){
-	newIndex=1;
-	if(aimBlockIndexLP(i,iBlock,kp)!=aimBlockIndexSplit(i,iBlock,k)){
-	  newIndex=0;
-	}
-	if(newIndex){
-	  for(int splitIndex=0;splitIndex<siBlockIndicesSplitFixedaim[i][k].size();++splitIndex){
-	    if(siBlockIndexLP(i,iBlock,kp)==siBlockIndicesSplitFixedaim[i][k][splitIndex]){
-	      newIndex=0;
-	    }
-	  }
-	}
-	if(newIndex){
-	  siBlockIndicesSplitFixedaim[i][k].push_back(siBlockIndexLP(i,iBlock,kp));
-	}
-      }
-    }
-  }
-  for(int iBlock=0;iBlock<numBlocksRP(i);++iBlock){
-    for(int j=0;j<rBlockSizeRP(i,iBlock);++j){
-      newIndex=1;
-      for(int splitIndex=0;splitIndex<aiBlockIndicesSplit[i].size();++splitIndex){
-	if(aiBlockIndexRP(i,iBlock,j)==aiBlockIndicesSplit[i][splitIndex]){
-	  newIndex=0;
-	}
-      }
-      if(newIndex){
-	aiBlockIndicesSplit[i].push_back(aiBlockIndexRP(i,iBlock,j));
-      }
-      newIndex=1;
-      for(int splitIndex=0;splitIndex<siBlockIndicesSplit[i].size();++splitIndex){
-	if(siBlockIndexRP(i,iBlock,j)==siBlockIndicesSplit[i][splitIndex]){
-	  newIndex=0;
-	}
-      }
-      if(newIndex){
-	siBlockIndicesSplit[i].push_back(siBlockIndexRP(i,iBlock,j));
-      }
-    }
-  }
 }
 
 //---------------------------------------------------------------------------------------------------//

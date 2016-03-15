@@ -28,43 +28,35 @@ class basisQNOrderMatrix{
   void initialize(dimensionTable &dimin, std::vector<quantumNumber> *conservedQNsin);
   void generateQNIndexTables();
   int blockStructure(int const i, int const direction, std::vector<std::vector<int> > &aiIndices, std::vector<std::vector<multInt> > &siaimIndices);
-  int aiBlockIndexLP(int const i, int const iBlock, int const j) const{return aiBlockIndicesLP[i][iBlock][j];}
-  int siBlockIndexLP(int const i, int const iBlock, int const k) const{return siaimBlockIndicesLP[i][iBlock][k].si;}
-  int aimBlockIndexLP(int const i, int const iBlock, int const k) const{return siaimBlockIndicesLP[i][iBlock][k].aim;}
-  int aiBlockIndexRP(int const i, int const iBlock, int const k) const{return siaiBlockIndicesRP[i][iBlock][k].aim;}
-  int siBlockIndexRP(int const i, int const iBlock, int const k) const{return siaiBlockIndicesRP[i][iBlock][k].si;}
-  int aimBlockIndexRP(int const i, int const iBlock, int const j) const{return aimBlockIndicesRP[i][iBlock][j];}
-  int aimBlockIndexSplit(int const i, int const iBlock, int const j) const{return aimBlockIndicesSplit[i][j];}
-  int aiBlockIndexSplit(int const i, int const iBlock, int const k) const{return aiBlockIndicesSplit[i][k];}
-  int siBlockIndexSplit(int const i, int const iBlock, int const j) const{return siBlockIndicesSplit[i][j];}
-  int siBlockIndexSplitFixedaim(int const i, int const iBlock, int const k, int const j) const{return siBlockIndicesSplitFixedaim[i][k][j];}
+  int aiBlockIndexLP(int i, int iBlock, int j) const{return aiBlockIndicesLPAccess[reducedIndexFunction(i,iBlock,j)];}
+  int siBlockIndexLP(int i, int iBlock, int k) const{return siaimBlockIndicesLPAccess[reducedIndexFunction(i,iBlock,k)].si;}
+  int aimBlockIndexLP(int i, int iBlock, int k) const{return siaimBlockIndicesLPAccess[reducedIndexFunction(i,iBlock,k)].aim;}
+  int aiBlockIndexRP(int i, int iBlock, int k) const{return siaiBlockIndicesRPAccess[reducedIndexFunction(i,iBlock,k)].aim;}
+  int siBlockIndexRP(int i, int iBlock, int k) const{return siaiBlockIndicesRPAccess[reducedIndexFunction(i,iBlock,k)].si;}
+  int aimBlockIndexRP(int i, int iBlock, int j) const{return aimBlockIndicesRPAccess[reducedIndexFunction(i,iBlock,j)];}
   int lBlockSizeLP(int const i, int const iBlock){return siaimBlockIndicesLP[i][iBlock].size();}
   int rBlockSizeLP(int const i, int const iBlock){return aiBlockIndicesLP[i][iBlock].size();}
   int lBlockSizeRP(int const i, int const iBlock){return aimBlockIndicesRP[i][iBlock].size();}
   int rBlockSizeRP(int const i, int const iBlock){return siaiBlockIndicesRP[i][iBlock].size();}
-  int siBlockSizeSplit(int const i, int const iBlock){return siBlockIndicesSplit[i].size();}
-  int siBlockSizeSplitFixedaim(int const i, int const iBlock, int const k){return siBlockIndicesSplitFixedaim[i][k].size();}
-  int aimBlockSizeSplit(int const i, int const iBlock){return aimBlockIndicesSplit[i].size();}
-  int aiBlockSizeSplit(int const i, int const iBlock){return aiBlockIndicesSplit[i].size();}
   int numBlocksLP(int const i){return aiBlockIndicesLP[i].size();}
   int numBlocksRP(int const i){return aimBlockIndicesRP[i].size();}
   int nQNs() const{return conservedQNs->size();}
  private:
+  int maxNumBlocks, maxBlockSize;
   basisQNOrderMatrix(basisQNOrderMatrix const &source);
   basisQNOrderMatrix& operator=(basisQNOrderMatrix const &source);
   std::vector<quantumNumber> *conservedQNs;
+  std::vector<int> aiBlockIndicesLPAccess, aimBlockIndicesRPAccess;
+  std::vector<multInt> siaimBlockIndicesLPAccess, siaiBlockIndicesRPAccess;
   std::vector<std::vector<int> > *aiBlockIndicesLP;
   std::vector<std::vector<multInt> > *siaimBlockIndicesLP;
   std::vector<std::vector<int> > *aimBlockIndicesRP;
   std::vector<std::vector<multInt> > *siaiBlockIndicesRP;
-  std::vector<int > *siBlockIndicesSplit;
-  std::vector<int> *aimBlockIndicesSplit;
-  std::vector<int> *aiBlockIndicesSplit;
-  std::vector<std::vector<int> > *siBlockIndicesSplitFixedaim;
   dimensionTable dimInfo;
+  void generateAccessArrays();
   void deleteTables();
-  void splitIndexTables(int const i);
   std::complex<int> qnCriterium(int const iQN, int const i, int const aim, int const si, int const direction, int const pre);
+  int reducedIndexFunction(int i, int iBlock, int k) const{return k+iBlock*maxBlockSize+i*maxBlockSize*maxNumBlocks;}
 };
 
 #endif
