@@ -26,7 +26,7 @@ class projector{
   ~projector();
   projector& operator=(projector const &source);
   void setParameterD(int Dnew);
-  void loadScalarProducts(mps *const variationalState, int iEigen);
+  void loadScalarProducts(mps const &variationalState, int iEigen);
   void updateScalarProducts(int i, int direction);
   int getProjector(int i);
   void project(lapack_complex_double *vec, int i);

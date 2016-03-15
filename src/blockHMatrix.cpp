@@ -2,6 +2,7 @@
 #include "tmpContainer.h"
 #include "arrayprocessing.h"
 #include <iostream>
+#include <memory>
 #include <time.h>
 #include "mkl_complex_defined.h"
 
@@ -28,7 +29,7 @@ blockHMatrix::blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcom
   compressedVector=new arcomplex<double>[dimension];
   std::cout<<"Current eigenvalue problem dimension: "<<dimension<<std::endl;
   if(lDR<350 && lDL<350 && !cached){
-    explicitMv=1;
+    explicitMv=0;
   }
   else{
     explicitMv=0;
@@ -53,7 +54,8 @@ blockHMatrix::~blockHMatrix(){
 
 void blockHMatrix::MultMvBlocked(arcomplex<double> *v, arcomplex<double> *w){
   if(explicitMv){
-    lapack_complex_double *proxy=new lapack_complex_double[dimension];
+    std::auto_ptr<lapack_complex_double> proxyP(new lapack_complex_double[dimension]);
+    lapack_complex_double *proxy=proxyP.get();
     excitedStateProject(v);
     auxiliary::arraycpy(dimension,v,proxy);
     arcomplex<double> simpleContainer;
@@ -65,7 +67,6 @@ void blockHMatrix::MultMvBlocked(arcomplex<double> *v, arcomplex<double> *w){
       w[m]=simpleContainer+shift*proxy[m];
     }
     excitedStateProject(w);
-    delete[] proxy;
   }
   else{
     MultMvBlockedLP(v,w);

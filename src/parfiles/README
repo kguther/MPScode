@@ -13,6 +13,7 @@ D	bond dimension. If smaller than 2*N, 2*N is used as bond dimension. Default: 1
 p	total subchain parity (+1 or -1). Default: 1
 o	total particle number modulo 2. Only referred for T==1 to determine the particle number for different L. Default: 0
 n	number of subsequent runs for different parameters J,g. Only referred for T==0 Default: 5
+E	number of eigenvalues computed. Default: 1
 z	inverse of the scaling prefactor for the perturbation parameters J,g. Default: 100
 s	total number of angles for measurement of composite second order correlator. Only referred for T==2. Default: 0
 a	initial value of the enrichment parameter alpha. Default: 1e-3

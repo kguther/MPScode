@@ -3,7 +3,7 @@
 #include "tmpContainer.h"
 
 //---------------------------------------------------------------------------------------------------//
-// Tested computation of partial contractions, they work as intended. Check computation of F (and its
+// Tested computation of partial contractions, they work as intended. Checked computation of F (and its
 // usage in network).
 //---------------------------------------------------------------------------------------------------//
 
@@ -75,7 +75,7 @@ void overlap::subContractionStartRight(lapack_complex_double *&pStart, int const
 // the measurement classes, just without the intermediate step of inserting some MPO.
 //---------------------------------------------------------------------------------------------------//
 
-void overlap::calcCtrIterLeft(int const i){
+void overlap::calcCtrIterLeft(int i){
   int lDR, lDL, ld;
   lDL=phi->locDimL(i);
   lDR=phi->locDimR(i);
@@ -117,7 +117,7 @@ void overlap::calcCtrIterLeft(int const i){
 
 //---------------------------------------------------------------------------------------------------//
 
-void overlap::calcCtrIterRight(int const i){
+void overlap::calcCtrIterRight(int i){
   int lDR, lDL, ld;
   lDL=(*phi).locDimL(i);
   lDR=(*phi).locDimR(i);
@@ -155,6 +155,14 @@ void overlap::calcCtrIterRight(int const i){
       target[pCtrLocalIndex(aimp,aim)]=simpleContainer;
     }
   }
+}
+
+//---------------------------------------------------------------------------------------------------//
+// Optimized versions of calcCtrIterLeft/Right for the case both, psi and phi are QN-Blocked.
+//---------------------------------------------------------------------------------------------------//
+
+void overlap::calcCtrIterLeftQNOpt(int i){
+  
 }
 
 //---------------------------------------------------------------------------------------------------//

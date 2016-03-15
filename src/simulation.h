@@ -23,6 +23,7 @@ class simulation{
   std::vector<double> E0, dE;
   void run();
  private:
+  //Order dependent, do not change
   problemParameters pars;
   simulationParameters simPars;
   network TensorNetwork;

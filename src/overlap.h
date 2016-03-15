@@ -11,7 +11,7 @@
 // the latter has more efficient buffering.
 //---------------------------------------------------------------------------------------------------//
 
-//FOR NOW, ONLY MPS WITH THE SAME BOND DIMENSION CAN BE MULTIPLIED. EXTENSION MIGHT BE COMING, BUT IS NOT NECESSARY NOW.
+//WITH THIS CLASS, ONLY MPS WITH THE SAME BOND DIMENSION CAN BE MULTIPLIED. CHILD CLASS FOR CONVERTING MPS TO FIT IN BOND DIMENSION MIGHT BE COMING, BUT IS NOT NECESSARY NOW.
 
 class overlap{
  public:
@@ -37,8 +37,10 @@ class overlap{
   lapack_complex_double& Rctr_access(int const i, int const ai, int const aip){return Rctr[aip+ai*D+i*D*D];}
   void subContractionStartLeft(lapack_complex_double *&pStart, int i);
   void subContractionStartRight(lapack_complex_double *&pStart, int i);
-  void calcCtrIterLeft(int const i);
-  void calcCtrIterRight(int const i);
+  void calcCtrIterLeft(int i);
+  void calcCtrIterRight(int i);
+  void calcCtrIterLeftQNOpt(int i);
+  void calcCtrIterRightQNOpt(int i);
   void getF();
   //Important: During sweeping, only the F matrix of the last updated site can be used, and only the mps site matrices of the last updated site should be manipulated. This ensures that the overlap is always up to date. Of course, use the corresponding step for updating (i.e. update the correct direction)
   void updateF(int const i);

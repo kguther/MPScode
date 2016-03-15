@@ -40,6 +40,7 @@ class network{
   void leftNormalizationMatrixFull();
   mpo<lapack_complex_double> *check, *checkParity;
  private:
+  //Order dependent, do not change
   problemParameters pars;
   simulationParameters simPars;
   int D,L,Dw;

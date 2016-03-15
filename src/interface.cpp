@@ -15,7 +15,7 @@
 interface::interface(){
   //default parameters which are used if a parameter is not specified in the file
   fileName="testRun";
-  parPack.nSweeps=12;
+  parPack.nSweeps=15;
   parPack.alphaInit=1e-3;
   parPack.arpackTol=1e-4;
   parPack.arpackTolMin=1e-8;

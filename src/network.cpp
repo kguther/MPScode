@@ -29,7 +29,7 @@
 //---------------------------------------------------------------------------------------------------//
 
 network::network()
-  //Empty networks dont do much, use the generate function to fill them - this allows for separation of declaration and assignment
+  //Empty networks dont do much, use the generate function to fill them - this allows for separation of declaration and assignment (but avoid using it unless neccessary=
 {}
 
 //---------------------------------------------------------------------------------------------------//
@@ -161,7 +161,7 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
     alpha=simPars.alpha;
     tol=simPars.tolInitial;
     //load all pairings with the current state and previous ones into the scalar products
-    excitedStateP.loadScalarProducts(&networkState,iEigen);
+    excitedStateP.loadScalarProducts(networkState,iEigen);
 
     pCtr.calcCtrIterRightBase(-1,&expectationValue);
     std::cout<<"Initial energy: "<<expectationValue<<std::endl;

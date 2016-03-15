@@ -18,7 +18,7 @@ writeK=False
 writepd=True
 newpd=False
 
-labellist=['$\\left|\\langle a^\dagger_i a_0^{} \\rangle \\right|$','$\\left|\\langle a^\dagger_i b^{}_i a_0^{\dagger} b_0 \\rangle \\right|$','$\\left|\\langle n^{a}_i n_0^{a} \\rangle \\right|$','$\\left|\\langle n^{a}_i n_0^{b} \\rangle \\right|$','$\\left|\\langle n^{a}_i \\rangle \\right|$','$\\left|\\langle a^\dagger_i b^\dagger_i a_0^{} b_0^{} \\rangle \\right|$','$\\left|\\langle \\right|\\rangle$','S','\\left|\\langle n^{a}_i n^{b}_i \\rangle\\right|','\\left|\\langle n^{b}_i\\rangle\\right|','other']
+labellist=['$\\left|\\langle a^\dagger_i a_0^{} \\rangle \\right|$','$\\left|\\langle a^\dagger_i b^{}_i a_0^{\dagger} b_0 \\rangle \\right|$','$\\left|\\langle n^{a}_i n_0^{a} \\rangle \\right|$','$\\left|\\langle n^{a}_i n_0^{b} \\rangle \\right|$','$\\left|\\langle n^{a}_i \\rangle \\right|$','$\\left|\\langle a^\dagger_i b^\dagger_i a_0^{} b_0^{} \\rangle \\right|$','$\\left|\\langle \\right|\\rangle$','S','\\left|\\langle n^{a}_i n^{b}_i \\rangle\\right|','\\left|\\langle n^{b}_i\\rangle\\right|','$\\langle a_i^{\dagger} a_{i+1}^{\dagger} a_0 a_1 \\rangle$','other']
 
 def tasknum(n):
     if n=="Intrachain correlation" or n=="Bulk correlation function":
@@ -41,8 +41,10 @@ def tasknum(n):
         taskindex=8
     elif n=="Local density B":
         taskindex=9
-    else:
+    elif n=="Bulk superconducting corrleation":
         taskindex=10
+    else:
+        taskindex=11
     return taskindex
 
 for filename in filelist:
@@ -94,9 +96,12 @@ for filename in filelist:
                         pd.write(point)
                 plt.figure()
                 if bCheck[0]=='Bulk':
-                    plt.loglog(x,map(abs,data),'o')
+                    if tasknum(datanames[i])==10:
+                        plt.plot(x,data,'o')
+                    else:
+                        plt.loglog(x,map(abs,data),'o')
                     if writeK and tasknum(datanames[i])==5:
-                        plt.plot(xeff,f(xeff,fpars[0],fpars[1],fpars[2]),'o')
+                        plt.loglog(xeff,f(xeff,fpars[0],fpars[1],fpars[2]),'o')
                 else:
                     if (tasknum(datanames[i])!=4 and tasknum(datanames[i])!=7):
                         plt.semilogy(x,map(abs,data),'o')
