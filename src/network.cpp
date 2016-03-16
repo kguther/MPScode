@@ -99,16 +99,16 @@ int network::setSimParameters(simulationParameters const &newPars){
 
 int network::setParameterD(int Dnew){
   //Decreasing D is neither required nor reasonable in any context
-  if(Dnew<D){
+  if(Dnew<=D){
     return -1;
+  }
+  for(int iQN=0;iQN<pars.nQNs;++iQN){
+    conservedQNs[iQN].setParameterD(Dnew);
   }
   networkState.setParameterD(Dnew);
   networkDimInfo.setParameterD(Dnew);
   //All stored states have to be brought into the correct form for compatibility with current D
   excitedStateP.setParameterD(Dnew);
-  for(int iQN=0;iQN<pars.nQNs;++iQN){
-    conservedQNs[iQN].setParameterD(Dnew);
-  }
   //Adapt D
   D=Dnew;
   simPars.D=Dnew;
@@ -117,7 +117,7 @@ int network::setParameterD(int Dnew){
 
 //---------------------------------------------------------------------------------------------------//
 
-void network::getLocalDimensions(int const i){
+void network::getLocalDimensions(int i){
   lDL=networkDimInfo.locDimL(i);
   lDR=networkDimInfo.locDimR(i);
   ld=networkDimInfo.locd(i);
@@ -187,6 +187,7 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
 	tol*=pow(simPars.tolMin/simPars.tolInitial,1.0/simPars.nSweeps);
       }
       std::cout<<"Quality of convergence: "<<deltaLambda[iEigen]<<"\tRequired accuracy: "<<simPars.devAccuracy<<std::endl<<std::endl;
+      std::cout<<"Used bond dimension: "<<D<<std::endl;
       excitedStateP.updateScalarProducts(0,-1);
       for(int prev=0;prev<iEigen;++prev){
 	std::cout<<"Overlap with state "<<prev<<" is: "<<excitedStateP.fullOverlap(prev)<<std::endl;
@@ -217,7 +218,7 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
 
 //---------------------------------------------------------------------------------------------------//
 
-void network::sweep(double const maxIter, double const tol, double &lambda){
+void network::sweep(double maxIter, double tol, double &lambda){
   clock_t curtime;
   // By default enrichment is used whenever conserved QNs are used
   int const expFlag=pars.nQNs;
@@ -269,7 +270,7 @@ void network::sweep(double const maxIter, double const tol, double &lambda){
 // eigenvalue problem. 
 //---------------------------------------------------------------------------------------------------//
 
-int network::optimize(int const i, int const maxIter, double const tol, double &iolambda){
+int network::optimize(int i, int maxIter, double tol, double &iolambda){
   //Invokes ARPACK++ to solve the eigenvalue problem
   arcomplex<double> lambda;
   arcomplex<double> *plambda;
@@ -338,7 +339,7 @@ int network::optimize(int const i, int const maxIter, double const tol, double &
 // expansion
 //---------------------------------------------------------------------------------------------------//
 
-void network::normalize(int const i, int const direction, int const enrichment){
+void network::normalize(int i, int direction, int enrichment){
   if(direction){
     if(enrichment){
       if(pars.nQNs){
@@ -477,13 +478,13 @@ void network::getEntanglement(std::vector<double> &S, std::vector<std::vector<do
 // returning a fixed dimension.
 //---------------------------------------------------------------------------------------------------//
 
-int network::locd(int const i){
+int network::locd(int i){
   return networkDimInfo.locd(i);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-int network::locDMax(int const i){
+int network::locDMax(int i){
   return networkDimInfo.locDMax(i);
 }
 
@@ -563,7 +564,7 @@ int network::checkQN(){
 
 //---------------------------------------------------------------------------------------------------//
 
-void network::checkContractions(int const i){
+void network::checkContractions(int i){
   /*
   lapack_complex_double *RTerm;
   int change=0;

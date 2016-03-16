@@ -6,11 +6,6 @@
 #include "globalMeasurement.h"
 #include "localMeasurementSeries.h"
 
-simulation::simulation(){
-}
-
-//---------------------------------------------------------------------------------------------------//
-
 simulation::simulation(problemParameters &parsIn, simulationParameters &simParsIn, double J, double g, double WIn, int pathPoints, double stepSize, std::string const &targetFile):
   simPars(simParsIn),
   pars(parsIn),
@@ -21,7 +16,7 @@ simulation::simulation(problemParameters &parsIn, simulationParameters &simParsI
   measureES(0),
   scaling(stepSize),
   parDirection(std::complex<double>(J,g)),
-  TensorNetwork(network(pars,simPars)),
+  csystem(Qsystem(pars,simPars)),
   particleNumber(mpo<lapack_complex_double>(pars.d.maxd(),2,pars.L)),
   subChainParity(mpo<lapack_complex_double>(pars.d.maxd(),1,pars.L))
 {
@@ -64,8 +59,8 @@ simulation::simulation(problemParameters &parsIn, simulationParameters &simParsI
       }
     }
   }
-  TensorNetwork.check=&particleNumber;
-  TensorNetwork.checkParity=&subChainParity;
+  csystem.TensorNetwork.check=&particleNumber;
+  csystem.TensorNetwork.checkParity=&subChainParity;
   localMeasureTask.clear();
   measureTask.clear();
 }
@@ -123,13 +118,17 @@ void simulation::singleRun(){
   J=1+parDirection.real();
   g=1+parDirection.imag();
   std::cout<<J<<" "<<g<<std::endl;
-  hInfo=writeHamiltonian(TensorNetwork,J,g,W);
+  hInfo=writeHamiltonian(csystem.TensorNetwork,J,g,W);
+  if(pathLength!=1 && simPars.nStages!=1){
+    std::cout<<"Invalid simulation parameters: Staging is disabled for type-0 runs.\n";
+    exit(1);
+  }
   if(hInfo){
     std::cout<<"Invalid bond dimension for the construction of H. Terminating process.\n";
     exit(1);
   }
   //Actual DMRG
-  TensorNetwork.solve(E0,dE);
+  csystem.getGroundState();
   expectationValues.resize(measureTask.size());
   localExpectationValues.resize(localMeasureTask.size());
   //Measure previously set operators and write results into the result file
@@ -161,7 +160,7 @@ void simulation::singleRun(){
       ofs<<pars.L<<"\t"<<real(pars.QNconserved[0])<<"\t"<<imag(pars.QNconserved[0])<<"\t"<<J<<"\t"<<g<<"\t"<<W<<"\t"<<E0[iEigen]<<"\t"<<dE[iEigen]<<std::endl;
       //First, global measurements are performed (this is used rarely)
       for(int iM=0;iM<measureTask.size();++iM){
-	TensorNetwork.measure(&measureTask[iM],expectationValues[iM],iEigen);
+	csystem.measure(&measureTask[iM],expectationValues[iM],iEigen);
 	ofs<<operatorNames[iM]<<"\t";
       }
       //Then, all results are written into the result file
@@ -174,7 +173,7 @@ void simulation::singleRun(){
 	ofs<<std::endl;
       //Now, the same is done for the local measurements (this is what is usually interesting)
       for(int iM=0;iM<localMeasureTask.size();++iM){
-	TensorNetwork.measureLocalOperators(&localMeasureTask[iM],localExpectationValues[iM],iEigen);
+	csystem.measureLocalOperators(&localMeasureTask[iM],localExpectationValues[iM],iEigen);
 	ofs<<localOperatorNames[iM]<<"\t";
       }
       if(measureEE){
@@ -192,7 +191,7 @@ void simulation::singleRun(){
       std::vector<double> S;
       std::vector<std::vector<double> > spec;
       if(measureEE){
-	TensorNetwork.getEntanglement(S,spec,iEigen);
+	csystem.TensorNetwork.getEntanglement(S,spec,iEigen);
       }
       if(localExpectationValues.size()>0 || measureEE){
 	for(int i=0;i<pars.L;++i){
@@ -231,5 +230,5 @@ void simulation::singleRun(){
       ofs.close();
     }
   }
-  TensorNetwork.resetConvergence();
+  csystem.TensorNetwork.resetConvergence();
 }

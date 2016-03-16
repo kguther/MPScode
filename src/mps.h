@@ -17,6 +17,7 @@ class mps: public stateArray{
   void setToExactGroundState();
   int leftNormalizeState(int i);
   int rightNormalizeState(int i);
+  int setParameterD(int Dnew);
   void normalizeFinal(int i);
   void restoreQN(int i);
   void getEntanglementSpectrum(int i, double &S, std::vector<double> &spectrum);

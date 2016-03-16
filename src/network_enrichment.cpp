@@ -15,7 +15,7 @@
 // minima till now).
 //---------------------------------------------------------------------------------------------------//
 
-void network::leftEnrichment(int const i){
+void network::leftEnrichment(int i){
   lapack_complex_double *Mnew;
   lapack_complex_double *Bnew;
   lapack_complex_double *pExpression, *unity;
@@ -103,7 +103,7 @@ void network::leftEnrichment(int const i){
 
 //---------------------------------------------------------------------------------------------------//
 
-void network::rightEnrichment(int const i){
+void network::rightEnrichment(int i){
   lapack_complex_double *Mnew;
   lapack_complex_double *Anew;
   lapack_complex_double *pExpression;
@@ -197,7 +197,7 @@ void network::rightEnrichment(int const i){
 // if the truncated P is as useful as the heuristic ansatz by Hubig
 //---------------------------------------------------------------------------------------------------//
 
-void network::leftEnrichmentBlockwise(int const i){
+void network::leftEnrichmentBlockwise(int i){
   lapack_complex_double *Mnew;
   lapack_complex_double *Bnew, *R, *BStart, *networkB;
   lapack_complex_double *pExpression;
@@ -319,7 +319,7 @@ void network::leftEnrichmentBlockwise(int const i){
 
 //---------------------------------------------------------------------------------------------------//
 
-void network::rightEnrichmentBlockwise(int const i){
+void network::rightEnrichmentBlockwise(int i){
   lapack_complex_double *Mnew;
   lapack_complex_double *Anew, *R, *networkA;
   lapack_complex_double *pExpression;
@@ -477,7 +477,7 @@ void network::getPExpressionLeft(int const i, lapack_complex_double *pExpr){
 
 //---------------------------------------------------------------------------------------------------//
 
-void network::getPExpressionRight(int const i, lapack_complex_double *pExpr){
+void network::getPExpressionRight(int i, lapack_complex_double *pExpr){
   //This works just like the left version, except for the shape of the used storage scheme (and other functions are called to get the right expression)
   int const numBlocks=networkState.indexTable.numBlocksRP(i);
   int lBlockSize, rBlockSize;
@@ -507,7 +507,7 @@ void network::getPExpressionRight(int const i, lapack_complex_double *pExpr){
 // after each step
 //---------------------------------------------------------------------------------------------------//
 
-double network::getCurrentEnergy(int const i){
+double network::getCurrentEnergy(int i){
   lapack_complex_double simpleContainer=0;
   lapack_complex_double *siteMatrixContainer=new lapack_complex_double [ld*lDR*lDL];
   lapack_complex_double *currentM, *LTerm, *RTerm;
@@ -559,7 +559,7 @@ double network::getCurrentEnergy(int const i){
 
 //---------------------------------------------------------------------------------------------------//
 
-void network::getNewAlpha(int const i, double const lambda, double const prevLambda){
+void network::getNewAlpha(int i, double lambda, double prevLambda){
   /*
   double dET=getCurrentEnergy(i);
   double dE0=abs(prevLambda-lambda);

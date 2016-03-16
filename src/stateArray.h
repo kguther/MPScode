@@ -12,7 +12,7 @@ class stateArray{
   stateArray(dimensionTable const &dimInfoIn);
   virtual ~stateArray();
   virtual void mpsCpy(stateArray const &source);
-  int setParameterD(int Dnew);
+  virtual int setParameterD(int Dnew);
   const lapack_complex_double& operator() (int i, int si, int ai, int aim) const{return state_array_access_structure[i][si][ai][aim];}
   lapack_complex_double& operator()(int i, int si, int ai, int aim){return state_array_access_structure[i][si][ai][aim];}
   lapack_complex_double* operator()(int i, int si=0){return state_array_access_structure[i][si][0];}

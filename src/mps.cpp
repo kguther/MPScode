@@ -119,6 +119,20 @@ void mps::createInitialState(){
 
 //---------------------------------------------------------------------------------------------------//
 
+int mps::setParameterD(int Dnew){
+  dimInfo.setParameterD(Dnew);
+  for(int iQN=0;iQN<nQNs;++iQN){
+    conservedQNs[iQN].setParameterD(Dnew);
+  }
+  if(nQNs){
+    indexTable.initialize(dimInfo,&conservedQNs);
+    indexTable.generateQNIndexTables();
+  }
+  return stateArray::setParameterD(Dnew);
+}
+
+//---------------------------------------------------------------------------------------------------//
+
 void mps::setToExactGroundState(){
     //This is the exact ground state at the critical point for fixed particle number and subchain parity. It turns out that this is a nice guess for the ground state of the perturbed system (for small perturbations).
   int ld, lDL, lDR;

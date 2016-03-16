@@ -54,31 +54,31 @@ class network{
   iterativeMeasurement pCtr;
   lapack_complex_double expectationValue;
   //most of these methods are auxiliary functions
-  int pctrIndex(int const ai, int const bi, int const aip){return aip+bi*D+ai*D*Dw;}
-  int optimize(int const i, int const maxIter, double const tol, double &iolambda);
-  int solveSiteEigenProb(int const i, int const maxIter, double const tol, double &iolambda);
-  int solveSiteEigenProbQNC(int const i, int const maxIter, double const tol, double &iolambda);
-  int locDMax(int const i);
+  int pctrIndex(int ai, int bi, int aip){return aip+bi*D+ai*D*Dw;}
+  int optimize(int i, int maxIter, double tol, double &iolambda);
+  int solveSiteEigenProb(int i, int maxIter, double tol, double &iolambda);
+  int solveSiteEigenProbQNC(int i, int maxIter, double tol, double &iolambda);
+  int locDMax(int i);
   int gotoNextEigen();
   int setParameterD(int Dnew);
   double convergenceCheck();
-  double getCurrentEnergy(int const i);
-  void getNewAlpha(int const i, double const lambda, double const prevLambda);
-  void normalize(int const i, int const direction, int const enrichment=0);
-  void sweep(double const maxIter, double const tol, double &lambda);
-  void leftEnrichment(int const i);
-  void rightEnrichment(int const i);
-  void leftEnrichmentBlockwise(int const i);
-  void rightEnrichmentBlockwise(int const i);
+  double getCurrentEnergy(int i);
+  void getNewAlpha(int i, double lambda, double prevLambda);
+  void normalize(int i, int direction, int enrichment=0);
+  void sweep(double maxIter, double tol, double &lambda);
+  void leftEnrichment(int i);
+  void rightEnrichment(int i);
+  void leftEnrichmentBlockwise(int i);
+  void rightEnrichmentBlockwise(int i);
   void calcHSqrExpectationValue(double &ioHsqr);
-  void getPExpressionLeft(int const i, lapack_complex_double *pExpr);
-  void getPExpressionRight(int const i, lapack_complex_double *pExpr);
-  void getLocalDimensions(int const i);
+  void getPExpressionLeft(int i, lapack_complex_double *pExpr);
+  void getPExpressionRight(int i, lapack_complex_double *pExpr);
+  void getLocalDimensions(int i);
   //This one is only for consistency checks
   void leftNormalizationMatrixIter(int i, lapack_complex_double *psi);
   int checkQN();
   int checkEqualWeightState();
-  void checkContractions(int const i);
+  void checkContractions(int i);
   lapack_complex_double *backupCtr;
 };
 

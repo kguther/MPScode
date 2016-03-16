@@ -17,6 +17,7 @@ struct info{
   int odd;
   int numPts;
   int nEigens;
+  int nStages;
   int nGs;
   double rho;
   double alphaInit;
@@ -25,6 +26,7 @@ struct info{
   double Jsc, gsc, Wsc;
   double alphaMin, alphaMax;
   double scaling;
+  double acc;
 };
 
 //-------------------------------------------------------------------------------------------//

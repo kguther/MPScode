@@ -38,8 +38,8 @@ int main(int argc, char *argv[]){
   MPI_Aint displacements[dn], firstAdress, secondAdress;
   MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
   MPI_Comm_size(MPI_COMM_WORLD,&commsize);
-  blockLengths[0]=9;
-  blockLengths[1]=10;
+  blockLengths[0]=10;
+  blockLengths[1]=11;
   MPI_Get_address(&necPars.L,&firstAdress);
   MPI_Get_address(&necPars.rho,&secondAdress);
   displacements[0]=(MPI_Aint)0;
@@ -154,7 +154,7 @@ void getScaling(int L, info const &parPack, double *results, std::string const &
   localHSpaces localHilbertSpaceDims(4);
   problemParameters pars(localHilbertSpaceDims,L,12,nEigens,nQuantumNumbers,QNValue,QNList);
   //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack
-  simulationParameters simPars(usedD,parPack.nSweeps,1,parPack.alphaInit,1e-4,parPack.arpackTolMin,parPack.arpackTol);
+  simulationParameters simPars(usedD,parPack.nSweeps,1,parPack.alphaInit,parPack.acc,parPack.arpackTolMin,parPack.arpackTol);
   simulation sim(pars,simPars,parPack.Jsc,parPack.gsc,parPack.Wsc,parPack.numPts,parPack.scaling,fileName);
   sim.run();
   results[0]=sim.E0[0];
@@ -178,7 +178,7 @@ void sysScan(double J, double g, info const &parPack, std::string const &fileNam
   problemParameters pars(localHilbertSpaceDims,parPack.L,12,nEigens,nQuantumNumbers,QNValue,QNList);
   //simulationParameters simPars(100,5,2,1e-4,1e-8,1e-9,1e-2);
   //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack
-  simulationParameters simPars(usedD,parPack.nSweeps,1,parPack.alphaInit,1e-8,parPack.arpackTolMin,parPack.arpackTol);
+  simulationParameters simPars(usedD,parPack.nSweeps,1,parPack.alphaInit,parPack.acc,parPack.arpackTolMin,parPack.arpackTol);
   simulation sim(pars,simPars,J,g,parPack.Wsc,parPack.numPts,parPack.scaling,fileName);
   sysSetMeasurements(sim,pars.d.maxd(),L);
 }
@@ -197,7 +197,7 @@ void sysSolve(info const &parPack, std::string const &fileName){
   localHSpaces localHilbertSpaceDims(4);
   problemParameters pars(localHilbertSpaceDims,parPack.L,12,nEigens,nQuantumNumbers,QNValue,QNList);
   //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack
-  simulationParameters simPars(usedD,parPack.nSweeps,1,parPack.alphaInit,1e-4,parPack.arpackTolMin,parPack.arpackTol);
+  simulationParameters simPars(usedD,parPack.nSweeps,parPack.nStages,parPack.alphaInit,parPack.acc,parPack.arpackTolMin,parPack.arpackTol);
   simulation sim(pars,simPars,parPack.Jsc,parPack.gsc,parPack.Wsc,numPoints,parPack.scaling,fileName);
 
   int const d=pars.d.maxd();

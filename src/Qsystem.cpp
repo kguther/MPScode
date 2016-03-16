@@ -8,16 +8,14 @@
 Qsystem::Qsystem(problemParameters &inputpars, simulationParameters &inputsimPars):
   pars(inputpars),
   simPars(inputsimPars),
-  DMax(simPars.D),
-  nSweepsMax(simPars.nSweeps),
-  tolInitialMax(simPars.tolInitial),
-  TensorNetwork(network(pars,simPars))
+  DMax(inputsimPars.D),
+  nSweepsMax(inputsimPars.nSweeps),
+  tolInitialMax(inputsimPars.tolInitial),
+  TensorNetwork(network(inputpars,inputsimPars))
 {
-  simPars.D=stageD(0);
   simPars.nSweeps=stageNSweeps(0);
   simPars.tolInitial=stageTolInitial(0);
 }
-
 
 //---------------------------------------------------------------------------------------------------//
 
@@ -31,8 +29,8 @@ int Qsystem::getGroundState(){
       simPars.D=stageD(iStage);
       simPars.nSweeps=stageNSweeps(iStage);
       simPars.tolInitial=stageTolInitial(iStage);
-      TensorNetwork.setSimParameters(simPars);
     }
+    TensorNetwork.setSimParameters(simPars);
     converged=TensorNetwork.solve(E0,dE);
     if(converged==0){
       std::cout<<"SIMULATION CONVERGED\n";
@@ -47,11 +45,7 @@ int Qsystem::getGroundState(){
 //---------------------------------------------------------------------------------------------------//
 
 int Qsystem::stageD(int const nStage){
-  if(simPars.nStages>1){
-    int D0=(DMax>10)?DMax/4:5;
-    return D0+nStage*(DMax-D0)/(simPars.nStages-1);
-  }
-  return DMax;
+  return (nStage+1)*DMax;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -74,12 +68,12 @@ double Qsystem::stageTolInitial(int const nStage){
 
 //---------------------------------------------------------------------------------------------------//
 
-int Qsystem::measure(mpo<lapack_complex_double> *const MPOperator, double &expectationValue, mps *const MPState){
-  return TensorNetwork.measure(MPOperator,expectationValue);
+int Qsystem::measure(mpo<lapack_complex_double> *const MPOperator, double &expectationValue, int iEigen){
+  return TensorNetwork.measure(MPOperator,expectationValue,iEigen);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-int Qsystem::measureLocal(localMpo<lapack_complex_double> *const localMPOperator, std::vector<std::complex<double> > &result, mps *const MPState){
-  return TensorNetwork.measureLocalOperators(localMPOperator,result);
+int Qsystem::measureLocalOperators(localMpo<lapack_complex_double> *const localMPOperator, std::vector<std::complex<double> > &result, int iEigen){
+  return TensorNetwork.measureLocalOperators(localMPOperator,result,iEigen);
 }

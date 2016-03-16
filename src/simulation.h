@@ -9,6 +9,7 @@
 #include "localMpo.h"
 #include "mps.h"
 #include "network.h"
+#include "Qsystem.h"
 
 class simulation{
  public:
@@ -26,7 +27,7 @@ class simulation{
   //Order dependent, do not change
   problemParameters pars;
   simulationParameters simPars;
-  network TensorNetwork;
+  Qsystem csystem;
   std::vector<double> convergedEigens;
   std::vector<std::string> operatorNames;
   std::vector<std::string> localOperatorNames;

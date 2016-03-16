@@ -39,8 +39,8 @@ class overlap{
   void subContractionStartRight(lapack_complex_double *&pStart, int i);
   void calcCtrIterLeft(int i);
   void calcCtrIterRight(int i);
-  void calcCtrIterLeftQNOpt(int i);
-  void calcCtrIterRightQNOpt(int i);
+  void calcCtrIterLeftQNOpt(int i, lapack_complex_double const*const source, lapack_complex_double *const target);
+  void calcCtrIterRightQNOpt(int i, lapack_complex_double const*const source, lapack_complex_double *const target);
   void getF();
   //Important: During sweeping, only the F matrix of the last updated site can be used, and only the mps site matrices of the last updated site should be manipulated. This ensures that the overlap is always up to date. Of course, use the corresponding step for updating (i.e. update the correct direction)
   void updateF(int const i);

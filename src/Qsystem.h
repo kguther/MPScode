@@ -10,18 +10,17 @@
 
 //---------------------------------------------------------------------------------------------------//
 // This class is used to execute the simulation with its main task being the adaption of bond
-// dimension D over the course of the run. Also, this is where measurements are going to be implemented.
+// dimension D over the course of the run.
 //---------------------------------------------------------------------------------------------------//
 
 class Qsystem{
  public:
   Qsystem(problemParameters &pars, simulationParameters &simPars);
-  ~Qsystem();
   network TensorNetwork;
   std::vector<double> E0, dE;
   int getGroundState();
-  int measure(mpo<std::complex<double> > *const MPOperator, double &expectationValue, mps *const MPState=0);
-  int measureLocal(localMpo<std::complex<double> > *const localMPOperator, std::vector<std::complex<double> > &result, mps *const MPState=0);
+  int measure(mpo<std::complex<double> > *const MPOperator, double &expectationValue, int iEigen=0);
+  int measureLocalOperators(localMpo<std::complex<double> > *const localMPOperator, std::vector<std::complex<double> > &result, int iEigen=0);
  protected:
   problemParameters pars;
   simulationParameters simPars;

@@ -144,70 +144,7 @@ void iterativeMeasurement::calcCtrIterRightBaseQNOpt(int const i, lapack_complex
   MPState->subMatrixStart(siteMatrixState,i+1);
   getLocalDimensions(i+1);
   tmpContainer<lapack_complex_double> outercontainer(lDL,lDwL,ld,lDR);
-  calcOuterContainerRightQNOpt(i,outercontainer);
-
-  /*
-  lapack_complex_double *sourcePctr;
-  lapack_complex_double *siteMatrixH;
-  int *biIndices, *bimIndices, *siIndices, *sipIndices;
-  int const sparseSize=MPOperator->numEls(i+1);
-  int biS, bimS, siS, sipS;
-  Rctr.subContractionStart(sourcePctr,i+1);
-  MPOperator->sparseSubMatrixStart(siteMatrixH,i+1);
-  MPOperator->biSubIndexArrayStart(biIndices,i+1);
-  MPOperator->bimSubIndexArrayStart(bimIndices,i+1);
-  MPOperator->siSubIndexArrayStart(siIndices,i+1);
-  MPOperator->sipSubIndexArrayStart(sipIndices,i+1);
-  tmpContainer<lapack_complex_double> innercontainer(ld,lDwR,lDR,lDL);
-  curtime=clock();
-  for(int sip=0;sip<ld;++sip){                                  
-    for(int bi=0;bi<lDwR;++bi){
-      for(int ai=0;ai<lDR;++ai){
-	for(int aimp=0;aimp<lDL;++aimp){
-	  innercontainer.global_access(sip,bi,ai,aimp)=0;
-	}
-      }
-    }
-  }
-  for(int iBlock=0;iBlock<numBlocks;++iBlock){
-    lBlockSize=MPState->indexTable.lBlockSizeRP(i+1,iBlock);
-    rBlockSize=MPState->indexTable.rBlockSizeRP(i+1,iBlock);
-    for(int j=0;j<rBlockSize;++j){
-      aiB=MPState->indexTable.aiBlockIndexRP(i+1,iBlock,j);
-      siB=MPState->indexTable.siBlockIndexRP(i+1,iBlock,j);
-      for(int k=0;k<lBlockSize;++k){
-	aimB=MPState->indexTable.aimBlockIndexRP(i+1,iBlock,k);
-	for(int bi=0;bi<lDwR;++bi){
-	  for(int ai=0;ai<lDR;++ai){
-	    innercontainer.global_access(siB,bi,ai,aimB)+=sourcePctr[pctrIndex(ai,bi,aiB)]*siteMatrixState[stateIndex(siB,aiB,aimB)];
-	  }
-	}
-      }
-    }
-  }
-  for(int iBlock=0;iBlock<numBlocks;++iBlock){
-    rBlockSize=MPState->indexTable.rBlockSizeRP(i+1,iBlock);
-    for(int j=0;j<rBlockSize;++j){
-      siB=MPState->indexTable.siBlockIndexRP(i+1,iBlock,j);
-      aiB=MPState->indexTable.aiBlockIndexRP(i+1,iBlock,j);
-      for(int aim=0;aim<lDL;++aim){
-	for(int bim=0;bim<lDwL;++bim){
-	  outercontainer.global_access(aim,bim,siB,aiB)=0;
-	}
-	for(int nSparse=0;nSparse<sparseSize;++nSparse){
-	  siS=siIndices[nSparse];
-	  if(siS==siB){
-	    biS=biIndices[nSparse];
-	    bimS=bimIndices[nSparse];
-	    sipS=sipIndices[nSparse];
-	    outercontainer.global_access(aim,bimS,siB,aiB)+=siteMatrixH[nSparse]*innercontainer.global_access(sipS,biS,aiB,aim);
-	  }
-	}
-      }
-    }
-  }
-  */
-  
+  calcOuterContainerRightQNOpt(i,outercontainer);  
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
     lBlockSize=MPState->indexTable.lBlockSizeRP(i+1,iBlock);
     rBlockSize=MPState->indexTable.rBlockSizeRP(i+1,iBlock);

@@ -15,13 +15,14 @@
 interface::interface(){
   //default parameters which are used if a parameter is not specified in the file
   fileName="testRun";
-  parPack.nSweeps=1;
+  parPack.nSweeps=12;
   parPack.alphaInit=1e-3;
   parPack.arpackTol=1e-4;
   parPack.arpackTolMin=1e-8;
   parPack.L=100;
   parPack.N=parPack.L;
   parPack.scaling=100;
+  parPack.nStages=1;
   //note that D=1 (or any other too small value for D) uses a fixed minimal value instead
   parPack.D=1;
   parPack.par=1;
@@ -30,12 +31,13 @@ interface::interface(){
   parPack.Jsc=-1;
   parPack.odd=0;
   parPack.rho=0.5;
-  parPack.simType=0;
+  parPack.simType=2;
   parPack.nEigens=1;
   parPack.numPts=1;
   parPack.alphaMin=0;
   parPack.alphaMax=2*M_PI;
   parPack.Wsc=1;
+  parPack.acc=1e-4;
 }
 
 //-------------------------------------------------------------------------------------------//
@@ -79,7 +81,7 @@ void interface::readParFile(std::string const &fN){
   fileName=target;
   while(ifs.get(inArg)){
     if(inArg!=' '){
-      if(inArg=='L' || inArg=='D' || inArg=='S' || inArg=='p' || inArg=='N' || inArg=='n' || inArg=='o' || inArg=='T' || inArg=='s' || inArg=='E'){
+      if(inArg=='L' || inArg=='D' || inArg=='S' || inArg=='p' || inArg=='N' || inArg=='n' || inArg=='o' || inArg=='T' || inArg=='s' || inArg=='E' || inArg=='R'){
 	ifs>>intPar;
 	if(inArg=='L'){
 	  parPack.L=intPar;
@@ -110,6 +112,9 @@ void interface::readParFile(std::string const &fN){
 	}
 	if(inArg=='E'){
 	  parPack.nEigens=intPar;
+	}
+	if(inArg=='R'){
+	  parPack.nStages=intPar;
 	}
       }
       else{
@@ -143,6 +148,9 @@ void interface::readParFile(std::string const &fN){
 	}
 	if(inArg=='W'){
 	  parPack.Wsc=fPar;
+	}
+	if(inArg=='c'){
+	  parPack.acc=fPar;
 	}
       }
       ifs.get(inArg);
