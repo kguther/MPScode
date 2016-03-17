@@ -6,7 +6,7 @@
 #include "globalMeasurement.h"
 #include "localMeasurementSeries.h"
 
-simulation::simulation(problemParameters &parsIn, simulationParameters &simParsIn, double J, double g, double WIn, int pathPoints, double stepSize, std::string const &targetFile):
+simulation::simulation(problemParameters &parsIn, simulationParameters &simParsIn, double J, double g, double WIn, int pathPoints, double stepSize, double deltaPIn, std::string const &targetFile):
   simPars(simParsIn),
   pars(parsIn),
   W(WIn),
@@ -14,6 +14,7 @@ simulation::simulation(problemParameters &parsIn, simulationParameters &simParsI
   filePrefix(targetFile),
   measureEE(0),
   measureES(0),
+  deltaP(deltaPIn),
   scaling(stepSize),
   parDirection(std::complex<double>(J,g)),
   csystem(Qsystem(pars,simPars)),
@@ -118,7 +119,7 @@ void simulation::singleRun(){
   J=1+parDirection.real();
   g=1+parDirection.imag();
   std::cout<<J<<" "<<g<<std::endl;
-  hInfo=writeHamiltonian(csystem.TensorNetwork,J,g,W);
+  hInfo=writeHamiltonian(csystem.TensorNetwork,J,g,W,deltaP);
   if(pathLength!=1 && simPars.nStages!=1){
     std::cout<<"Invalid simulation parameters: Staging is disabled for type-0 runs.\n";
     exit(1);
@@ -129,6 +130,8 @@ void simulation::singleRun(){
   }
   //Actual DMRG
   csystem.getGroundState();
+  E0=csystem.E0;
+  dE=csystem.dE;
   expectationValues.resize(measureTask.size());
   localExpectationValues.resize(localMeasureTask.size());
   //Measure previously set operators and write results into the result file
@@ -137,7 +140,7 @@ void simulation::singleRun(){
     std::ofstream ofs;
     std::string finalName, fileName;
     std::ostringstream compositeName;
-    compositeName<<filePrefix<<"_J_"<<J<<"_g_"<<g;
+    compositeName<<filePrefix<<"_W_"<<W<<"_J_"<<J<<"_g_"<<g;
     finalName=compositeName.str();
     for(int m=0;m<finalName.length();++m){
       if(finalName[m]=='.'){

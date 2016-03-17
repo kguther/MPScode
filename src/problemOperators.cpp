@@ -4,10 +4,13 @@
 #include "delta.h"
 #include "math.h"
 #include <iostream> 
+#include <cstdlib>
+#include <ctime>
 
-int writeHamiltonian(network &sys, double J, double g, double W){
+int writeHamiltonian(network &sys, double J, double g, double W, double deltaP){
+  std::srand(std::time(0));
   int const Dw=sys.networkH.maxDim();
-  if(Dw!=12){
+  if(Dw!=12 && Dw!=14){
     //The minimal bond dimension of our Hamiltonian is 12, so the system better has a Hamiltonian of that bond dimension.
     return 2;
   }
@@ -68,7 +71,7 @@ int writeHamiltonian(network &sys, double J, double g, double W){
 		  sys.networkH(i,si,sip,bi,bim)=delta(si,2)*delta(sip,1);
 		  break;
 		case 11:
-		  sys.networkH(i,si,sip,bi,bim)=prefactor*J*delta(si,sip)*(1-delta(si,0)+delta(si,3));
+		  sys.networkH(i,si,sip,bi,bim)=prefactor*J*(1+disorder(deltaP))*delta(si,sip)*(1-delta(si,0)+delta(si,3));
 		  break;
 		default:
 		  sys.networkH(i,si,sip,bi,bim)=0;
@@ -76,7 +79,7 @@ int writeHamiltonian(network &sys, double J, double g, double W){
 	      }
 	      else{
 		if(bim==lDwL-1){
-		  sys.networkH(i,si,sip,bi,bim)=prefactor*J*delta(si,sip)*(1-delta(si,0)+delta(si,3));
+		  sys.networkH(i,si,sip,bi,bim)=prefactor*J*(1+disorder(deltaP))*delta(si,sip)*(1-delta(si,0)+delta(si,3));
 		}
 		else{
 		  sys.networkH(i,si,sip,bi,bim)=0;
@@ -87,7 +90,7 @@ int writeHamiltonian(network &sys, double J, double g, double W){
 	      if(bim==lDwL-1){
 		switch(bi){
 		case 0:
-		  sys.networkH(i,si,sip,bi,bim)=prefactor*J*delta(si,sip)*(1-delta(si,0)+delta(si,3));
+		  sys.networkH(i,si,sip,bi,bim)=prefactor*J*(1+disorder(deltaP))*delta(si,sip)*(1-delta(si,0)+delta(si,3));
 		  break;		  
 		case 1:
 		  //THIS IS TRICKY: By construction, a and b anticommute, but only for the same site. For the nearest-neigbhour hopping, one has to take into account extra signs from anticommutation of operators on adjacent sites. All other terms are at least quadratic in the local fermionic operators, so this problem only occurs here. 
@@ -103,22 +106,22 @@ int writeHamiltonian(network &sys, double J, double g, double W){
 		  sys.networkH(i,si,sip,bi,bim)=bMatrix(si,sip)*(delta(sip,3)-delta(sip,2));
 		  break;
 		case 5:
-		  sys.networkH(i,si,sip,bi,bim)=-2*J*delta(si,sip)*(delta(si,1)+delta(si,3));
+		  sys.networkH(i,si,sip,bi,bim)=-2*J*(1+disorder(deltaP))*delta(si,sip)*(delta(si,1)+delta(si,3));
 		  break;
 		case 6:
-		  sys.networkH(i,si,sip,bi,bim)=-2*J*delta(si,sip)*(delta(si,2)+delta(si,3));
+		  sys.networkH(i,si,sip,bi,bim)=-2*J*(1+disorder(deltaP))*delta(si,sip)*(delta(si,2)+delta(si,3));
 		  break;
 		case 7:
-		  sys.networkH(i,si,sip,bi,bim)=g*pre*delta(si,sip)*delta(si,1);
+		  sys.networkH(i,si,sip,bi,bim)=g*(1+disorder(deltaP))*pre*delta(si,sip)*delta(si,1);
 		  break;
 		case 8:
-		  sys.networkH(i,si,sip,bi,bim)=g*pre*delta(si,sip)*delta(si,2);
+		  sys.networkH(i,si,sip,bi,bim)=g*(1+disorder(deltaP))*pre*delta(si,sip)*delta(si,2);
 		  break;
 		case 9:
-		  sys.networkH(i,si,sip,bi,bim)=-pre*delta(si,1)*delta(sip,2);
+		  sys.networkH(i,si,sip,bi,bim)=-pre*(1+disorder(deltaP))*delta(si,1)*delta(sip,2);
 		  break;
 		case 10:
-		  sys.networkH(i,si,sip,bi,bim)=-pre*delta(si,2)*delta(sip,1);
+		  sys.networkH(i,si,sip,bi,bim)=-pre*(1+disorder(deltaP))*delta(si,2)*delta(sip,1);
 		  break;
 		case 11:
 		  sys.networkH(i,si,sip,bi,bim)=delta(si,sip);
@@ -137,6 +140,56 @@ int writeHamiltonian(network &sys, double J, double g, double W){
     }
   }
   return 0;
+}
+
+//-------------------------------------------------------------------------------------------//
+
+int writeHamiltonianSingleParticleHopping(network &sys, double J, double g, double W, std::complex<double> t, double deltaP){
+  int info;
+  int const Dw=sys.networkH.maxDim();
+  if(Dw!=14){
+    return 2;
+  }
+  info=writeHamiltonian(sys,J,g,W,deltaP);
+  int const L=sys.networkH.length();
+  int lDwL, lDwR;
+  for(int i=0;i<L;++i){
+    lDwL=sys.networkH.locDimL(i);
+    lDwR=sys.networkH.locDimR(i);
+    for(int si=0;si<sys.locd(i);++si){
+      for(int sip=0;sip<sys.locd(i);++sip){
+	for(int bi=0;bi<lDwR;++bi){
+	  for(int bim=0;bim<lDwL;++bim){
+	    if(bi==0){
+	      if(i!=0){
+		switch(bim){
+		case 12:
+		  sys.networkH(i,si,sip,bi,bim)=aMatrix(sip,si)*(delta(si,0)-delta(si,2));
+		  break;
+		case 13:
+		  sys.networkH(i,si,sip,bi,bim)=bMatrix(sip,si)*(delta(si,0)-delta(si,1));
+		  break;
+		}
+	      }
+	    }
+	    else{
+	      if(bim==lDwL-1){
+		switch(bi){
+		case 12:
+		  sys.networkH(i,si,sip,bi,bim)=t*bMatrix(si,sip);
+		  break;
+		case 13:
+		  sys.networkH(i,si,sip,bi,bim)=t*aMatrix(si,sip);
+		  break;
+		}
+	      }
+	    }
+	  }
+	}
+      }
+    }
+  }
+  return info;
 }
 
 //-------------------------------------------------------------------------------------------//
@@ -200,4 +253,11 @@ int delta(int const a, int const b){
     return 1;
   }
   return 0;
+}
+
+//-------------------------------------------------------------------------------------------//
+
+double disorder(double deltaP){
+  double dval=static_cast<double>(rand())/RAND_MAX;
+  return deltaP*dval;
 }

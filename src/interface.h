@@ -26,6 +26,7 @@ struct info{
   double Jsc, gsc, Wsc;
   double alphaMin, alphaMax;
   double scaling;
+  double delta;
   double acc;
 };
 

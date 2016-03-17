@@ -13,6 +13,8 @@
 double aMatrix(int const a, int const b);
 double bMatrix(int const a, int const b);
 int writePhasedSecondOrder(localMpo<std::complex<double> > &gamma, double theta);
-int writeHamiltonian(network &sys, double J, double g, double W);
+int writeHamiltonian(network &sys, double J, double g, double W, double deltaP=0);
+int writeHamiltonianSingleParticleHopping(network &sys, double J, double g, double W, std::complex<double> t, double deltaP=0);
+double disorder(double deltaP);
 
 #endif

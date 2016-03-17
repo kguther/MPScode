@@ -144,7 +144,8 @@ void iterativeMeasurement::calcCtrIterRightBaseQNOpt(int const i, lapack_complex
   MPState->subMatrixStart(siteMatrixState,i+1);
   getLocalDimensions(i+1);
   tmpContainer<lapack_complex_double> outercontainer(lDL,lDwL,ld,lDR);
-  calcOuterContainerRightQNOpt(i,outercontainer);  
+  calcOuterContainerRightQNOpt(i,outercontainer);
+#pragma omp parallel for private(simpleContainer,lBlockSize,rBlockSize,aimB,aiB,siB)  
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
     lBlockSize=MPState->indexTable.lBlockSizeRP(i+1,iBlock);
     rBlockSize=MPState->indexTable.rBlockSizeRP(i+1,iBlock);
@@ -187,6 +188,7 @@ void iterativeMeasurement::calcOuterContainerRightQNOpt(int const i, tmpContaine
   MPOperator->siSubIndexArrayStart(siIndices,i+1);
   MPOperator->sipSubIndexArrayStart(sipIndices,i+1);
   tmpContainer<lapack_complex_double> innercontainer(ld,lDwR,lDR,lDL);
+#pragma omp parallel for
   for(int sip=0;sip<ld;++sip){                                  
     for(int bi=0;bi<lDwR;++bi){
       for(int ai=0;ai<lDR;++ai){
@@ -196,6 +198,7 @@ void iterativeMeasurement::calcOuterContainerRightQNOpt(int const i, tmpContaine
       }
     }
   }
+#pragma omp parallel for private(lBlockSize,rBlockSize,aiB,siB,aimB)
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
     lBlockSize=MPState->indexTable.lBlockSizeRP(i+1,iBlock);
     rBlockSize=MPState->indexTable.rBlockSizeRP(i+1,iBlock);
@@ -212,6 +215,7 @@ void iterativeMeasurement::calcOuterContainerRightQNOpt(int const i, tmpContaine
       }
     }
   }
+#pragma omp parallel for private(lBlockSize,rBlockSize,aiB,siB,siS,sipS,biS,bimS)
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
     rBlockSize=MPState->indexTable.rBlockSizeRP(i+1,iBlock);
     for(int j=0;j<rBlockSize;++j){

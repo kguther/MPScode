@@ -31,6 +31,7 @@ interface::interface(){
   parPack.Jsc=-1;
   parPack.odd=0;
   parPack.rho=0.5;
+  parPack.delta=0;
   parPack.simType=2;
   parPack.nEigens=1;
   parPack.numPts=1;
@@ -151,6 +152,9 @@ void interface::readParFile(std::string const &fN){
 	}
 	if(inArg=='c'){
 	  parPack.acc=fPar;
+	}
+	if(inArg=='d'){
+	  parPack.delta=fPar;
 	}
       }
       ifs.get(inArg);

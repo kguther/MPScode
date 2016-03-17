@@ -85,13 +85,14 @@ void baseMeasurement::calcCtrIterLeftBaseQNOpt(int const i, lapack_complex_doubl
   //container arrays to significantly reduce computational effort by storing intermediate results
   tmpContainer<lapack_complex_double> outercontainer(ld,lDwR,lDR,lDL);
   calcOuterContainerLeftQNOpt(i,source,outercontainer);
-  for(int iBlock=0;iBlock<numBlocks;++iBlock){
-    lBlockSize=MPState->indexTable.lBlockSizeLP(i-1,iBlock);
-    rBlockSize=MPState->indexTable.rBlockSizeLP(i-1,iBlock);
-    for(int j=0;j<rBlockSize;++j){
-      aiB=MPState->indexTable.aiBlockIndexLP(i-1,iBlock,j);
-      for(int bi=0;bi<lDwR;++bi){
-	for(int aip=0;aip<lDR;++aip){
+#pragma omp parallel for private(simpleContainer,lBlockSize,rBlockSize,aiB,siB,aimB)
+  for(int aip=0;aip<lDR;++aip){
+    for(int iBlock=0;iBlock<numBlocks;++iBlock){
+      lBlockSize=MPState->indexTable.lBlockSizeLP(i-1,iBlock);
+      rBlockSize=MPState->indexTable.rBlockSizeLP(i-1,iBlock);
+      for(int j=0;j<rBlockSize;++j){
+	aiB=MPState->indexTable.aiBlockIndexLP(i-1,iBlock,j);
+	for(int bi=0;bi<lDwR;++bi){
 	  simpleContainer=0;
 	  for(int k=0;k<lBlockSize;++k){
 	    siB=MPState->indexTable.siBlockIndexLP(i-1,iBlock,k);
@@ -125,6 +126,7 @@ void baseMeasurement::calcOuterContainerLeftQNOpt(int const i, lapack_complex_do
   tmpContainer<lapack_complex_double> innercontainer(ld,lDR,lDwL,lDL);
   curtime=clock();
   //horrible construct to efficiently compute the partial contraction
+#pragma omp parallel for
   for(int sip=0;sip<ld;++sip){
     for(int bim=0;bim<lDwL;++bim){
       for(int aim=0;aim<lDL;++aim){
@@ -134,15 +136,16 @@ void baseMeasurement::calcOuterContainerLeftQNOpt(int const i, lapack_complex_do
       }
     }
   }
-  for(int iBlock=0;iBlock<numBlocks;++iBlock){
-    lBlockSize=MPState->indexTable.lBlockSizeLP(i-1,iBlock);
-    rBlockSize=MPState->indexTable.rBlockSizeLP(i-1,iBlock);
-    for(int k=0;k<lBlockSize;++k){
-      aimB=MPState->indexTable.aimBlockIndexLP(i-1,iBlock,k);
-      siB=MPState->indexTable.siBlockIndexLP(i-1,iBlock,k);
-      for(int j=0;j<rBlockSize;++j){
-	aiB=MPState->indexTable.aiBlockIndexLP(i-1,iBlock,j);
-	for(int bim=0;bim<lDwL;++bim){
+#pragma omp parallel for private(lBlockSize,rBlockSize,aiB,aimB,siB)
+  for(int bim=0;bim<lDwL;++bim){
+    for(int iBlock=0;iBlock<numBlocks;++iBlock){
+      lBlockSize=MPState->indexTable.lBlockSizeLP(i-1,iBlock);
+      rBlockSize=MPState->indexTable.rBlockSizeLP(i-1,iBlock);
+      for(int k=0;k<lBlockSize;++k){
+	aimB=MPState->indexTable.aimBlockIndexLP(i-1,iBlock,k);
+	siB=MPState->indexTable.siBlockIndexLP(i-1,iBlock,k);
+	for(int j=0;j<rBlockSize;++j){
+	  aiB=MPState->indexTable.aiBlockIndexLP(i-1,iBlock,j);
 	  for(int aim=0;aim<lDL;++aim){
 	    innercontainer.global_access(siB,aiB,bim,aim)+=source[pctrIndex(aim,bim,aimB)]*siteMatrixState[stateIndex(siB,aiB,aimB)];
 	  }
@@ -153,12 +156,13 @@ void baseMeasurement::calcOuterContainerLeftQNOpt(int const i, lapack_complex_do
   curtime=clock()-curtime;
   //std::cout<<"Inner contraction took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
   curtime=clock();
-  for(int iBlock=0;iBlock<numBlocks;++iBlock){
-    lBlockSize=MPState->indexTable.lBlockSizeLP(i-1,iBlock);
-    for(int k=0;k<lBlockSize;++k){
-      siB=MPState->indexTable.siBlockIndexLP(i-1,iBlock,k);
-      aimB=MPState->indexTable.aimBlockIndexLP(i-1,iBlock,k);
-      for(int aip=0;aip<lDR;++aip){
+#pragma omp parallel for private(lBlockSize,rBlockSize,siB,aimB,siS,biS,bimS,sipS)
+  for(int aip=0;aip<lDR;++aip){
+    for(int iBlock=0;iBlock<numBlocks;++iBlock){
+      lBlockSize=MPState->indexTable.lBlockSizeLP(i-1,iBlock);
+      for(int k=0;k<lBlockSize;++k){
+	siB=MPState->indexTable.siBlockIndexLP(i-1,iBlock,k);
+	aimB=MPState->indexTable.aimBlockIndexLP(i-1,iBlock,k);
 	for(int bi=0;bi<lDwR;++bi){
 	  outercontainer.global_access(siB,bi,aip,aimB)=0;
 	}

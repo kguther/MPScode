@@ -96,14 +96,15 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
   clock_t curtime;
   curtime=clock();
   excitedStateProject(v);
-  for(int iBlock=0;iBlock<numBlocks;++iBlock){
-    lBlockSize=indexTable->lBlockSizeLP(i,iBlock);
-    rBlockSize=indexTable->rBlockSizeLP(i,iBlock);
-    for(int k=0;k<lBlockSize;++k){
-      siB=indexTable->siBlockIndexLP(i,iBlock,k);
-      aimB=indexTable->aimBlockIndexLP(i,iBlock,k);
-      for(int aip=0;aip<lDR;++aip){
-	for(int bi=0;bi<lDwR;++bi){
+#pragma omp parallel for private(simpleContainer,siB,aimB,lBlockSize,rBlockSize)
+  for(int aip=0;aip<lDR;++aip){
+    for(int iBlock=0;iBlock<numBlocks;++iBlock){
+      lBlockSize=indexTable->lBlockSizeLP(i,iBlock);
+      rBlockSize=indexTable->rBlockSizeLP(i,iBlock);
+      for(int k=0;k<lBlockSize;++k){
+	siB=indexTable->siBlockIndexLP(i,iBlock,k);
+	aimB=indexTable->aimBlockIndexLP(i,iBlock,k);
+      	for(int bi=0;bi<lDwR;++bi){
 	  simpleContainer=0;
 	  for(int j=0;j<rBlockSize;++j){
 	    simpleContainer+=Rctr[ctrIndex(aip,bi,indexTable->aiBlockIndexLP(i,iBlock,j))]*v[vecBlockIndexLP(iBlock,j,k)];
@@ -113,11 +114,7 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
       }
     }
   }
-  if(timing){
-  curtime=clock()-curtime;
-  std::cout<<"Inner contraction took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
-  curtime=clock();
-  }
+#pragma omp parallel for
   for(int si=0;si<d;++si){
     for(int bim=0;bim<lDwL;++bim){
       for(int ai=0;ai<lDR;++ai){
@@ -127,11 +124,7 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
       }
     }
   }
-  if(timing){
-  curtime=clock()-curtime;
-  std::cout<<"Container initialization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
-  curtime=clock();
-  }
+#pragma omp parallel for private(siB,aimB,lBlockSize,rBlockSize,sipS)
   for(int ai=0;ai<lDR;++ai){
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
       lBlockSize=indexTable->lBlockSizeLP(i,iBlock);
@@ -147,11 +140,7 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
       }
     }	 
   }
-  if(timing){
-  curtime=clock()-curtime;
-  std::cout<<"Outer contraction took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
-  curtime=clock();
-  }
+#pragma omp parallel for private(simpleContainer,aiB,siB,aimB,lBlockSize,rBlockSize)
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
     lBlockSize=indexTable->lBlockSizeLP(i,iBlock);
     rBlockSize=indexTable->rBlockSizeLP(i,iBlock);
@@ -171,11 +160,6 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
     }
   }
   excitedStateProject(w);
-  if(timing){
-  curtime=clock()-curtime;
-  std::cout<<"Matrix multiplication took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
-  exit(1);
-  }
 }
 
 //---------------------------------------------------------------------------------------------------//
