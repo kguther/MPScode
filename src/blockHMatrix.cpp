@@ -4,6 +4,7 @@
 #include <iostream>
 #include <memory>
 #include <time.h>
+#include <omp.h>
 #include "mkl_complex_defined.h"
 
 
@@ -83,9 +84,9 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
   tmpContainer<arcomplex<double> > innerContainer(d,lDL,lDR,lDwR);
   tmpContainer<arcomplex<double> > outerContainer(d,lDwL,lDR,lDL);
   arcomplex<double> simpleContainer;
-  int timing=0;
   int const numBlocks=indexTable->numBlocksLP(i);
   int const sparseSize=HMPO->numEls(i);
+  int const nThreads=20;
   int lBlockSize, rBlockSize, siBlockSize, rBlockSizep;
   int *biIndices, *siIndices, *bimIndices, *sipIndices;
   HMPO->biSubIndexArrayStart(biIndices,i);
@@ -93,10 +94,8 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
   HMPO->bimSubIndexArrayStart(bimIndices,i);
   HMPO->sipSubIndexArrayStart(sipIndices,i);
   int siB, aiB, aimB, sipS;
-  clock_t curtime;
-  curtime=clock();
   excitedStateProject(v);
-#pragma omp parallel for private(simpleContainer,siB,aimB,lBlockSize,rBlockSize)
+#pragma omp parallel for private(simpleContainer,siB,aimB,lBlockSize,rBlockSize) schedule(dynamic,1)
   for(int aip=0;aip<lDR;++aip){
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
       lBlockSize=indexTable->lBlockSizeLP(i,iBlock);
@@ -114,7 +113,7 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
       }
     }
   }
-#pragma omp parallel for
+#pragma omp parallel for schedule(static,1)
   for(int si=0;si<d;++si){
     for(int bim=0;bim<lDwL;++bim){
       for(int ai=0;ai<lDR;++ai){
@@ -124,7 +123,7 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
       }
     }
   }
-#pragma omp parallel for private(siB,aimB,lBlockSize,rBlockSize,sipS)
+#pragma omp parallel for private(siB,aimB,lBlockSize,rBlockSize,sipS) schedule(dynamic,1)
   for(int ai=0;ai<lDR;++ai){
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
       lBlockSize=indexTable->lBlockSizeLP(i,iBlock);
@@ -140,7 +139,7 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
       }
     }	 
   }
-#pragma omp parallel for private(simpleContainer,aiB,siB,aimB,lBlockSize,rBlockSize)
+#pragma omp parallel for private(simpleContainer,aiB,siB,aimB,lBlockSize,rBlockSize) schedule(dynamic,1)
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
     lBlockSize=indexTable->lBlockSizeLP(i,iBlock);
     rBlockSize=indexTable->rBlockSizeLP(i,iBlock);
@@ -150,8 +149,8 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
       for(int j=0;j<rBlockSize;++j){
 	aiB=indexTable->aiBlockIndexLP(i,iBlock,j);
 	simpleContainer=0;
-	for(int bim=0;bim<lDwL;++bim){
-	  for(int aim=0;aim<lDL;++aim){
+	for(int aim=0;aim<lDL;++aim){
+	  for(int bim=0;bim<lDwL;++bim){
 	    simpleContainer+=Lctr[ctrIndex(aimB,bim,aim)]*outerContainer.global_access(siB,bim,aiB,aim);
 	  }
 	}

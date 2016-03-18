@@ -15,6 +15,7 @@ class tmpContainer{
   const T& operator()(int i, int ai1, int ai2, int ai3)const {return container[ai3+ai2*D3+ai1*D3*D2+i*D1*D2*D3];}
   T& operator()(int i, int ai1, int ai2, int ai3){return container[ai3+ai2*D3+ai1*D3*D2+i*D1*D2*D3];}
   T& global_access(int const i, int const ai1, int const ai2, int const ai3){return container[ai3+ai2*D3+ai1*D3*D2+i*D1*D2*D3];}
+  void getPtr(T *&target){target=container;}
  protected:
   int L, D1, D2, D3;
   T *container;

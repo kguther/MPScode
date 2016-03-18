@@ -146,13 +146,13 @@ void iterativeMeasurement::calcCtrIterRightBaseQNOpt(int const i, lapack_complex
   tmpContainer<lapack_complex_double> outercontainer(lDL,lDwL,ld,lDR);
   calcOuterContainerRightQNOpt(i,outercontainer);
 #pragma omp parallel for private(simpleContainer,lBlockSize,rBlockSize,aimB,aiB,siB)  
-  for(int iBlock=0;iBlock<numBlocks;++iBlock){
-    lBlockSize=MPState->indexTable.lBlockSizeRP(i+1,iBlock);
-    rBlockSize=MPState->indexTable.rBlockSizeRP(i+1,iBlock);
-    for(int k=0;k<lBlockSize;++k){
-      aimB=MPState->indexTable.aimBlockIndexRP(i+1,iBlock,k);
-      for(int bim=0;bim<lDwL;++bim){
-	for(int aimp=0;aimp<lDL;++aimp){
+  for(int aimp=0;aimp<lDL;++aimp){
+    for(int iBlock=0;iBlock<numBlocks;++iBlock){
+      lBlockSize=MPState->indexTable.lBlockSizeRP(i+1,iBlock);
+      rBlockSize=MPState->indexTable.rBlockSizeRP(i+1,iBlock);
+      for(int k=0;k<lBlockSize;++k){
+	aimB=MPState->indexTable.aimBlockIndexRP(i+1,iBlock,k);
+	for(int bim=0;bim<lDwL;++bim){
 	  simpleContainer=0;
 	  for(int j=0;j<rBlockSize;++j){
 	    siB=MPState->indexTable.siBlockIndexRP(i+1,iBlock,j);
@@ -199,16 +199,16 @@ void iterativeMeasurement::calcOuterContainerRightQNOpt(int const i, tmpContaine
     }
   }
 #pragma omp parallel for private(lBlockSize,rBlockSize,aiB,siB,aimB)
-  for(int iBlock=0;iBlock<numBlocks;++iBlock){
-    lBlockSize=MPState->indexTable.lBlockSizeRP(i+1,iBlock);
-    rBlockSize=MPState->indexTable.rBlockSizeRP(i+1,iBlock);
-    for(int j=0;j<rBlockSize;++j){
-      aiB=MPState->indexTable.aiBlockIndexRP(i+1,iBlock,j);
-      siB=MPState->indexTable.siBlockIndexRP(i+1,iBlock,j);
-      for(int k=0;k<lBlockSize;++k){
-	aimB=MPState->indexTable.aimBlockIndexRP(i+1,iBlock,k);
-	for(int bi=0;bi<lDwR;++bi){
-	  for(int ai=0;ai<lDR;++ai){
+  for(int ai=0;ai<lDR;++ai){
+    for(int iBlock=0;iBlock<numBlocks;++iBlock){
+      lBlockSize=MPState->indexTable.lBlockSizeRP(i+1,iBlock);
+      rBlockSize=MPState->indexTable.rBlockSizeRP(i+1,iBlock);
+      for(int j=0;j<rBlockSize;++j){
+	aiB=MPState->indexTable.aiBlockIndexRP(i+1,iBlock,j);
+	siB=MPState->indexTable.siBlockIndexRP(i+1,iBlock,j);
+	for(int k=0;k<lBlockSize;++k){
+	  aimB=MPState->indexTable.aimBlockIndexRP(i+1,iBlock,k);
+	  for(int bi=0;bi<lDwR;++bi){
 	    innercontainer.global_access(siB,bi,ai,aimB)+=sourcePctr[pctrIndex(ai,bi,aiB)]*siteMatrixState[stateIndex(siB,aiB,aimB)];
 	  }
 	}
@@ -216,12 +216,12 @@ void iterativeMeasurement::calcOuterContainerRightQNOpt(int const i, tmpContaine
     }
   }
 #pragma omp parallel for private(lBlockSize,rBlockSize,aiB,siB,siS,sipS,biS,bimS)
-  for(int iBlock=0;iBlock<numBlocks;++iBlock){
-    rBlockSize=MPState->indexTable.rBlockSizeRP(i+1,iBlock);
-    for(int j=0;j<rBlockSize;++j){
-      siB=MPState->indexTable.siBlockIndexRP(i+1,iBlock,j);
-      aiB=MPState->indexTable.aiBlockIndexRP(i+1,iBlock,j);
-      for(int aim=0;aim<lDL;++aim){
+  for(int aim=0;aim<lDL;++aim){
+    for(int iBlock=0;iBlock<numBlocks;++iBlock){
+      rBlockSize=MPState->indexTable.rBlockSizeRP(i+1,iBlock);
+      for(int j=0;j<rBlockSize;++j){
+	siB=MPState->indexTable.siBlockIndexRP(i+1,iBlock,j);
+	aiB=MPState->indexTable.aiBlockIndexRP(i+1,iBlock,j);
 	for(int bim=0;bim<lDwL;++bim){
 	  outercontainer.global_access(aim,bim,siB,aiB)=0;
 	}

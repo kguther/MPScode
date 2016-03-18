@@ -108,13 +108,13 @@ int main(int argc, char *argv[]){
   //Each process calculates its own couplings/system size
   int const range=4;
   int const redRank=myrank/2;
+  int WStage=redRank/range;
+  if(necPars.simType==0){
+    necPars.Wsc+=(1+WStage)/2*0.2*pow(-1,WStage);
+  }
   alpha=(necPars.alphaMax-necPars.alphaMin)*((redRank%range)/static_cast<double>(range))+necPars.alphaMin;
   J=cos(alpha);
   g=sin(alpha);
-  int WStage=redRank/range;
-  if(necPars.simType==0){
-    necPars.Wsc+=WStage*0.2*pow(-1,WStage);
-  }
   L=L0+dL*myrank;
   //And evaluates its computation
   if(necPars.simType==1){
