@@ -19,6 +19,7 @@ struct info{
   int nEigens;
   int nStages;
   int nGs;
+  int Dw;
   double rho;
   double alphaInit;
   double arpackTol;
@@ -28,6 +29,7 @@ struct info{
   double scaling;
   double delta;
   double acc;
+  double tReal, tImag;
 };
 
 //-------------------------------------------------------------------------------------------//

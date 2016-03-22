@@ -19,12 +19,13 @@ interface::interface(){
   parPack.alphaInit=1e-3;
   parPack.arpackTol=1e-4;
   parPack.arpackTolMin=1e-8;
-  parPack.L=100;
+  parPack.L=10;
   parPack.N=parPack.L;
   parPack.scaling=100;
   parPack.nStages=1;
   //note that D=1 (or any other too small value for D) uses a fixed minimal value instead
   parPack.D=1;
+  parPack.Dw=12;
   parPack.par=1;
   parPack.nGs=0;
   parPack.gsc=0;
@@ -39,6 +40,8 @@ interface::interface(){
   parPack.alphaMax=2*M_PI;
   parPack.Wsc=1;
   parPack.acc=1e-4;
+  parPack.tReal=0;
+  parPack.tImag=0;
 }
 
 //-------------------------------------------------------------------------------------------//
@@ -156,11 +159,21 @@ void interface::readParFile(std::string const &fN){
 	if(inArg=='d'){
 	  parPack.delta=fPar;
 	}
+	if(inArg=='I'){
+	  parPack.tImag=fPar;
+	}
+	if(inArg=='Z'){
+	  parPack.tReal=fPar;
+	}
       }
       ifs.get(inArg);
     }
   }
   ifs.close();
+  if((abs(parPack.tReal)+abs(parPack.tImag))>1e-12){
+    parPack.Dw=14;
+    parPack.par=1;
+  }
   if(parPack.par!=1 && parPack.par!=-1){
     std::cout<<"Invalid parity supplied. Terminating process\n";
     exit(3);

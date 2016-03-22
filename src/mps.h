@@ -14,7 +14,6 @@ class mps: public stateArray{
   mps& operator=(mps const &source);
   void generate(dimensionTable const &dimInfoIn, std::vector<quantumNumber> const &conservedQNsin);
   void mpsCpy(mps const &source);
-  void setToExactGroundState();
   int leftNormalizeState(int i);
   int rightNormalizeState(int i);
   int setParameterD(int Dnew);

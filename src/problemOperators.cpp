@@ -14,6 +14,7 @@ int writeHamiltonian(network &sys, double J, double g, double W, double deltaP){
     //The minimal bond dimension of our Hamiltonian is 12, so the system better has a Hamiltonian of that bond dimension.
     return 2;
   }
+  std::cout<<deltaP<<std::endl;
   int const L=sys.networkH.length();
   int lDwL, lDwR;
   double prefactor;

@@ -132,51 +132,6 @@ int mps::setParameterD(int Dnew){
 }
 
 //---------------------------------------------------------------------------------------------------//
-
-void mps::setToExactGroundState(){
-    //This is the exact ground state at the critical point for fixed particle number and subchain parity. It turns out that this is a nice guess for the ground state of the perturbed system (for small perturbations).
-  int ld, lDL, lDR;
-  for(int i=0;i<L;++i){
-    lDL=locDimL(i);
-    lDR=locDimR(i);
-    ld=locd(i);
-    for(int si=0;si<ld;++si){
-      for(int ai=0;ai<lDR;++ai){
-	for(int aim=0;aim<lDL;++aim){
-	  global_access(i,si,ai,aim)=0;
-	}
-      }
-    }
-    int numBlocks, lBlockSize, rBlockSize;
-    numBlocks=indexTable.numBlocksLP(i);
-    for(int iBlock=0;iBlock<numBlocks;++iBlock){
-      rBlockSize=indexTable.rBlockSizeLP(i,iBlock);
-      lBlockSize=indexTable.lBlockSizeLP(i,iBlock);
-      for(int j=0;j<rBlockSize;++j){
-	for(int k=0;k<lBlockSize;++k){
-	  if(conservedQNs[0].primaryIndex(i,indexTable.aiBlockIndexLP(i,iBlock,j)) && conservedQNs[0].primaryIndex(i-1,indexTable.aimBlockIndexLP(i,iBlock,k))){
-	    state_array_access_structure[i][indexTable.siBlockIndexLP(i,iBlock,k)][indexTable.aiBlockIndexLP(i,iBlock,j)][indexTable.aimBlockIndexLP(i,iBlock,k)]=exactGroundStateEntry(i,indexTable.siBlockIndexLP(i,iBlock,k),indexTable.aiBlockIndexLP(i,iBlock,j),indexTable.aimBlockIndexLP(i,iBlock,k));
-	  }
-	}
-      }
-    }
-  }
-}
-
-
-//---------------------------------------------------------------------------------------------------//
-
-lapack_complex_double mps::exactGroundStateEntry(int i, int si, int ai, int aim){
-  if(si==0 || si==2){
-    return 1.0;
-  }
-  if(imag(conservedQNs[0].QNLabel(i-1,aim))==-1){
-    return -1.0;
-  }
-  return 1.0;
-}
-
-//---------------------------------------------------------------------------------------------------//
 // The following functions are left/right normalizing the matrices of a site after 
 // optimization and multiplying the remainder to the matrices of the site to the left/right.
 //---------------------------------------------------------------------------------------------------//

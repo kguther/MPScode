@@ -97,19 +97,23 @@ void simulation::setEntanglementSpectrumMeasurement(){
 
 //---------------------------------------------------------------------------------------------------//
 
-void simulation::run(){
+int simulation::run(){
   //Solve the system for different parameters (J,g) along a straight line in radial direction 
+  int info;
   for(int nRun=1;nRun<pathLength+1;++nRun){
     if(abs(parDirection)>1e-20){
       parDirection*=1.0/(scaling*abs(parDirection))*nRun;
     }
-    singleRun();
+    info=singleRun();
+    if(info)
+      return info;
   }
+  return 0;
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-void simulation::singleRun(){
+int simulation::singleRun(){
   //Get nEigs eigenstates for a fixed set of parameters J,g of the hamiltonian
   int hInfo;
   double J,g;
@@ -119,14 +123,19 @@ void simulation::singleRun(){
   J=1+parDirection.real();
   g=1+parDirection.imag();
   std::cout<<J<<" "<<g<<std::endl;
-  hInfo=writeHamiltonian(csystem.TensorNetwork,J,g,W,deltaP);
-  if(pathLength!=1 && simPars.nStages!=1){
-    std::cout<<"Invalid simulation parameters: Staging is disabled for type-0 runs.\n";
-    exit(1);
+  if(pars.Dw==12){
+    hInfo=writeHamiltonian(csystem.TensorNetwork,J,g,W,deltaP);
   }
-  if(hInfo){
-    std::cout<<"Invalid bond dimension for the construction of H. Terminating process.\n";
-    exit(1);
+  if(pars.Dw==14){
+    hInfo=writeHamiltonianSingleParticleHopping(csystem.TensorNetwork,J,g,W,pars.t,deltaP);
+  }
+  if(pathLength!=1 && simPars.nStages!=1){
+    std::cout<<"Invalid simulation parameters: Staging is disabled for type-0 runs. Aborting run.\n";
+    return -1;
+  }
+  if(pars.Dw!=12 && pars.Dw!=14){
+    std::cout<<"Invalid bond dimension for the construction of H. Aborting run.\n";
+    return -2;
   }
   //Actual DMRG
   csystem.getGroundState();
@@ -156,6 +165,7 @@ void simulation::singleRun(){
       else{
 	fileName=finalName+".txt";
       }
+      std::cout<<finalName<<std::endl;
       ofs.open(fileName.c_str());
       ofs<<"Values for state number "<<iEigen<<" with energy "<<E0[iEigen]<<" and energy variance "<<dE[iEigen]<<std::endl;
       //The problem parameters are written into the first lines
@@ -234,4 +244,5 @@ void simulation::singleRun(){
     }
   }
   csystem.TensorNetwork.resetConvergence();
+  return 0;
 }

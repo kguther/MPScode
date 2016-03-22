@@ -9,11 +9,17 @@ quantumNumber::quantumNumber(){
 //---------------------------------------------------------------------------------------------------//
 
 quantumNumber::quantumNumber(dimensionTable const &dimInfoin, std::complex<int> const &Nin, std::vector<std::complex<int> > const &QNlocin):
+  failed(0),
   N(Nin),
   dimInfo(dimInfoin),
   QNloc(QNlocin)
 {
-  initializeLabelList();
+  int info;
+  info=initializeLabelList();
+  if(info){
+    std::cout<<"Critical error: Target quantum number cannot be reached.\n";
+    failed=1;
+  }
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -42,9 +48,9 @@ std::complex<int> quantumNumber::QNLabelRP(int i, int ai){
 
 //---------------------------------------------------------------------------------------------------//
 
-void quantumNumber::setParameterD(int Dnew){
+int quantumNumber::setParameterD(int Dnew){
   dimInfo.setParameterD(Dnew);
-  initializeLabelList();
+  return initializeLabelList();
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -60,34 +66,50 @@ void quantumNumber::setParameterD(int Dnew){
 // once if the bond dimensions is at least equal to the number of labels.
 //---------------------------------------------------------------------------------------------------//
 
-void quantumNumber::initializeLabelList(){
+int quantumNumber::initializeLabelList(){
+  int info;
   leftLabel.resize(dimInfo.D()*(dimInfo.L()+1));
   rightLabel.resize(dimInfo.D()*(dimInfo.L()+1));
   indexLabel.resize(dimInfo.D()*(dimInfo.L()+1));
-  initializeLabelListLP();
+  info=initializeLabelListLP();
+  if(info)
+    return info;
   initializeLabelListRP();
+  if(info)
+    return info;
   primaryIndices.resize(dimInfo.L()+1);
   for(int i=0;i<=dimInfo.L();++i){
-    initializeLabelList(i);
+    info=initializeLabelList(i);
+    if(info)
+      return info;
   }
   leftLabel.clear();
   rightLabel.clear();
+  return 0;
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-void quantumNumber::initializeLabelListLP(){
+int quantumNumber::initializeLabelListLP(){
+  int info;
   for(int i=0;i<=dimInfo.L();++i){
-    initializeLabelList(i,0);
+    info=initializeLabelList(i,0);
+    if(info)
+      return info;
   }
+  return 0;
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-void quantumNumber::initializeLabelListRP(){
+int quantumNumber::initializeLabelListRP(){
+  int info;
   for(int i=dimInfo.L();i>=0;--i){
-    initializeLabelList(i,1);
+    info=initializeLabelList(i,1);
+    if(info)
+      return info;
   }
+  return 0;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -196,6 +218,9 @@ int quantumNumber::initializeLabelList(int i, int direction){
 	if(iBlock==validQNLabels.size()-1){
 	  (*cLabel)[aim+i*dimInfo.D()]=std::complex<int>(-100,1);
 	}
+      }
+      if(validQNLabels.size()==0){
+	return -1;
       }
       blockCounter=(blockCounter+1)%(validQNLabels.size());
     }

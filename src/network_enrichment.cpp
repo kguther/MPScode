@@ -458,6 +458,9 @@ void network::getPExpressionLeft(int const i, lapack_complex_double *pExpr){
   tmpContainer<lapack_complex_double> outerContainer(ld,lDwR,lDR,lDL);
   //Use the measurement class to calculate the p-expression, which is one of the containers used in calculation of partial contractions. 
   pCtr.calcOuterContainerLeft(i+1,outerContainer);
+  for(int m=0;m<lDL*lDR*ld*lDwR;++m){
+    pExpr[m]=0;
+  }
   //Copying has to be done explicitly for an optimized storage scheme of pExpr
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
     lBlockSize=networkState.indexTable.lBlockSizeLP(i,iBlock);
@@ -565,6 +568,7 @@ void network::getNewAlpha(int i, double lambda, double prevLambda){
   double dE0=abs(prevLambda-lambda);
   double const pre=1.2;
   dET-=lambda;
+  std::cout<<dET<<" "<<dE0<<std::endl;
   if(dET<0){
     alpha*=pre;
   }
@@ -579,5 +583,6 @@ void network::getNewAlpha(int i, double lambda, double prevLambda){
   */
   //This is numerically somewhat simpler and works also quite nice.
   //alpha*=0.9765;
-  alpha*=pow(0.1,1/static_cast<double>(L));
+  alpha*=pow(0.5,1/static_cast<double>(2*L));
+  std::cout<<"New alpha="<<alpha<<std::endl;
 }

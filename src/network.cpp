@@ -12,6 +12,7 @@
 #include "blockHMatrix.h"
 #include "globalMeasurement.h"
 #include "localMeasurementSeries.h"
+#include "exactGroundState.h"
 
 //BEWARE: ALL MPS AND MPO NETWORK MATRICES ARE STORED WITH A CONTIGOUS COLUMN INDEX (i.e. transposed with respect to C standard, for better compatibility with LAPACK)
 
@@ -59,7 +60,10 @@ network::network(problemParameters const &inputpars, simulationParameters const 
   for(int iEigen=1;iEigen<pars.nEigs;++iEigen){
     excitedStateP.storeOrthoState(networkState,iEigen);
   }
-  networkState.setToExactGroundState();
+
+  exactGroundState gsLoader(conservedQNs[0].QNValue());
+  gsLoader.writeExactGroundState(networkState);
+
   excitedStateP.storeOrthoState(networkState,0);
 }
 
@@ -80,7 +84,7 @@ void network::resetConvergence(){
 }
 
 //---------------------------------------------------------------------------------------------------//
-// These functions can be employed to alter the algorithm parameters N and D during lifetime of a 
+// These functions can be employed to alter the algorithm parameters nSweeps and D during lifetime of a 
 // network object. This allows for iteratively increasing D. They completely take care of all required
 // updated within the network, but they should be needed only a few times.
 //---------------------------------------------------------------------------------------------------//
@@ -132,7 +136,7 @@ void network::getLocalDimensions(int i){
 //---------------------------------------------------------------------------------------------------//
 
 int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda){  //IMPORTANT TODO: ENHANCE STARTING POINT -> HUGE SPEEDUP
-  int maxIter=100000;
+  int maxIter=10000;
   int stepRet;
   int cshift=0;
   double tol;
@@ -192,12 +196,12 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
       for(int prev=0;prev<iEigen;++prev){
 	std::cout<<"Overlap with state "<<prev<<" is: "<<excitedStateP.fullOverlap(prev)<<std::endl;
       }
-      /*
+      
       measure(check,spinCheck);
       measure(checkParity,parCheck);
       std::cout<<"Current particle number (final): "<<spinCheck<<std::endl;
       std::cout<<"Current subchain parity (final): "<<parCheck<<std::endl;
-      */
+      
     }
     stepRet=gotoNextEigen();
     if(!stepRet){

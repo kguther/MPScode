@@ -11,7 +11,6 @@
 #include <vector>
 
 void sysSolve(info const &parPack, std::string const &fileName);
-void sysScan(double J, double g, info const &parPack, std::string const &fileName);
 void getScaling(int L, info const &parPack, double *results, std::string const &fileName);
 void sysSetMeasurements(simulation &sim, int d, int L);
 //results has to be at least of size 4 (in the sense of a C array)
@@ -29,7 +28,7 @@ int main(int argc, char *argv[]){
   int const dn=2;
   int const L0=30;
   int const dL=5;
-  double J,g,alpha;
+  double alpha;
   int L;
   MPI_Datatype apparentTypes[dn],mpiInfo;
   int blockLengths[dn];
@@ -38,8 +37,8 @@ int main(int argc, char *argv[]){
   MPI_Aint displacements[dn], firstAdress, secondAdress;
   MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
   MPI_Comm_size(MPI_COMM_WORLD,&commsize);
-  blockLengths[0]=10;
-  blockLengths[1]=12;
+  blockLengths[0]=12;
+  blockLengths[1]=14;
   MPI_Get_address(&necPars.L,&firstAdress);
   MPI_Get_address(&necPars.rho,&secondAdress);
   displacements[0]=(MPI_Aint)0;
@@ -93,6 +92,9 @@ int main(int argc, char *argv[]){
     compositeName<<"_rho_"<<necPars.rho<<"_par_"<<necPars.par<<"_odd_"<<necPars.odd<<"_J_"<<necPars.Jsc<<"_g_"<<necPars.gsc<<".txt";
   }
   else{
+    if(necPars.simType==2 && commsize>1){
+      compositeName<<"_run_"<<myrank;
+    }
     compositeName<<"_L_"<<necPars.L<<"_N_"<<necPars.N<<"_p_"<<necPars.par;
   }
   std::string finalName=compositeName.str();
@@ -104,7 +106,7 @@ int main(int argc, char *argv[]){
       }
     }
   }
-  std::cout<<finalName<<std::endl;
+  std::cout<<finalName<<" "<<commsize<<std::endl;
   //Each process calculates its own couplings/system size
   int const range=4;
   int const redRank=myrank/2;
@@ -113,8 +115,10 @@ int main(int argc, char *argv[]){
     necPars.Wsc+=(1+WStage)/2*0.2*pow(-1,WStage);
   }
   alpha=(necPars.alphaMax-necPars.alphaMin)*((redRank%range)/static_cast<double>(range))+necPars.alphaMin;
-  J=cos(alpha);
-  g=sin(alpha);
+  if(necPars.simType==0){
+    necPars.Jsc=cos(alpha);
+    necPars.gsc=sin(alpha);
+  }
   L=L0+dL*myrank;
   //And evaluates its computation
   if(necPars.simType==1){
@@ -138,9 +142,10 @@ int main(int argc, char *argv[]){
     }
   }
   if(necPars.simType==0){
-    sysScan(J,g,necPars,finalName);
+    sysSolve(necPars,finalName);
   }
   if(necPars.simType==2){
+    necPars.numPts=1;
     sysSolve(necPars,finalName);
   }
   MPI_Finalize();
@@ -155,11 +160,10 @@ void getScaling(int L, info const &parPack, double *results, std::string const &
   int const nQuantumNumbers=1;
   int minimalD=(2*N>4)?2*N:4;
   int usedD=(parPack.D>minimalD)?parPack.D:minimalD;
-  std::ofstream ofs;
   std::complex<int> QNValue[1]={std::complex<int>(N,parPack.par)};
   std::complex<int> QNList[4]={std::complex<int>(0,1),std::complex<int>(1,1),std::complex<int>(1,-1),std::complex<int>(2,-1)};
   localHSpaces localHilbertSpaceDims(4);
-  problemParameters pars(localHilbertSpaceDims,L,12,nEigens,nQuantumNumbers,QNValue,QNList);
+  problemParameters pars(localHilbertSpaceDims,L,parPack.Dw,nEigens,nQuantumNumbers,QNValue,QNList);
   //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack
   simulationParameters simPars(usedD,parPack.nSweeps,parPack.nStages,parPack.alphaInit,parPack.acc,parPack.arpackTolMin,parPack.arpackTol);
   simulation sim(pars,simPars,parPack.Jsc,parPack.gsc,parPack.Wsc,parPack.numPts,parPack.scaling,parPack.delta,fileName);
@@ -172,58 +176,40 @@ void getScaling(int L, info const &parPack, double *results, std::string const &
 
 //-------------------------------------------------------------------------------------------//
 
-void sysScan(double J, double g, info const &parPack, std::string const &fileName){
-  int const L=parPack.L;
-  int const nEigens=parPack.nEigens;
-  //The required bond dimension for the perturbed system seems to be greater than that of the unperturbed system
-  int const nQuantumNumbers=1;
-  int const minimalD=(2*parPack.N>4)?2*parPack.N:4;
-  int const usedD=(parPack.D>minimalD)?parPack.D:minimalD;
-  std::complex<int> QNValue[1]={std::complex<int>(parPack.N,parPack.par)};
-  std::complex<int> QNList[8]={std::complex<int>(0,1),std::complex<int>(1,1),std::complex<int>(1,-1),std::complex<int>(2,-1)};
-  localHSpaces localHilbertSpaceDims(4);
-  problemParameters pars(localHilbertSpaceDims,parPack.L,12,nEigens,nQuantumNumbers,QNValue,QNList);
-  //simulationParameters simPars(100,5,2,1e-4,1e-8,1e-9,1e-2);
-  //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack
-  simulationParameters simPars(usedD,parPack.nSweeps,1,parPack.alphaInit,parPack.acc,parPack.arpackTolMin,parPack.arpackTol);
-  simulation sim(pars,simPars,J,g,parPack.Wsc,parPack.numPts,parPack.scaling,parPack.delta,fileName);
-  sysSetMeasurements(sim,pars.d.maxd(),L);
-}
-
-//-------------------------------------------------------------------------------------------//
-
 void sysSolve(info const &parPack, std::string const &fileName){
-  int const nEigens=parPack.nEigens;
   int const nQuantumNumbers=1;
-  int const numPoints=1;
-  int const nGs=parPack.nGs;
   int minimalD=(2*parPack.N>4)?2*parPack.N:4;
   int usedD=(parPack.D>minimalD)?parPack.D:minimalD;
   std::complex<int> QNValue[1]={std::complex<int>(parPack.N,parPack.par)};
-  std::complex<int> QNList[8]={std::complex<int>(0,1),std::complex<int>(1,1),std::complex<int>(1,-1),std::complex<int>(2,-1)};
+  std::complex<int> QNList[4]={std::complex<int>(0,1),std::complex<int>(1,1),std::complex<int>(1,-1),std::complex<int>(2,-1)};
+
+  if(parPack.Dw!=12){
+    QNList[2]=std::complex<int>(1,1);
+    QNList[3]=std::complex<int>(2,1);
+  }
   localHSpaces localHilbertSpaceDims(4);
-  problemParameters pars(localHilbertSpaceDims,parPack.L,12,nEigens,nQuantumNumbers,QNValue,QNList);
+  problemParameters pars(localHilbertSpaceDims,parPack.L,parPack.Dw,parPack.nEigens,nQuantumNumbers,QNValue,QNList);
   //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack
   simulationParameters simPars(usedD,parPack.nSweeps,parPack.nStages,parPack.alphaInit,parPack.acc,parPack.arpackTolMin,parPack.arpackTol);
-  simulation sim(pars,simPars,parPack.Jsc,parPack.gsc,parPack.Wsc,numPoints,parPack.scaling,parPack.delta,fileName);
-
-  int const d=pars.d.maxd();
-  int const L=parPack.L;
-  localMpo<lapack_complex_double> gamma(d,1,L,L/4,0);
-  std::string gammaName="Second Order ";
-  std::string fName;
-  std::ostringstream cGName;
-  double theta;
-  for(int m=0;m<nGs;++m){
-    theta=m*2*M_PI/static_cast<double>(nGs);
-    std::cout<<theta<<std::endl;
-    writePhasedSecondOrder(gamma,theta);
-    cGName<<gammaName<<theta;
-    fName=cGName.str();
-    sim.setLocalMeasurement(gamma,fName);
-    cGName.str("");
+  simulation sim(pars,simPars,parPack.Jsc,parPack.gsc,parPack.Wsc,parPack.numPts,parPack.scaling,parPack.delta,fileName);
+  if(parPack.simType==2){
+    int const d=pars.d.maxd();
+    int const L=parPack.L;
+    localMpo<lapack_complex_double> gamma(d,1,L,L/4,0);
+    std::string gammaName="Second Order ";
+    std::string fName;
+    std::ostringstream cGName;
+    double theta;
+    for(int m=0;m<parPack.nGs;++m){
+      theta=m*2*M_PI/static_cast<double>(parPack.nGs);
+      writePhasedSecondOrder(gamma,theta);
+      cGName<<gammaName<<theta;
+      fName=cGName.str();
+      sim.setLocalMeasurement(gamma,fName);
+      cGName.str("");
+    }
   }
-  sysSetMeasurements(sim,d,L);
+  sysSetMeasurements(sim,pars.d.maxd(),parPack.L);
 }
 
 //-------------------------------------------------------------------------------------------//
