@@ -14,6 +14,12 @@ quantumNumber::quantumNumber(dimensionTable const &dimInfoin, std::complex<int> 
   dimInfo(dimInfoin),
   QNloc(QNlocin)
 {
+  if(imag(N)==0){
+    imag(N)=0;
+    for(int m=0;m<QNloc.size();++m){
+      imag(QNloc[m])=0;
+    }
+  }
   int info;
   info=initializeLabelList();
   if(info){
@@ -172,21 +178,28 @@ int quantumNumber::initializeLabelList(int i, int direction){
     }
     for(int iBlock=0;iBlock<qnLabels.size();++iBlock){
       validBlock=1;
-      
       if(real(qnLabels[iBlock])>maximalLabel || real(qnLabels[iBlock])<minimalLabel){
 	validBlock=0;
       }
       if(real(qnLabels[iBlock])==0 && real(qnLabels[iBlock])==real(N)-2*(dimInfo.L()-i) && integerParity(dimInfo.L()-i)!=imag(N)){
-	validBlock=0;
+	if(imag(N)){
+	  validBlock=0;
+	}
       }
       if(real(qnLabels[iBlock])==real(N) && real(qnLabels[iBlock])==2*i && integerParity(i)!=imag(N)){
-	validBlock=0;
+	if(imag(N)){
+	  validBlock=0;
+	}
       }
       if((real(qnLabels[iBlock])==0 && imag(qnLabels[iBlock])!=1) || (real(qnLabels[iBlock])==real(N)-2*(dimInfo.L()-i) && imag(qnLabels[iBlock])!=integerParity(dimInfo.L()-i)*imag(N))){
-	validBlock=0;
+	if(imag(N)){
+	  validBlock=0;
+	}
       }
       if((real(qnLabels[iBlock])==2*i && imag(qnLabels[iBlock])!=integerParity(i)) || (real(qnLabels[iBlock])==real(N) && imag(qnLabels[iBlock])!=imag(N))){
-	validBlock=0;
+	if(imag(N)){
+	  validBlock=0;
+	}
       }
       if(validBlock){
 	if(direction!=-1){
@@ -199,6 +212,7 @@ int quantumNumber::initializeLabelList(int i, int direction){
 	maxBlockSizes.push_back(allowedBlockSize);
       }
     }
+
     blockOccupations.resize(validQNLabels.size());
     for(int j=0;j<validQNLabels.size();++j){
       blockOccupations[j]=0;

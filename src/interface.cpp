@@ -18,7 +18,7 @@ interface::interface(){
   parPack.nSweeps=12;
   parPack.alphaInit=1e-3;
   parPack.arpackTol=1e-4;
-  parPack.arpackTolMin=1e-8;
+  parPack.arpackTolMin=1e-7;
   parPack.L=10;
   parPack.N=parPack.L;
   parPack.scaling=100;
@@ -47,24 +47,6 @@ interface::interface(){
 //-------------------------------------------------------------------------------------------//
 
 void interface::provideInterface(char *argv){
-  /*
-  char inArg;
-  //choose mode
-  std::cout<<"Determine correlations for a broad parameter range (c), for a single point (p) or calculate gap scaling (s)? ";
-  std::cin>>inArg;
-  if(inArg=='c'){
-    parPack.simType=0;
-  }
-  if(inArg=='s'){
-    parPack.simType=1;
-  }
-  if(inArg=='p'){
-    parPack.simType=2;
-  }
-  std::string fN;
-  std::cout<<"Enter filename ((d) for default file): ";
-  std::cin>>fN;
-  */
   std::string fN;
   if(argv){
     fN=argv;
@@ -170,11 +152,10 @@ void interface::readParFile(std::string const &fN){
     }
   }
   ifs.close();
-  if((abs(parPack.tReal)+abs(parPack.tImag))>1e-12){
-    parPack.Dw=14;
-    parPack.par=1;
+  if(symmetryBroken(parPack)){
+    parPack.par=0;
   }
-  if(parPack.par!=1 && parPack.par!=-1){
+  if(parPack.par!=1 && parPack.par!=-1 && parPack.par!=0){
     std::cout<<"Invalid parity supplied. Terminating process\n";
     exit(3);
   }
@@ -182,4 +163,13 @@ void interface::readParFile(std::string const &fN){
     std::cout<<"Invalid particle number supplied. Terminating process\n";
     exit(3);
   }
+}
+
+//-------------------------------------------------------------------------------------------//
+
+int symmetryBroken(info parPack){
+  if((abs(parPack.tReal)+abs(parPack.tImag))>1e-12){
+    return 1;
+  }
+  return 0;
 }

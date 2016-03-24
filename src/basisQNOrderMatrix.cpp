@@ -59,6 +59,18 @@ void basisQNOrderMatrix::generateQNIndexTables(){
   for(int i=0;i<dimInfo.L();++i){
     blockStructure(i,0,aiBlockIndicesLP[i],siaimBlockIndicesLP[i]);
     blockStructure(i,1,aimBlockIndicesRP[i],siaiBlockIndicesRP[i]);
+    cumulativeBlockSize=0;
+    for(int iBlock=0;iBlock<numBlocksLP(i);++iBlock){
+      cumulativeBlockSize+=lBlockSizeLP(i,iBlock);
+    }
+    if(cumulativeBlockSize==0){
+      // If the cumulativeBlockSize is zero, then there are no indices fullfilling the QN constraint on this site. That means the right vacuum QN is invalid, for example N=80 for a chain of length 20.
+      std::cout<<"At site "<<i<<": critical error: Invalid quantum number. Terminating process.\n";
+      exit(2);
+    }
+  }
+  generateAccessArrays();
+  for(int i=0;i<dimInfo.L();++i){
     if(i==0 && 0){
       // This part is used to test QN labeling schemes for their useability. It prints out the block indices and their QN labels.
       std::cout<<"Right labels:\n";
@@ -70,16 +82,16 @@ void basisQNOrderMatrix::generateQNIndexTables(){
 	std::cout<<aim<<" with label "<<(*conservedQNs)[0].QNLabel(i-1,aim)<<std::endl;
       }
       /*
-      for(int iBlock=0;iBlock<numBlocksRP(i);++iBlock){
+	for(int iBlock=0;iBlock<numBlocksRP(i);++iBlock){
 	std::cout<<"Right indices: "<<std::endl;
 	for(int j=0;j<rBlockSizeRP(i,iBlock);++j){
-	  std::cout<<aiBlockIndexRP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(i,aiBlockIndexRP(i,iBlock,j))<<"\t"<<siBlockIndexRP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(siBlockIndexRP(i,iBlock,j))<<std::endl;
+	std::cout<<aiBlockIndexRP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(i,aiBlockIndexRP(i,iBlock,j))<<"\t"<<siBlockIndexRP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(siBlockIndexRP(i,iBlock,j))<<std::endl;
 	}
 	std::cout<<"Left indices: \n";
 	for(int j=0;j<lBlockSizeRP(i,iBlock);++j){
-	  std::cout<<aimBlockIndexRP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(i-1,aimBlockIndexRP(i,iBlock,j))<<std::endl;
+	std::cout<<aimBlockIndexRP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(i-1,aimBlockIndexRP(i,iBlock,j))<<std::endl;
 	}
-      }
+	}
       */
       for(int iBlock=0;iBlock<numBlocksLP(i);++iBlock){
 	std::cout<<"Left indices: "<<std::endl;
@@ -93,17 +105,7 @@ void basisQNOrderMatrix::generateQNIndexTables(){
       }
       exit(1);
     }
-    cumulativeBlockSize=0;
-    for(int iBlock=0;iBlock<numBlocksLP(i);++iBlock){
-      cumulativeBlockSize+=lBlockSizeLP(i,iBlock);
-    }
-    if(cumulativeBlockSize==0){
-      // If the cumulativeBlockSize is zero, then there are no indices fullfilling the QN constraint on this site. That means the right vacuum QN is invalid, for example N=80 for a chain of length 20.
-      std::cout<<"At site "<<i<<": critical error: Invalid quantum number. Terminating process.\n";
-      exit(2);
-    }
   }
-  generateAccessArrays();
 }
 
 //---------------------------------------------------------------------------------------------------//

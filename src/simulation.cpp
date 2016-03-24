@@ -124,10 +124,7 @@ int simulation::singleRun(){
   g=1+parDirection.imag();
   std::cout<<J<<" "<<g<<std::endl;
   if(pars.Dw==12){
-    hInfo=writeHamiltonian(csystem.TensorNetwork,J,g,W,deltaP);
-  }
-  if(pars.Dw==14){
-    hInfo=writeHamiltonianSingleParticleHopping(csystem.TensorNetwork,J,g,W,pars.t,deltaP);
+    hInfo=writeHamiltonian(csystem.TensorNetwork,J,g,W,pars.t,deltaP);
   }
   if(pathLength!=1 && simPars.nStages!=1){
     std::cout<<"Invalid simulation parameters: Staging is disabled for type-0 runs. Aborting run.\n";

@@ -32,6 +32,8 @@ struct info{
   double tReal, tImag;
 };
 
+int symmetryBroken(info parPack);
+
 //-------------------------------------------------------------------------------------------//
 // The interface class is used for input of parameters. This is done via parameter files
 //-------------------------------------------------------------------------------------------//

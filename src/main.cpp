@@ -88,6 +88,9 @@ int main(int argc, char *argv[]){
   }
   std::ostringstream compositeName;
   compositeName<<dir<<fNBuf<<type;
+  if(symmetryBroken(necPars)){
+    compositeName<<"_single_hop";
+  }
   if(necPars.simType==1){
     compositeName<<"_rho_"<<necPars.rho<<"_par_"<<necPars.par<<"_odd_"<<necPars.odd<<"_J_"<<necPars.Jsc<<"_g_"<<necPars.gsc<<".txt";
   }
@@ -183,10 +186,6 @@ void sysSolve(info const &parPack, std::string const &fileName){
   std::complex<int> QNValue[1]={std::complex<int>(parPack.N,parPack.par)};
   std::complex<int> QNList[4]={std::complex<int>(0,1),std::complex<int>(1,1),std::complex<int>(1,-1),std::complex<int>(2,-1)};
 
-  if(parPack.Dw!=12){
-    QNList[2]=std::complex<int>(1,1);
-    QNList[3]=std::complex<int>(2,1);
-  }
   localHSpaces localHilbertSpaceDims(4);
   problemParameters pars(localHilbertSpaceDims,parPack.L,parPack.Dw,parPack.nEigens,nQuantumNumbers,QNValue,QNList);
   //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack

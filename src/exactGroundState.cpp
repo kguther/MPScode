@@ -3,6 +3,9 @@
 
 exactGroundState::exactGroundState(std::complex<int> N):QNValue(N)
 {
+  if(imag(QNValue)==0){
+    imag(QNValue)=1;
+  }
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -13,7 +16,6 @@ void exactGroundState::writeExactGroundState(mps &target){
   for(int m=0;m<4;++m){
     localQNsVec.push_back(localQNs[m]);
   }
-
   QNsVec.push_back(quantumNumber(target.dimInfo,QNValue,localQNsVec));
   mps proxy(target.dimInfo,QNsVec);
   generateExactState(proxy);
