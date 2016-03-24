@@ -166,8 +166,8 @@ int simulation::singleRun(){
       ofs.open(fileName.c_str());
       ofs<<"Values for state number "<<iEigen<<" with energy "<<E0[iEigen]<<" and energy variance "<<dE[iEigen]<<std::endl;
       //The problem parameters are written into the first lines
-      ofs<<"L\tN\tsubchain parity\tJ\tg\tW\tE\tvariance of energy\n";
-      ofs<<pars.L<<"\t"<<real(pars.QNconserved[0])<<"\t"<<imag(pars.QNconserved[0])<<"\t"<<J<<"\t"<<g<<"\t"<<W<<"\t"<<E0[iEigen]<<"\t"<<dE[iEigen]<<std::endl;
+      ofs<<"L\tN\tsubchain parity\tJ\tg\tW\tE\tvariance of energy\tt\n";
+      ofs<<pars.L<<"\t"<<real(pars.QNconserved[0])<<"\t"<<imag(pars.QNconserved[0])<<"\t"<<J<<"\t"<<g<<"\t"<<W<<"\t"<<E0[iEigen]<<"\t"<<dE[iEigen]<<"\t"<<pars.t<<std::endl;
       //First, global measurements are performed (this is used rarely)
       for(int iM=0;iM<measureTask.size();++iM){
 	csystem.measure(&measureTask[iM],expectationValues[iM],iEigen);

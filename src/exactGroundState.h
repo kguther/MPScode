@@ -1,3 +1,6 @@
+#ifndef EXACT_POINT_GROUND_STATE
+#define EXACT_POINT_GROUND_STATE
+
 #include "mps.h"
 #include "quantumNumber.h"
 #include <complex>
@@ -18,3 +21,5 @@ class exactGroundState{
   std::complex<int> QNValue;
   std::vector<quantumNumber> QNsVec;
 };
+
+#endif

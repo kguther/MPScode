@@ -38,9 +38,13 @@ class mpo{
   std::vector<int> siIndices, sipIndices, biIndices, bimIndices;
 };
 
+//---------------------------------------------------------------------------------------------------//
+
 template<typename T>
 mpo<T>::mpo(){
 }
+
+//---------------------------------------------------------------------------------------------------//
 
 template<typename T>
 mpo<T>::mpo(int const din, int const Dwin, int const Lin):
@@ -50,6 +54,8 @@ d(din),
 {
   Qoperator.resize(d*d*Dw*Dw*L);
 }
+
+//---------------------------------------------------------------------------------------------------//
 
 template<typename T>
 void mpo<T>::shift(T const delta){
@@ -61,6 +67,8 @@ void mpo<T>::shift(T const delta){
     }
   }
 }
+
+//---------------------------------------------------------------------------------------------------//
 
 template<typename T>
 void mpo<T>::setUpSparse(){
@@ -74,6 +82,8 @@ void mpo<T>::setUpSparse(){
     setUpSiteSparse(i);
   }
 }
+
+//---------------------------------------------------------------------------------------------------//
 
 template<typename T>
 void mpo<T>::setUpSiteSparse(int const i){
@@ -99,10 +109,14 @@ void mpo<T>::setUpSiteSparse(int const i){
   }
 }
 
+//---------------------------------------------------------------------------------------------------//
+
 template<typename T>
 void mpo<T>::subMatrixStart(T *&pStart, int const i, int const si, int const sip){
   pStart=&(Qoperator[i*Dw*Dw*d*d+sip*Dw*Dw+si*Dw*Dw*d]);
 }
+
+//---------------------------------------------------------------------------------------------------//
 
 template<typename T>
 int mpo<T>::locDimL(int const i) const{
@@ -111,6 +125,8 @@ int mpo<T>::locDimL(int const i) const{
   }
   return Dw;
 }
+
+//---------------------------------------------------------------------------------------------------//
 
 template<typename T>
 int mpo<T>::locDimR(int const i) const{
