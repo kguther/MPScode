@@ -26,6 +26,7 @@ class quantumNumber{
   std::complex<int> QNValue() const {return N;}
   int primaryIndex(int i, int ai);
   int setParameterD(int Dnew);
+  int setParameterL(int Lnew);
   //The failed flag is set when the given quantum number cannot be reached in the given system or the initialization failed for some other reason. It is set to zero else.
   int failed;
  private:

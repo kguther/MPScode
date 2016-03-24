@@ -286,7 +286,10 @@ int network::optimize(int i, int maxIter, double tol, double &iolambda){
   //Get the current partial contractions and site matrix of the Hamiltonian
   pCtr.Lctr.subContractionStart(LTerm,i);
   pCtr.Rctr.subContractionStart(RTerm,i);
-  excitedStateP.getProjector(i);
+  nconv=excitedStateP.getProjector(i);
+  if(nconv){
+    return -1;
+  }
   plambda=&lambda;
   //Using the current site matrix as a starting point allows for much faster convergence as it has already been optimized in previous sweeps (except for the first sweep, this is where a good starting point has to be guessed
   networkState.subMatrixStart(currentM,i);

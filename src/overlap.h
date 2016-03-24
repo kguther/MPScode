@@ -26,15 +26,15 @@ class overlap{
   lapack_complex_double getFullOverlap();
   void stepLeft(int const i);
   void stepRight(int const i);
-  lapack_complex_double applyF(lapack_complex_double *vec, int const i);
+  lapack_complex_double applyF(lapack_complex_double *vec, int i);
  private:
   int L, D, d;
   mps const *psi;
   mps const *phi;
   lapack_complex_double *Lctr;
   lapack_complex_double *Rctr;
-  lapack_complex_double& Lctr_access(int const i, int const aim, int const aimp){return Lctr[aimp+aim*D+i*D*D];}
-  lapack_complex_double& Rctr_access(int const i, int const ai, int const aip){return Rctr[aip+ai*D+i*D*D];}
+  lapack_complex_double& Lctr_access(int i, int aim, int aimp){return Lctr[aimp+aim*D+i*D*D];}
+  lapack_complex_double& Rctr_access(int i, int ai, int aip){return Rctr[aip+ai*D+i*D*D];}
   void subContractionStartLeft(lapack_complex_double *&pStart, int i);
   void subContractionStartRight(lapack_complex_double *&pStart, int i);
   void calcCtrIterLeft(int i);
@@ -45,7 +45,7 @@ class overlap{
   //Important: During sweeping, only the F matrix of the last updated site can be used, and only the mps site matrices of the last updated site should be manipulated. This ensures that the overlap is always up to date. Of course, use the corresponding step for updating (i.e. update the correct direction)
   void updateF(int const i);
   void ovCpy(overlap const &source);
-  int pCtrLocalIndex(int const aip, int const ai){return aip+D*ai;} 
+  int pCtrLocalIndex(int aip, int ai){return aip+D*ai;} 
 };
 
 #endif

@@ -18,7 +18,7 @@
 void network::leftEnrichment(int i){
   lapack_complex_double *Mnew;
   lapack_complex_double *Bnew;
-  lapack_complex_double *pExpression, *unity;
+  lapack_complex_double *pExpression, *unity, *localMatrix, *localBMatrix;
   int lDRR, ldp;
   getLocalDimensions(i);
   lDRR=networkState.locDimR(i+1);
@@ -31,16 +31,18 @@ void network::leftEnrichment(int i){
   Bnew=new lapack_complex_double[ldp*lDRR*MNumCols];
   pExpression=new lapack_complex_double[MNumRows*lDR*lDwR];
   getPExpressionLeft(i,pExpression);
+  networkState.subMatrixStart(localMatrix,i);
+  networkState.subMatrixStart(localBMatrix,i+1);
   for(int si=0;si<ld;++si){
     //Copy A and B while rearranging to allow for expansion
     for(int ai=0;ai<lDR;++ai){
       for(int aim=0;aim<lDL;++aim){
-	Mnew[aim+si*lDL+ai*MNumRows]=networkState.global_access(i,si,ai,aim);
+	Mnew[aim+si*lDL+ai*MNumRows]=localMatrix[stateIndex(si,ai,aim)];
       }
     }
     for(int air=0;air<lDRR;++air){
       for(int ai=0;ai<lDR;++ai){
-	Bnew[ai+air*MNumCols+si*lDRR*MNumCols]=networkState.global_access(i+1,si,air,ai);
+	Bnew[ai+air*MNumCols+si*lDRR*MNumCols]=localBMatrix[si*lDR*lDRR+air*lDR+ai];
       }
     }
     //Add zeros and P-Expression to Mnew and Bnew
@@ -88,11 +90,11 @@ void network::leftEnrichment(int i){
   }
   delete[] VT;
   delete[] Bnew;
-  networkState.subMatrixStart(networkB,i);
+  networkState.subMatrixStart(localMatrix,i);
   for(int si=0;si<ld;++si){
     for(int ai=0;ai<lDR;++ai){
       for(int aim=0;aim<lDL;++aim){
-        networkState.global_access(i,si,ai,aim)=U[aim+si*lDL+ai*lDL*ld];
+        localMatrix[stateIndex(si,ai,aim)]=U[aim+si*lDL+ai*lDL*ld];
       }
     }
   }
@@ -106,7 +108,7 @@ void network::leftEnrichment(int i){
 void network::rightEnrichment(int i){
   lapack_complex_double *Mnew;
   lapack_complex_double *Anew;
-  lapack_complex_double *pExpression;
+  lapack_complex_double *pExpression, *localMatrix, *localAMatrix;
   int lDLL, ldm;
   getLocalDimensions(i);
   lDLL=networkState.locDimL(i-1);
@@ -118,16 +120,18 @@ void network::rightEnrichment(int i){
   Anew=new lapack_complex_double[ldm*lDLL*MNumRows];
   pExpression=new lapack_complex_double[ld*lDR*lDL*lDwL];
   getPExpressionRight(i,pExpression);
+  networkState.subMatrixStart(localMatrix,i);
+  networkState.subMatrixStart(localAMatrix,i-1);
   //Copy A and B while rearranging to allow for expansion
   for(int si=0;si<ld;++si){
     for(int ai=0;ai<lDR;++ai){
       for(int aim=0;aim<lDL;++aim){
-	Mnew[aim+ai*MNumRows+si*lDR*MNumRows]=networkState.global_access(i,si,ai,aim);
+	Mnew[aim+ai*MNumRows+si*lDR*MNumRows]=localMatrix[stateIndex(si,ai,aim)];
       }
     }
     for(int aim=0;aim<lDL;++aim){
       for(int aimm=0;aimm<lDLL;++aimm){
-	Anew[aimm+aim*ld*lDLL+si*lDLL]=networkState.global_access(i-1,si,aim,aimm);
+	Anew[aimm+aim*ld*lDLL+si*lDLL]=localAMatrix[si*lDL*lDLL+aim*lDLL+aimm];
       }
     }
     //Add zeros and P-Expression to Mnew and Bnew
@@ -179,10 +183,11 @@ void network::rightEnrichment(int i){
   delete[] U;
   delete[] Anew;
   //Store the remaining VT into B
+  networkState.subMatrixStart(localMatrix,i);
   for(int si=0;si<ld;++si){
     for(int ai=0;ai<lDR;++ai){
       for(int aim=0;aim<lDL;++aim){
-	networkState.global_access(i,si,ai,aim)=VT[aim+si*lDR*MNumCols+ai*MNumCols];
+        localMatrix[stateIndex(si,ai,aim)]=VT[aim+si*lDR*MNumCols+ai*MNumCols];
       }
     }
   }
@@ -199,7 +204,7 @@ void network::rightEnrichment(int i){
 
 void network::leftEnrichmentBlockwise(int i){
   lapack_complex_double *Mnew;
-  lapack_complex_double *Bnew, *R, *BStart, *networkB;
+  lapack_complex_double *Bnew, *R, *BStart, *networkB, *localMatrix;
   lapack_complex_double *pExpression;
   lapack_complex_double *U, *VT;
   double *diags;
@@ -229,6 +234,7 @@ void network::leftEnrichmentBlockwise(int i){
   R=Rp.get();
   getPExpressionLeft(i,pExpression);
   numBlocks=networkState.indexTable.numBlocksLP(i);
+  networkState.subMatrixStart(localMatrix,i);
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
     lBlockSize=networkState.indexTable.lBlockSizeLP(i,iBlock);
     rBlockSize=networkState.indexTable.rBlockSizeLP(i,iBlock);
@@ -243,7 +249,7 @@ void network::leftEnrichmentBlockwise(int i){
       	for(int k=0;k<lBlockSize;++k){
 	  aimCurrent=networkState.indexTable.aimBlockIndexLP(i,iBlock,k);
 	  siCurrent=networkState.indexTable.siBlockIndexLP(i,iBlock,k);
-	  Mnew[k+j*lBlockSize]=networkState.global_access(i,siCurrent,aiCurrent,aimCurrent);
+	  Mnew[k+j*lBlockSize]=localMatrix[stateIndex(siCurrent,aiCurrent,aimCurrent)];
 	  for(int bi=0;bi<lDwR;++bi){
 	    Mnew[k+j*lBlockSize+(bi+1)*lBlockSize*rBlockSize]=alpha*pExpression[aimCurrent+lDL*siCurrent+bi*lDL*ld*lDR+aiCurrent*lDL*ld];
 	  }
@@ -291,17 +297,18 @@ void network::leftEnrichmentBlockwise(int i){
 	for(int k=0;k<lBlockSize;++k){
 	  aimCurrent=networkState.indexTable.aimBlockIndexLP(i,iBlock,k);
 	  siCurrent=networkState.indexTable.siBlockIndexLP(i,iBlock,k);
-	  networkState.global_access(i,siCurrent,aiCurrent,aimCurrent)=U[k+lBlockSize*j];
+	  localMatrix[stateIndex(siCurrent,aiCurrent,aimCurrent)]=U[k+lBlockSize*j];
 	}
       }
     }
   }
   std::auto_ptr<lapack_complex_double> BP(new lapack_complex_double[ldp*lDRR*lDR*(1+lDwR)]);
   Bnew=BP.get();
+  networkState.subMatrixStart(localMatrix,i+1);
   for(int si=0;si<ldp;++si){
     for(int air=0;air<lDRR;++air){
       for(int ai=0;ai<lDR;++ai){
-	Bnew[ai+air*MNumCols+si*lDRR*MNumCols]=networkState.global_access(i+1,si,air,ai);
+	Bnew[ai+air*MNumCols+si*lDRR*MNumCols]=localMatrix[si*lDRR*lDR+air*lDR+ai];
       }
       for(int ai=lDR;ai<MNumCols;++ai){
 	Bnew[ai+air*MNumCols+si*lDRR*MNumCols]=0;
@@ -321,7 +328,7 @@ void network::leftEnrichmentBlockwise(int i){
 
 void network::rightEnrichmentBlockwise(int i){
   lapack_complex_double *Mnew;
-  lapack_complex_double *Anew, *R, *networkA;
+  lapack_complex_double *Anew, *R, *networkA, *localMatrix;
   lapack_complex_double *pExpression;
   lapack_complex_double *U, *VT;
   double *diags;
@@ -353,6 +360,7 @@ void network::rightEnrichmentBlockwise(int i){
   pExpression=pEP.get();
   getPExpressionRight(i,pExpression);
   numBlocks=networkState.indexTable.numBlocksRP(i);
+  networkState.subMatrixStart(localMatrix,i);
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
     lBlockSize=networkState.indexTable.lBlockSizeRP(i,iBlock);
     rBlockSize=networkState.indexTable.rBlockSizeRP(i,iBlock);
@@ -367,7 +375,7 @@ void network::rightEnrichmentBlockwise(int i){
 	siCurrent=networkState.indexTable.siBlockIndexRP(i,iBlock,j);
       	for(int k=0;k<lBlockSize;++k){
 	  aimCurrent=networkState.indexTable.aimBlockIndexRP(i,iBlock,k);
-	  Mnew[k+j*blockDimL]=networkState.global_access(i,siCurrent,aiCurrent,aimCurrent);
+	  Mnew[k+j*blockDimL]=localMatrix[stateIndex(siCurrent,aiCurrent,aimCurrent)];
 	  for(int bim=0;bim<lDwL;++bim){
 	    Mnew[k+j*blockDimL+(bim+1)*lBlockSize]=alpha*pExpression[aimCurrent*lDwL+lDR*lDwL*lDL*siCurrent+bim+aiCurrent*lDL*lDwL];
 	  }
@@ -414,17 +422,18 @@ void network::rightEnrichmentBlockwise(int i){
 	siCurrent=networkState.indexTable.siBlockIndexRP(i,iBlock,j);
 	for(int k=0;k<lBlockSize;++k){
 	  aimCurrent=networkState.indexTable.aimBlockIndexRP(i,iBlock,k);
-	  networkState.global_access(i,siCurrent,aiCurrent,aimCurrent)=VT[k+blockDimR*j];
+	  localMatrix[stateIndex(siCurrent,aiCurrent,aimCurrent)]=VT[k+blockDimR*j];
 	}
       }
     }
   }
   std::auto_ptr<lapack_complex_double> AP(new lapack_complex_double[ldm*lDLL*lDL*(1+lDwL)]);
   Anew=AP.get();
+  networkState.subMatrixStart(localMatrix,i-1);
   for(int si=0;si<ldm;++si){
     for(int aimm=0;aimm<lDLL;++aimm){
       for(int aim=0;aim<lDL;++aim){
-	Anew[aim*lDLL*ldm+aimm+si*lDLL]=networkState.global_access(i-1,si,aim,aimm);
+	Anew[aim*lDLL*ldm+aimm+si*lDLL]=localMatrix[si*lDLL*lDL+aim*lDLL+aimm];
       }
       for(int aim=lDL;aim<MNumRows;++aim){
 	Anew[aim*ldm*lDLL+aimm+si*lDLL]=0;

@@ -60,6 +60,13 @@ int quantumNumber::setParameterD(int Dnew){
 }
 
 //---------------------------------------------------------------------------------------------------//
+
+int quantumNumber::setParameterL(int Lnew){
+  dimInfo.setParameterL(Lnew);
+  return initializeLabelList();
+}
+
+//---------------------------------------------------------------------------------------------------//
 // This is the new, dynamic labeling scheme, where first, starting with the vacuum labels for the 
 // leftmost index, the allowed blocks of the next site are constructed - these are those blocks
 // that allow for fullfilling the QN constraints - for all sites from the left. 

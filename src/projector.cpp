@@ -5,6 +5,7 @@
 #include "mps.h"
 #include "overlap.h"
 #include "arrayprocessing.h"
+#include <iostream>
 
 //---------------------------------------------------------------------------------------------------//
 // The projector class is still experimental, it seems to yield correct results, but I am not sure
@@ -62,6 +63,14 @@ void projector::pCpy(projector const &source){
 void projector::setParameterD(int Dnew){
   for(int iEigen=0;iEigen<nEigs;++iEigen){
     orthoStates[iEigen].setParameterD(Dnew);
+  }
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void projector::setParameterL(int Lnew){
+  for(int iEigen=0;iEigen<nEigs;++iEigen){
+    orthoStates[iEigen].setParameterL(Lnew);
   }
 }
 
@@ -218,8 +227,13 @@ int projector::getProjector(int i){
     suppZ=suppZP.get();
     gramEigens=gramEigensP.get();
     getGramMatrix(gram,i);
-    lapack_int gramDim=nCurrentEigen;
+    lapack_int const gramDim=nCurrentEigen;
     info=LAPACKE_zheevr(LAPACK_COL_MAJOR,'V','A','U',gramDim,gram,gramDim,0.0,0.0,0,0,1e-5,&nGramEigens,gramEigens,gramEigenvecs,gramDim,suppZ);
+    if(info){
+      std::cout<<"Error in LAPACKE_zheevr: "<<info<<" at site "<<i<<std::endl;
+      exit(1);
+      return 1;
+    }
     double const minRelevantEigens=LDBL_EPSILON*nCurrentEigen*gramEigens[nGramEigens-1];
     nRelevantEigens=0;
     for(int iEigen=0;iEigen<nGramEigens;++iEigen){
@@ -241,9 +255,6 @@ int projector::getProjector(int i){
 	zFactor=gramEigenvecs[k+(nGramEigens-1-mu)*nCurrentEigen]*1.0/sqrt(gramEigens[nGramEigens-1-mu]);
 	cblas_zaxpy(ld*lDR*lDL,&zFactor,Fki,1,workingMatrix,1);
       }
-    }
-    if(info){
-      return 1;
     }
   }
   return 0;

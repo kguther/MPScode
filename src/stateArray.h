@@ -1,24 +1,27 @@
 #ifndef MATRIX_PRODUCT_STATE_ARRAY
 #define MATRIX_PRODUCT_STATE_ARRAY
 
+#include <vector>
 #include "mkl_complex_defined.h"
 #include "arraycreation.h"
 #include "dimensionTable.h"
 #include "localHSpaces.h"
+#include "baseTensor.h"
 
 class stateArray{
  public:
   stateArray();
   stateArray(dimensionTable const &dimInfoIn);
-  virtual ~stateArray();
   virtual void mpsCpy(stateArray const &source);
   virtual int setParameterD(int Dnew);
-  const lapack_complex_double& operator() (int i, int si, int ai, int aim) const{return state_array_access_structure[i][si][ai][aim];}
-  lapack_complex_double& operator()(int i, int si, int ai, int aim){return state_array_access_structure[i][si][ai][aim];}
-  lapack_complex_double* operator()(int i, int si=0){return state_array_access_structure[i][si][0];}
-  lapack_complex_double& global_access(int i, int si, int ai, int aim){return state_array_access_structure[i][si][ai][aim];}
-  const lapack_complex_double& global_access(int i, int si, int ai, int aim) const {return state_array_access_structure[i][si][ai][aim];}
-  void subMatrixStart(lapack_complex_double *&pStart, int i, int si=0){pStart=state_array_access_structure[i][si][0];}
+  virtual int setParameterL(int Lnew);
+  const lapack_complex_double& operator() (int i, int si, int ai, int aim) const{std::vector<int> indices=getIndexVec(si,ai,aim); return stateArrayAccessStructure[i](indices);}
+  lapack_complex_double& operator()(int i, int si, int ai, int aim){std::vector<int> indices=getIndexVec(si,ai,aim); return stateArrayAccessStructure[i](indices);}
+  lapack_complex_double* operator()(int i, int si=0){lapack_complex_double *target; stateArrayAccessStructure[i].getPtr(target,si); return target;}
+  lapack_complex_double& global_access(int i, int si, int ai, int aim){std::vector<int> indices=getIndexVec(si,ai,aim); return stateArrayAccessStructure[i](indices);}
+  const lapack_complex_double& global_access(int i, int si, int ai, int aim) const {std::vector<int> indices=getIndexVec(si,ai,aim); return stateArrayAccessStructure[i](indices);}
+  void subMatrixStart(lapack_complex_double *&pStart, int i, int si=0){stateArrayAccessStructure[i].getPtr(pStart,si);}
+  void subMatrixStart(lapack_complex_double const*&pStart, int i, int si=0)const {stateArrayAccessStructure[i].getPtr(pStart,si);}
   virtual void generate(dimensionTable const &dimInfoIn);
   int locDimR(int i) const;
   int locDimL(int i) const;
@@ -33,11 +36,10 @@ class stateArray{
   stateArray& operator=(stateArray const &cpyState);
  protected:
   int D,L;
-  int icrit;
-  lapack_complex_double ****state_array_access_structure;
+  std::vector<baseTensor<lapack_complex_double> > stateArrayAccessStructure;
   virtual void initialize(dimensionTable const &dimInfoIn);
-  void getIcrit();
-  void createStateArray(int const Din, int const Lin, lapack_complex_double *****array);
+  void createStateArray(int const Lin);
+  std::vector<int> getIndexVec(int si, int ai, int aim) const;
 };
 
 #endif

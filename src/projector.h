@@ -26,6 +26,7 @@ class projector{
   ~projector();
   projector& operator=(projector const &source);
   void setParameterD(int Dnew);
+  void setParameterL(int Lnew);
   void loadScalarProducts(mps const &variationalState, int iEigen);
   void updateScalarProducts(int i, int direction);
   int getProjector(int i);

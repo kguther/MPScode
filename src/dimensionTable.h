@@ -22,6 +22,7 @@ class dimensionTable{
   int locDMax(int const i) const;
   int locd(int const i) const;
   void setParameterD(int Dnew);
+  void setParameterL(int Lnew);
  private:
   int dpar, Dpar, Lpar;
   localHSpaces dpars;

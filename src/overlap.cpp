@@ -59,13 +59,13 @@ void overlap::ovCpy(overlap const &source){
 
 //---------------------------------------------------------------------------------------------------//
 
-void overlap::subContractionStartLeft(lapack_complex_double *&pStart, int const i){
+void overlap::subContractionStartLeft(lapack_complex_double *&pStart, int i){
   pStart=Lctr+i*D*D;
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-void overlap::subContractionStartRight(lapack_complex_double *&pStart, int const i){
+void overlap::subContractionStartRight(lapack_complex_double *&pStart, int i){
   pStart=Rctr+i*D*D;
 }
 
@@ -175,6 +175,7 @@ void overlap::calcCtrIterLeftQNOpt(int i, lapack_complex_double const*const sour
   int lDL=phi->locDimL(i);
   int ld=phi->locd(i);
   int lDR=phi->locDimR(i);
+  lapack_complex_double const *localMatrix;
   tmpContainer<lapack_complex_double> innerContainer(1,ld,lDR,lDL);
   for(int si=0;si<ld;++si){
     for(int ai=0;ai<lDR;++ai){
@@ -183,6 +184,7 @@ void overlap::calcCtrIterLeftQNOpt(int i, lapack_complex_double const*const sour
       }
     }
   }
+  phi->subMatrixStart(localMatrix,i);
   int numBlocks, lBlockSize, rBlockSize;
   int aiB, aimB, siB;
   numBlocks=phi->indexTable.numBlocksLP(i);
@@ -195,7 +197,7 @@ void overlap::calcCtrIterLeftQNOpt(int i, lapack_complex_double const*const sour
 	siB=phi->indexTable.siBlockIndexLP(i,iBlock,k);
 	for(int j=0;j<rBlockSize;++j){
 	  aiB=phi->indexTable.aiBlockIndexLP(i,iBlock,j);
-	  innerContainer.global_access(0,siB,aiB,aim)+=source[pCtrLocalIndex(aimB,aim)]*phi->global_access(i,siB,aiB,aimB);
+	  innerContainer.global_access(0,siB,aiB,aim)+=source[pCtrLocalIndex(aimB,aim)]*localMatrix[aimB+aiB*lDL+siB*lDL*lDR];
 	}
       }
     }
@@ -205,6 +207,7 @@ void overlap::calcCtrIterLeftQNOpt(int i, lapack_complex_double const*const sour
       target[pCtrLocalIndex(ai,aip)]=0;
     }
   }
+  psi->subMatrixStart(localMatrix,i);
   numBlocks=psi->indexTable.numBlocksLP(i);
   for(int ai=0;ai<lDR;++ai){
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
@@ -215,7 +218,7 @@ void overlap::calcCtrIterLeftQNOpt(int i, lapack_complex_double const*const sour
 	siB=psi->indexTable.siBlockIndexLP(i,iBlock,k);
 	for(int j=0;j<rBlockSize;++j){
 	  aiB=psi->indexTable.aiBlockIndexLP(i,iBlock,j);
-	  target[pCtrLocalIndex(ai,aiB)]+=innerContainer.global_access(0,siB,ai,aimB)*conj(psi->global_access(i,siB,aiB,aimB));
+	  target[pCtrLocalIndex(ai,aiB)]+=innerContainer.global_access(0,siB,ai,aimB)*conj(localMatrix[aimB+aiB*lDL+siB*lDL*lDR]);
 	}
       }
     }
@@ -229,6 +232,7 @@ void overlap::calcCtrIterRightQNOpt(int i, lapack_complex_double const*const sou
   int ld=phi->locd(i);
   int lDR=phi->locDimR(i);
   tmpContainer<lapack_complex_double> innerContainer(1,ld,lDR,lDL);
+  lapack_complex_double const *localMatrix;
   for(int si=0;si<ld;++si){
     for(int ai=0;ai<lDR;++ai){
       for(int aim=0;aim<lDL;++aim){
@@ -239,6 +243,7 @@ void overlap::calcCtrIterRightQNOpt(int i, lapack_complex_double const*const sou
   int numBlocks, lBlockSize, rBlockSize;
   int aiB, aimB, siB;
   numBlocks=phi->indexTable.numBlocksLP(i);
+  phi->subMatrixStart(localMatrix,i);
   for(int ai=0;ai<lDR;++ai){
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
       lBlockSize=phi->indexTable.lBlockSizeLP(i,iBlock);
@@ -248,7 +253,7 @@ void overlap::calcCtrIterRightQNOpt(int i, lapack_complex_double const*const sou
 	siB=phi->indexTable.siBlockIndexLP(i,iBlock,k);
 	for(int j=0;j<rBlockSize;++j){
 	  aiB=phi->indexTable.aiBlockIndexLP(i,iBlock,j);
-	  innerContainer.global_access(0,siB,ai,aimB)+=source[pCtrLocalIndex(aiB,ai)]*phi->global_access(i,siB,aiB,aimB);
+	  innerContainer.global_access(0,siB,ai,aimB)+=source[pCtrLocalIndex(aiB,ai)]*localMatrix[aimB+aiB*lDL+siB*lDL*lDR];
 	}
       }
     }
@@ -259,6 +264,7 @@ void overlap::calcCtrIterRightQNOpt(int i, lapack_complex_double const*const sou
     }
   }
   numBlocks=psi->indexTable.numBlocksLP(i);
+  psi->subMatrixStart(localMatrix,i);
   for(int aim=0;aim<lDL;++aim){
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
       lBlockSize=psi->indexTable.lBlockSizeLP(i,iBlock);
@@ -268,7 +274,7 @@ void overlap::calcCtrIterRightQNOpt(int i, lapack_complex_double const*const sou
 	siB=psi->indexTable.siBlockIndexLP(i,iBlock,k);
 	for(int j=0;j<rBlockSize;++j){
 	  aiB=psi->indexTable.aiBlockIndexLP(i,iBlock,j);
-	  target[pCtrLocalIndex(aim,aimB)]+=innerContainer.global_access(0,siB,aiB,aim)*conj(psi->global_access(i,siB,aiB,aimB));
+	  target[pCtrLocalIndex(aim,aimB)]+=innerContainer.global_access(0,siB,aiB,aim)*conj(localMatrix[aimB+aiB*lDL+siB*lDL*lDR]);
 	}
       }
     }
@@ -284,7 +290,7 @@ void overlap::calcCtrIterRightQNOpt(int i, lapack_complex_double const*const sou
 // getF() computes the F matrix for all sites.
 //---------------------------------------------------------------------------------------------------//
 
-void overlap::updateF(int const i){
+void overlap::updateF(int i){
   int lDR, lDL, ld;
   lDL=(*phi).locDimL(i);
   lDR=(*phi).locDimR(i);
@@ -293,6 +299,7 @@ void overlap::updateF(int const i){
   lapack_complex_double simpleContainer;
   lapack_complex_double zone=1.0;
   lapack_complex_double *leftPart, *rightPart;
+  lapack_complex_double const *localMatrix;
   if(i>0){
     subContractionStartLeft(leftPart,i-1);
   }
@@ -305,12 +312,13 @@ void overlap::updateF(int const i){
   else{
     rightPart=&zone;
   }
+  phi->subMatrixStart(localMatrix,i);
   for(int si=0;si<ld;++si){
     for(int aip=0;aip<lDR;++aip){
       for(int aim=0;aim<lDL;++aim){
 	simpleContainer=0;
 	for(int aimp=0;aimp<lDL;++aimp){
-	  simpleContainer+=leftPart[pCtrLocalIndex(aimp,aim)]*phi->global_access(i,si,aip,aimp);
+	  simpleContainer+=leftPart[pCtrLocalIndex(aimp,aim)]*localMatrix[aimp+aip*lDL+si*lDL*lDR];
 	}
 	innerContainer.global_access(0,si,aip,aim)=simpleContainer;
       }
@@ -347,7 +355,7 @@ void overlap::getF(){
 // have changed on site i.
 //---------------------------------------------------------------------------------------------------//
 
-void overlap::stepLeft(int const i){
+void overlap::stepLeft(int i){
   //i is the source site of the step, i.e. site i-1 is updated
   calcCtrIterRight(i);
   if(i>0){
@@ -357,7 +365,7 @@ void overlap::stepLeft(int const i){
 
 //---------------------------------------------------------------------------------------------------//
 
-void overlap::stepRight(int const i){
+void overlap::stepRight(int i){
   calcCtrIterLeft(i);
   updateF(i+1);
 }
@@ -385,7 +393,7 @@ lapack_complex_double overlap::getFullOverlap(){
 // Not in use currently. 
 //---------------------------------------------------------------------------------------------------//
 
-lapack_complex_double overlap::applyF(lapack_complex_double *vec, int const i){
+lapack_complex_double overlap::applyF(lapack_complex_double *vec, int i){
   lapack_complex_double simpleContainer=0.0;
   int lDR, lDL, ld;
   lDL=(*phi).locDimL(i);

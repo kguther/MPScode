@@ -30,6 +30,7 @@ class mpo{
   void siSubIndexArrayStart(int *&target, int const i){target=&(siIndices[i*d*d*Dw*Dw]);}
   void sipSubIndexArrayStart(int *&target, int const i){target=&(sipIndices[i*d*d*Dw*Dw]);}
   int numEls(int const i) const {return nNzero[i];}
+  int setParameterL(int Lnew);
  protected:
   void setUpSiteSparse(int const i);
   int d, Dw, L;
@@ -108,6 +109,29 @@ void mpo<T>::setUpSiteSparse(int const i){
     }
   }
 }
+
+//---------------------------------------------------------------------------------------------------//
+
+template<typename T>
+int mpo<T>::setParameterL(int Lnew){
+  if(Lnew==L){
+    return 0;
+  }
+  if(Lnew<L){
+    return -1;
+  }
+  std::vector<T> buffer;
+  int const deltaL=L-Lnew;
+  buffer.resize(deltaL*d*d*Dw*Dw);
+  for(int iInsert=0;iInsert<deltaL;++iInsert){
+    for(int m=0;m<d*d*Dw*Dw;++m){
+      buffer[m+iInsert*d*d*Dw*Dw]=Qoperator[m+d*d*Dw*Dw*L/2];
+    }
+  }
+  Qoperator.insert(Qoperator.begin()+L/2+deltaL/2,buffer.begin(),buffer.end());
+  L=Lnew;
+}
+    
 
 //---------------------------------------------------------------------------------------------------//
 

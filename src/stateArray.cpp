@@ -2,11 +2,7 @@
 #include "arrayprocessing.h"
 #include "arraycreation.h"
 
-stateArray::stateArray():
-  state_array_access_structure(0),
-  dimInfo(dimensionTable(1,1,localHSpaces(1)))
-{
-  createStateArray(1,1,&state_array_access_structure);
+stateArray::stateArray(){
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -17,14 +13,7 @@ stateArray::stateArray(dimensionTable const &dimInfoIn){
 
 //---------------------------------------------------------------------------------------------------//
 
-stateArray::~stateArray(){
-  auxiliary::deleteStateArray(&state_array_access_structure);
-}
-
-//---------------------------------------------------------------------------------------------------//
-
 void stateArray::mpsCpy(stateArray const &source){
-  auxiliary::deleteStateArray(&state_array_access_structure);
   initialize(source.dimInfo);
   int lDL, lDR, ld;
   for(int i=0;i<L;++i){
@@ -34,7 +23,7 @@ void stateArray::mpsCpy(stateArray const &source){
     for(int si=0;si<ld;++si){
       for(int ai=0;ai<lDR;++ai){
 	for(int aim=0;aim<lDL;++aim){
-	  state_array_access_structure[i][si][ai][aim]=source.global_access(i,si,ai,aim);
+	  global_access(i,si,ai,aim)=source.global_access(i,si,ai,aim);
 	}
       }
     }
@@ -45,50 +34,69 @@ void stateArray::mpsCpy(stateArray const &source){
 //---------------------------------------------------------------------------------------------------//
 
 void stateArray::generate(dimensionTable const &dimInfoIn){
-  auxiliary::deleteStateArray(&state_array_access_structure);
   initialize(dimInfoIn);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
 void stateArray::initialize(dimensionTable const &dimInfoIn){
+  dimInfo=dimInfoIn;
   D=dimInfoIn.D();
   L=dimInfoIn.L();
-  dimInfo=dimInfoIn;
-  createStateArray(D,L,&state_array_access_structure);
+  createStateArray(L);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
 int stateArray::setParameterD(int Dnew){
-  lapack_complex_double ****newNetworkState;
-  dimensionTable backupDimInfo=dimInfo;
   //Copy the content of the current state into the larger array (which is initialized with zero)
   dimInfo.setParameterD(Dnew);
-  createStateArray(Dnew,L,&newNetworkState);
-  int lDL, lDR, ld;
+  int info=0;
+  std::vector<int> newDims(3,0);
   for(int i=0;i<L;++i){
-    lDL=backupDimInfo.locDimL(i);
-    lDR=backupDimInfo.locDimR(i);
-    ld=backupDimInfo.locd(i);
-    for(int si=0;si<ld;++si){
-      for(int ai=0;ai<lDR;++ai){
-	for(int aim=0;aim<lDL;++aim){
-	  if(Dnew<D){
-	    newNetworkState[i][si][ai][aim]=0;
-	  }
-	  else{
-	    newNetworkState[i][si][ai][aim]=state_array_access_structure[i][si][ai][aim];
-	  }
-	}
-      }
-    }
+    newDims[0]=locd(i);
+    newDims[1]=locDimR(i);
+    newDims[2]=locDimL(i);
+    info+=stateArrayAccessStructure[i].setParameterDims(newDims);
   }
   //Replace the current state
-  auxiliary::deleteStateArray(&state_array_access_structure);
-  state_array_access_structure=newNetworkState;
   D=Dnew;
+  return info;
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+int stateArray::setParameterL(int Lnew){
+  dimInfo.setParameterL(Lnew);
+  std::vector<int> locDims(3,0);
+  int startPos;
+  int const deltaL=Lnew-L;
+  if(deltaL==0){
+    return 0;
+  }
+  if(deltaL<0){
+    startPos=L/2+deltaL/2;
+    int endPos=L/2-deltaL/2+deltaL%2;
+    stateArrayAccessStructure.erase(stateArrayAccessStructure.begin()+startPos,stateArrayAccessStructure.begin()+endPos);
+    setParameterD(D);
+  }
+  else{
+    startPos=L/2-deltaL/2;
+    stateArrayAccessStructure.insert(stateArrayAccessStructure.begin()+startPos,deltaL,baseTensor<lapack_complex_double>());
+    setParameterD(D);
+  }
+  L=Lnew;
   return 0;
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+std::vector<int> stateArray::getIndexVec(int si, int ai, int aim) const{
+  std::vector<int> result(3,0);
+  result[0]=si;
+  result[1]=ai;
+  result[2]=aim;
+  return result;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -125,56 +133,13 @@ int stateArray::locDMax(int i) const{
   return dimInfo.locDMax(i);
 }
 
-void stateArray::createStateArray(int const D, int const L, lapack_complex_double *****array){
-  int dimR, dimL, lD, rD, dimd;
-  dimR=0;
-  dimL=0;
-  dimd=0;
-  for(int i=0;i<L;i++){
-    dimR+=locd(i)*locDimR(i);
-    dimL+=locd(i)*locDimR(i)*locDimL(i);
-    dimd+=locd(i);
-  }
-  (*array)=new lapack_complex_double ***[L];
-  (*array)[0]=new lapack_complex_double **[dimd];
-  for(int i=1;i<L;++i){
-    (*array)[i]=(*array)[i-1]+locd(i);
-  }
-  (*array)[0][0]=new lapack_complex_double*[dimR];
-  for(int i=0;i<L;i++){
-    rD=locDimR(i);
-    if(i>0){
-      (*array)[i][0]=(*array)[i-1][0]+locd(i)*locDimR(i-1);
-    }
-    for(int si=1;si<locd(i);++si){
-      (*array)[i][si]=(*array)[i][si-1]+rD;
-    }
-  }
-  (*array)[0][0][0]=new lapack_complex_double[dimL];
-  for(int i=0;i<L;i++){
-    lD=locDimL(i);
-    rD=locDimR(i);
-    if(i>0){
-      (*array)[i][0][0]=(*array)[i-1][0][0]+locd(i)*locDimL(i-1)*locDimR(i-1);
-    }
-    for(int si=0;si<locd(i);++si){
-      if(si>0){
-	(*array)[i][si][0]=(*array)[i][si-1][0]+lD*rD;
-      }
-      for(int ai=1;ai<rD;++ai){
-	(*array)[i][si][ai]=(*array)[i][si][ai-1]+lD;
-      }
-    }
-  }
-  for(int i=0;i<L;i++){
-    lD=locDimL(i);
-    rD=locDimR(i);
-    for(int si=0;si<locd(i);si++){
-      for(int ai=0;ai<rD;ai++){
-	for(int aim=0;aim<lD;aim++){
-	  (*array)[i][si][ai][aim]=0;
-	}
-      }
-    }
+void stateArray::createStateArray(int L){
+  std::vector<int> locDims(3,0);
+  stateArrayAccessStructure.resize(L);
+  for(int i=0;i<L;++i){
+    locDims[0]=locd(i);
+    locDims[1]=locDimR(i);
+    locDims[2]=locDimL(i);
+    stateArrayAccessStructure[i].generate(locDims);
   }
 }

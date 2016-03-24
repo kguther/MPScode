@@ -41,9 +41,17 @@ void dimensionTable::getDMaxTable(){
 
 //---------------------------------------------------------------------------------------------------//
 
-void dimensionTable::setParameterD(int const Dnew){
+void dimensionTable::setParameterD(int Dnew){
   Dpar=Dnew;
   getIcrit();
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void dimensionTable::setParameterL(int Lnew){
+  Lpar=Lnew;
+  getIcrit();
+  getDMaxTable();
 }
 
 //---------------------------------------------------------------------------------------------------//
