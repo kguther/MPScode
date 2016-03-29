@@ -55,7 +55,7 @@ blockHMatrix::~blockHMatrix(){
 
 void blockHMatrix::MultMvBlocked(arcomplex<double> *v, arcomplex<double> *w){
   if(explicitMv){
-    std::auto_ptr<lapack_complex_double> proxyP(new lapack_complex_double[dimension]);
+    std::unique_ptr<lapack_complex_double> proxyP(new lapack_complex_double[dimension]);
     lapack_complex_double *proxy=proxyP.get();
     excitedStateProject(v);
     auxiliary::arraycpy(dimension,v,proxy);

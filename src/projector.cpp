@@ -174,8 +174,8 @@ void projector::project(lapack_complex_double *vec, int i){
     lapack_complex_double zone=1.0;
     lapack_complex_double zzero=0.0;
     getLocalDimensions(i);
-    std::auto_ptr<lapack_complex_double> vecP(new lapack_complex_double[ld*lDR*lDL]);
-    std::auto_ptr<lapack_complex_double> trP(new lapack_complex_double[ld*lDR*ld*lDR]);
+    std::unique_ptr<lapack_complex_double> vecP(new lapack_complex_double[ld*lDR*lDL]);
+    std::unique_ptr<lapack_complex_double> trP(new lapack_complex_double[ld*lDR*ld*lDR]);
     vecContainer=vecP.get();
     trContainer=trP.get();
     //Initialization is required (i.e. it is as fast as any other way)
@@ -218,10 +218,10 @@ int projector::getProjector(int i){
     lapack_complex_double zone=1.0;
     lapack_complex_double zzero=0.0;
     lapack_int info;
-    std::auto_ptr<lapack_complex_double> gramP(new lapack_complex_double[nCurrentEigen*nCurrentEigen]);
-    std::auto_ptr<lapack_complex_double> gramEigenvecsP(new lapack_complex_double[nCurrentEigen*nCurrentEigen]);
-    std::auto_ptr<lapack_int> suppZP(new lapack_int[2*nCurrentEigen]);
-    std::auto_ptr<double> gramEigensP(new double[nCurrentEigen]);
+    std::unique_ptr<lapack_complex_double> gramP(new lapack_complex_double[nCurrentEigen*nCurrentEigen]);
+    std::unique_ptr<lapack_complex_double> gramEigenvecsP(new lapack_complex_double[nCurrentEigen*nCurrentEigen]);
+    std::unique_ptr<lapack_int> suppZP(new lapack_int[2*nCurrentEigen]);
+    std::unique_ptr<double> gramEigensP(new double[nCurrentEigen]);
     gram=gramP.get();
     gramEigenvecs=gramEigenvecsP.get();
     suppZ=suppZP.get();
@@ -231,7 +231,6 @@ int projector::getProjector(int i){
     info=LAPACKE_zheevr(LAPACK_COL_MAJOR,'V','A','U',gramDim,gram,gramDim,0.0,0.0,0,0,1e-5,&nGramEigens,gramEigens,gramEigenvecs,gramDim,suppZ);
     if(info){
       std::cout<<"Error in LAPACKE_zheevr: "<<info<<" at site "<<i<<std::endl;
-      exit(1);
       return 1;
     }
     double const minRelevantEigens=LDBL_EPSILON*nCurrentEigen*gramEigens[nGramEigens-1];
@@ -273,7 +272,7 @@ void projector::getGramMatrix(lapack_complex_double *gram, int i){
     lapack_complex_double *matrixContainer, *Fki, *Fkpi;
     lapack_complex_double zone=1.0;
     lapack_complex_double zzero=0.0;
-    std::auto_ptr<lapack_complex_double> matrixContainerP(new lapack_complex_double[ld*lDR*ld*lDR]);
+    std::unique_ptr<lapack_complex_double> matrixContainerP(new lapack_complex_double[ld*lDR*ld*lDR]);
     matrixContainer=matrixContainerP.get();
     for(int kp=0;kp<nCurrentEigen;++kp){
       scalarProducts[kp].F.subMatrixStart(Fkpi,i);

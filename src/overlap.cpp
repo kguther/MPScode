@@ -292,9 +292,9 @@ void overlap::calcCtrIterRightQNOpt(int i, lapack_complex_double const*const sou
 
 void overlap::updateF(int i){
   int lDR, lDL, ld;
-  lDL=(*phi).locDimL(i);
-  lDR=(*phi).locDimR(i);
-  ld=(*phi).locd(i);
+  lDL=phi->locDimL(i);
+  lDR=phi->locDimR(i);
+  ld=phi->locd(i);
   tmpContainer<lapack_complex_double> innerContainer(1,ld,lDR,lDL);
   lapack_complex_double simpleContainer;
   lapack_complex_double zone=1.0;

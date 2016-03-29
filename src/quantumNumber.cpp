@@ -15,9 +15,9 @@ quantumNumber::quantumNumber(dimensionTable const &dimInfoin, std::complex<int> 
   QNloc(QNlocin)
 {
   if(imag(N)==0){
-    imag(N)=0;
+    N.imag(0);
     for(int m=0;m<QNloc.size();++m){
-      imag(QNloc[m])=0;
+      (QNloc[m]).imag(0);
     }
   }
   int info;
@@ -247,8 +247,8 @@ int quantumNumber::initializeLabelList(int i, int direction){
     }
   }
   if(i==0){
-    imag(label)=1;
-    real(label)=0;
+    label.imag(1);
+    label.real(0);
     (*cLabel)[i*dimInfo.D()]=label;
     if(direction==-1){
       primaryIndices[i].push_back(0);
@@ -363,8 +363,8 @@ std::complex<int> quantumNumber::exactLabel(int i, int ai){
 std::complex<int> quantumNumber::groupOperation(std::complex<int> const &a, std::complex<int> const &b, int const pre){
   //Defines the real part as the U(1) part and the imaginary as the Z_2 part of a quantum number
   std::complex<int> result;
-  real(result)=real(a)+pre*real(b);
-  imag(result)=imag(a)*imag(b);
+  result.real(real(a)+pre*real(b));
+  result.imag(imag(a)*imag(b));
   return result;
 }
 

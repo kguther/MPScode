@@ -17,7 +17,7 @@
 class optHMatrix{
  public:
   optHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcomplex<double> > *Hin, dimensionTable &dimInfo, int Dwin, int iIn, projector *excitedStateP, double shift, std::vector<quantumNumber> *conservedQNsin);
-  ~optHMatrix();
+  virtual ~optHMatrix();
   virtual void MultMv(arcomplex<double> *v, arcomplex<double> *w);
   void MultMvQNConserving(arcomplex<double> *v, arcomplex<double> *w);
   int dim() const {return dimension;}

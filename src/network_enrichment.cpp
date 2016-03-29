@@ -218,14 +218,14 @@ void network::leftEnrichmentBlockwise(int i){
   int const MNumRows=lDL*ld;
   lDRR=networkState.locDimR(i+1);
   ldp=locd(i+1);
-  std::auto_ptr<lapack_complex_double> Rp(new lapack_complex_double[lDR*lDR*(1+lDwR)]);
-  std::auto_ptr<lapack_complex_double> pEP(new lapack_complex_double[ld*lDL*lDR*lDwR]);
-  std::auto_ptr<lapack_complex_double> MP, UP, VTP;
-  std::auto_ptr<double> diagsP;
+  std::unique_ptr<lapack_complex_double> Rp(new lapack_complex_double[lDR*lDR*(1+lDwR)]);
+  std::unique_ptr<lapack_complex_double> pEP(new lapack_complex_double[ld*lDL*lDR*lDwR]);
+  std::unique_ptr<lapack_complex_double> MP, UP, VTP;
+  std::unique_ptr<double> diagsP;
 #ifndef USE_MKL
-  std::auto_ptr<int> iworkP;
-  std::auto_ptr<double> rworkP;
-  std::auto_ptr<lapack_complex_double> workP;
+  std::unique_ptr<int> iworkP;
+  std::unique_ptr<double> rworkP;
+  std::unique_ptr<lapack_complex_double> workP;
   int *iwork;
   double *rwork;
   lapack_complex_double *work;
@@ -302,7 +302,7 @@ void network::leftEnrichmentBlockwise(int i){
       }
     }
   }
-  std::auto_ptr<lapack_complex_double> BP(new lapack_complex_double[ldp*lDRR*lDR*(1+lDwR)]);
+  std::unique_ptr<lapack_complex_double> BP(new lapack_complex_double[ldp*lDRR*lDR*(1+lDwR)]);
   Bnew=BP.get();
   networkState.subMatrixStart(localMatrix,i+1);
   for(int si=0;si<ldp;++si){
@@ -343,14 +343,14 @@ void network::rightEnrichmentBlockwise(int i){
   lDLL=networkState.locDimL(i-1);
   ldm=locd(i-1);
 
-  std::auto_ptr<lapack_complex_double> Rp(new lapack_complex_double[lDL*lDL*(1+lDwL)]);
-  std::auto_ptr<lapack_complex_double> pEP(new lapack_complex_double[ld*lDL*lDR*lDwL]);
-  std::auto_ptr<lapack_complex_double> MP, UP, VTP;
-  std::auto_ptr<double> diagsP;
+  std::unique_ptr<lapack_complex_double> Rp(new lapack_complex_double[lDL*lDL*(1+lDwL)]);
+  std::unique_ptr<lapack_complex_double> pEP(new lapack_complex_double[ld*lDL*lDR*lDwL]);
+  std::unique_ptr<lapack_complex_double> MP, UP, VTP;
+  std::unique_ptr<double> diagsP;
 #ifndef USE_MKL
-  std::auto_ptr<int> iworkP;
-  std::auto_ptr<double> rworkP;
-  std::auto_ptr<lapack_complex_double> workP;
+  std::unique_ptr<int> iworkP;
+  std::unique_ptr<double> rworkP;
+  std::unique_ptr<lapack_complex_double> workP;
   int *iwork;
   double *rwork;
   lapack_complex_double *work;
@@ -427,7 +427,7 @@ void network::rightEnrichmentBlockwise(int i){
       }
     }
   }
-  std::auto_ptr<lapack_complex_double> AP(new lapack_complex_double[ldm*lDLL*lDL*(1+lDwL)]);
+  std::unique_ptr<lapack_complex_double> AP(new lapack_complex_double[ldm*lDLL*lDL*(1+lDwL)]);
   Anew=AP.get();
   networkState.subMatrixStart(localMatrix,i-1);
   for(int si=0;si<ldm;++si){
@@ -442,7 +442,7 @@ void network::rightEnrichmentBlockwise(int i){
   }
   lapack_complex_double zone=1.0;
   lapack_complex_double zzero=0.0;
-  std::auto_ptr<lapack_complex_double> ASP(new lapack_complex_double[lDLL*MNumRows]);
+  std::unique_ptr<lapack_complex_double> ASP(new lapack_complex_double[lDLL*MNumRows]);
   lapack_complex_double *AStart=ASP.get();
   for(int si=0;si<ldm;++si){
     networkState.subMatrixStart(networkA,i-1,si);

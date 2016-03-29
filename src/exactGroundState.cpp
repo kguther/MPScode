@@ -4,7 +4,7 @@
 exactGroundState::exactGroundState(std::complex<int> N):QNValue(N)
 {
   if(imag(QNValue)==0){
-    imag(QNValue)=1;
+    QNValue.imag(1);
   }
 }
 

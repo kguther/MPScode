@@ -11,7 +11,7 @@ class tmpContainer{
  public:
   tmpContainer(){container=0;}
   tmpContainer(int Lin, int D1in, int D2in, int D3in){initializeContainer(Lin,D1in,D2in,D3in);}
-  ~tmpContainer(){delete[] container;}
+  virtual ~tmpContainer(){delete[] container;}
   const T& operator()(int i, int ai1, int ai2, int ai3)const {return container[ai3+ai2*D3+ai1*D3*D2+i*D1*D2*D3];}
   T& operator()(int i, int ai1, int ai2, int ai3){return container[ai3+ai2*D3+ai1*D3*D2+i*D1*D2*D3];}
   T& global_access(int const i, int const ai1, int const ai2, int const ai3){return container[ai3+ai2*D3+ai1*D3*D2+i*D1*D2*D3];}

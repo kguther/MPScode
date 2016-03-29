@@ -89,7 +89,7 @@ int main(int argc, char *argv[]){
   std::ostringstream compositeName;
   compositeName<<dir<<fNBuf<<type;
   if(symmetryBroken(necPars)){
-    compositeName<<"_single_hop";
+    compositeName<<"_single_hop_tR_"<<necPars.tReal<<"_tI_"<<necPars.tImag;
   }
   if(necPars.simType==1){
     compositeName<<"_rho_"<<necPars.rho<<"_par_"<<necPars.par<<"_odd_"<<necPars.odd<<"_J_"<<necPars.Jsc<<"_g_"<<necPars.gsc<<".txt";
