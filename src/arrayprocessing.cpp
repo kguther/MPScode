@@ -110,4 +110,18 @@ void lapackSVD(int MNumCols, int MNumRows, lapack_complex_double *Mnew, lapack_c
   delete[] offdiags;
 }
 
+//---------------------------------------------------------------------------------------------------//
+  void matrixMult(int dimL, int dimR, int dimContract, lapack_complex_double *a, lapack_complex_double *b, lapack_complex_double *result){
+    for(int m=0;m<dimR*dimL;++m){
+      result[m]=0;
+    }
+    for(int mL=0;mL<dimL;++mL){
+      for(int mR=0;mR<dimR;++mR){
+	for(int mContract=0;mContract<dimContract;++mContract){
+	  result[mL+mR*dimL]+=a[mL+mContract*dimL]*b[mContract+mR*dimContract];
+	}
+      }
+    }
+  }
+
 }

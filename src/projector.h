@@ -42,7 +42,7 @@ class projector{
   mps *orthoStates;
   overlap *scalarProducts;
   int nCurrentEigen;
-  siteArray<lapack_complex_double> auxiliaryMatrix;
+  baseTensor<lapack_complex_double> auxiliaryMatrix;
   void getGramMatrix(lapack_complex_double *gram, int i);
   void getLocalDimensions(int i);
   void pCpy(projector const &source);

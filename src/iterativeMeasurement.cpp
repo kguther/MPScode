@@ -48,6 +48,7 @@ void iterativeMeasurement::calcCtrIterRight(int const i){
 
 void iterativeMeasurement::calcCtrIterRightBase(int const i, lapack_complex_double *targetPctr){
   if(MPState->indexTable.nQNs()){
+    //Only this is usually relevant
     calcCtrIterRightBaseQNOpt(i,targetPctr);
   }
   else{
@@ -144,6 +145,7 @@ void iterativeMeasurement::calcCtrIterRightBaseQNOpt(int const i, lapack_complex
   MPState->subMatrixStart(siteMatrixState,i+1);
   getLocalDimensions(i+1);
   tmpContainer<lapack_complex_double> outercontainer(lDL,lDwL,ld,lDR);
+  //The calculation of the first two contractions has to be done in other functions, too. It therefore has an extra function. 
   calcOuterContainerRightQNOpt(i,outercontainer);
 #pragma omp parallel for private(simpleContainer,lBlockSize,rBlockSize,aimB,aiB,siB)  
   for(int aimp=0;aimp<lDL;++aimp){

@@ -22,6 +22,7 @@ class baseTensor{
   void getPtr(T const *&target, int si=0)const {target=entries+si*factors[0];}
   int setParameterDims(std::vector<int> const &dimsNew);
  private:
+  //TODO: replace T* with std::vector<T>
   T *entries;
   std::vector<int> dimensions;
   std::vector<int> factors;
@@ -132,12 +133,12 @@ int baseTensor<T>::setParameterDims(std::vector<int> const &dimsNew){
   }
   std::vector<int> indices;
   int mReduced, position, backupPosition;
-  //This is more sophisticated than I thought. Increasing the size of a Tensor requires to translate the absolute position in the source entries array to a position in the target entries array, where both have different factors.
+  //This is more sophisticated than I thought. Increasing the size of a Tensor requires to translate the absolute position in the source entries-array to a position in the target entries-array, where both have different factors-arrays.
   for(int m=0;m<backupCSize;++m){
     indices.clear();
     mReduced=m;
     for(int iDim=0;iDim<dimensions.size();++iDim){
-      //Get virtual bond indices
+      //Get virtual bond indices to translate absolute position in the entries-arrays for different dimensions to comparable variables
       indices.push_back(mReduced/backupFactors[iDim]);
       mReduced=mReduced%(backupFactors[iDim]);
     }
@@ -166,6 +167,7 @@ void baseTensor<T>::initialize(){
       factors[m]*=dimensions[k];
     }
   }
+  //deleting the memory has to be called manually because there is a case where initialization and deallocating are reversed (using a backup pointer)
   entries=new T[containerSize];
   for(int m=0;m<containerSize;++m){
     entries[m]=0;

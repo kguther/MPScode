@@ -241,6 +241,7 @@ void network::sweep(double maxIter, double tol, double &lambda){
     curtime=clock()-curtime;
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
     //Execute left-sided enrichment step and update the coefficient of the expansion term
+    
     normalize(i,1,expFlag);
     if(expFlag){
       getNewAlpha(i,lambda,lambdaCont);
@@ -248,6 +249,7 @@ void network::sweep(double maxIter, double tol, double &lambda){
     //Here, the scalar products with lower lying states are updated
     excitedStateP.updateScalarProducts(i,1);
     pCtr.calcCtrIterLeft(i+1);
+    
   }
   networkState.normalizeFinal(0);
   std::cout<<"STARTING LEFTSWEEP\n\n";
@@ -259,6 +261,7 @@ void network::sweep(double maxIter, double tol, double &lambda){
     optimize(i,maxIter,tol,lambda);
     curtime=clock()-curtime;
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
+    
     //Execute right-sided enrichment step and update the coefficient of the expansion term
     normalize(i,0,expFlag);
     if(expFlag){
@@ -267,6 +270,7 @@ void network::sweep(double maxIter, double tol, double &lambda){
     //same as above for the scalar products with lower lying states
     excitedStateP.updateScalarProducts(i,-1);
     pCtr.calcCtrIterRight(i-1);
+    
   }
   networkState.normalizeFinal(1);
 }

@@ -181,7 +181,7 @@ void projector::project(lapack_complex_double *vec, int i){
       vecContainer[mi]=0;
     }
     for(int mu=0;mu<nRelevantEigens;++mu){
-      auxiliaryMatrix.subMatrixStart(G,mu);
+      auxiliaryMatrix.getPtr(G,mu);
       //Compute Tr(G^dagger *vec) which gives the projector onto the space spanned by lower lying states
       cblas_zgemm(CblasColMajor,CblasConjTrans,CblasNoTrans,ld*lDR,ld*lDR,lDL,&zone,G,lDL,vec,lDL,&zzero,trContainer,ld*lDR);
       simpleContainer=0;
@@ -226,8 +226,6 @@ int projector::getProjector(int i){
     getGramMatrix(gram,i);
     lapack_int const gramDim=nCurrentEigen;
     if(nCurrentEigen>1){
-      //Causes memory leak and it seems we cannot fix that (also occurs when using LAPACKE_zheevr_work)
-      //Therefore, only use when really necessary (nEigens>2)
       lapack_int *suppZ;
       std::unique_ptr<lapack_int> suppZP(new lapack_int[2*nCurrentEigen]);
       suppZ=suppZP.get();
@@ -252,11 +250,15 @@ int projector::getProjector(int i){
     }
     getLocalDimensions(i);
     //stateArray::initialize automatically intializes all elements with zero
-    auxiliaryMatrix.initialize(nRelevantEigens,lDL,lDR*ld);
+    std::vector<int> dimensions(3,0);
+    dimensions[0]=nRelevantEigens;
+    dimensions[1]=lDL;
+    dimensions[2]=lDR*ld;
+    auxiliaryMatrix=baseTensor<lapack_complex_double>(dimensions);
     //delete[] projectionMatrix;
     //projectionMatrix=new lapack_complex_double[lDL*lDL];
     for(int mu=0;mu<nRelevantEigens;++mu){
-      auxiliaryMatrix.subMatrixStart(workingMatrix,mu);
+      auxiliaryMatrix.getPtr(workingMatrix,mu);
       //Eigenvectors are returned in ascending order
       for(int k=0;k<nCurrentEigen;++k){
 	scalarProducts[k].F.subMatrixStart(Fki,i);
@@ -279,16 +281,23 @@ void projector::getGramMatrix(lapack_complex_double *gram, int i){
   if(nCurrentEigen>0){
     getLocalDimensions(i);
     lapack_complex_double simpleContainer;
-    lapack_complex_double *matrixContainer, *Fki, *Fkpi;
+    lapack_complex_double *matrixContainer, *Fki, *Fkpi, *FkiT;
     lapack_complex_double zone=1.0;
     lapack_complex_double zzero=0.0;
+    std::unique_ptr<lapack_complex_double> FkiTP(new lapack_complex_double[ld*lDR*lDL]);
+    FkiT=FkiTP.get();
     std::unique_ptr<lapack_complex_double> matrixContainerP(new lapack_complex_double[ld*lDR*ld*lDR]);
     matrixContainer=matrixContainerP.get();
     for(int kp=0;kp<nCurrentEigen;++kp){
       scalarProducts[kp].F.subMatrixStart(Fkpi,i);
       for(int k=0;k<nCurrentEigen;++k){
 	scalarProducts[k].F.subMatrixStart(Fki,i);
-	cblas_zgemm(CblasColMajor,CblasConjTrans,CblasNoTrans,ld*lDR,ld*lDR,lDL,&zone,Fki,lDL,Fkpi,lDL,&zzero,matrixContainer,ld*lDR);
+	auxiliary::arraycpy(ld*lDR*lDL,Fki,FkiT);
+	auxiliary::transp(ld*lDR,lDL,FkiT);
+	for(int m=0;m<ld*lDR*lDL;++m){
+	  FkiT[m]=conj(FkiT[m]);
+	}
+	cblas_zgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,ld*lDR,ld*lDR,lDL,&zone,FkiT,ld*lDR,Fkpi,lDL,&zzero,matrixContainer,ld*lDR);
 	simpleContainer=0;
 	for(int mi=0;mi<ld*lDR;++mi){
 	  simpleContainer+=matrixContainer[mi+ld*lDR*mi];
