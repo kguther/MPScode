@@ -355,7 +355,6 @@ void network::rightEnrichmentBlockwise(int i){
   double *rwork;
   lapack_complex_double *work;
 #endif
-  
   R=Rp.get();
   pExpression=pEP.get();
   getPExpressionRight(i,pExpression);

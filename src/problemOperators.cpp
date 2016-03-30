@@ -16,7 +16,8 @@ int writeHamiltonian(network &sys, double J, double g, double W, std::complex<do
   }
   int const L=sys.networkH.length();
   int lDwL, lDwR;
-  double prefactor;
+  double prefactor, JD, gD, preD;
+  std::complex<double> tD;
   //The prefactor pre exists only for consistency checks and is the relative weight of the inter- and intrachain term
   double pre=W;
   for(int i=0;i<L;++i){
@@ -29,6 +30,10 @@ int writeHamiltonian(network &sys, double J, double g, double W, std::complex<do
     else{
       prefactor=2;
     }
+    gD=g*(1+disorder(deltaP));
+    tD=t*(1+disorder(deltaP));
+    JD=J*(1+disorder(deltaP));
+    preD=pre*(1+disorder(deltaP));
     for(int si=0;si<sys.locd(i);++si){
       for(int sip=0;sip<sys.locd(i);++sip){
 	for(int bi=0;bi<lDwR;++bi){
@@ -71,7 +76,7 @@ int writeHamiltonian(network &sys, double J, double g, double W, std::complex<do
 		  sys.networkH(i,si,sip,bi,bim)=delta(si,2)*delta(sip,1);
 		  break;
 		case 11:
-		  sys.networkH(i,si,sip,bi,bim)=prefactor*J*(1+disorder(deltaP))*delta(si,sip)*(1-delta(si,0)+delta(si,3))+t*aMatrix(sip,si)*bMatrix(si,sip)+conj(t)*bMatrix(sip,si)*aMatrix(si,sip);
+		  sys.networkH(i,si,sip,bi,bim)=prefactor*JD*delta(si,sip)*(1-delta(si,0)+delta(si,3))+tD*aMatrix(sip,si)*bMatrix(si,sip)+conj(tD)*bMatrix(sip,si)*aMatrix(si,sip);
 		  break;
 		default:
 		  sys.networkH(i,si,sip,bi,bim)=0;
@@ -79,7 +84,7 @@ int writeHamiltonian(network &sys, double J, double g, double W, std::complex<do
 	      }
 	      else{
 		if(bim==lDwL-1){
-		  sys.networkH(i,si,sip,bi,bim)=prefactor*J*(1+disorder(deltaP))*delta(si,sip)*(1-delta(si,0)+delta(si,3))+t*aMatrix(sip,si)*bMatrix(si,sip)+conj(t)*bMatrix(sip,si)*aMatrix(si,sip);
+		  sys.networkH(i,si,sip,bi,bim)=prefactor*JD*delta(si,sip)*(1-delta(si,0)+delta(si,3))+tD*aMatrix(sip,si)*bMatrix(si,sip)+conj(tD)*bMatrix(sip,si)*aMatrix(si,sip);
 		}
 		else{
 		  sys.networkH(i,si,sip,bi,bim)=0;
@@ -90,7 +95,7 @@ int writeHamiltonian(network &sys, double J, double g, double W, std::complex<do
 	      if(bim==lDwL-1){
 		switch(bi){
 		case 0:
-		  sys.networkH(i,si,sip,bi,bim)=prefactor*J*(1+disorder(deltaP))*delta(si,sip)*(1-delta(si,0)+delta(si,3));
+		  sys.networkH(i,si,sip,bi,bim)=prefactor*JD*delta(si,sip)*(1-delta(si,0)+delta(si,3));
 		  break;		  
 		case 1:
 		  //THIS IS TRICKY: By construction, a and b anticommute, but only for the same site. For the nearest-neigbhour hopping, one has to take into account extra signs from anticommutation of operators on adjacent sites. All other terms are at least quadratic in the local fermionic operators, so this problem only occurs here. 
@@ -106,22 +111,22 @@ int writeHamiltonian(network &sys, double J, double g, double W, std::complex<do
 		  sys.networkH(i,si,sip,bi,bim)=bMatrix(si,sip)*(delta(sip,3)-delta(sip,2));
 		  break;
 		case 5:
-		  sys.networkH(i,si,sip,bi,bim)=-2*J*(1+disorder(deltaP))*delta(si,sip)*(delta(si,1)+delta(si,3));
+		  sys.networkH(i,si,sip,bi,bim)=-2*JD*delta(si,sip)*(delta(si,1)+delta(si,3));
 		  break;
 		case 6:
-		  sys.networkH(i,si,sip,bi,bim)=-2*J*(1+disorder(deltaP))*delta(si,sip)*(delta(si,2)+delta(si,3));
+		  sys.networkH(i,si,sip,bi,bim)=-2*JD*delta(si,sip)*(delta(si,2)+delta(si,3));
 		  break;
 		case 7:
-		  sys.networkH(i,si,sip,bi,bim)=g*(1+disorder(deltaP))*pre*delta(si,sip)*delta(si,1);
+		  sys.networkH(i,si,sip,bi,bim)=gD*pre*delta(si,sip)*delta(si,1);
 		  break;
 		case 8:
-		  sys.networkH(i,si,sip,bi,bim)=g*(1+disorder(deltaP))*pre*delta(si,sip)*delta(si,2);
+		  sys.networkH(i,si,sip,bi,bim)=gD*pre*delta(si,sip)*delta(si,2);
 		  break;
 		case 9:
-		  sys.networkH(i,si,sip,bi,bim)=-pre*(1+disorder(deltaP))*delta(si,1)*delta(sip,2);
+		  sys.networkH(i,si,sip,bi,bim)=-preD*delta(si,1)*delta(sip,2);
 		  break;
 		case 10:
-		  sys.networkH(i,si,sip,bi,bim)=-pre*(1+disorder(deltaP))*delta(si,2)*delta(sip,1);
+		  sys.networkH(i,si,sip,bi,bim)=-preD*delta(si,2)*delta(sip,1);
 		  break;
 		case 11:
 		  sys.networkH(i,si,sip,bi,bim)=delta(si,sip);

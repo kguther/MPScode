@@ -174,10 +174,8 @@ void projector::project(lapack_complex_double *vec, int i){
     lapack_complex_double zone=1.0;
     lapack_complex_double zzero=0.0;
     getLocalDimensions(i);
-    std::unique_ptr<lapack_complex_double> vecP(new lapack_complex_double[ld*lDR*lDL]);
-    std::unique_ptr<lapack_complex_double> trP(new lapack_complex_double[ld*lDR*ld*lDR]);
-    vecContainer=vecP.get();
-    trContainer=trP.get();
+    vecContainer=new lapack_complex_double[ld*lDR*lDL];
+    trContainer=new lapack_complex_double[ld*lDR*ld*lDR];
     //Initialization is required (i.e. it is as fast as any other way)
     for(int mi=0;mi<ld*lDR*lDL;++mi){
       vecContainer[mi]=0;
@@ -196,6 +194,8 @@ void projector::project(lapack_complex_double *vec, int i){
     for(int mi=0;mi<ld*lDR*lDL;++mi){
       vec[mi]-=vecContainer[mi];
     }
+    delete[] vecContainer;
+    delete[] trContainer;
   }
 }
 
@@ -210,7 +210,6 @@ int projector::getProjector(int i){
   if(nCurrentEigen>0){
     lapack_complex_double *gram;
     lapack_int nGramEigens;
-    lapack_int *suppZ;
     lapack_complex_double *gramEigenvecs;
     double *gramEigens;
     lapack_complex_double *workingMatrix, *Fki;
@@ -220,15 +219,26 @@ int projector::getProjector(int i){
     lapack_int info;
     std::unique_ptr<lapack_complex_double> gramP(new lapack_complex_double[nCurrentEigen*nCurrentEigen]);
     std::unique_ptr<lapack_complex_double> gramEigenvecsP(new lapack_complex_double[nCurrentEigen*nCurrentEigen]);
-    std::unique_ptr<lapack_int> suppZP(new lapack_int[2*nCurrentEigen]);
     std::unique_ptr<double> gramEigensP(new double[nCurrentEigen]);
     gram=gramP.get();
     gramEigenvecs=gramEigenvecsP.get();
-    suppZ=suppZP.get();
     gramEigens=gramEigensP.get();
     getGramMatrix(gram,i);
     lapack_int const gramDim=nCurrentEigen;
-    info=LAPACKE_zheevr(LAPACK_COL_MAJOR,'V','A','U',gramDim,gram,gramDim,0.0,0.0,0,0,1e-5,&nGramEigens,gramEigens,gramEigenvecs,gramDim,suppZ);
+    if(nCurrentEigen>1){
+      //Causes memory leak and it seems we cannot fix that (also occurs when using LAPACKE_zheevr_work)
+      //Therefore, only use when really necessary (nEigens>2)
+      lapack_int *suppZ;
+      std::unique_ptr<lapack_int> suppZP(new lapack_int[2*nCurrentEigen]);
+      suppZ=suppZP.get();
+      info=LAPACKE_zheevr(LAPACK_COL_MAJOR,'V','A','U',gramDim,gram,gramDim,0.0,0.0,0,0,1e-5,&nGramEigens,gramEigens,gramEigenvecs,gramDim,suppZ);
+    }
+    else{
+      gramEigenvecs[0]=1;
+      gramEigens[0]=real(gram[0]);
+      info=0;
+      nGramEigens=1;
+    }
     if(info){
       std::cout<<"Error in LAPACKE_zheevr: "<<info<<" at site "<<i<<std::endl;
       return 1;

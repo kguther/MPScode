@@ -139,6 +139,7 @@ void basisQNOrderMatrix::generateAccessArrays(){
       }
     }
   }
+  //These are just flattened versions of the xyBlockIndex arrays, for slightly faster access (not that poweful to be honest)
   aiBlockIndicesLPAccess.resize(maxBlockSize*maxNumBlocks*dimInfo.L());
   aimBlockIndicesRPAccess.resize(maxBlockSize*maxNumBlocks*dimInfo.L());
   siaimBlockIndicesLPAccess.resize(maxBlockSize*maxNumBlocks*dimInfo.L());

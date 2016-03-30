@@ -165,6 +165,9 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
     alpha=simPars.alpha;
     tol=simPars.tolInitial;
     //load all pairings with the current state and previous ones into the scalar products
+    if(iEigen){
+      std::cout<<"GENERATING PROJECTOR"<<std::endl;
+    }
     excitedStateP.loadScalarProducts(networkState,iEigen);
 
     pCtr.calcCtrIterRightBase(-1,&expectationValue);

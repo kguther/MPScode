@@ -3,6 +3,10 @@
 
 #include <vector>
 
+//---------------------------------------------------------------------------------------------------//
+// Basic class for a tensor of an MPS (or MPO, although MPOs are stored in another scheme for sake of efficiency). It can have an arbitrary dimension, but this comes at the cost of an ugly direct access. Therefore, when performance is required, getPtr should be used instead.
+//---------------------------------------------------------------------------------------------------//
+
 template<typename T>
 class baseTensor{
  public:
@@ -61,6 +65,8 @@ baseTensor<T>& baseTensor<T>::operator=(baseTensor<T> const &source){
   return *this;
 }
 
+//---------------------------------------------------------------------------------------------------//
+// Direct access function for the baseTensor class. Not very fast, so it should be avoided when fast access is required, instead, use getPtr to get C-style access.
 //---------------------------------------------------------------------------------------------------//
 
 template<typename T>
@@ -126,10 +132,12 @@ int baseTensor<T>::setParameterDims(std::vector<int> const &dimsNew){
   }
   std::vector<int> indices;
   int mReduced, position, backupPosition;
+  //This is more sophisticated than I thought. Increasing the size of a Tensor requires to translate the absolute position in the source entries array to a position in the target entries array, where both have different factors.
   for(int m=0;m<backupCSize;++m){
     indices.clear();
     mReduced=m;
     for(int iDim=0;iDim<dimensions.size();++iDim){
+      //Get virtual bond indices
       indices.push_back(mReduced/backupFactors[iDim]);
       mReduced=mReduced%(backupFactors[iDim]);
     }
