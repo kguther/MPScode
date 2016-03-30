@@ -80,6 +80,8 @@ const T& baseTensor<T>::operator()(std::vector<int> const &indices) const{
   return entries[position];
 }
 
+//---------------------------------------------------------------------------------------------------//
+
 template<typename T>
 T& baseTensor<T>::operator()(std::vector<int> const &indices){
   return const_cast<T&>(static_cast<baseTensor<T> const&>(*this)(indices));
@@ -110,6 +112,8 @@ void baseTensor<T>::generate(std::vector<int> const &dims){
   initialize();
 }
 
+//---------------------------------------------------------------------------------------------------//
+// This feature is used to ramp up the (virtual) bond dimension over the course of calculation.
 //---------------------------------------------------------------------------------------------------//
 
 template<typename T>

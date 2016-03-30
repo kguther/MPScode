@@ -177,7 +177,6 @@ void iterativeMeasurement::calcOuterContainerRightQNOpt(int const i, tmpContaine
   int lBlockSize, rBlockSize;
   MPState->subMatrixStart(siteMatrixState,i+1);
   getLocalDimensions(i+1);
- 
   lapack_complex_double *sourcePctr;
   lapack_complex_double *siteMatrixH;
   int *biIndices, *bimIndices, *siIndices, *sipIndices;
@@ -200,6 +199,7 @@ void iterativeMeasurement::calcOuterContainerRightQNOpt(int const i, tmpContaine
       }
     }
   }
+  //Contraction works similar to the general case. Here, only entries fulfilling the QN constraint are used
 #pragma omp parallel for private(lBlockSize,rBlockSize,aiB,siB,aimB)
   for(int ai=0;ai<lDR;++ai){
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
