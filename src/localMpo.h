@@ -41,8 +41,9 @@ void localMpo<T>::stepRight(){
       }
     }
   }
-  this->setUpSiteSparse(i);
-  this->setUpSiteSparse(i+1);
+  for(int m=0;m<=size;++m){
+    this->setUpSiteSparse(i+1-m);
+  }
   ++i;
 }
 

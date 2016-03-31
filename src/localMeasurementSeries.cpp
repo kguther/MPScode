@@ -1,5 +1,7 @@
 #include "localMeasurementSeries.h"
 #include "optHMatrix.h"
+#include "globalMeasurement.h"
+#include <iostream>
 
 localMeasurementSeries::localMeasurementSeries(localMpo<lapack_complex_double> *const MPOperator, mps *const MPState):
   iterativeMeasurement(MPOperator,MPState),
@@ -11,7 +13,7 @@ localMeasurementSeries::localMeasurementSeries(localMpo<lapack_complex_double> *
 void localMeasurementSeries::measureFull(std::vector<lapack_complex_double> &lambda){
   int const L=MPOperator->length();
   lapack_complex_double result;
-  int const operatorSize=MPOperator->width();
+  int const operatorSize=localMPOperator->width();
   MPOperator->setUpSparse();
   //The input operator is stored since the measure sweep destroys its form
   localMpo<lapack_complex_double> backup=*localMPOperator;
@@ -23,9 +25,16 @@ void localMeasurementSeries::measureFull(std::vector<lapack_complex_double> &lam
   for(int i=1;i<=localMPOperator->currentSite();++i){
     calcCtrIterLeft(i);
   }
+  globalMeasurement test;
+  double buffer;
   //Beginning from the initial site, we sweep to the right and compute the expectation value on each site, using the unchanged partial contractions as intermediate results.
   for(int i=localMPOperator->currentSite();i<L-1;++i){
     localMPOperator->stepRight();
+    /*
+    test.setupMeasurement(localMPOperator,MPState);
+    test.measureFull(buffer);
+    lambda.push_back(buffer);
+    */
     for(int m=operatorSize-1;m>=0;--m){
       calcCtrIterLeft(i+1-m);
     }
@@ -57,5 +66,4 @@ void localMeasurementSeries::getCurrentValue(std::vector<lapack_complex_double> 
   }
   lambda.push_back((simpleContainer));
   delete[] siteMatrixContainer;
-  
 }

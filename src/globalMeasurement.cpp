@@ -1,6 +1,12 @@
 #include <iostream>
 #include "globalMeasurement.h"
 
+globalMeasurement::globalMeasurement():
+  baseMeasurement()
+{}
+
+//---------------------------------------------------------------------------------------------------//
+
 globalMeasurement::globalMeasurement(mpo<lapack_complex_double> *MPOperatorIn, mps *MPStateIn):
   baseMeasurement(MPOperatorIn,MPStateIn)
 {}

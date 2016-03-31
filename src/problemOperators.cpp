@@ -220,9 +220,11 @@ double disorder(double deltaP){
 //-------------------------------------------------------------------------------------------//
 
 std::complex<double> tLocalScale(int i){
+  /*
   if(i==0 || i==30){
     return 1;
   }
   return 0;
-  //return 1+disorder(0.2);
+  */
+  return 1+disorder(0.02);
 }
