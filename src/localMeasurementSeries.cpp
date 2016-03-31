@@ -11,6 +11,7 @@ localMeasurementSeries::localMeasurementSeries(localMpo<lapack_complex_double> *
 void localMeasurementSeries::measureFull(std::vector<lapack_complex_double> &lambda){
   int const L=MPOperator->length();
   lapack_complex_double result;
+  int const operatorSize=MPOperator->width();
   MPOperator->setUpSparse();
   //The input operator is stored since the measure sweep destroys its form
   localMpo<lapack_complex_double> backup=*localMPOperator;
@@ -25,7 +26,9 @@ void localMeasurementSeries::measureFull(std::vector<lapack_complex_double> &lam
   //Beginning from the initial site, we sweep to the right and compute the expectation value on each site, using the unchanged partial contractions as intermediate results.
   for(int i=localMPOperator->currentSite();i<L-1;++i){
     localMPOperator->stepRight();
-    calcCtrIterLeft(i+1);
+    for(int m=operatorSize-1;m>=0;--m){
+      calcCtrIterLeft(i+1-m);
+    }
     getCurrentValue(lambda,localMPOperator->currentSite());
   }
   //Here, the input operator is restored to its original form

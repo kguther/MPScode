@@ -3,6 +3,10 @@
 
 #include "mpo.h"
 
+//---------------------------------------------------------------------------------------------------//
+// A 'localMpo' is a mpo wich only contains operators acting on a few sites. Usually, it can be seperated into two parts, each acting on spatially different sites. This class allows to move the part operating on sites with higher indices to be moved to the right, a useful feature when measuring correlation functions.
+//---------------------------------------------------------------------------------------------------//
+
 template<typename T>
 class localMpo: public mpo<T>{
  public:
@@ -11,14 +15,18 @@ class localMpo: public mpo<T>{
   void initializeLocal(int const din, int const Dwin, int const Lin, int const initialSite, int *fermionicParites=0){this->initialize(din,Dwin,Lin);i=initialSite;fermionicSign=fermionicParites;}
   void stepRight();
   int currentSite()const {return i;}
+  int width()const {return size;}
  private: 
   int i, size;
   int *fermionicSign;
   int fermionicSignFunction(int const si);
 };
 
+//---------------------------------------------------------------------------------------------------//
+
 template<typename T>
 void localMpo<T>::stepRight(){
+  //Special feature of localMpo: moves size MPO-matrices at size i one site to the right (and fills up the vacancy with identity)
   int lDwR=this->locDimR(i);
   int lDwL=this->locDimL(i);
   for(int si=0;si<this->d;++si){
@@ -40,6 +48,7 @@ void localMpo<T>::stepRight(){
 
 template<typename T>
 int localMpo<T>::fermionicSignFunction(int const si){
+  //When moving matrices, one has to take into account for signs occuring due to fermionic statistics if the matrices moved contain unpaired fermionic operators. This is indicated by the fermionicSign flag.
   if(fermionicSign){
     return fermionicSign[si];
   }

@@ -290,8 +290,8 @@ void sysSetMeasurements(simulation &sim, int d, int L){
       bulkSuperconductingOrder.global_access(bulkStart,si,sip,0,0)=delta(si,3)*delta(sip,0);
       bulkSuperconductingOrder.global_access(bulkStart-1,si,sip,0,0)=delta(si,0)*delta(sip,3);
       localDensityProd.global_access(1,si,sip,0,0)=delta(si,sip)*delta(si,3);
-      bulkSuperConductingCorrelation.global_access(bulkStart-3,si,sip,0,0)=aMatrix(sip,si)*(delta(sip,0)-delta(sip,2));
-      bulkSuperConductingCorrelation.global_access(bulkStart-2,si,sip,0,0)=aMatrix(sip,si);
+      bulkSuperConductingCorrelation.global_access(bulkStart-3,si,sip,0,0)=bMatrix(sip,si)*(delta(sip,0)-delta(sip,1));
+      bulkSuperConductingCorrelation.global_access(bulkStart-2,si,sip,0,0)=bMatrix(sip,si);
       bulkSuperConductingCorrelation.global_access(bulkStart-1,si,sip,0,0)=aMatrix(si,sip)*(delta(sip,1)-delta(sip,3));
       bulkSuperConductingCorrelation.global_access(bulkStart,si,sip,0,0)=aMatrix(si,sip);
     }

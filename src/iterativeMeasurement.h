@@ -21,6 +21,7 @@ class iterativeMeasurement: public baseMeasurement{
   void calcCtrIterRight(int const i);
   void calcOuterContainerLeft(int const i, tmpContainer<lapack_complex_double> &outerContainer);
   void calcOuterContainerRight(int const i, tmpContainer<lapack_complex_double> &outerContainer);
+  //Containers for caching of partial contractions of the expectation value. This is what distinguishes the iterativeMeasurement
   pContraction<lapack_complex_double> Lctr;
   pContraction<lapack_complex_double> Rctr;
  protected:
