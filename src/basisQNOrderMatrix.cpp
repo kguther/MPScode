@@ -258,7 +258,8 @@ int basisQNOrderMatrix::blockStructure(int const i, int const direction, std::ve
 
 std::complex<int> basisQNOrderMatrix::qnCriterium(int const iQN, int const i, int const aim, int const si, int const direction, int const pre){
   std::complex<int> criterium;
-  criterium.real(real((*conservedQNs)[iQN].QNLabel(i-1+direction,aim))+pre*real((*conservedQNs)[iQN].QNLabel(si)));
-  criterium.imag(imag((*conservedQNs)[iQN].QNLabel(i-1+direction,aim))*imag((*conservedQNs)[iQN].QNLabel(si)));
+  //criterium.real(real((*conservedQNs)[iQN].QNLabel(i-1+direction,aim))+pre*real((*conservedQNs)[iQN].QNLabel(si)));
+  //criterium.imag(imag((*conservedQNs)[iQN].QNLabel(i-1+direction,aim))*imag((*conservedQNs)[iQN].QNLabel(si)));
+  criterium=(*conservedQNs)[iQN].groupOperation((*conservedQNs)[iQN].QNLabel(i-1+direction,aim),(*conservedQNs)[iQN].QNLabel(si),pre);
   return criterium;
 }

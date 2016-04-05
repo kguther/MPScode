@@ -13,14 +13,13 @@
 void sysSolve(info const &parPack, std::string const &fileName);
 void getScaling(int L, info const &parPack, double *results, std::string const &fileName);
 void sysSetMeasurements(simulation &sim, int d, int L);
+void getFileName(info const &necPars, char *fNBuf, int commsize, int myrank, std::string &finalName);
 //results has to be at least of size 4 (in the sense of a C array)
 
 int main(int argc, char *argv[]){
   //Here, the parameters are distributed via MPI to the processes. Each process then individuall solves the system for a specific set of parameters - great paralellization.
   //There are currently two settings: scaling and correlation. The former computes the behaivour of the gap with increasing system size and the latter computes correlations etc across the parameter space for fixed system size
   MPI_Init(&argc,&argv);
-  std::string dir="results/";
-  std::string type;
   int myrank, commsize;
   info necPars;
   char *fNBuf;
@@ -47,7 +46,6 @@ int main(int argc, char *argv[]){
   apparentTypes[1]=MPI_DOUBLE;
   MPI_Type_create_struct(dn,blockLengths,displacements,apparentTypes,&mpiInfo);
   MPI_Type_commit(&mpiInfo);
-
   //The main process now gets the input and prepares the broadcast of parameters
   //The interface class mainly reads parameter files
   if(myrank==0){
@@ -74,48 +72,14 @@ int main(int argc, char *argv[]){
     fNBuf=new char[fNBufSize+1];
   }
   MPI_Bcast(fNBuf,fNBufSize+1,MPI_CHAR,0,MPI_COMM_WORLD);
-  
-  //The output filename is generated
-  if(necPars.simType==1){
-    type="_scaling";
-  }
-  if(necPars.simType==0){
-      type="_correlations";
-      necPars.par=2*(myrank%2)-1;
-  }
-  if(necPars.simType==2){
-    type="_point";
-  }
-  std::ostringstream compositeName;
-  compositeName<<dir<<fNBuf<<type;
-  if(symmetryBroken(necPars)){
-    compositeName<<"_single_hop_tR_"<<necPars.tReal<<"_tI_"<<necPars.tImag;
-  }
-  if(necPars.simType==1){
-    compositeName<<"_rho_"<<necPars.rho<<"_par_"<<necPars.par<<"_odd_"<<necPars.odd<<"_J_"<<necPars.Jsc<<"_g_"<<necPars.gsc<<".txt";
-  }
-  else{
-    if(necPars.simType==2 && commsize>1){
-      compositeName<<"_run_"<<myrank;
-    }
-    compositeName<<"_L_"<<necPars.L<<"_N_"<<necPars.N<<"_p_"<<necPars.par;
-  }
-  std::string finalName=compositeName.str();
-  //Only type-1 runs do not use the simulation output, where the filename is generated. There, the name is generated here
-  if(necPars.simType==1){
-    for(int m=0;m<finalName.length()-4;++m){
-      if(finalName[m]=='.'){
-	finalName.erase(m,1);
-      }
-    }
-  }
-  std::cout<<finalName<<" "<<commsize<<std::endl;
+  std::string finalName;
   //Each process calculates its own couplings/system size
   int const range=4;
   int const redRank=myrank/2;
   int WStage=redRank/range;
   if(necPars.simType==0){
     necPars.Wsc+=(1+WStage)/2*0.2*pow(-1,WStage);
+    necPars.par=2*(myrank%2)-1;
   }
   alpha=(necPars.alphaMax-necPars.alphaMin)*((redRank%range)/static_cast<double>(range))+necPars.alphaMin;
   if(necPars.simType==0){
@@ -125,9 +89,19 @@ int main(int argc, char *argv[]){
   L=L0+dL*myrank;
   //And evaluates its computation
   if(necPars.simType==1){
+    for(int pty=-1;pty<2;pty+=2){
+      for(int varL=71;varL<110;varL+=3){
+	necPars.L=varL;
+	necPars.N=necPars.rho*necPars.L*2;
+	necPars.par=pty;
+	getFileName(necPars,fNBuf,commsize,myrank,finalName);
+	sysSolve(necPars,finalName);
+      }
+    }
+    /*
     double *energies=new double[4*commsize];
     double results[4];
-    getScaling(L,necPars,results,finalName);
+    //getScaling(L,necPars,results,finalName);
     //rcvcount is the number of objects recieved PER PROCESS, not in total
     MPI_Gather(results,4,MPI_DOUBLE,energies,4,MPI_DOUBLE,0,MPI_COMM_WORLD);
     //For scaling, all results are written in the same file. This is done by the poor man's solution: only the main process writes.
@@ -141,8 +115,13 @@ int main(int argc, char *argv[]){
 	ofs<<L0+rk*dL<<"\t"<<energies[4*rk]<<"\t"<<energies[4*rk+1]<<"\t"<<energies[4*rk+2]<<"\t"<<energies[4*rk+3]<<std::endl;
       }
       ofs.close();
-      delete[] energies;
     }
+    delete[] energies;
+    */
+  }
+  //The output filename is generated
+  if(necPars.simType!=1){
+    getFileName(necPars,fNBuf,commsize,myrank,finalName);
   }
   if(necPars.simType==0){
     sysSolve(necPars,finalName);
@@ -320,4 +299,45 @@ void sysSetMeasurements(simulation &sim, int d, int L){
   sim.setLocalMeasurement(bulkICSuperConductingCorrelation,picscName);
   sim.setEntanglementSpectrumMeasurement();
   sim.run();
+}
+
+//-------------------------------------------------------------------------------------------//
+
+void getFileName(info const &necPars, char *fNBuf, int commsize, int myrank, std::string &finalName){
+  std::string dir="results/";
+  std::string type;
+  if(necPars.simType==1){
+    type="_scaling";
+  }
+  if(necPars.simType==0){
+    type="_correlations";
+  }
+  if(necPars.simType==2){
+    type="_point";
+  }
+  std::ostringstream compositeName;
+  compositeName<<dir<<fNBuf<<type;
+  if(symmetryBroken(necPars)){
+    compositeName<<"_single_hop_tR_"<<necPars.tReal<<"_tI_"<<necPars.tImag;
+  }
+  if(necPars.simType==1){
+    //compositeName<<"_run_"<<myrank<<"_rho_"<<necPars.rho<<"_par_"<<necPars.par<<"_odd_"<<necPars.odd<<"_J_"<<necPars.Jsc<<"_g_"<<necPars.gsc<<".txt";
+    compositeName<<"_run_"<<myrank<<"_L_"<<necPars.L<<"_N_"<<necPars.N<<"_p_"<<necPars.par;
+  }
+  else{
+    if(necPars.simType==2 && commsize>1){
+      compositeName<<"_run_"<<myrank;
+    }
+    compositeName<<"_L_"<<necPars.L<<"_N_"<<necPars.N<<"_p_"<<necPars.par;
+  }
+  finalName=compositeName.str();
+  //Only type-1 runs do not use the simulation output, where the filename is generated. There, the name is generated here
+  if(necPars.simType==1){
+    for(int m=0;m<finalName.length()-4;++m){
+      if(finalName[m]=='.'){
+	finalName.erase(m,1);
+      }
+    }
+  }
+  std::cout<<finalName<<std::endl;
 }

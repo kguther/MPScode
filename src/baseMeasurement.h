@@ -16,21 +16,26 @@
 class baseMeasurement{
  protected:
   //Result of iteration is stored in target
-  void calcOuterContainerLeft(int const i, lapack_complex_double *const source, tmpContainer<lapack_complex_double> &outerContainer);
-  void calcCtrIterLeftBase(int const i, lapack_complex_double *const source, lapack_complex_double *const targetPctr);
+  //Todo: Seperate protected and private
+  virtual void calcOuterContainerLeft(int const i, lapack_complex_double *const source, tmpContainer<lapack_complex_double> &outerContainer);
+  virtual void calcCtrIterLeftBase(int const i, lapack_complex_double *const source, lapack_complex_double *const targetPctr);
+  virtual void calcCtrIterRightBase(int const i, lapack_complex_double *const source, lapack_complex_double *const target);
   baseMeasurement();
   baseMeasurement(mpo<lapack_complex_double> *const MPOperator, mps *const MPState);
   mpo<lapack_complex_double> *MPOperator;
   mps *MPState;
-  void getLocalDimensions(int const i);
-  void initializeBase();
   void setupMeasurement(mpo<lapack_complex_double> *const MPOperator, mps *const MPState);
+  void initializeBase();
+  void calcOuterContainerRightQNOpt(int const i, lapack_complex_double *const source,  tmpContainer<lapack_complex_double> &outerContainer);
+  void getLocalDimensions(int const i);
   int lDwL, lDwR, lDL, lDR, ld, D, Dw;
   int pctrIndex(int const ai, int const bi, int const aip) {return aip+bi*D+ai*D*Dw;}
   int stateIndex(int const si, int const ai, int const aim) {return aim+ai*lDL+si*lDL*lDR;}
   int operatorIndex(int const si, int const sip, int const bi, int const bim) {return bim+bi*Dw+sip*Dw*Dw+si*ld*Dw*Dw;}
+ private:
   void calcCtrIterLeftBaseQNOpt(int const i, lapack_complex_double *const source, lapack_complex_double *const targetPctr);
   void calcOuterContainerLeftQNOpt(int const i, lapack_complex_double *const source, tmpContainer<lapack_complex_double> &outerContainer);
+  void calcCtrIterRightBaseQNOpt(int const i, lapack_complex_double *const source, lapack_complex_double *const target);
 };
 
 #endif

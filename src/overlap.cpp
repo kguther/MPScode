@@ -45,7 +45,7 @@ void overlap::loadMPS(mps const*const psiIn, mps const*const phiIn){
   delete[] Rctr;
   Lctr=new lapack_complex_double[L*D*D];
   Rctr=new lapack_complex_double[L*D*D];
-  F.generate(psiIn->dimInfo);
+  F.initialize(psiIn->dimInfo);
   getF();
 }
 

@@ -27,8 +27,10 @@ class quantumNumber{
   int primaryIndex(int i, int ai);
   int setParameterD(int Dnew);
   int setParameterL(int Lnew);
+  std::vector<std::complex<int> > localQNValue() const {return QNloc;}
   //The failed flag is set when the given quantum number cannot be reached in the given system or the initialization failed for some other reason. It is set to zero else.
   int failed;
+  std::complex<int> groupOperation(std::complex<int> const &a, std::complex<int> const &b, int pre=1);
  private:
   dimensionTable dimInfo;
   std::vector<std::complex<int> > leftLabel;
@@ -48,7 +50,6 @@ class quantumNumber{
   std::complex<int> QNLabelRP(int i, int ai);
   std::complex<int> pre(std::complex<int> a, int direction);
   int integerParity(int n);
-  std::complex<int> groupOperation(std::complex<int> const &a, std::complex<int> const &b, int pre=1);
 };
 
 template<typename T>

@@ -30,13 +30,6 @@ void stateArray::mpsCpy(stateArray const &source){
   }
 }
 
-
-//---------------------------------------------------------------------------------------------------//
-
-void stateArray::generate(dimensionTable const &dimInfoIn){
-  initialize(dimInfoIn);
-}
-
 //---------------------------------------------------------------------------------------------------//
 
 void stateArray::initialize(dimensionTable const &dimInfoIn){
@@ -78,14 +71,13 @@ int stateArray::setParameterL(int Lnew){
     startPos=L/2+deltaL/2;
     int endPos=L/2-deltaL/2+deltaL%2;
     stateArrayAccessStructure.erase(stateArrayAccessStructure.begin()+startPos,stateArrayAccessStructure.begin()+endPos);
-    setParameterD(D);
   }
   else{
-    startPos=L/2-deltaL/2;
+    startPos=L/2-deltaL/2+1;
     stateArrayAccessStructure.insert(stateArrayAccessStructure.begin()+startPos,deltaL,baseTensor<lapack_complex_double>());
-    setParameterD(D);
   }
   L=Lnew;
+  setParameterD(D);
   return 0;
 }
 

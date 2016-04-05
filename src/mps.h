@@ -26,7 +26,7 @@ class mps: public stateArray{
   void getEntanglementEntropy(std::vector<double> &S, std::vector<std::vector<double> > &spectra);
   void setUpQNs(std::vector<quantumNumber> const &conservedQNs);
   basisQNOrderMatrix indexTable;
- private:
+ protected:
   int nQNs;
   std::vector<quantumNumber> conservedQNs;
   void createInitialState();
@@ -34,6 +34,7 @@ class mps: public stateArray{
   int rightNormalizeStateBlockwise(int i);
   void convertIndicesLP(int i, int j, int k, int iBlock, int &si, int &ai, int &aim);
   void convertIndicesRP(int i, int j, int k, int iBlock, int &si, int &ai, int &aim);
+ private:
   void getEntanglementSpectrumOC(int i, double &S, std::vector<double> &spectrum);
 };
 

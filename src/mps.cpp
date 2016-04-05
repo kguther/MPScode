@@ -23,18 +23,7 @@ mps::mps():stateArray()
 
 mps::mps(dimensionTable const &dimInfoIn, std::vector<quantumNumber> const &conservedQNsin){
   stateArray::initialize(dimInfoIn);
-  conservedQNs=conservedQNsin;
-  if(conservedQNs.size()){
-    nQNs=conservedQNs.size();
-  }
-  else{
-    nQNs=0;
-  }
-  if(nQNs){
-    int cumulativeBlockSize, numBlocks;
-    indexTable.initialize(dimInfo,&conservedQNs);
-    indexTable.generateQNIndexTables();
-  }
+  setUpQNs(conservedQNsin);
   createInitialState();
 }
 
@@ -54,7 +43,7 @@ mps& mps::operator=(mps const &source){
 //---------------------------------------------------------------------------------------------------//
 
 void mps::generate(dimensionTable const &dimInfoIn, std::vector<quantumNumber> const &conservedQNsin){
-  stateArray::generate(dimInfoIn);
+  stateArray::initialize(dimInfoIn);
   setUpQNs(conservedQNsin);
   createInitialState();
 }

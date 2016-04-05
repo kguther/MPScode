@@ -22,7 +22,6 @@ class stateArray{
   const lapack_complex_double& global_access(int i, int si, int ai, int aim) const {std::vector<int> indices=getIndexVec(si,ai,aim); return stateArrayAccessStructure[i](indices);}
   void subMatrixStart(lapack_complex_double *&pStart, int i, int si=0){stateArrayAccessStructure[i].getPtr(pStart,si);}
   void subMatrixStart(lapack_complex_double const*&pStart, int i, int si=0)const {stateArrayAccessStructure[i].getPtr(pStart,si);}
-  virtual void generate(dimensionTable const &dimInfoIn);
   int locDimR(int i) const;
   int locDimL(int i) const;
   int locd(int i) const;
@@ -30,6 +29,7 @@ class stateArray{
   int maxDim() const {return dimInfo.D();}
   int siteDim() const {return dimInfo.d();}
   int length() const {return dimInfo.L();}
+  virtual void initialize(dimensionTable const &dimInfoIn);
   dimensionTable dimInfo;
  private:
   stateArray(stateArray const &cpyState);
@@ -37,7 +37,6 @@ class stateArray{
  protected:
   int D,L;
   std::vector<baseTensor<lapack_complex_double> > stateArrayAccessStructure;
-  virtual void initialize(dimensionTable const &dimInfoIn);
   void createStateArray(int const Lin);
   std::vector<int> getIndexVec(int si, int ai, int aim) const;
 };
