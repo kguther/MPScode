@@ -21,8 +21,8 @@ class quantumNumber{
   quantumNumber();
   quantumNumber(dimensionTable const &dimInfoin, std::complex<int> const &Nin, std::vector<std::complex<int> > const &QNlocin);
   int qnConstraint(int i, int si, int ai, int aim);
-  std::complex<int> QNLabel(int i, int ai);
-  std::complex<int> QNLabel(int si);
+  std::complex<int> QNLabel(int i, int ai)const;
+  std::complex<int> QNLabel(int si)const;
   std::complex<int> QNValue() const {return N;}
   int primaryIndex(int i, int ai);
   int setParameterD(int Dnew);
@@ -30,7 +30,7 @@ class quantumNumber{
   std::vector<std::complex<int> > localQNValue() const {return QNloc;}
   //The failed flag is set when the given quantum number cannot be reached in the given system or the initialization failed for some other reason. It is set to zero else.
   int failed;
-  std::complex<int> groupOperation(std::complex<int> const &a, std::complex<int> const &b, int pre=1);
+  std::complex<int> groupOperation(std::complex<int> const &a, std::complex<int> const &b, int pre=1)const;
  private:
   dimensionTable dimInfo;
   std::vector<std::complex<int> > leftLabel;

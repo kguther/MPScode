@@ -2,13 +2,14 @@
 #define MATRIX_PRODUCT_STATE_VARIABLE_SIZE
 
 #include "mps.h"
+#include "twositeQNOrderMatrix.h"
 
 class imps: public mps{
  public:
-  imps();
   imps(dimensionTable const &dimInfo, std::vector<quantumNumber> const &conservedQNsin);
   void addSite(std::complex<int> *targetQN);
   void exportState(mps &target);
+  twositeQNOrderMatrix centralIndexTable;
 };
 
 #endif

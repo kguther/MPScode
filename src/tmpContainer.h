@@ -44,6 +44,7 @@ class dynamic5DContainer{
   ~dynamic5DContainer(){delete[] container;}
   void generate(int d1, int d2, int d3, int d4, int d5){delete[] container; D1=d1; D2=d2; D3=d3; D4=d4; D5=d5; container=new T[d1*d2*d3*d4*d5];}
   T& global_access(int const a1, int const a2, int const a3, int const a4, int const a5){return container[a5+a4*D5+a3*D4*D5+a2*D3*D4*D5+a1*D2*D3*D4*D5];}
+  void getPtr(T *&target){target=container;}
  private:
   T *container;
   int D1,D2,D3,D4,D5;

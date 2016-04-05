@@ -1,13 +1,8 @@
 #include "imps.h"
 
-imps::imps():
-  mps()
-{}
-
-//---------------------------------------------------------------------------------------------------//
-
 imps::imps(dimensionTable const &dimInfo, std::vector<quantumNumber> const &conservedQNsin):
-  mps(dimInfo,conservedQNsin)
+  mps(dimInfo,conservedQNsin),
+  centralIndexTable(twositeQNOrderMatrix(dimInfo.L()/2,dimInfo,&conservedQNsin))
 {}
 
 //---------------------------------------------------------------------------------------------------//
@@ -19,6 +14,7 @@ void imps::addSite(std::complex<int> *targetQN){
     conservedQNs[iQN]=quantumNumber(dimInfo,targetQN[iQN],conservedQNs[iQN].localQNValue());
   }
   setUpQNs(conservedQNs);
+  centralIndexTable=twositeQNOrderMatrix(L/2,dimInfo,&conservedQNs);
 }
 
 //---------------------------------------------------------------------------------------------------//
