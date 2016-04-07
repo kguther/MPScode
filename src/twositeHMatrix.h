@@ -9,6 +9,10 @@
 #include "dimensionTable.h"
 #include "projector.h"
 
+//---------------------------------------------------------------------------------------------------//
+// STORAGE SCHEME FOR TWOSITE MATRICES: (sip,air,si,aim)
+//---------------------------------------------------------------------------------------------------//
+
 class twositeHMatrix{
  public:
   twositeHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcomplex<double> > *Hin, dimensionTable const &dimInfo, twositeQNOrderMatrix *indexTable, projector *excitedStateP=0);

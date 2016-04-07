@@ -16,7 +16,6 @@
 class baseMeasurement{
  protected:
   //Result of iteration is stored in target
-  //Todo: Seperate protected and private
   virtual void calcOuterContainerLeft(int const i, lapack_complex_double *const source, tmpContainer<lapack_complex_double> &outerContainer);
   virtual void calcCtrIterLeftBase(int const i, lapack_complex_double *const source, lapack_complex_double *const targetPctr);
   virtual void calcCtrIterRightBase(int const i, lapack_complex_double *const source, lapack_complex_double *const target);

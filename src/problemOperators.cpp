@@ -221,20 +221,10 @@ double disorder(double deltaP){
 //-------------------------------------------------------------------------------------------//
 
 std::complex<double> tLocalScale(int i){
-  if(i==0){
+  if(i==30){
     return 1;
   }
   return 0;
   
   //return 1+disorder(0.02);
-}
-
-void writeHSBahn(network &sys, double t, double U, double gamma12){
-  
-}
-
-int cmatrix(int a, int b){
-  if(a==(b-1))
-    return 1;
-  return 0;
 }

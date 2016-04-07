@@ -2,19 +2,19 @@
 
 imps::imps(dimensionTable const &dimInfo, std::vector<quantumNumber> const &conservedQNsin):
   mps(dimInfo,conservedQNsin),
-  centralIndexTable(twositeQNOrderMatrix(dimInfo.L()/2,dimInfo,&conservedQNsin))
+  centralIndexTable(twositeQNOrderMatrix((dimInfo.L()-1)/2,dimInfo,&conservedQNsin))
 {}
 
 //---------------------------------------------------------------------------------------------------//
 
-void imps::addSite(std::complex<int> *targetQN){
+void imps::addSite(std::vector<std::complex<int> > const &targetQN){
   stateArray::setParameterL(L+2);
   for(int iQN=0;iQN<nQNs;++iQN){
     //Not sure if this correctly updates quantum numbers since this relies on the layout being unchanged when QN is shifted
     conservedQNs[iQN]=quantumNumber(dimInfo,targetQN[iQN],conservedQNs[iQN].localQNValue());
   }
   setUpQNs(conservedQNs);
-  centralIndexTable=twositeQNOrderMatrix(L/2,dimInfo,&conservedQNs);
+  centralIndexTable=twositeQNOrderMatrix((L-1)/2,dimInfo,&conservedQNs);
 }
 
 //---------------------------------------------------------------------------------------------------//

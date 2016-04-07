@@ -11,6 +11,8 @@ uncachedMeasurement::uncachedMeasurement(mpo<lapack_complex_double> *const MPOpe
 {
   Lctr.resize(MPState->maxDim()*MPState->maxDim()*MPOperator->maxDim());
   Rctr.resize(MPState->maxDim()*MPState->maxDim()*MPOperator->maxDim());
+  Lctr[0]=1.0;
+  Rctr[0]=1.0;
 }
 
 //---------------------------------------------------------------------------------------------------//
