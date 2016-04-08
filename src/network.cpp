@@ -152,12 +152,18 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
   //Necessary if multiple instances of solve() are called
   excitedStateP.loadNextState(networkState,0);
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
-    pCtr.initialize(&networkH,&networkState);  
+    pCtr.initialize(&networkH,&networkState);
     std::cout<<"Startung normalization\n";
     for(int i=L-1;i>0;--i){
       normalize(i,0,0);
     }
     networkState.normalizeFinal(1);
+
+    measure(check,spinCheck);
+    measure(checkParity,parCheck);
+    std::cout<<"Current particle number (initial): "<<spinCheck<<std::endl;
+    std::cout<<"Current subchain parity (initial): "<<parCheck<<std::endl;
+
     std::cout<<"Computing partial contractions\n";
     pCtr.Lctr.global_access(0,0,0,0)=1;
     //In preparation of the first sweep, generate full contraction to the right (first sweeps starts at site 0)
@@ -201,12 +207,12 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
       for(int prev=0;prev<iEigen;++prev){
 	std::cout<<"Overlap with state "<<prev<<" is: "<<excitedStateP.fullOverlap(prev)<<std::endl;
       }
-      /*
+      
       measure(check,spinCheck);
       measure(checkParity,parCheck);
       std::cout<<"Current particle number (final): "<<spinCheck<<std::endl;
       std::cout<<"Current subchain parity (final): "<<parCheck<<std::endl;
-      */
+      
     }
     stepRet=gotoNextEigen();
     if(!stepRet){
@@ -449,7 +455,7 @@ int network::gotoNextEigen(){
 
 int network::measure(mpo<lapack_complex_double> *const MPOperator, double &lambda, int iEigen){
   mps *measureState;
-  if(pars.nEigs==1){
+  if(excitedStateP.nEigen()==iEigen){
     measureState=&networkState;
   }
   else{
@@ -464,7 +470,8 @@ int network::measure(mpo<lapack_complex_double> *const MPOperator, double &lambd
 
 int network::measureLocalOperators(localMpo<lapack_complex_double> *const MPOperator, std::vector<lapack_complex_double> &lambda, int iEigen){
   mps *measureState;
-  if(pars.nEigs==1){
+  //This is for measuring the network state during calculation, which is useful for consistency checks
+  if(excitedStateP.nEigen()==iEigen){
     measureState=&networkState;
   }
   else{
@@ -479,7 +486,7 @@ int network::measureLocalOperators(localMpo<lapack_complex_double> *const MPOper
 
 void network::getEntanglement(std::vector<double> &S, std::vector<std::vector<double> > &spectrum, int iEigen){
   mps *measureState;
-  if(iEigen==0){
+  if(excitedStateP.nEigen()==iEigen){
     measureState=&networkState;
   }
   else{
