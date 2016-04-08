@@ -65,5 +65,6 @@ void localMeasurementSeries::getCurrentValue(std::vector<lapack_complex_double> 
     }
   }
   lambda.push_back((simpleContainer));
+  std::cout<<simpleContainer<<std::endl;
   delete[] siteMatrixContainer;
 }

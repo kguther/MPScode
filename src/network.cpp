@@ -148,6 +148,8 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
   if(pars.nQNs || pars.nEigs>1){
     cshift=-100;
   }
+
+  //Necessary if multiple instances of solve() are called
   excitedStateP.loadNextState(networkState,0);
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
     pCtr.initialize(&networkH,&networkState);  
@@ -447,7 +449,7 @@ int network::gotoNextEigen(){
 
 int network::measure(mpo<lapack_complex_double> *const MPOperator, double &lambda, int iEigen){
   mps *measureState;
-  if(iEigen==0){
+  if(pars.nEigs==1){
     measureState=&networkState;
   }
   else{
@@ -462,7 +464,7 @@ int network::measure(mpo<lapack_complex_double> *const MPOperator, double &lambd
 
 int network::measureLocalOperators(localMpo<lapack_complex_double> *const MPOperator, std::vector<lapack_complex_double> &lambda, int iEigen){
   mps *measureState;
-  if(iEigen==0){
+  if(pars.nEigs==1){
     measureState=&networkState;
   }
   else{

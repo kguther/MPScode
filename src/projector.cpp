@@ -13,7 +13,8 @@
 //---------------------------------------------------------------------------------------------------//
 
 projector::projector(int nEigsin):
-  nEigs(nEigsin)
+  nEigs(nEigsin),
+  nCurrentEigen(0)
 {
   orthoStates=new mps[nEigs];
   scalarProducts=new overlap[nEigs-1];

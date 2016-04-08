@@ -90,7 +90,7 @@ int main(int argc, char *argv[]){
   //And evaluates its computation
   if(necPars.simType==1){
     for(int pty=-1;pty<2;pty+=2){
-      for(int varL=71;varL<110;varL+=3){
+      for(int varL=35;varL<110;varL+=3){
 	necPars.L=varL;
 	necPars.N=necPars.rho*necPars.L*2;
 	necPars.par=pty;
@@ -282,10 +282,13 @@ void sysSetMeasurements(simulation &sim, int d, int L){
       bulkICSuperConductingCorrelation.global_access(bulkStart,si,sip,0,0)=aMatrix(si,sip);
     }
   }
+  /*
   sim.setLocalMeasurement(localDensity,lDName);
   sim.setLocalMeasurement(localDensityB,lDOName);
   sim.setLocalMeasurement(localDensityProd,lDPName);
+  */
   sim.setLocalMeasurement(greensFunction,gFName);
+  /*
   sim.setLocalMeasurement(interChainCorrelation,iCCName);
   sim.setLocalMeasurement(densityCorrelation,dCName);
   sim.setLocalMeasurement(interChainDensityCorrelation,iCDCName);
@@ -298,6 +301,7 @@ void sysSetMeasurements(simulation &sim, int d, int L){
   sim.setLocalMeasurement(bulkSuperConductingCorrelation,pscName);
   sim.setLocalMeasurement(bulkICSuperConductingCorrelation,picscName);
   sim.setEntanglementSpectrumMeasurement();
+  */
   sim.run();
 }
 
