@@ -7,7 +7,7 @@
 #include <cstdlib>
 #include <ctime>
 
-int writeHamiltonian(network &sys, double J, double g, double W, std::complex<double> t, double deltaP){
+int writeHamiltonian(network &sys, double J, double g, double W, std::complex<double> t, double deltaP, int tSite){
   std::srand(std::time(0));
   int const Dw=sys.networkH.maxDim();
   if(Dw!=12){
@@ -31,7 +31,12 @@ int writeHamiltonian(network &sys, double J, double g, double W, std::complex<do
       prefactor=2;
     }
     gD=g*(1+disorder(deltaP));
-    tD=t*tLocalScale(i);
+    if(tSite<0){
+      tD=t*tLocalScale(i);
+    }
+    else{
+      tD=t*tSingleSite(i,tSite);
+    }
     JD=J*(1+disorder(deltaP));
     preD=pre*(1+disorder(deltaP));
     for(int si=0;si<sys.locd(i);++si){
@@ -221,10 +226,12 @@ double disorder(double deltaP){
 //-------------------------------------------------------------------------------------------//
 
 std::complex<double> tLocalScale(int i){
-  if(i==30){
+  return 1+disorder(0.02);
+}
+
+std::complex<double> tSingleSite(int i, int targetSite){
+  if(i==targetSite){
     return 1;
   }
   return 0;
-  
-  //return 1+disorder(0.02);
 }

@@ -36,7 +36,7 @@ int main(int argc, char *argv[]){
   MPI_Aint displacements[dn], firstAdress, secondAdress;
   MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
   MPI_Comm_size(MPI_COMM_WORLD,&commsize);
-  blockLengths[0]=12;
+  blockLengths[0]=13;
   blockLengths[1]=14;
   MPI_Get_address(&necPars.L,&firstAdress);
   MPI_Get_address(&necPars.rho,&secondAdress);
@@ -72,6 +72,7 @@ int main(int argc, char *argv[]){
     fNBuf=new char[fNBufSize+1];
   }
   MPI_Bcast(fNBuf,fNBufSize+1,MPI_CHAR,0,MPI_COMM_WORLD);
+  necPars.tPos=-1;
   std::string finalName;
   //Each process calculates its own couplings/system size
   int const range=4;
@@ -119,6 +120,36 @@ int main(int argc, char *argv[]){
     delete[] energies;
     */
   }
+ 
+  if(necPars.simType==3){
+    necPars.nEigens=2;
+    switch(myrank){
+    case 0:
+      necPars.tImag=0;
+      necPars.tPos=0;
+      break;
+    case 1:
+      necPars.tReal=0;
+      necPars.tPos=0;
+      break;
+    case 2:
+      necPars.tImag=0;
+      necPars.tPos=necPars.L/2;
+      break;
+    case 3:
+      necPars.tReal=0;
+      necPars.tPos=necPars.L/2;
+      break;
+    case 4:
+      necPars.tReal=0;
+      necPars.tPos=-1;
+      break;
+    default:
+      necPars.tImag=0;
+      necPars.tPos=-1;
+    }
+  }
+
   //The output filename is generated
   if(necPars.simType!=1){
     getFileName(necPars,fNBuf,commsize,myrank,finalName);
@@ -126,7 +157,7 @@ int main(int argc, char *argv[]){
   if(necPars.simType==0){
     sysSolve(necPars,finalName);
   }
-  if(necPars.simType==2){
+  if(necPars.simType==2 || necPars.simType==3){
     necPars.numPts=1;
     sysSolve(necPars,finalName);
   }
@@ -169,7 +200,7 @@ void sysSolve(info const &parPack, std::string const &fileName){
   problemParameters pars(localHilbertSpaceDims,parPack.L,parPack.Dw,parPack.nEigens,nQuantumNumbers,QNValue,QNList);
   //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack
   simulationParameters simPars(usedD,parPack.nSweeps,parPack.nStages,parPack.alphaInit,parPack.acc,parPack.arpackTolMin,parPack.arpackTol);
-  simulation sim(pars,simPars,parPack.Jsc,parPack.gsc,parPack.Wsc,parPack.numPts,parPack.scaling,parPack.delta,fileName);
+  simulation sim(pars,simPars,parPack.Jsc,parPack.gsc,parPack.Wsc,parPack.numPts,parPack.scaling,parPack.delta,fileName,parPack.tPos);
   if(parPack.simType==2){
     int const d=pars.d.maxd();
     int const L=parPack.L;
@@ -282,13 +313,10 @@ void sysSetMeasurements(simulation &sim, int d, int L){
       bulkICSuperConductingCorrelation.global_access(bulkStart,si,sip,0,0)=aMatrix(si,sip);
     }
   }
-  /*
   sim.setLocalMeasurement(localDensity,lDName);
   sim.setLocalMeasurement(localDensityB,lDOName);
   sim.setLocalMeasurement(localDensityProd,lDPName);
-  */
   sim.setLocalMeasurement(greensFunction,gFName);
-  /*
   sim.setLocalMeasurement(interChainCorrelation,iCCName);
   sim.setLocalMeasurement(densityCorrelation,dCName);
   sim.setLocalMeasurement(interChainDensityCorrelation,iCDCName);
@@ -301,7 +329,6 @@ void sysSetMeasurements(simulation &sim, int d, int L){
   sim.setLocalMeasurement(bulkSuperConductingCorrelation,pscName);
   sim.setLocalMeasurement(bulkICSuperConductingCorrelation,picscName);
   sim.setEntanglementSpectrumMeasurement();
-  */
   sim.run();
 }
 
@@ -318,6 +345,20 @@ void getFileName(info const &necPars, char *fNBuf, int commsize, int myrank, std
   }
   if(necPars.simType==2){
     type="_point";
+  }
+  if(necPars.simType==3){
+    switch(myrank){
+    case 0:
+    case 1:
+      type="_0";
+      break;
+    case 2:
+    case 3:
+      type="_mid";
+      break;
+    default:
+      type="_global";
+    }
   }
   std::ostringstream compositeName;
   compositeName<<dir<<fNBuf<<type;

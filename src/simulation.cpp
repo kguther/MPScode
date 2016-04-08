@@ -6,7 +6,7 @@
 #include "globalMeasurement.h"
 #include "localMeasurementSeries.h"
 
-simulation::simulation(problemParameters &parsIn, simulationParameters &simParsIn, double J, double g, double WIn, int pathPoints, double stepSize, double deltaPIn, std::string const &targetFile):
+simulation::simulation(problemParameters &parsIn, simulationParameters &simParsIn, double J, double g, double WIn, int pathPoints, double stepSize, double deltaPIn, std::string const &targetFile, int tSiteIn):
   simPars(simParsIn),
   pars(parsIn),
   W(WIn),
@@ -16,6 +16,7 @@ simulation::simulation(problemParameters &parsIn, simulationParameters &simParsI
   measureES(0),
   deltaP(deltaPIn),
   scaling(stepSize),
+  tSite(tSiteIn),
   parDirection(std::complex<double>(J,g)),
   csystem(Qsystem(pars,simPars)),
   particleNumber(mpo<lapack_complex_double>(pars.d.maxd(),2,pars.L)),
@@ -124,7 +125,7 @@ int simulation::singleRun(){
   g=1+parDirection.imag();
   std::cout<<J<<" "<<g<<std::endl;
   if(pars.Dw==12){
-    hInfo=writeHamiltonian(csystem.TensorNetwork,J,g,W,pars.t,deltaP);
+    hInfo=writeHamiltonian(csystem.TensorNetwork,J,g,W,pars.t,deltaP,tSite);
   }
   if(pathLength!=1 && simPars.nStages!=1){
     std::cout<<"Invalid simulation parameters: Staging is disabled for type-0 runs. Aborting run.\n";

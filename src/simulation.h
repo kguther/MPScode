@@ -13,7 +13,7 @@
 
 class simulation{
  public:
-  simulation(problemParameters &pars, simulationParameters &simPars, double J, double g, double W, int pathPoints, double stepSize, double deltaPIn, std::string const &targetFile);
+  simulation(problemParameters &pars, simulationParameters &simPars, double J, double g, double W, int pathPoints, double stepSize, double deltaPIn, std::string const &targetFile, int tSiteIn=-1);
   void setMeasurement(mpo<lapack_complex_double> &MPOperator, std::string &opName);
   void setLocalMeasurement(localMpo<lapack_complex_double> &localMPOperator, std::string &opName);
   void setEntanglementMeasurement();
@@ -31,6 +31,7 @@ class simulation{
   std::vector<std::string> operatorNames;
   std::vector<std::string> localOperatorNames;
   int pathLength;
+  int tSite;
   int measureEE, measureES;
   double scaling, W, deltaP;
   std::complex<double> parDirection;

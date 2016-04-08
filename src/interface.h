@@ -20,6 +20,7 @@ struct info{
   int nStages;
   int nGs;
   int Dw;
+  int tPos;
   double rho;
   double alphaInit;
   double arpackTol;
