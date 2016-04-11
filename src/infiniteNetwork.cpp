@@ -44,6 +44,34 @@ void infiniteNetwork::iDMRGStep(){
 
 //---------------------------------------------------------------------------------------------------//
 
+int infiniteNetwork::optimize(arcomplex<double> *target){
+  arcomplex<double> *Rterm, *Lterm;
+  arcomplex<double> lambda;
+  arcomplex<double> *pLambda;
+  pLambda=&lambda;
+  int nconv=0;
+  int const maxIter=2000;
+  pCtr.getLctr(Lterm);
+  pCtr.getRctr(Rterm);
+  twositeHMatrix BMat(Rterm,Lterm,&networkH,dimInfo,&networkState.centralIndexTable);
+  BMat.prepareInput(target);
+  if(BMat.dim()>1){
+    ARCompStdEig<double,twositeHMatrix> eigProblemTwoSite(BMat.dim(),1,&BMat,&twositeHMatrix::MultMvBlocked,"SR",0,simPars.tolInitial,maxIter,BMat.compressedVector);
+    nconv=eigProblemTwoSite.EigenValVectors(BMat.compressedVector,pLambda);
+  }
+  else{
+    nconv=1;
+  }
+  BMat.readOutput(target);
+  if(nconv!=1){
+    std::cout<<"Failed to converge in iterative eigensolver, number of Iterations taken: "<<maxIter<<" With tolerance "<<simPars.tolInitial<<std::endl;
+    return 1;
+  }
+  return 0;
+}
+
+//---------------------------------------------------------------------------------------------------//
+
 void infiniteNetwork::addSite(){
   pCtr.update();
   std::vector<std::complex<int> > newQNs;
@@ -52,5 +80,5 @@ void infiniteNetwork::addSite(){
     newQNs[iQN].imag(pars.QNconserved[iQN].imag());
   }
   networkState.addSite(newQNs);
-  dimInfo.setParameterL(L+2);
+  dimInfo.setParameterL(dimInfo.L()+2);
 }

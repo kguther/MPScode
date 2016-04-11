@@ -42,6 +42,7 @@ interface::interface(){
   parPack.acc=1e-4;
   parPack.tReal=0;
   parPack.tImag=0;
+  parPack.tPos=-1;
 }
 
 //-------------------------------------------------------------------------------------------//
@@ -67,7 +68,7 @@ void interface::readParFile(std::string const &fN){
   fileName=target;
   while(ifs.get(inArg)){
     if(inArg!=' '){
-      if(inArg=='L' || inArg=='D' || inArg=='S' || inArg=='p' || inArg=='N' || inArg=='n' || inArg=='o' || inArg=='T' || inArg=='s' || inArg=='E' || inArg=='R'){
+      if(inArg=='L' || inArg=='D' || inArg=='S' || inArg=='p' || inArg=='N' || inArg=='n' || inArg=='o' || inArg=='T' || inArg=='s' || inArg=='E' || inArg=='R' || inArg=='b'){
 	ifs>>intPar;
 	if(inArg=='L'){
 	  parPack.L=intPar;
@@ -101,6 +102,9 @@ void interface::readParFile(std::string const &fN){
 	}
 	if(inArg=='R'){
 	  parPack.nStages=intPar;
+	}
+	if(inArg=='b'){
+	  parPack.tPos=intPar;
 	}
       }
       else{

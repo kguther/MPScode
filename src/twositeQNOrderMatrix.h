@@ -11,6 +11,7 @@
 
 class twositeQNOrderMatrix{
  public:
+  twositeQNOrderMatrix();
   twositeQNOrderMatrix(int i, dimensionTable const &dimIn, std::vector<quantumNumber> const *conservedQNsin);
   int generateQNIndexTable();
   int aimBlockIndex(int iBlock, int k)const {return lBlockIndices[iBlock][k].aim;}

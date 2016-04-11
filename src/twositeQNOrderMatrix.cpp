@@ -1,5 +1,10 @@
 #include "twositeQNOrderMatrix.h"
 
+twositeQNOrderMatrix::twositeQNOrderMatrix()
+{}
+
+//---------------------------------------------------------------------------------------------------//
+
 twositeQNOrderMatrix::twositeQNOrderMatrix(int i, dimensionTable const &dimIn, std::vector<quantumNumber> const *conservedQNsin):
   conservedQNs(conservedQNsin),
   dimInfo(dimIn),

@@ -72,7 +72,6 @@ int main(int argc, char *argv[]){
     fNBuf=new char[fNBufSize+1];
   }
   MPI_Bcast(fNBuf,fNBufSize+1,MPI_CHAR,0,MPI_COMM_WORLD);
-  necPars.tPos=-1;
   std::string finalName;
   //Each process calculates its own couplings/system size
   int const range=4;
@@ -149,7 +148,6 @@ int main(int argc, char *argv[]){
       necPars.tPos=-1;
     }
   }
-
   //The output filename is generated
   if(necPars.simType!=1){
     getFileName(necPars,fNBuf,commsize,myrank,finalName);

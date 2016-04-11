@@ -36,18 +36,22 @@ void infiniteNetwork::statePrediction(arcomplex<double> *target){
 void infiniteNetwork::updateMPS(arcomplex<double> *source){
   diagsm=diags;
   int const ld=dimInfo.locd(i);
+  int const ldp=dimInfo.locd(i+1);
   int const lDL=dimInfo.locDimL(i);
   int const lDR=dimInfo.locDimR(i);
   int const lDRR=dimInfo.locDimR(i+1);
-  int lBlockSize, rBlockSize;
+  int lBlockSize, rBlockSize, targetLBlockSize, targetRBlockSize;
+  int maxTargetBlockSize, maxBlockSize;
   int aimB, siB, airB, sipB;
   diags.resize(ld*lDL);
   arcomplex<double> *aMatrix, *bMatrix;
-  std::unique_ptr<arcomplex<double> > sourceBlockP, aBlockP, bBlockP, diagsBlockP;
+  std::unique_ptr<arcomplex<double> > sourceBlockP, aBlockP, bBlockP;
   std::unique_ptr<arcomplex<double> > aFullP(new arcomplex<double> [ld*lDL*ld*lDL]);
   std::unique_ptr<arcomplex<double> > bFullP(new arcomplex<double> [ldp*lDRR*ldp*lDRR]);
-  std::unique_ptr<arcomplex<double> > diagsFullP(new arcomplex<double> [ld*lDL]);
-  arcomplex<double> *sourceBlock, *aBlock, *bBlock, *diagsBlock, *aFull, *bFull, *diagsFull;
+  std::unique_ptr<double > diagsFullP(new double [ld*lDL]);
+  arcomplex<double> *sourceBlock, *aBlock, *bBlock, *aFull, *bFull;
+  std::unique_ptr<double> diagsBlockP;
+  double *diagsFull, *diagsBlock;
   aFull=aFullP.get();
   bFull=bFullP.get();
   diagsFull=diagsFullP.get();
@@ -61,7 +65,7 @@ void infiniteNetwork::updateMPS(arcomplex<double> *source){
       sourceBlockP.reset(new arcomplex<double>[rBlockSize*lBlockSize]);
       aBlockP.reset(new arcomplex<double>[lBlockSize*lBlockSize]);
       bBlockP.reset(new arcomplex<double>[rBlockSize*rBlockSize]);
-      diagsBlockP.reset(new arcomplex<double>[lBlockSize]);
+      diagsBlockP.reset(new double[lBlockSize]);
       sourceBlock=sourceBlockP.get();
       aBlock=aBlockP.get();
       bBlock=bBlockP.get();
@@ -72,25 +76,44 @@ void infiniteNetwork::updateMPS(arcomplex<double> *source){
 	}
       }
       LAPACKE_zgesdd(LAPACK_COL_MAJOR,'A',lBlockSize,rBlockSize,sourceBlock,lBlockSize,diagsBlock,aBlock,lBlockSize,bBlock,rBlockSize);
-      for(int k=0;k<lBlockSize;++k){
-	aimB=networkState.centralIndexTable.aimBlockIndex(iBlock,k);
-	siB=networkState.centralIndexTable.siBlockIndex(iBlock,k);
+
+      //Testversion: Truncate blockwise, this ensures the QN scheme is kept. But this also means that a suboptimal QN scheme will be carried through, preventing accurate results.
+
+      targetRBlockSize=networkState.indexTable.rBlockSizeLP(i,iBlock);
+      targetLBlockSize=networkState.indexTable.lBlockSizeRP(i+1,iBlock);
+      for(int j=0;j<targetRBlockSize;++j){
+	aimB=networkState.indexTable.aiBlockIndexLP(i,iBlock,j);
+	//aimB=networkState.centralIndexTable.aimBlockIndex(iBlock,k);
+	//siB=networkState.centralIndexTable.siBlockIndex(iBlock,k);
 	for(int kp=0;kp<lBlockSize;++kp){
 	  airB=networkState.centralIndexTable.aimBlockIndex(iBlock,kp);
 	  sipB=networkState.centralIndexTable.siBlockIndex(iBlock,kp);
-	  aFull[airB+sipB*lDL+aimB*lDL*ld+siB*lDL*lDL*ld]=aBlock[kp+lBlockSize*k];
+	  aMatrix[airB+sipB*lDL+aimB*lDL*ld]=aBlock[kp+targetRBlockSize*j];
 	}
-	if(k<rBlockSize){
-	  diagsFull[aimB]=diagsBlock[k];
+	if(j<targetLBlockSize){
+	  diags[aimB]=diagsBlock[j];
 	}
       }
+
+      //This is to see how good the QN labeling scheme is
+      maxTargetBlockSize=(targetLBlockSize<targetRBlockSize)?targetRBlockSize:targetLBlockSize;
+      maxBlockSize=(lBlockSize<rBlockSize)?rBlockSize:lBlockSize;
+      if(maxTargetBlockSize<maxBlockSize){
+	std::cout<<"Kept SVs from "<<diagsBlock[0]<<" to "<<diagsBlock[maxTargetBlockSize-1]<<" discarded from "<<diagsBlock[maxTargetBlockSize]<<" to "<<diagsBlock[maxBlockSize]<<std::endl;
+      }
+      else{
+	std::cout<<"Kept all SVs\n";
+      }
+
+
       for(int j=0;j<rBlockSize;++j){
 	aimB=networkState.centralIndexTable.airBlockIndex(iBlock,j);
 	siB=networkState.centralIndexTable.sipBlockIndex(iBlock,j);
-	for(int jp=0;kp<rBlockSize;++jp){
-	  airB=networkState.centralIndexTable.airBlockIndex(iBlock,jp);
-	  sipB=networkState.centralIndexTable.sipBlockIndex(iBlock,jp);
-	  bFull[airB+sipB*lDRR+aimB*lDRR*ld+siB*lDRR*lDRR*ld]=bBlock[jp+rBlockSize*j];
+	for(int jp=0;jp<targetLBlockSize;++jp){
+	  airB=networkState.indexTable.aimBlockIndexRP(i+1,iBlock,jp);
+	  //airB=networkState.centralIndexTable.airBlockIndex(iBlock,jp);
+	  //sipB=networkState.centralIndexTable.sipBlockIndex(iBlock,jp);
+	  bMatrix[airB+aimB*lDR+siB*lDR*lDRR]=bBlock[jp+rBlockSize*j];
 	}
       }	
     }

@@ -6,6 +6,7 @@
 
 class imps: public mps{
  public:
+  imps();
   imps(dimensionTable const &dimInfo, std::vector<quantumNumber> const &conservedQNsin);
   void addSite(std::vector<std::complex<int> > const &targetQN);
   void exportState(mps &target);

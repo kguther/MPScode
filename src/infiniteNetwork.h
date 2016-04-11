@@ -16,18 +16,18 @@ class infiniteNetwork{
   void iDMRGStep();
   void addSite();
   void statePrediction(arcomplex<double> *target);
-  void optimize(arcomplex<double> *target);
+  int optimize(arcomplex<double> *target);
   void updateMPS(arcomplex<double> *source);
   void exportState(mps &target);
   mpo<lapack_complex_double> networkH;
  private:
-  problemParemters pars;
-  simulationParamters simPars;
+  problemParameters pars;
+  simulationParameters simPars;
   dimensionTable dimInfo;
   imps networkState;
   int i;
   std::vector<quantumNumber> conservedQNs;
-  std::vector<arcomplex<double> > diags, diagsm;
+  std::vector<double> diags, diagsm;
   //Beware that iDMRG builds up a regular system -> only three MPO matrices are referred - in particular is a MPO length of at least 3 required
   uncachedMeasurement pCtr;
   int explicitIndex(int iBlock, int j, int k);

@@ -93,6 +93,7 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
   HMPO->siSubIndexArrayStart(siIndices,i);
   HMPO->bimSubIndexArrayStart(bimIndices,i);
   HMPO->sipSubIndexArrayStart(sipIndices,i);
+  HMPO->sparseSubMatrixStart(H,i);
   int siB, aiB, aimB, sipS;
   excitedStateProject(v);
 #pragma omp parallel for private(simpleContainer,siB,aimB,lBlockSize,rBlockSize) schedule(dynamic,1)
@@ -133,7 +134,7 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
 	for(int nSparse=0;nSparse<sparseSize;++nSparse){
 	  sipS=sipIndices[nSparse];
 	  if(sipS==siB){
-	    outerContainer.global_access(siIndices[nSparse],bimIndices[nSparse],ai,aimB)+=H[hIndex(siIndices[nSparse],sipS,biIndices[nSparse],bimIndices[nSparse])]*innerContainer.global_access(sipS,aimB,ai,biIndices[nSparse]);
+	    outerContainer.global_access(siIndices[nSparse],bimIndices[nSparse],ai,aimB)+=H[nSparse]*innerContainer.global_access(sipS,aimB,ai,biIndices[nSparse]);
 	  }
 	}
       }

@@ -22,7 +22,7 @@ class twositeHMatrix{
   void prepareInput(arcomplex<double> *inputVector);
   void storageCompress(arcomplex<double> *v, arcomplex<double> *vCompressed);
   void storageExpand(arcomplex<double> *v, arcomplex<double> *vExpanded);
-  int getDim()const {return dimension;}
+  int dim()const {return dimension;}
   arcomplex<double> *compressedVector;
  private:
   int dimension;
