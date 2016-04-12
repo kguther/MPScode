@@ -1,7 +1,17 @@
 #include "infiniteNetwork.h"
 #include "mkl_complex_defined.h"
+#include "arrayprocessing.h"
 #include <memory>
 #include <vector>
+#include <algorithm>
+
+//---------------------------------------------------------------------------------------------------//
+
+bool compareSortData(sortData const &a, sortData const &b){
+  return a.lambda>b.lambda;
+}
+
+//---------------------------------------------------------------------------------------------------//
 
 void infiniteNetwork::statePrediction(arcomplex<double> *target){
   //Submatrices of already existing matrices
@@ -46,7 +56,6 @@ void infiniteNetwork::updateMPS(arcomplex<double> *source){
   int maxTargetBlockSize, maxBlockSize;
   int aimB, siB, airB, sipB;
   arcomplex<double> *aMatrix, *bMatrix;
-  std::vector<std::complex<int> > blockQNs;
   std::unique_ptr<arcomplex<double> > sourceBlockP, aBlockP, bBlockP;
   std::unique_ptr<arcomplex<double> > aFullP(new arcomplex<double> [ld*lDL*ld*lDL]);
   std::unique_ptr<arcomplex<double> > bFullP(new arcomplex<double> [ldp*lDRR*ldp*lDRR]);
@@ -62,7 +71,10 @@ void infiniteNetwork::updateMPS(arcomplex<double> *source){
 
   
   int const nQNs=networkState.centralIndexTable.nQNs();
-  blockQNs.resize(ld*lDL);
+  optLocalQNs.resize(ld*lDL);
+  for(int m=0;m<ld*lDL;++m){
+    optLocalQNs[m]=std::complex<int>(-100,2);
+  }
 
   int const numBlocks=networkState.centralIndexTable.numBlocks();
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
@@ -93,9 +105,7 @@ void infiniteNetwork::updateMPS(arcomplex<double> *source){
 	}
 	if(k<rBlockSize){
 	  diagsFull[aimB+lDL*siB]=diagsBlock[k];
-	  
-	  blockQNs[aimB+lDL*siB]=networkState.centralIndexTable.blockQN(0,iBlock);
-
+	  optLocalQNs[aimB+lDL*siB]=networkState.centralIndexTable.blockQN(0,iBlock);
 	}
       }
       for(int j=0;j<rBlockSize;++j){
@@ -109,44 +119,44 @@ void infiniteNetwork::updateMPS(arcomplex<double> *source){
       }	
     }
   }
-  optLocalQNs.clear();
-  std::vector<double> diagsBuffer;
-  std::vector<int> aiIndices;
-  diagsBuffer.insert(diagsBuffer.begin(),diagsFull[0]);
-  optLocalQNs.insert(optLocalQNs.begin(),blockQNs[0]);
-  aiIndices.insert(aiIndices.begin(),0);
-  for(int ai=1;ai<ld*lDR;++ai){
-    for(int m=0;m<diagsBuffer.size();++m){
-      if(diagsBuffer[m]<diagsFull[ai]){
-	diagsBuffer.insert(diagsBuffer.begin()+m,diagsFull[ai]);
-	aiIndices.insert(aiIndices.begin()+m,ai);
-	optLocalQNs.insert(optLocalQNs.begin()+m,blockQNs[ai]);
-	break;
-      }
-    }
+
+  //BLOCKWISE TRUNCATION REQUIRED FOR INITIAL STATE SEARCH
+  
+  std::vector<sortData> comparer;
+  comparer.resize(ld*lDL);
+  for(int ai=0;ai<ld*lDL;++ai){
+    comparer[ai].index=ai;
+    comparer[ai].QN=optLocalQNs[ai];
+    comparer[ai].lambda=diagsFull[ai];
+    std::cout<<"Available QN: "<<optLocalQNs[ai]<<std::endl;
   }
+
+  sort(comparer.begin(),comparer.end(),compareSortData);
+
   //Truncate to lDR largest SVs
   optLocalQNs.resize(lDR);
-  diagsBuffer.resize(lDR);
-  
   for(int ai=0;ai<lDR;++ai){
-    std::cout<<"Kept QN label "<<optLocalQNs[ai]<<" with SV "<<diagsBuffer[ai]<<std::endl;
+    //Copy the remaining diagonal matrix into diags
+    optLocalQNs[ai]=comparer[ai].QN;
+    diags[ai]=comparer[ai].lambda;
+  }
+ 
+  for(int ai=0;ai<lDR;++ai){
+    std::cout<<"\nKept QN label "<<optLocalQNs[ai]<<" with SV "<<diags[ai]<<std::endl;
   }
 
   //Copy the corresponding columns(A)/rows(B) into the MPS
   for(int ai=0;ai<lDR;++ai){
     for(int si=0;si<ld;++si){
       for(int aim=0;aim<lDL;++aim){
-	aMatrix[aim+ai*lDL+si*lDL*lDR]=aFull[aim+si*lDL+ld*lDL*aiIndices[ai]];
+	aMatrix[aim+ai*lDL+si*lDL*lDR]=aFull[aim+si*lDL+ld*lDL*comparer[ai].index];
       }
       for(int air=0;air<lDRR;++air){
-	bMatrix[ai+air*lDR+si*lDR*lDRR]=bFull[aiIndices[ai]+ld*lDRR*air+ld*lDRR*lDRR*si];
+	bMatrix[ai+air*lDR+si*lDR*lDRR]=bFull[comparer[ai].index+ld*lDRR*air+ld*lDRR*lDRR*si];
       }
     }
   }
-  
-  //Copy the remaining diagonal matrix into diags
-  diags=diagsBuffer;
+
   //Problem: TRUNCATE THE RESULTING MATRICES WITHOUT DESTROYING THE QN LABELING SCHEME
   //Truncation will be carried out by deleting individual columns/rows from a/b. This leads to an outdated QN labeling. Possible solution: Create new QN labeling here and make local QN labelings storable. Then: CHANGE HOW QNs ARE UPDATED WHEN INSERTING A SITE. This will currently destroy any stored data.
 }
@@ -155,8 +165,7 @@ void infiniteNetwork::updateMPS(arcomplex<double> *source){
 
 
 int infiniteNetwork::explicitIndex(int iBlock, int j, int k){
-  return networkState.centralIndexTable.aimBlockIndex(iBlock,k)+dimInfo.locDimL(i)*networkState.centralIndexTable.siBlockIndex(iBlock,k)+networkState.centralIndexTable.airBlockIndex(iBlock,j)*dimInfo.locDimL(i)*dimInfo.locd(i)+networkState.centralIndexTable.sipBlockIndex(iBlock,j)*dimInfo.locDimL(i)*dimInfo.locDimR(i+1)*dimInfo.locd(i);
+  return networkState.centralIndexTable.aimBlockIndex(iBlock,k)+dimInfo.locDimL(i)*dimInfo.locDimR(i+1)*networkState.centralIndexTable.siBlockIndex(iBlock,k)+networkState.centralIndexTable.airBlockIndex(iBlock,j)*dimInfo.locDimL(i)+networkState.centralIndexTable.sipBlockIndex(iBlock,j)*dimInfo.locDimL(i)*dimInfo.locDimR(i+1)*dimInfo.locd(i);
 }
 
-
-
+//---------------------------------------------------------------------------------------------------//

@@ -62,18 +62,10 @@ network::network(problemParameters const &inputpars, simulationParameters const 
     excitedStateP.storeOrthoState(networkState,iEigen);
   }
 
-  /*
+  
   exactGroundState gsLoader(conservedQNs[0].QNValue());
   gsLoader.writeExactGroundState(networkState);
-  */
-
-  //Testing for setup of initial state via iDMRG
-
-  infiniteNetwork setupNetwork(pars,simPars);
-  setupNetwork.growSystem();
-  setupNetwork.exportState(networkState);
-
-  exit(1);
+  
 
   excitedStateP.storeOrthoState(networkState,0);
 }

@@ -1,4 +1,5 @@
 #include "twositeQNOrderMatrix.h"
+#include <iostream>
 
 twositeQNOrderMatrix::twositeQNOrderMatrix()
 {}
@@ -49,6 +50,11 @@ int twositeQNOrderMatrix::generateQNIndexTable(){
   }
   writeIndexTables(site-1,ld,lDL,lBlockIndices);
   writeIndexTables(site+1,ldp,lDRR,rBlockIndices);
+
+  for(int iBlock=0;iBlock<qnLabels[0].size();++iBlock){
+    std::cout<<"Possible QN: "<<blockQN(0,iBlock)<<std::endl;
+  }
+
   return 0;
 }
 

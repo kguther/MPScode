@@ -109,8 +109,11 @@ void infiniteNetwork::addSite(){
     newQNs[iQN].imag(pars.QNconserved[iQN].imag());
   }
   dimInfo.setParameterL(dimInfo.L()+2);
+
+  //Only for a single QN
   conservedQNs[0].refine(i+1,optLocalQNs);
-  networkState.addSite(dimInfo.L()+2,i+1,newQNs);
+
+  networkState.addSite(dimInfo.L(),i+1,newQNs);
 }
 
 //---------------------------------------------------------------------------------------------------//

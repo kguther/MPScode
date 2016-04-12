@@ -84,6 +84,11 @@ int quantumNumber::grow(int L, int i, std::complex<int> const &targetQN){
   for(int aim=0;aim<lDL;++aim){
     indexLabel[aim+(i+dL)*D]=indexLabel[aim+i*D];
   }
+  int const deltaN=targetQN.real()-N.real();
+  for(int j=(i+dL)*D;j<D*L;++j){
+    indexLabel[j].real(indexLabel[j].real()+deltaN);
+  }
+
   dimInfo.setParameterL(L);
   return 0;
 }

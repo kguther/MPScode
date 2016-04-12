@@ -1,6 +1,7 @@
 #include "stateArray.h"
 #include "arrayprocessing.h"
 #include "arraycreation.h"
+#include <iostream>
 
 stateArray::stateArray(){
 }
@@ -64,6 +65,9 @@ int stateArray::setParameterL(int Lnew){
   std::vector<int> locDims(3,0);
   int startPos;
   int const deltaL=Lnew-L;
+
+  std::cout<<L<<" "<<deltaL<<std::endl;
+
   if(deltaL==0){
     return 0;
   }
@@ -74,7 +78,8 @@ int stateArray::setParameterL(int Lnew){
   }
   else{
     startPos=L/2-deltaL/2;
-    stateArrayAccessStructure.insert(stateArrayAccessStructure.begin()+startPos,deltaL,baseTensor<lapack_complex_double>());
+    baseTensor<lapack_complex_double> dummyTensor;
+    stateArrayAccessStructure.insert(stateArrayAccessStructure.begin()+startPos,deltaL,dummyTensor);
   }
   L=Lnew;
   setParameterD(D);

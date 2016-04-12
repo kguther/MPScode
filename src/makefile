@@ -19,7 +19,7 @@ LFLAGS=$(MPI_LINK_FLAGS) -L$(MKL_PATH) $(LBFLAGS) -lgfortran
 DCFLAGS=$(DMKL)
 MPI_COMPILE_FLAGS=$(shell mpic++ --showme:compile)
 MPI_LINK_FLAGS=$(shell mpic++ --showme:link)
-CFLAGS=-Wall -std=c++11 -fopenmp -g $(MKL_INCLUDE)
+CFLAGS=-Wall -std=c++11 -fopenmp -O3 $(MKL_INCLUDE)
 APCK_INCLUDE=-I/usr/include/arpack++
 MKL_INCLUDE=-I$(MKL_INCLUDE_PATH)
 OBJECTS=network.o arrayprocessing.o Qsystem.o optHMatrix.o mps.o globalMeasurement.o baseMeasurement.o iterativeMeasurement.o overlap.o stateArray.o network_enrichment.o projector.o quantumNumber.o dimensionTable.o basisQNOrderMatrix.o blockHMatrix.o localHSpaces.o localMeasurementSeries.o simulation.o problemOperators.o interface.o main.o parameters.o exactGroundState.o imps.o uncachedMeasurement.o twositeQNOrderMatrix.o twositeHMatrix.o infiniteNetwork.o infiniteNetwork_prediction.o

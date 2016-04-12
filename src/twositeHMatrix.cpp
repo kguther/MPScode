@@ -20,6 +20,9 @@ twositeHMatrix::twositeHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<a
     }
     dimension+=cBlockSize;
   }
+  
+  std::cout<<"Eigenvalue problem dimension: "<<dimension<<std::endl;
+
   compressedVector=new arcomplex<double>[dimension];
   i=indexTable->getSite();
   ld=dimInfo.locd(i);

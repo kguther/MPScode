@@ -2,6 +2,7 @@
 #define ARRAYPROCESSING
 
 #include "mkl_complex_defined.h"
+#include <vector>
 
 namespace auxiliary{
 
@@ -13,6 +14,5 @@ namespace auxiliary{
  void matrixprint(int const n, int const m, lapack_complex_double *array);
  void lapackSVD(int dim1, int dim2, lapack_complex_double *U, lapack_complex_double *V, double *diags);
  void matrixMult(int dimR, int dimL, int dimContract, lapack_complex_double *a, lapack_complex_double *b, lapack_complex_double *result);
-
 }
 #endif

@@ -8,6 +8,14 @@
 #include "uncachedMeasurement.h"
 #include <arcomp.h>
 
+struct sortData{
+  double lambda;
+  std::complex<int> QN;
+  int index;
+};
+
+bool compareSortData(sortData const &a, sortData const &b);
+
 class infiniteNetwork{
  public:
   infiniteNetwork(problemParameters parsIn, simulationParameters simParsIn);

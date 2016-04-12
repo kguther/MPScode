@@ -35,7 +35,7 @@ class twositeHMatrix{
   arcomplex<double> *Lctr, *Rctr, *W;
   twositeQNOrderMatrix *indexTable;
   int vecBlockIndex(int iBlock, int j, int k){return k+j*indexTable->lBlockSize(iBlock)+blockOffset[iBlock];}
-  int vecIndex(int sip, int air, int si, int aim){return aim+si*lDL+air*ld*lDL+sip*ld*lDL*lDRR;}
+  int vecIndex(int sip, int air, int si, int aim){return aim+si*lDL*lDRR+air*lDL+sip*ld*lDL*lDRR;}
   int hIndex(int si, int sip, int sit, int sitp, int bir, int bim){return bim+bir*lDwL+sitp*lDwL*lDwRR+sit*ldp*lDwL*lDwRR+sip*ldp*ldp*lDwL*lDwRR+si*lDwL*lDwRR*ld*ldp*ldp;}
   int ctrIndex(int ai, int bi, int aip){return aip+bi*D+ai*D*Dw;}
 };
