@@ -73,7 +73,7 @@ int stateArray::setParameterL(int Lnew){
     stateArrayAccessStructure.erase(stateArrayAccessStructure.begin()+startPos,stateArrayAccessStructure.begin()+endPos);
   }
   else{
-    startPos=L/2-deltaL/2+1;
+    startPos=L/2-deltaL/2;
     stateArrayAccessStructure.insert(stateArrayAccessStructure.begin()+startPos,deltaL,baseTensor<lapack_complex_double>());
   }
   L=Lnew;

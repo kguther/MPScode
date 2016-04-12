@@ -70,41 +70,51 @@ void basisQNOrderMatrix::generateQNIndexTables(){
     }
   }
   generateAccessArrays();
-  for(int i=0;i<dimInfo.L();++i){
-    if(i==0 && 0){
-      // This part is used to test QN labeling schemes for their useability. It prints out the block indices and their QN labels.
-      std::cout<<"Right labels:\n";
-      for(int aim=0;aim<dimInfo.locDimL(i+1);++aim){
-	std::cout<<aim<<" with label "<<(*conservedQNs)[0].QNLabel(i,aim)<<std::endl;
+  
+  //Check if labeling scheme is valid
+  int info;
+  info=validate();
+  if(info){
+    std::cout<<"CRITICAL ERROR: Invalid QN labeling scheme at site "<<info-1<<" - terminating process\n";
+    for(int i=0;i<dimInfo.L();++i){
+      if(i+1==info){
+	// This part is used to test QN labeling schemes for their useability. It prints out the block indices and their QN labels.
+	std::cout<<"Right labels:\n";
+	for(int aim=0;aim<dimInfo.locDimL(i+1);++aim){
+	  std::cout<<aim<<" with label "<<(*conservedQNs)[0].QNLabel(i,aim)<<std::endl;
+	}
+	std::cout<<"Left labels:\n";
+	for(int aim=0;aim<dimInfo.locDimL(i);++aim){
+	  std::cout<<aim<<" with label "<<(*conservedQNs)[0].QNLabel(i-1,aim)<<std::endl;
+	}
+	/*
+	  for(int iBlock=0;iBlock<numBlocksRP(i);++iBlock){
+	  std::cout<<"Right indices: "<<std::endl;
+	  for(int j=0;j<rBlockSizeRP(i,iBlock);++j){
+	  std::cout<<aiBlockIndexRP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(i,aiBlockIndexRP(i,iBlock,j))<<"\t"<<siBlockIndexRP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(siBlockIndexRP(i,iBlock,j))<<std::endl;
+	  }
+	  std::cout<<"Left indices: \n";
+	  for(int j=0;j<lBlockSizeRP(i,iBlock);++j){
+	  std::cout<<aimBlockIndexRP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(i-1,aimBlockIndexRP(i,iBlock,j))<<std::endl;
+	  }
+	  }
+	*/
+	for(int iBlock=0;iBlock<numBlocksLP(i);++iBlock){
+	  std::cout<<"Left indices: "<<std::endl;
+	  for(int j=0;j<lBlockSizeLP(i,iBlock);++j){
+	    std::cout<<aimBlockIndexLP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(i-1,aimBlockIndexLP(i,iBlock,j))<<"\t"<<siBlockIndexLP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(siBlockIndexLP(i,iBlock,j))<<std::endl;
+	  }
+	  std::cout<<"Right indices: \n";
+	  for(int j=0;j<rBlockSizeLP(i,iBlock);++j){
+	    std::cout<<aiBlockIndexLP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(i,aiBlockIndexLP(i,iBlock,j))<<std::endl;
+	  }
+	}
       }
-      std::cout<<"Left labels:\n";
-      for(int aim=0;aim<dimInfo.locDimL(i);++aim){
-	std::cout<<aim<<" with label "<<(*conservedQNs)[0].QNLabel(i-1,aim)<<std::endl;
-      }
-      /*
-	for(int iBlock=0;iBlock<numBlocksRP(i);++iBlock){
-	std::cout<<"Right indices: "<<std::endl;
-	for(int j=0;j<rBlockSizeRP(i,iBlock);++j){
-	std::cout<<aiBlockIndexRP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(i,aiBlockIndexRP(i,iBlock,j))<<"\t"<<siBlockIndexRP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(siBlockIndexRP(i,iBlock,j))<<std::endl;
-	}
-	std::cout<<"Left indices: \n";
-	for(int j=0;j<lBlockSizeRP(i,iBlock);++j){
-	std::cout<<aimBlockIndexRP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(i-1,aimBlockIndexRP(i,iBlock,j))<<std::endl;
-	}
-	}
-      */
-      for(int iBlock=0;iBlock<numBlocksLP(i);++iBlock){
-	std::cout<<"Left indices: "<<std::endl;
-	for(int j=0;j<lBlockSizeLP(i,iBlock);++j){
-	  std::cout<<aimBlockIndexLP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(i-1,aimBlockIndexLP(i,iBlock,j))<<"\t"<<siBlockIndexLP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(siBlockIndexLP(i,iBlock,j))<<std::endl;
-	}
-	std::cout<<"Right indices: \n";
-	for(int j=0;j<rBlockSizeLP(i,iBlock);++j){
-	  std::cout<<aiBlockIndexLP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(i,aiBlockIndexLP(i,iBlock,j))<<std::endl;
-	}
-      }
-      exit(1);
     }
+    exit(-1);
+  }
+  else{
+    std::cout<<"Validated QN labeling scheme - all blocks are normalizable\n";
   }
 }
 
@@ -262,4 +272,29 @@ std::complex<int> basisQNOrderMatrix::qnCriterium(int const iQN, int const i, in
   //criterium.imag(imag((*conservedQNs)[iQN].QNLabel(i-1+direction,aim))*imag((*conservedQNs)[iQN].QNLabel(si)));
   criterium=(*conservedQNs)[iQN].groupOperation((*conservedQNs)[iQN].QNLabel(i-1+direction,aim),(*conservedQNs)[iQN].QNLabel(si),pre);
   return criterium;
+}
+
+//---------------------------------------------------------------------------------------------------//
+// The validate() function returns -1 if there are non-normalizable blocks and 0 else.
+//---------------------------------------------------------------------------------------------------//
+
+int basisQNOrderMatrix::validate(){
+  int lBlockSize, rBlockSize;
+  for(int i=0;i<dimInfo.L();++i){
+    for(int iBlock=0;iBlock<numBlocksLP(i);++iBlock){
+      lBlockSize=lBlockSizeLP(i,iBlock);
+      rBlockSize=rBlockSizeLP(i,iBlock);
+      if(lBlockSize<rBlockSize && lBlockSize>0){
+	return i+1;
+      }
+    }
+    for(int iBlock=0;iBlock<numBlocksRP(i);++iBlock){
+      lBlockSize=lBlockSizeRP(i,iBlock);
+      rBlockSize=rBlockSizeRP(i,iBlock);
+      if(rBlockSize<lBlockSize && rBlockSize>0){
+	return i+1;
+      }
+    }
+  }
+  return 0;
 }

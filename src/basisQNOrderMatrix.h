@@ -41,6 +41,7 @@ class basisQNOrderMatrix{
   int numBlocksLP(int const i) const{return aiBlockIndicesLP[i].size();}
   int numBlocksRP(int const i) const{return aimBlockIndicesRP[i].size();}
   int nQNs() const{return conservedQNs->size();}
+  int validate();
  private:
   int maxNumBlocks, maxBlockSize;
   basisQNOrderMatrix(basisQNOrderMatrix const &source);

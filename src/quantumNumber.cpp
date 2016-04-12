@@ -67,6 +67,42 @@ int quantumNumber::setParameterL(int Lnew){
 }
 
 //---------------------------------------------------------------------------------------------------//
+// Functions for easy manipulation of the index labels during runtime. 
+
+// grow() adds sites to reach length L at site i. The new bonds have undefined indices, except for the
+//last new bond, which takes those of bond i-1. Then, the indices of the right part are shifted by
+// targetQN-N such that the new lattice has total charge targetQN.
+
+// refine() defines the indices at site i by using the entries of source. It returns -1 if source is of insufficient size. Use to define labels for bond indices introduces with grow()
+//---------------------------------------------------------------------------------------------------//
+
+int quantumNumber::grow(int L, int i, std::complex<int> const &targetQN){
+  int const D=dimInfo.D();
+  int const dL=L-dimInfo.L();
+  indexLabel.insert(indexLabel.begin()+i*D,dL*D,0);
+  int const lDL=dimInfo.locDimL(i);
+  for(int aim=0;aim<lDL;++aim){
+    indexLabel[aim+(i+dL)*D]=indexLabel[aim+i*D];
+  }
+  dimInfo.setParameterL(L);
+  return 0;
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+int quantumNumber::refine(int i, std::vector<std::complex<int> > const &source){
+  int const lDL=dimInfo.locDimL(i);
+  int const D=dimInfo.D();
+  if(source.size()<lDL){
+    return -1;
+  }
+  for(int aim=0;aim<lDL;++aim){
+    indexLabel[aim+i*D]=source[aim];
+  }
+  return 0;
+}
+
+//---------------------------------------------------------------------------------------------------//
 // This is the new, dynamic labeling scheme, where first, starting with the vacuum labels for the 
 // leftmost index, the allowed blocks of the next site are constructed - these are those blocks
 // that allow for fullfilling the QN constraints - for all sites from the left. 

@@ -1,6 +1,7 @@
 #include "infiniteNetwork.h"
 #include "mkl_complex_defined.h"
 #include <memory>
+#include <vector>
 
 void infiniteNetwork::statePrediction(arcomplex<double> *target){
   //Submatrices of already existing matrices
@@ -32,6 +33,7 @@ void infiniteNetwork::statePrediction(arcomplex<double> *target){
   }
 }
 
+//---------------------------------------------------------------------------------------------------//
 
 void infiniteNetwork::updateMPS(arcomplex<double> *source){
   diagsm=diags;
@@ -40,11 +42,11 @@ void infiniteNetwork::updateMPS(arcomplex<double> *source){
   int const lDL=dimInfo.locDimL(i);
   int const lDR=dimInfo.locDimR(i);
   int const lDRR=dimInfo.locDimR(i+1);
-  int lBlockSize, rBlockSize, targetLBlockSize, targetRBlockSize;
+  int lBlockSize, rBlockSize;
   int maxTargetBlockSize, maxBlockSize;
   int aimB, siB, airB, sipB;
-  diags.resize(ld*lDL);
   arcomplex<double> *aMatrix, *bMatrix;
+  std::vector<std::complex<int> > blockQNs;
   std::unique_ptr<arcomplex<double> > sourceBlockP, aBlockP, bBlockP;
   std::unique_ptr<arcomplex<double> > aFullP(new arcomplex<double> [ld*lDL*ld*lDL]);
   std::unique_ptr<arcomplex<double> > bFullP(new arcomplex<double> [ldp*lDRR*ldp*lDRR]);
@@ -57,6 +59,11 @@ void infiniteNetwork::updateMPS(arcomplex<double> *source){
   diagsFull=diagsFullP.get();
   networkState.subMatrixStart(aMatrix,i);
   networkState.subMatrixStart(bMatrix,i+1);
+
+  
+  int const nQNs=networkState.centralIndexTable.nQNs();
+  blockQNs.resize(ld*lDL);
+
   int const numBlocks=networkState.centralIndexTable.numBlocks();
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
     rBlockSize=networkState.centralIndexTable.rBlockSize(iBlock);
@@ -76,52 +83,80 @@ void infiniteNetwork::updateMPS(arcomplex<double> *source){
 	}
       }
       LAPACKE_zgesdd(LAPACK_COL_MAJOR,'A',lBlockSize,rBlockSize,sourceBlock,lBlockSize,diagsBlock,aBlock,lBlockSize,bBlock,rBlockSize);
-
-      //Testversion: Truncate blockwise, this ensures the QN scheme is kept. But this also means that a suboptimal QN scheme will be carried through, preventing accurate results.
-
-      targetRBlockSize=networkState.indexTable.rBlockSizeLP(i,iBlock);
-      targetLBlockSize=networkState.indexTable.lBlockSizeRP(i+1,iBlock);
-      for(int j=0;j<targetRBlockSize;++j){
-	aimB=networkState.indexTable.aiBlockIndexLP(i,iBlock,j);
-	//aimB=networkState.centralIndexTable.aimBlockIndex(iBlock,k);
-	//siB=networkState.centralIndexTable.siBlockIndex(iBlock,k);
+      for(int k=0;k<lBlockSize;++k){
+	aimB=networkState.centralIndexTable.aimBlockIndex(iBlock,k);
+	siB=networkState.centralIndexTable.siBlockIndex(iBlock,k);
 	for(int kp=0;kp<lBlockSize;++kp){
 	  airB=networkState.centralIndexTable.aimBlockIndex(iBlock,kp);
 	  sipB=networkState.centralIndexTable.siBlockIndex(iBlock,kp);
-	  aMatrix[airB+sipB*lDL+aimB*lDL*ld]=aBlock[kp+targetRBlockSize*j];
+	  aFull[airB+sipB*lDL+aimB*lDL*ld+siB*lDL*lDL*ld]=aBlock[kp+lBlockSize*k];
 	}
-	if(j<targetLBlockSize){
-	  diags[aimB]=diagsBlock[j];
+	if(k<rBlockSize){
+	  diagsFull[aimB+lDL*siB]=diagsBlock[k];
+	  
+	  blockQNs[aimB+lDL*siB]=networkState.centralIndexTable.blockQN(0,iBlock);
+
 	}
       }
-
-      //This is to see how good the QN labeling scheme is
-      maxTargetBlockSize=(targetLBlockSize<targetRBlockSize)?targetRBlockSize:targetLBlockSize;
-      maxBlockSize=(lBlockSize<rBlockSize)?rBlockSize:lBlockSize;
-      if(maxTargetBlockSize<maxBlockSize){
-	std::cout<<"Kept SVs from "<<diagsBlock[0]<<" to "<<diagsBlock[maxTargetBlockSize-1]<<" discarded from "<<diagsBlock[maxTargetBlockSize]<<" to "<<diagsBlock[maxBlockSize]<<std::endl;
-      }
-      else{
-	std::cout<<"Kept all SVs\n";
-      }
-
-
       for(int j=0;j<rBlockSize;++j){
 	aimB=networkState.centralIndexTable.airBlockIndex(iBlock,j);
 	siB=networkState.centralIndexTable.sipBlockIndex(iBlock,j);
-	for(int jp=0;jp<targetLBlockSize;++jp){
-	  airB=networkState.indexTable.aimBlockIndexRP(i+1,iBlock,jp);
-	  //airB=networkState.centralIndexTable.airBlockIndex(iBlock,jp);
-	  //sipB=networkState.centralIndexTable.sipBlockIndex(iBlock,jp);
-	  bMatrix[airB+aimB*lDR+siB*lDR*lDRR]=bBlock[jp+rBlockSize*j];
+	for(int jp=0;jp<rBlockSize;++jp){
+	  airB=networkState.centralIndexTable.airBlockIndex(iBlock,jp);
+	  sipB=networkState.centralIndexTable.sipBlockIndex(iBlock,jp);
+	  bFull[airB+sipB*lDRR+aimB*lDRR*ld+siB*lDRR*lDRR*ld]=bBlock[jp+rBlockSize*j];
 	}
       }	
     }
   }
+  optLocalQNs.clear();
+  std::vector<double> diagsBuffer;
+  std::vector<int> aiIndices;
+  diagsBuffer.insert(diagsBuffer.begin(),diagsFull[0]);
+  optLocalQNs.insert(optLocalQNs.begin(),blockQNs[0]);
+  aiIndices.insert(aiIndices.begin(),0);
+  for(int ai=1;ai<ld*lDR;++ai){
+    for(int m=0;m<diagsBuffer.size();++m){
+      if(diagsBuffer[m]<diagsFull[ai]){
+	diagsBuffer.insert(diagsBuffer.begin()+m,diagsFull[ai]);
+	aiIndices.insert(aiIndices.begin()+m,ai);
+	optLocalQNs.insert(optLocalQNs.begin()+m,blockQNs[ai]);
+	break;
+      }
+    }
+  }
+  //Truncate to lDR largest SVs
+  optLocalQNs.resize(lDR);
+  diagsBuffer.resize(lDR);
+  
+  for(int ai=0;ai<lDR;++ai){
+    std::cout<<"Kept QN label "<<optLocalQNs[ai]<<" with SV "<<diagsBuffer[ai]<<std::endl;
+  }
+
+  //Copy the corresponding columns(A)/rows(B) into the MPS
+  for(int ai=0;ai<lDR;++ai){
+    for(int si=0;si<ld;++si){
+      for(int aim=0;aim<lDL;++aim){
+	aMatrix[aim+ai*lDL+si*lDL*lDR]=aFull[aim+si*lDL+ld*lDL*aiIndices[ai]];
+      }
+      for(int air=0;air<lDRR;++air){
+	bMatrix[ai+air*lDR+si*lDR*lDRR]=bFull[aiIndices[ai]+ld*lDRR*air+ld*lDRR*lDRR*si];
+      }
+    }
+  }
+  
+  //Copy the remaining diagonal matrix into diags
+  diags=diagsBuffer;
   //Problem: TRUNCATE THE RESULTING MATRICES WITHOUT DESTROYING THE QN LABELING SCHEME
   //Truncation will be carried out by deleting individual columns/rows from a/b. This leads to an outdated QN labeling. Possible solution: Create new QN labeling here and make local QN labelings storable. Then: CHANGE HOW QNs ARE UPDATED WHEN INSERTING A SITE. This will currently destroy any stored data.
 }
 
+//---------------------------------------------------------------------------------------------------//
+
+
 int infiniteNetwork::explicitIndex(int iBlock, int j, int k){
   return networkState.centralIndexTable.aimBlockIndex(iBlock,k)+dimInfo.locDimL(i)*networkState.centralIndexTable.siBlockIndex(iBlock,k)+networkState.centralIndexTable.airBlockIndex(iBlock,j)*dimInfo.locDimL(i)*dimInfo.locd(i)+networkState.centralIndexTable.sipBlockIndex(iBlock,j)*dimInfo.locDimL(i)*dimInfo.locDimR(i+1)*dimInfo.locd(i);
 }
+
+
+

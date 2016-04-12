@@ -27,6 +27,8 @@ class quantumNumber{
   int primaryIndex(int i, int ai);
   int setParameterD(int Dnew);
   int setParameterL(int Lnew);
+  int grow(int L, int i, std::complex<int> const &targetQN);
+  int refine(int i, std::vector<std::complex<int> > const &source);
   std::vector<std::complex<int> > localQNValue() const {return QNloc;}
   //The failed flag is set when the given quantum number cannot be reached in the given system or the initialization failed for some other reason. It is set to zero else.
   int failed;

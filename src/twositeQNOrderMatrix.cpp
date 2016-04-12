@@ -19,7 +19,6 @@ int twositeQNOrderMatrix::generateQNIndexTable(){
   if(nQNs()==0){
     return 1;
   }
-  std::vector<std::vector<std::complex<int> > > qnLabels;
   qnLabels.resize(nQNs());
   int isNew=1;
   int const ld=dimInfo.locd(site);
@@ -48,14 +47,14 @@ int twositeQNOrderMatrix::generateQNIndexTable(){
       }
     }
   }
-  writeIndexTables(site-1,ld,lDL,qnLabels,lBlockIndices);
-  writeIndexTables(site+1,ldp,lDRR,qnLabels,rBlockIndices);
+  writeIndexTables(site-1,ld,lDL,lBlockIndices);
+  writeIndexTables(site+1,ldp,lDRR,rBlockIndices);
   return 0;
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-void twositeQNOrderMatrix::writeIndexTables(int i, int ld, int lD, std::vector<std::vector<std::complex<int> > > const &qnLabels, std::vector<std::vector<multInt> > &target){
+void twositeQNOrderMatrix::writeIndexTables(int i, int ld, int lD, std::vector<std::vector<multInt> > &target){
   int const numBlocks=qnLabels[0].size();
   int matchBlock;
   int const pre=(i==site-1)?1:-1;

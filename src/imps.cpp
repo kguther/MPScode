@@ -12,13 +12,13 @@ imps::imps(dimensionTable const &dimInfo, std::vector<quantumNumber> const &cons
 
 //---------------------------------------------------------------------------------------------------//
 
-void imps::addSite(std::vector<std::complex<int> > const &targetQN){
-  stateArray::setParameterL(L+2);
+void imps::addSite(int Lnew, int i, std::vector<std::complex<int> > const &targetQN){
   for(int iQN=0;iQN<nQNs;++iQN){
-    
+    conservedQNs[iQN].grow(Lnew,i,targetQN[iQN]);
   }
+  stateArray::setParameterL(Lnew);
   setUpQNs(conservedQNs);
-  centralIndexTable=twositeQNOrderMatrix((L-1)/2,dimInfo,&conservedQNs);
+  centralIndexTable=twositeQNOrderMatrix(i,dimInfo,&conservedQNs);
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -38,4 +38,5 @@ void imps::exportState(mps &target){
       }
     }
   }
+  target.setUpQNs(conservedQNs);
 }

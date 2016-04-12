@@ -13,6 +13,7 @@
 #include "globalMeasurement.h"
 #include "localMeasurementSeries.h"
 #include "exactGroundState.h"
+#include "infiniteNetwork.h"
 
 //BEWARE: ALL MPS AND MPO NETWORK MATRICES ARE STORED WITH A CONTIGOUS COLUMN INDEX (i.e. transposed with respect to C standard, for better compatibility with LAPACK)
 
@@ -61,8 +62,18 @@ network::network(problemParameters const &inputpars, simulationParameters const 
     excitedStateP.storeOrthoState(networkState,iEigen);
   }
 
+  /*
   exactGroundState gsLoader(conservedQNs[0].QNValue());
   gsLoader.writeExactGroundState(networkState);
+  */
+
+  //Testing for setup of initial state via iDMRG
+
+  infiniteNetwork setupNetwork(pars,simPars);
+  setupNetwork.growSystem();
+  setupNetwork.exportState(networkState);
+
+  exit(1);
 
   excitedStateP.storeOrthoState(networkState,0);
 }
