@@ -12,7 +12,7 @@
 
 void sysSolve(info const &parPack, std::string const &fileName);
 void getScaling(int L, info const &parPack, double *results, std::string const &fileName);
-void sysSetMeasurements(simulation &sim, int d, int L);
+void sysSetMeasurements(simulation &sim, int d, int L, int meas);
 void getFileName(info const &necPars, char *fNBuf, int commsize, int myrank, std::string &finalName);
 //results has to be at least of size 4 (in the sense of a C array)
 
@@ -216,12 +216,13 @@ void sysSolve(info const &parPack, std::string const &fileName){
       cGName.str("");
     }
   }
-  sysSetMeasurements(sim,pars.d.maxd(),parPack.L);
+  int const doMeas=(parPack.simType==1)?0:1;
+  sysSetMeasurements(sim,pars.d.maxd(),parPack.L,doMeas);
 }
 
 //-------------------------------------------------------------------------------------------//
 
-void sysSetMeasurements(simulation &sim, int d, int L){
+void sysSetMeasurements(simulation &sim, int d, int L, int meas){
   int const bulkStart=(L/4>2)?L/4:3;
   int parityQNs[4]={1,-1,-1,1};
   localMpo<lapack_complex_double> greensFunction(d,1,L,1,parityQNs);
@@ -312,20 +313,22 @@ void sysSetMeasurements(simulation &sim, int d, int L){
     }
   }
   sim.setLocalMeasurement(localDensity,lDName);
-  sim.setLocalMeasurement(localDensityB,lDOName);
-  sim.setLocalMeasurement(localDensityProd,lDPName);
   sim.setLocalMeasurement(greensFunction,gFName);
-  sim.setLocalMeasurement(interChainCorrelation,iCCName);
-  sim.setLocalMeasurement(densityCorrelation,dCName);
-  sim.setLocalMeasurement(interChainDensityCorrelation,iCDCName);
-  sim.setLocalMeasurement(superconductingOrder,scName);
   sim.setLocalMeasurement(bulkGreensFunction,bgFName);
-  sim.setLocalMeasurement(bulkInterChainCorrelation,biCCName);
-  sim.setLocalMeasurement(bulkDensityCorrelation,bdCName);
-  sim.setLocalMeasurement(bulkInterChainDensityCorrelation,biCDCName);
-  sim.setLocalMeasurement(bulkSuperconductingOrder,bscName);
-  sim.setLocalMeasurement(bulkSuperConductingCorrelation,pscName);
-  sim.setLocalMeasurement(bulkICSuperConductingCorrelation,picscName);
+  if(meas){
+    sim.setLocalMeasurement(localDensityB,lDOName);
+    sim.setLocalMeasurement(localDensityProd,lDPName);
+    sim.setLocalMeasurement(interChainCorrelation,iCCName);
+    sim.setLocalMeasurement(densityCorrelation,dCName);
+    sim.setLocalMeasurement(interChainDensityCorrelation,iCDCName);
+    sim.setLocalMeasurement(superconductingOrder,scName);
+    sim.setLocalMeasurement(bulkInterChainCorrelation,biCCName);
+    sim.setLocalMeasurement(bulkDensityCorrelation,bdCName);
+    sim.setLocalMeasurement(bulkInterChainDensityCorrelation,biCDCName);
+    sim.setLocalMeasurement(bulkSuperconductingOrder,bscName);
+    sim.setLocalMeasurement(bulkSuperConductingCorrelation,pscName);
+    sim.setLocalMeasurement(bulkICSuperConductingCorrelation,picscName);
+  }
   sim.setEntanglementSpectrumMeasurement();
   sim.run();
 }

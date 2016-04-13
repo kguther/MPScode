@@ -62,10 +62,22 @@ network::network(problemParameters const &inputpars, simulationParameters const 
     excitedStateP.storeOrthoState(networkState,iEigen);
   }
 
-  
-  exactGroundState gsLoader(conservedQNs[0].QNValue());
-  gsLoader.writeExactGroundState(networkState);
-  
+  if(conservedQNs[0].QNValue().imag()){  
+    exactGroundState gsLoader(conservedQNs[0].QNValue());
+    gsLoader.writeExactGroundState(networkState);
+  }
+  else{
+    std::complex<int> even=conservedQNs[0].QNValue();
+    std::complex<int> odd=std::complex<int>(conservedQNs[0].QNValue().real(),-1);
+    exactGroundState gsLoaderA(even);
+    exactGroundState gsLoaderB(odd);
+    gsLoaderA.writeExactGroundState(networkState);
+    if(pars.nEigs>1){
+      mps firstInitialState(networkDimInfo,conservedQNs);
+      gsLoaderB.writeExactGroundState(firstInitialState);
+      excitedStateP.storeOrthoState(firstInitialState,1);
+    }
+  }  
 
   excitedStateP.storeOrthoState(networkState,0);
 }
@@ -210,12 +222,12 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
       for(int prev=0;prev<iEigen;++prev){
 	std::cout<<"Overlap with state "<<prev<<" is: "<<excitedStateP.fullOverlap(prev)<<std::endl;
       }
-      
+      /*
       measure(check,spinCheck);
       measure(checkParity,parCheck);
       std::cout<<"Current particle number (final): "<<spinCheck<<std::endl;
       std::cout<<"Current subchain parity (final): "<<parCheck<<std::endl;
-      
+      */
     }
     stepRet=gotoNextEigen();
     if(!stepRet){

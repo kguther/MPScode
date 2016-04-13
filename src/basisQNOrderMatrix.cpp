@@ -73,7 +73,7 @@ void basisQNOrderMatrix::generateQNIndexTables(){
   
   //Check if labeling scheme is valid
   int info;
-  info=validate();
+  info=0;//validate();
   if(info){
     std::cout<<"CRITICAL ERROR: Invalid QN labeling scheme at site "<<info-1<<" - terminating process\n";
     for(int i=0;i<dimInfo.L();++i){
@@ -114,7 +114,7 @@ void basisQNOrderMatrix::generateQNIndexTables(){
     exit(-1);
   }
   else{
-    std::cout<<"Validated QN labeling scheme - all blocks are normalizable\n";
+    //std::cout<<"Validated QN labeling scheme - all blocks are normalizable\n";
   }
 }
 
