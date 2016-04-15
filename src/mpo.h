@@ -53,6 +53,7 @@ d(din),
   Dw(Dwin),
   L(Lin)
 {
+  //Allocation of Hamiltonian MPO - square matrices are used since no library matrix functions have to be applied - this allows for faster access
   Qoperator.resize(d*d*Dw*Dw*L);
 }
 

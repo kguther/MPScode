@@ -15,6 +15,7 @@ simulation::simulation(problemParameters &parsIn, simulationParameters &simParsI
   measureEE(0),
   measureES(0),
   deltaP(deltaPIn),
+  targetDelta(deltaPIn),
   scaling(stepSize),
   tSite(tSiteIn),
   parDirection(std::complex<double>(J,g)),
@@ -102,9 +103,20 @@ int simulation::run(){
   //Solve the system for different parameters (J,g) along a straight line in radial direction 
   int info;
   for(int nRun=1;nRun<pathLength+1;++nRun){
+
+    /*
     if(abs(parDirection)>1e-20){
       parDirection*=1.0/(scaling*abs(parDirection))*nRun;
     }
+    */
+    //Now: disorder scaling
+    if(pathLength>1){
+      deltaP=(nRun-1)*targetDelta/(pathLength-1);
+    }
+    else{
+      deltaP=targetDelta;
+    }
+    
     info=singleRun();
     if(info)
       return info;
@@ -121,8 +133,12 @@ int simulation::singleRun(){
   //Containers for measurements
   std::vector<double> expectationValues;
   std::vector<std::vector<std::complex<double> > > localExpectationValues;
-  J=1+parDirection.real();
-  g=1+parDirection.imag();
+
+  
+  J=1;//+parDirection.real();
+  g=1;//+parDirection.imag();
+  
+
   std::cout<<J<<" "<<g<<std::endl;
   if(pars.Dw==12){
     hInfo=writeHamiltonian(csystem.TensorNetwork,J,g,W,pars.t,deltaP,tSite);
@@ -148,6 +164,10 @@ int simulation::singleRun(){
     std::string finalName, fileName;
     std::ostringstream compositeName;
     compositeName<<filePrefix<<"_W_"<<W<<"_J_"<<J<<"_g_"<<g;
+    if(abs(targetDelta)>1e-10){
+      compositeName<<"_delta_"<<deltaP;
+    }
+    
     finalName=compositeName.str();
     for(int m=0;m<finalName.length();++m){
       if(finalName[m]=='.'){

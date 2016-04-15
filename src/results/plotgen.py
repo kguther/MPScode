@@ -15,8 +15,9 @@ if 'plots' not in filelist:
 taskname=sys.argv[1]
 
 writeK=False
-writepd=True
+writepd=False
 newpd=False
+defaultLegs=['Ground state', '1st excited State']
 
 labellist=['$\\left|\\langle a^\dagger_i a_0^{} \\rangle \\right|$','$\\left|\\langle a^\dagger_i b^{}_i a_0^{\dagger} b_0 \\rangle \\right|$','$\\left|\\langle n^{a}_i n_0^{a} \\rangle \\right|$','$\\left|\\langle n^{a}_i n_0^{b} \\rangle \\right|$','$\\left|\\langle n^{a}_i \\rangle \\right|$','$\\left|\\langle a^\dagger_i b^\dagger_i a_0^{} b_0^{} \\rangle \\right|$','$\\left|\\langle \\right|\\rangle$','S','$\\left|\\langle n^{a}_i n^{b}_i \\rangle\\right|$','$\\left|\\langle n^{b}_i\\rangle\\right|$','$\\langle a_i^{\dagger} a_{i+1}^{\dagger} a_0 a_1 \\rangle$','other']
 
@@ -49,7 +50,7 @@ def tasknum(n):
 
 for filename in filelist:
     if filename[0:len(taskname)]==taskname:
-        if filename[(len(filename)-6):(len(filename)-4)]!='ES':
+        if filename[(len(filename)-6):(len(filename)-4)]!='ES' and filename[(len(filename)-6):(len(filename)-4)]!='_2':
             print filename
             with open(filename) as readCaption:
                 readCaption.readline()
@@ -71,6 +72,7 @@ for filename in filelist:
                         pd.write('J\tg\tdensity fluctuation\n')
             for i in range(0,n-1):
                 data=[]
+                dataB=[]
                 lineIndex=0
                 with open(filename) as readData:
                     for line in readData:
@@ -78,6 +80,25 @@ for filename in filelist:
                         buf=[x if x!='' else '0' for x in line.split('\t')]
                         if len(buf)-1>i and lineIndex>5:
                             data.append(float(buf[i]))
+                filenameB=filename[:(len(filename)-4)]+'_state_2.txt'
+                print filenameB
+                lineIndex=0
+                with open(filenameB) as readEnergy:
+                    readEnergy.readline()
+                    readEnergy.readline()
+                    enListR=readEnergy.readline()
+                enList=enListR.split('\t')
+                defaultLegs=[pars[6],enList[6]]
+                with open(filenameB) as readData:
+                    for line in readData:
+                        lineIndex+=1
+                        buf=[x if x!='' else '0' for x in line.split('\t')]
+                        if len(buf)-1>i and lineIndex>5:
+                            dataB.append(float(buf[i]))
+                if len(dataB)>0:
+                    excitedState=True
+                else:
+                    excitedState=False
                 x=range(0,len(data))
                 tasklabel=labellist[tasknum(datanames[i])]
                 bCheck=datanames[i].split(' ')
@@ -98,15 +119,27 @@ for filename in filelist:
                 if bCheck[0]=='Bulk':
                     if tasknum(datanames[i])==10:
                         plt.plot(x,data,'o')
+                        if excitedState:
+                            plt.plot(x,dataB,'o')
+                            plt.legend(defaultLegs)
                     else:
                         plt.loglog(x,map(abs,data),'o')
+                        if excitedState:
+                            plt.loglog(x,map(abs,dataB),'o')
+                            plt.legend(defaultLegs)
                     if writeK and tasknum(datanames[i])==5:
                         plt.loglog(xeff,f(xeff,fpars[0],fpars[1],fpars[2]),'o')
                 else:
                     if (tasknum(datanames[i])!=4 and tasknum(datanames[i])!=7 and tasknum(datanames[i])!=9 and tasknum(datanames[i])!=8):
                         plt.semilogy(x,map(abs,data),'o')
+                        if excitedState:
+                            plt.semilogy(x,map(abs,dataB),'o')
+                            plt.legend(defaultLegs)
                     else:
                         plt.plot(x,data,'o')
+                        if excitedState:
+                            plt.plot(x,dataB,'o')
+                            plt.legend(defaultLegs)
                 plt.xlabel('distance i')
                 plt.ylabel(tasklabel)
                 tname=datanames[i].replace('.','_')

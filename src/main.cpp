@@ -74,6 +74,8 @@ int main(int argc, char *argv[]){
   MPI_Bcast(fNBuf,fNBufSize+1,MPI_CHAR,0,MPI_COMM_WORLD);
   std::string finalName;
   //Each process calculates its own couplings/system size
+  
+
   int const range=4;
   int const redRank=myrank/2;
   int WStage=redRank/range;
@@ -86,6 +88,8 @@ int main(int argc, char *argv[]){
     necPars.Jsc=cos(alpha);
     necPars.gsc=sin(alpha);
   }
+
+  
   L=L0+dL*myrank;
   //And evaluates its computation
   if(necPars.simType==1){
@@ -152,10 +156,10 @@ int main(int argc, char *argv[]){
   if(necPars.simType!=1){
     getFileName(necPars,fNBuf,commsize,myrank,finalName);
   }
-  if(necPars.simType==0){
+  if(necPars.simType==2 || necPars.simType==0){
     sysSolve(necPars,finalName);
   }
-  if(necPars.simType==2 || necPars.simType==3){
+  if(necPars.simType==3){
     necPars.numPts=1;
     sysSolve(necPars,finalName);
   }
@@ -195,7 +199,7 @@ void sysSolve(info const &parPack, std::string const &fileName){
   std::complex<int> QNList[4]={std::complex<int>(0,1),std::complex<int>(1,1),std::complex<int>(1,-1),std::complex<int>(2,-1)};
 
   localHSpaces localHilbertSpaceDims(4);
-  problemParameters pars(localHilbertSpaceDims,parPack.L,parPack.Dw,parPack.nEigens,nQuantumNumbers,QNValue,QNList);
+  problemParameters pars(localHilbertSpaceDims,parPack.L,parPack.Dw,parPack.nEigens,nQuantumNumbers,QNValue,QNList,parPack.tReal,parPack.tImag);
   //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack
   simulationParameters simPars(usedD,parPack.nSweeps,parPack.nStages,parPack.alphaInit,parPack.acc,parPack.arpackTolMin,parPack.arpackTol);
   simulation sim(pars,simPars,parPack.Jsc,parPack.gsc,parPack.Wsc,parPack.numPts,parPack.scaling,parPack.delta,fileName,parPack.tPos);
@@ -216,7 +220,7 @@ void sysSolve(info const &parPack, std::string const &fileName){
       cGName.str("");
     }
   }
-  int const doMeas=(parPack.simType==1)?0:1;
+  int const doMeas=(parPack.simType==1 || parPack.simType==3 || parPack.simType==0)?0:1;
   sysSetMeasurements(sim,pars.d.maxd(),parPack.L,doMeas);
 }
 
@@ -312,6 +316,8 @@ void sysSetMeasurements(simulation &sim, int d, int L, int meas){
       bulkICSuperConductingCorrelation.global_access(bulkStart,si,sip,0,0)=aMatrix(si,sip);
     }
   }
+
+  
   sim.setLocalMeasurement(localDensity,lDName);
   sim.setLocalMeasurement(greensFunction,gFName);
   sim.setLocalMeasurement(bulkGreensFunction,bgFName);
@@ -330,6 +336,7 @@ void sysSetMeasurements(simulation &sim, int d, int L, int meas){
     sim.setLocalMeasurement(bulkICSuperConductingCorrelation,picscName);
   }
   sim.setEntanglementSpectrumMeasurement();
+  
   sim.run();
 }
 

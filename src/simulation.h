@@ -33,7 +33,7 @@ class simulation{
   int pathLength;
   int tSite;
   int measureEE, measureES;
-  double scaling, W, deltaP;
+  double scaling, W, deltaP, targetDelta;
   std::complex<double> parDirection;
   std::string filePrefix;
   mpo<lapack_complex_double> particleNumber;

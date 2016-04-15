@@ -44,7 +44,6 @@ network::network(problemParameters const &inputpars, simulationParameters const 
   simPars(inputsimPars),
   excitedStateP(projector(pars.nEigs)),
   networkDimInfo(dimensionTable(D,L,pars.d))
-  //Allocation of Hamiltonian MPO - square matrices are used since no library matrix functions have to be applied - this allows for faster access
 {
   networkH=mpo<lapack_complex_double>(pars.d.maxd(),Dw,L);
   nConverged.resize(pars.nEigs);
@@ -54,7 +53,7 @@ network::network(problemParameters const &inputpars, simulationParameters const 
   for(int iQN=0;iQN<pars.nQNs;++iQN){
     conservedQNs.push_back(quantumNumber(networkDimInfo,pars.QNconserved[iQN],pars.QNLocalList[iQN]));
   }
-  //Allocation of MPS - memory of the matrices has to be allocated exactly matching the dimension to use them with lapack and cblas
+  //Generation of MPS, that is basically the index tables for the QNs are written
   networkState.generate(networkDimInfo,conservedQNs);
   //All states have to be stored, for reusability in later solve() with other simulation parameters
   //Somewhat unelegant way to handle loading of the stored states in the first solve()
@@ -62,10 +61,12 @@ network::network(problemParameters const &inputpars, simulationParameters const 
     excitedStateP.storeOrthoState(networkState,iEigen);
   }
 
+  
   if(conservedQNs[0].QNValue().imag()){  
     exactGroundState gsLoader(conservedQNs[0].QNValue());
     gsLoader.writeExactGroundState(networkState);
   }
+  //In the absence of Z2-symmetry, the ground state guess is the even exact ground state, the first excited state guess is the odd exact ground state
   else{
     std::complex<int> even=conservedQNs[0].QNValue();
     std::complex<int> odd=std::complex<int>(conservedQNs[0].QNValue().real(),-1);
@@ -78,7 +79,7 @@ network::network(problemParameters const &inputpars, simulationParameters const 
       excitedStateP.storeOrthoState(firstInitialState,1);
     }
   }  
-
+  
   excitedStateP.storeOrthoState(networkState,0);
 }
 
@@ -174,10 +175,12 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
     }
     networkState.normalizeFinal(1);
 
+    /*
     measure(check,spinCheck);
     measure(checkParity,parCheck);
     std::cout<<"Current particle number (initial): "<<spinCheck<<std::endl;
     std::cout<<"Current subchain parity (initial): "<<parCheck<<std::endl;
+    */
 
     std::cout<<"Computing partial contractions\n";
     pCtr.Lctr.global_access(0,0,0,0)=1;
