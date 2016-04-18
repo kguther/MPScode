@@ -21,6 +21,7 @@ int twositeQNOrderMatrix::generateQNIndexTable(){
     return 1;
   }
   qnLabels.resize(nQNs());
+  
   int isNew=1;
   int const ld=dimInfo.locd(site);
   int const ldp=dimInfo.locd(site+1);
@@ -33,7 +34,7 @@ int twositeQNOrderMatrix::generateQNIndexTable(){
       isNew=1;
       for(int iBlock=0;iBlock<qnLabels[0].size();++iBlock){
 	for(int iQN=0;iQN<nQNs();++iQN){
-	  if(qnCriterium(iQN,site-1,aim,si,1)!=qnLabels[iQN][iBlock]){
+	  if(qnCriterium(iQN,site-1,aim,si,1)!=qnLabels[iQN][iBlock] && qnCriterium(iQN,site-1,aim,si,1).real()>-1){
 	    break;
 	  }
 	  if(iQN==nQNs()-1){
@@ -51,9 +52,11 @@ int twositeQNOrderMatrix::generateQNIndexTable(){
   writeIndexTables(site-1,ld,lDL,lBlockIndices);
   writeIndexTables(site+1,ldp,lDRR,rBlockIndices);
 
-  for(int iBlock=0;iBlock<qnLabels[0].size();++iBlock){
-    std::cout<<"Possible QN: "<<blockQN(0,iBlock)<<std::endl;
+  std::cout<<"Block-QNs:\n";
+  for(int m=0;m<qnLabels[0].size();++m){
+    std::cout<<qnLabels[0][m]<<"\t";
   }
+  std::cout<<std::endl;
 
   return 0;
 }

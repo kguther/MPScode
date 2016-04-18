@@ -50,8 +50,8 @@ void dimensionTable::setParameterD(int Dnew){
 
 void dimensionTable::setParameterL(int Lnew){
   Lpar=Lnew;
-  getIcrit();
   getDMaxTable();
+  getIcrit();
 }
 
 //---------------------------------------------------------------------------------------------------//

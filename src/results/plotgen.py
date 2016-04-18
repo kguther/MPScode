@@ -83,18 +83,19 @@ for filename in filelist:
                 filenameB=filename[:(len(filename)-4)]+'_state_2.txt'
                 print filenameB
                 lineIndex=0
-                with open(filenameB) as readEnergy:
-                    readEnergy.readline()
-                    readEnergy.readline()
-                    enListR=readEnergy.readline()
-                enList=enListR.split('\t')
-                defaultLegs=[pars[6],enList[6]]
-                with open(filenameB) as readData:
-                    for line in readData:
-                        lineIndex+=1
-                        buf=[x if x!='' else '0' for x in line.split('\t')]
-                        if len(buf)-1>i and lineIndex>5:
-                            dataB.append(float(buf[i]))
+                if filenameB in filelist:
+                    with open(filenameB) as readEnergy:
+                        readEnergy.readline()
+                        readEnergy.readline()
+                        enListR=readEnergy.readline()
+                    enList=enListR.split('\t')
+                    defaultLegs=[pars[6],enList[6]]
+                    with open(filenameB) as readData:
+                        for line in readData:
+                            lineIndex+=1
+                            buf=[x if x!='' else '0' for x in line.split('\t')]
+                            if len(buf)-1>i and lineIndex>5:
+                                dataB.append(float(buf[i]))
                 if len(dataB)>0:
                     excitedState=True
                 else:

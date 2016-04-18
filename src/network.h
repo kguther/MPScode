@@ -30,6 +30,7 @@ class network{
   void getEntanglement(std::vector<double> &S, std::vector<std::vector<double> > &spectrum, int iEigen=0);
   void loadNetworkState(mps const &source);
   void resetConvergence();
+  void getInitState();
   void quantumNumberVec(std::vector<quantumNumber> *target){target=&conservedQNs;}
   dimensionTable& dimTable() {return networkDimInfo;}
   int setSimParameters(simulationParameters const &newPars);

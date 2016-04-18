@@ -18,8 +18,9 @@ class baseTensor{
   void getPtr(T *&target, int si=0){target=&(entries[0])+si*factors[0];}
   void getPtr(T const *&target, int si=0)const {target=&(entries[0])+si*factors[0];}
   int setParameterDims(std::vector<int> const &dimsNew);
+  int lDL()const{return dimensions[2];}
+  int lDR()const{return dimensions[1];}
  private:
-  //TODO: replace T* with std::vector<T>
   std::vector<T> entries;
   std::vector<int> dimensions;
   std::vector<int> factors;
@@ -81,7 +82,7 @@ int baseTensor<T>::setParameterDims(std::vector<int> const &dimsNew){
   std::vector<T> backupEntries=entries;
   dimensions=dimsNew;
   initialize();
-  if(backupCSize>containerSize || backupDims.size()!=dimensions.size()){
+  if(backupCSize>containerSize){
     containerSize=backupCSize;
     factors=backupFactors;
     entries=backupEntries;
@@ -126,7 +127,6 @@ void baseTensor<T>::initialize(){
       factors[m]*=dimensions[k];
     }
   }
-  //deleting the memory has to be called manually because there is a case where initialization and deallocating are reversed (using a backup pointer)
   entries.resize(containerSize);
   for(int m=0;m<containerSize;++m){
     entries[m]=0;

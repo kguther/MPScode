@@ -29,13 +29,12 @@ class infiniteNetwork{
   void exportState(mps &target);
   mpo<lapack_complex_double> networkH;
  private:
+  int i;
   problemParameters pars;
   simulationParameters simPars;
   dimensionTable dimInfo;
   imps networkState;
-  int i;
   std::vector<std::complex<int> > optLocalQNs;
-  std::vector<quantumNumber> conservedQNs;
   std::vector<double> diags, diagsm;
   //Beware that iDMRG builds up a regular system -> only three MPO matrices are referred - in particular is a MPO length of at least 3 required
   uncachedMeasurement pCtr;

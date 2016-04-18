@@ -40,3 +40,9 @@ void imps::exportState(mps &target){
   }
   target.setUpQNs(conservedQNs);
 }
+
+//---------------------------------------------------------------------------------------------------//
+
+int imps::refineQN(int i, std::vector<std::complex<int> > const &source){
+  return conservedQNs[0].refine(i,source);
+}

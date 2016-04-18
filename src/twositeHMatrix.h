@@ -15,7 +15,7 @@
 
 class twositeHMatrix{
  public:
-  twositeHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcomplex<double> > *Hin, dimensionTable const &dimInfo, twositeQNOrderMatrix *indexTable, projector *excitedStateP=0);
+  twositeHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcomplex<double> > *Hin, int HPos, dimensionTable const &dimInfo, twositeQNOrderMatrix *indexTable, projector *excitedStateP=0);
   ~twositeHMatrix();
   void MultMvBlocked(arcomplex<double> *v, arcomplex<double> *w);
   void readOutput(arcomplex<double> *outputVector);
@@ -28,7 +28,7 @@ class twositeHMatrix{
   int dimension;
   int i, ld, ldp, lDL, lDRR;
   int lDwL, lDwRR;
-  int D, Dw;
+  int D, Dw, HMatrixPos;
   std::vector<int> blockOffset;
   dimensionTable dimInfo;
   mpo<arcomplex<double> > *HMPO;

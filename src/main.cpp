@@ -10,7 +10,7 @@
 #include <mpi.h>
 #include <vector>
 
-void sysSolve(info const &parPack, std::string const &fileName);
+void sysSolve(info const &parPack, std::string const &fileName, std::vector<double> &energies);
 void getScaling(int L, info const &parPack, double *results, std::string const &fileName);
 void sysSetMeasurements(simulation &sim, int d, int L, int meas);
 void getFileName(info const &necPars, char *fNBuf, int commsize, int myrank, std::string &finalName);
@@ -89,7 +89,7 @@ int main(int argc, char *argv[]){
     necPars.gsc=sin(alpha);
   }
 
-  
+  std::vector<double> energies;
   L=L0+dL*myrank;
   //And evaluates its computation
   if(necPars.simType==1){
@@ -99,7 +99,7 @@ int main(int argc, char *argv[]){
 	necPars.N=necPars.rho*necPars.L*2;
 	necPars.par=pty;
 	getFileName(necPars,fNBuf,commsize,myrank,finalName);
-	sysSolve(necPars,finalName);
+	sysSolve(necPars,finalName,energies);
       }
     }
     /*
@@ -126,6 +126,7 @@ int main(int argc, char *argv[]){
  
   if(necPars.simType==3){
     necPars.nEigens=2;
+    /*
     switch(myrank){
     case 0:
       necPars.tImag=0;
@@ -150,18 +151,44 @@ int main(int argc, char *argv[]){
     default:
       necPars.tImag=0;
       necPars.tPos=-1;
-    }
+      }
+    */
+    necPars.tReal=0;
+    necPars.tPos=myrank;
   }
   //The output filename is generated
   if(necPars.simType!=1){
     getFileName(necPars,fNBuf,commsize,myrank,finalName);
   }
   if(necPars.simType==2 || necPars.simType==0){
-    sysSolve(necPars,finalName);
+    sysSolve(necPars,finalName,energies);
   }
   if(necPars.simType==3){
     necPars.numPts=1;
-    sysSolve(necPars,finalName);
+    sysSolve(necPars,finalName,energies);
+
+    double *energyBuf=new double[4*commsize];
+    double results[4];
+    results[0]=energies[0];
+    results[1]=energies[1];
+    results[2]=energies[2];
+    results[3]=energies[3];
+    //rcvcount is the number of objects recieved PER PROCESS, not in total
+    MPI_Gather(results,4,MPI_DOUBLE,energyBuf,4,MPI_DOUBLE,0,MPI_COMM_WORLD);
+    //For scaling, all results are written in the same file. This is done by the poor man's solution: only the main process writes.
+    if(myrank==0){
+      std::ofstream ofs;
+      ofs.open("SB_local_sweep.txt");
+      ofs<<"Parameters: J="<<necPars.Jsc<<" g="<<necPars.gsc<<std::endl;
+      ofs<<"System size: "<<necPars.L<<" filling: "<<necPars.rho<<" subchain parity="<<necPars.par<<std::endl;
+      ofs<<"SB Position\tGS energy\t excited state energy\t GS accuracy\t excited state accuracy\n";
+      for(int rk=0;rk<commsize;++rk){
+	ofs<<rk<<"\t"<<energies[4*rk]<<"\t"<<energies[4*rk+1]<<"\t"<<energies[4*rk+2]<<"\t"<<energies[4*rk+3]<<std::endl;
+      }
+      ofs.close();
+    }
+    delete[] energyBuf;
+
   }
   MPI_Finalize();
   return 0;
@@ -191,7 +218,7 @@ void getScaling(int L, info const &parPack, double *results, std::string const &
 
 //-------------------------------------------------------------------------------------------//
 
-void sysSolve(info const &parPack, std::string const &fileName){
+void sysSolve(info const &parPack, std::string const &fileName, std::vector<double> &energies){
   int const nQuantumNumbers=1;
   int minimalD=(2*parPack.N>4)?2*parPack.N:4;
   int usedD=(parPack.D>minimalD)?parPack.D:minimalD;
@@ -222,6 +249,11 @@ void sysSolve(info const &parPack, std::string const &fileName){
   }
   int const doMeas=(parPack.simType==1 || parPack.simType==3 || parPack.simType==0)?0:1;
   sysSetMeasurements(sim,pars.d.maxd(),parPack.L,doMeas);
+  energies.resize(2*sim.E0.size());
+  for(int iE=0;iE<sim.E0.size();++iE){
+    energies[iE]=sim.E0[iE];
+    energies[iE+sim.E0.size()]=sim.dE[iE];
+  }
 }
 
 //-------------------------------------------------------------------------------------------//
@@ -355,6 +387,8 @@ void getFileName(info const &necPars, char *fNBuf, int commsize, int myrank, std
     type="_point";
   }
   if(necPars.simType==3){
+    type="_position_scan";
+    /*
     switch(myrank){
     case 0:
     case 1:
@@ -367,13 +401,14 @@ void getFileName(info const &necPars, char *fNBuf, int commsize, int myrank, std
     default:
       type="_global";
     }
+      */
   }
   std::ostringstream compositeName;
   compositeName<<dir<<fNBuf<<type;
   if(symmetryBroken(necPars)){
     compositeName<<"_single_hop_tR_"<<necPars.tReal<<"_tI_"<<necPars.tImag;
   }
-  if(necPars.simType==1){
+  if(necPars.simType==1 || necPars.simType==3){
     //compositeName<<"_run_"<<myrank<<"_rho_"<<necPars.rho<<"_par_"<<necPars.par<<"_odd_"<<necPars.odd<<"_J_"<<necPars.Jsc<<"_g_"<<necPars.gsc<<".txt";
     compositeName<<"_run_"<<myrank<<"_L_"<<necPars.L<<"_N_"<<necPars.N<<"_p_"<<necPars.par;
   }

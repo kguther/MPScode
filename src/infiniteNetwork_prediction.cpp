@@ -20,9 +20,10 @@ void infiniteNetwork::statePrediction(arcomplex<double> *target){
   arcomplex<double> *leftBuf, *rightBuf;
   arcomplex<double> const zzero=0.0;
   arcomplex<double> const zone=1.0;
-  int const lDL=dimInfo.locDimL(i);
-  int const lDRR=dimInfo.locDimR(i+1);
-  int const lDR=dimInfo.locDimR(i);
+  int const lDL=dimInfo.locDimL(i-1);
+  int const lDRR=lDL;
+  int const lDR=dimInfo.locDimR(i-1);
+  std::cout<<diags.size()<<" "<<diagsm.size()<<std::endl;
   std::unique_ptr<arcomplex<double> > leftBufP(new arcomplex<double> [lDL*lDR]);
   std::unique_ptr<arcomplex<double> > rightBufP(new arcomplex<double> [lDL*lDR]);
   leftBuf=leftBufP.get();
@@ -121,28 +122,28 @@ void infiniteNetwork::updateMPS(arcomplex<double> *source){
   }
 
   //BLOCKWISE TRUNCATION REQUIRED FOR INITIAL STATE SEARCH
-  
   std::vector<sortData> comparer;
   comparer.resize(ld*lDL);
   for(int ai=0;ai<ld*lDL;++ai){
     comparer[ai].index=ai;
     comparer[ai].QN=optLocalQNs[ai];
     comparer[ai].lambda=diagsFull[ai];
-    std::cout<<"Available QN: "<<optLocalQNs[ai]<<std::endl;
+    //std::cout<<"Available QN: "<<optLocalQNs[ai]<<std::endl;
   }
 
   sort(comparer.begin(),comparer.end(),compareSortData);
 
   //Truncate to lDR largest SVs
   optLocalQNs.resize(lDR);
+  diags.resize(lDR);
   for(int ai=0;ai<lDR;++ai){
     //Copy the remaining diagonal matrix into diags
     optLocalQNs[ai]=comparer[ai].QN;
     diags[ai]=comparer[ai].lambda;
   }
- 
+   
   for(int ai=0;ai<lDR;++ai){
-    std::cout<<"\nKept QN label "<<optLocalQNs[ai]<<" with SV "<<diags[ai]<<std::endl;
+    //std::cout<<"Kept QN label "<<optLocalQNs[ai]<<" with SV "<<diags[ai]<<std::endl;
   }
 
   //Copy the corresponding columns(A)/rows(B) into the MPS

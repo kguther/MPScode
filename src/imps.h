@@ -10,6 +10,7 @@ class imps: public mps{
   imps(dimensionTable const &dimInfo, std::vector<quantumNumber> const &conservedQNsin);
   void addSite(int Lnew, int i, std::vector<std::complex<int> > const &targetQN);
   void exportState(mps &target);
+  int refineQN(int i, std::vector<std::complex<int> > const &source);
   twositeQNOrderMatrix centralIndexTable;
 };
 

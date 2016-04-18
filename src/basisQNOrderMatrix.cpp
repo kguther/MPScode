@@ -47,10 +47,13 @@ void basisQNOrderMatrix::initialize(dimensionTable &dimin, std::vector<quantumNu
 }
 
 //---------------------------------------------------------------------------------------------------//
+// Generates the tables containing the virtual bond indices for the block indices. Returns 0 at success, 1 if the quantum number targeted is invalid and 2 if the labeling scheme itself is invalid (i.e. contains non-normalizable blocks).
+//---------------------------------------------------------------------------------------------------//
 
-void basisQNOrderMatrix::generateQNIndexTables(){
+int basisQNOrderMatrix::generateQNIndexTables(){
   int L=dimInfo.L();
   int cumulativeBlockSize;
+  int failed=0;
   deleteTables();
   aiBlockIndicesLP=new std::vector<std::vector<int> >[L];
   siaimBlockIndicesLP=new std::vector<std::vector<multInt> >[L];
@@ -61,23 +64,23 @@ void basisQNOrderMatrix::generateQNIndexTables(){
     blockStructure(i,1,aimBlockIndicesRP[i],siaiBlockIndicesRP[i]);
     cumulativeBlockSize=0;
     for(int iBlock=0;iBlock<numBlocksLP(i);++iBlock){
+      //Should it be lBlockSize*rBlockSize?
       cumulativeBlockSize+=lBlockSizeLP(i,iBlock);
     }
     if(cumulativeBlockSize==0){
       // If the cumulativeBlockSize is zero, then there are no indices fullfilling the QN constraint on this site. That means the right vacuum QN is invalid, for example N=80 for a chain of length 20.
-      std::cout<<"At site "<<i<<": critical error: Invalid quantum number. Terminating process.\n";
-      exit(2);
+      //std::cout<<"At site "<<i<<": CRITICAL ERROR: Invalid quantum number.\n";
+      failed=1;
     }
   }
   generateAccessArrays();
   
   //Check if labeling scheme is valid
-  int info;
-  info=0;//validate();
+  int info=validate();
   if(info){
-    std::cout<<"CRITICAL ERROR: Invalid QN labeling scheme at site "<<info-1<<" - terminating process\n";
+    std::cout<<"CRITICAL ERROR: Invalid QN labeling scheme at site "<<info-1<<"\n";
     for(int i=0;i<dimInfo.L();++i){
-      if(i+1==info){
+      if(i+1==info && 0){
 	// This part is used to test QN labeling schemes for their useability. It prints out the block indices and their QN labels.
 	std::cout<<"Right labels:\n";
 	for(int aim=0;aim<dimInfo.locDimL(i+1);++aim){
@@ -111,11 +114,12 @@ void basisQNOrderMatrix::generateQNIndexTables(){
 	}
       }
     }
-    exit(-1);
+    failed=2;
   }
   else{
-    //std::cout<<"Validated QN labeling scheme - all blocks are normalizable\n";
+    std::cout<<"Validated quantum number labeling scheme\n";
   }
+  return failed;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -278,7 +282,7 @@ std::complex<int> basisQNOrderMatrix::qnCriterium(int const iQN, int const i, in
 // The validate() function returns -1 if there are non-normalizable blocks and 0 else.
 //---------------------------------------------------------------------------------------------------//
 
-int basisQNOrderMatrix::validate(){
+int basisQNOrderMatrix::validate()const {
   int lBlockSize, rBlockSize;
   for(int i=0;i<dimInfo.L();++i){
     for(int iBlock=0;iBlock<numBlocksLP(i);++iBlock){

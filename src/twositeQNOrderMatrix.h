@@ -22,7 +22,7 @@ class twositeQNOrderMatrix{
   int lBlockSize(int iBlock)const {return lBlockIndices[iBlock].size();}
   int rBlockSize(int iBlock)const {return rBlockIndices[iBlock].size();}
   std::complex<int> blockQN(int iQN, int iBlock)const {return qnLabels[iQN][iBlock];}
-  int numBlocks()const {return lBlockIndices.size();}
+  int numBlocks()const {return qnLabels[0].size();}
   int nQNs()const {return conservedQNs->size();}
   int getSite()const {return site;}
  private:

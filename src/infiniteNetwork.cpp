@@ -8,12 +8,13 @@
 infiniteNetwork::infiniteNetwork(problemParameters parsIn, simulationParameters simParsIn):
   pars(parsIn),
   simPars(simParsIn),
-  dimInfo(dimensionTable(simParsIn.D,2,parsIn.d))
+  dimInfo(dimensionTable(simParsIn.D,10,parsIn.d))
 {
   networkH=mpo<lapack_complex_double>(pars.d.maxd(),pars.Dw,pars.L);
   std::complex<int> qnValue;
+  std::vector<quantumNumber> conservedQNs;
   for(int iQN=0;iQN<parsIn.QNconserved.size();++iQN){
-    qnValue=std::complex<int>(pars.filling[iQN]*4,pars.QNconserved[iQN].imag());
+    qnValue=std::complex<int>(pars.filling[iQN]*2*dimInfo.L(),pars.QNconserved[iQN].imag());
     conservedQNs.push_back(quantumNumber(dimInfo,qnValue,pars.QNLocalList[iQN]));
   }
   networkState=imps(dimInfo,conservedQNs);
@@ -64,7 +65,6 @@ void infiniteNetwork::iDMRGStep(){
       bufferMatrix[m]=1;
     }
   }
-
   optimize(bufferMatrix);
   updateMPS(bufferMatrix);
   addSite();
@@ -79,9 +79,10 @@ int infiniteNetwork::optimize(arcomplex<double> *target){
   pLambda=&lambda;
   int nconv=0;
   int const maxIter=2000;
+  int const HPos=(i==0)?0:1;
   pCtr.getLctr(Lterm);
   pCtr.getRctr(Rterm);
-  twositeHMatrix BMat(Rterm,Lterm,&networkH,dimInfo,&networkState.centralIndexTable);
+  twositeHMatrix BMat(Rterm,Lterm,&networkH,HPos,dimInfo,&networkState.centralIndexTable);
   BMat.prepareInput(target);
   if(BMat.dim()>1){
     ARCompStdEig<double,twositeHMatrix> eigProblemTwoSite(BMat.dim(),1,&BMat,&twositeHMatrix::MultMvBlocked,"SR",0,simPars.tolInitial,maxIter,BMat.compressedVector);
@@ -105,13 +106,24 @@ void infiniteNetwork::addSite(){
   std::vector<std::complex<int> > newQNs;
   newQNs.resize(pars.QNconserved.size());
   for(int iQN=0;iQN<pars.QNconserved.size();++iQN){
-    newQNs[iQN].real(static_cast<int>(2*pars.filling[iQN]*pars.L));
+    newQNs[iQN].real(static_cast<int>(2*pars.filling[iQN]*dimInfo.L()));
     newQNs[iQN].imag(pars.QNconserved[iQN].imag());
   }
+  std::cout<<"New global QN: "<<newQNs[0]<<std::endl;
+  
   dimInfo.setParameterL(dimInfo.L()+2);
 
   //Only for a single QN
-  conservedQNs[0].refine(i+1,optLocalQNs);
+  
+  /*
+  std::cout<<"Refining with vector\n";
+  for(int m=0;m<optLocalQNs.size();++m){
+    std::cout<<optLocalQNs[m]<<"\t";
+  }
+  std::cout<<"\n";
+  */
+  int info;
+  info=networkState.refineQN(i+1,optLocalQNs);
 
   networkState.addSite(dimInfo.L(),i+1,newQNs);
 }

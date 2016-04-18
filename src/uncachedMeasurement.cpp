@@ -19,6 +19,6 @@ uncachedMeasurement::uncachedMeasurement(mpo<lapack_complex_double> *const MPOpe
 
 void uncachedMeasurement::update(){
   int i=(MPState->length())/2;
-  calcCtrIterLeftBase(i+1,&(Lctr[0]),&(Lctr[0]));
+  calcCtrIterLeftBase(i,&(Lctr[0]),&(Lctr[0]));
   calcCtrIterRightBase(i-1,&(Rctr[0]),&(Rctr[0]));
 }

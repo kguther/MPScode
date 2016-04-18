@@ -1,11 +1,12 @@
 #include "twositeHMatrix.h"
 #include "tmpContainer.h"
 
-twositeHMatrix::twositeHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcomplex<double> > *Hin, dimensionTable const &dimInfoIn, twositeQNOrderMatrix *indexTableIn, projector *excitedStateP):
+twositeHMatrix::twositeHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcomplex<double> > *Hin, int HPos, dimensionTable const &dimInfoIn, twositeQNOrderMatrix *indexTableIn, projector *excitedStateP):
   HMPO(Hin),
   dimInfo(dimInfoIn),
   Lctr(L),
   Rctr(R),
+  HMatrixPos(HPos),
   indexTable(indexTableIn)
 {
   int cBlockSize;
@@ -44,7 +45,7 @@ twositeHMatrix::twositeHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<a
 	    for(int bim=0;bim<lDwL;++bim){
 	      simpleContainer=0;
 	      for(int bi=0;bi<lDwR;++bi){
-		simpleContainer+=HMPO->global_access(i,si,sip,bi,bim)*HMPO->global_access(i+1,sit,sitp,bir,bi);
+		simpleContainer+=HMPO->global_access(HMatrixPos,si,sip,bi,bim)*HMPO->global_access(HMatrixPos+1,sit,sitp,bir,bi);
 	      }
 	    }
 	  }

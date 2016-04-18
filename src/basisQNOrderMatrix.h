@@ -26,7 +26,7 @@ class basisQNOrderMatrix{
   basisQNOrderMatrix();
   ~basisQNOrderMatrix();
   void initialize(dimensionTable &dimin, std::vector<quantumNumber> *conservedQNsin);
-  void generateQNIndexTables();
+  int generateQNIndexTables();
   int blockStructure(int const i, int const direction, std::vector<std::vector<int> > &aiIndices, std::vector<std::vector<multInt> > &siaimIndices);
   int aiBlockIndexLP(int i, int iBlock, int j) const{return aiBlockIndicesLPAccess[reducedIndexFunction(i,iBlock,j)];}
   int siBlockIndexLP(int i, int iBlock, int k) const{return siaimBlockIndicesLPAccess[reducedIndexFunction(i,iBlock,k)].si;}
@@ -41,7 +41,7 @@ class basisQNOrderMatrix{
   int numBlocksLP(int const i) const{return aiBlockIndicesLP[i].size();}
   int numBlocksRP(int const i) const{return aimBlockIndicesRP[i].size();}
   int nQNs() const{return conservedQNs->size();}
-  int validate();
+  int validate()const;
  private:
   int maxNumBlocks, maxBlockSize;
   basisQNOrderMatrix(basisQNOrderMatrix const &source);

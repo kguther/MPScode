@@ -61,7 +61,6 @@ network::network(problemParameters const &inputpars, simulationParameters const 
     excitedStateP.storeOrthoState(networkState,iEigen);
   }
 
-  
   if(conservedQNs[0].QNValue().imag()){  
     exactGroundState gsLoader(conservedQNs[0].QNValue());
     gsLoader.writeExactGroundState(networkState);
@@ -97,6 +96,18 @@ void network::resetConvergence(){
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
     nConverged[iEigen]=1;
   }
+}
+
+//---------------------------------------------------------------------------------------------------//
+// Function to invoke the iDMRG algorithm to get an initial state. Has to be called externally because
+// the iDMRG algorithm makes use of the network class, too.
+//---------------------------------------------------------------------------------------------------//
+
+void network::getInitState(){
+  infiniteNetwork setup(pars,simPars);
+  setup.networkH=networkH;
+  setup.growSystem();
+  exit(1);
 }
 
 //---------------------------------------------------------------------------------------------------//
