@@ -23,6 +23,13 @@ void imps::addSite(int Lnew, int i, std::vector<std::complex<int> > const &targe
 
 //---------------------------------------------------------------------------------------------------//
 
+void imps::importState(mps const &source){
+  mpsCpy(source);
+  centralIndexTable=twositeQNOrderMatrix((dimInfo.L()-1)/2,dimInfo,&conservedQNs);
+}
+
+//---------------------------------------------------------------------------------------------------//
+
 void imps::exportState(mps &target){
   target=mps(dimInfo,conservedQNs);
   int lDL, lDR, ld;

@@ -11,6 +11,9 @@ class uncachedMeasurement: public baseMeasurement{
   void update();
   void getLctr(lapack_complex_double *&target){target=&(Lctr[0]);}
   void getRctr(lapack_complex_double *&target){target=&(Rctr[0]);}
+  void getLeftCtr(int i);
+  void getRightCtr(int i);
+  void getContractions(int site);
  private:
   std::vector<lapack_complex_double> Rctr, Lctr;
 };

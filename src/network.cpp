@@ -13,7 +13,7 @@
 #include "globalMeasurement.h"
 #include "localMeasurementSeries.h"
 #include "exactGroundState.h"
-#include "infiniteNetwork.h"
+#include "initStateGrow.h"
 
 //BEWARE: ALL MPS AND MPO NETWORK MATRICES ARE STORED WITH A CONTIGOUS COLUMN INDEX (i.e. transposed with respect to C standard, for better compatibility with LAPACK)
 
@@ -61,24 +61,25 @@ network::network(problemParameters const &inputpars, simulationParameters const 
     excitedStateP.storeOrthoState(networkState,iEigen);
   }
 
-  if(conservedQNs[0].QNValue().imag()){  
-    exactGroundState gsLoader(conservedQNs[0].QNValue());
-    gsLoader.writeExactGroundState(networkState);
-  }
-  //In the absence of Z2-symmetry, the ground state guess is the even exact ground state, the first excited state guess is the odd exact ground state
-  else{
-    std::complex<int> even=conservedQNs[0].QNValue();
-    std::complex<int> odd=std::complex<int>(conservedQNs[0].QNValue().real(),-1);
-    exactGroundState gsLoaderA(even);
-    exactGroundState gsLoaderB(odd);
-    gsLoaderA.writeExactGroundState(networkState);
-    if(pars.nEigs>1){
-      mps firstInitialState(networkDimInfo,conservedQNs);
-      gsLoaderB.writeExactGroundState(firstInitialState);
-      excitedStateP.storeOrthoState(firstInitialState,1);
+  if(pars.nQNs){
+    if(conservedQNs[0].QNValue().imag()){  
+      exactGroundState gsLoader(conservedQNs[0].QNValue());
+      gsLoader.writeExactGroundState(networkState);
     }
-  }  
-  
+    //In the absence of Z2-symmetry, the ground state guess is the even exact ground state, the first excited state guess is the odd exact ground state
+    else{
+      std::complex<int> even=conservedQNs[0].QNValue();
+      std::complex<int> odd=std::complex<int>(conservedQNs[0].QNValue().real(),-1);
+      exactGroundState gsLoaderA(even);
+      exactGroundState gsLoaderB(odd);
+      gsLoaderA.writeExactGroundState(networkState);
+      if(pars.nEigs>1){
+	mps firstInitialState(networkDimInfo,conservedQNs);
+	gsLoaderB.writeExactGroundState(firstInitialState);
+	excitedStateP.storeOrthoState(firstInitialState,1);
+      }
+    }  
+  }
   excitedStateP.storeOrthoState(networkState,0);
 }
 
@@ -88,6 +89,12 @@ network::network(problemParameters const &inputpars, simulationParameters const 
 
 void network::loadNetworkState(mps const &source){
   networkState.mpsCpy(source);
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void network::exportNetworkState(mps &target){
+  target.mpsCpy(networkState);
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -104,9 +111,8 @@ void network::resetConvergence(){
 //---------------------------------------------------------------------------------------------------//
 
 void network::getInitState(){
-  infiniteNetwork setup(pars,simPars);
-  setup.networkH=networkH;
-  setup.growSystem();
+  initStateGrow setup(pars,simPars,networkH);
+  setup.prepareInitialState(networkState);
   exit(1);
 }
 

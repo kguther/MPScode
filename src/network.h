@@ -29,6 +29,7 @@ class network{
   int measureLocalOperators(localMpo<lapack_complex_double> *const MPOperator, std::vector<lapack_complex_double> &expValue, int iEigen=0);
   void getEntanglement(std::vector<double> &S, std::vector<std::vector<double> > &spectrum, int iEigen=0);
   void loadNetworkState(mps const &source);
+  void exportNetworkState(mps &target);
   void resetConvergence();
   void getInitState();
   void quantumNumberVec(std::vector<quantumNumber> *target){target=&conservedQNs;}

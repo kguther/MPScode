@@ -18,11 +18,11 @@ bool compareSortData(sortData const &a, sortData const &b);
 
 class infiniteNetwork{
  public:
-  infiniteNetwork(problemParameters parsIn, simulationParameters simParsIn);
-  void growSystem();
+  infiniteNetwork(problemParameters const &parsIn, simulationParameters const &simParsIn, imps *MPState);
   void growTLSystem();
   void iDMRGStep();
   void addSite();
+  void addDiags();
   void statePrediction(arcomplex<double> *target);
   int optimize(arcomplex<double> *target);
   void updateMPS(arcomplex<double> *source);
@@ -33,7 +33,7 @@ class infiniteNetwork{
   problemParameters pars;
   simulationParameters simPars;
   dimensionTable dimInfo;
-  imps networkState;
+  imps *networkState;
   std::vector<std::complex<int> > optLocalQNs;
   std::vector<double> diags, diagsm;
   //Beware that iDMRG builds up a regular system -> only three MPO matrices are referred - in particular is a MPO length of at least 3 required

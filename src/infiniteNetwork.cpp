@@ -5,36 +5,31 @@
 #include <arscomp.h>
 #include <memory>
 
-infiniteNetwork::infiniteNetwork(problemParameters parsIn, simulationParameters simParsIn):
+//CHANGE: The iDMRG algorithm (infiniteNetwork class) shall be seperated from state management (new class)
+//THEN: the infiniteNetwork shall contain an imps* networkState which is given at creation. This can then be either a imps or a timps. The state preparation class can now hand over an imps of size 10 or so. The uncached measurement class has to be updated to initialize its left/right container according to the size of the imps. Initialize diags with locD ones.
+
+infiniteNetwork::infiniteNetwork(problemParameters const &parsIn, simulationParameters const &simParsIn, imps *MPState):
   pars(parsIn),
   simPars(simParsIn),
-  dimInfo(dimensionTable(simParsIn.D,10,parsIn.d))
+  networkState(MPState)
 {
+  dimInfo=networkState->dimInfo;
   networkH=mpo<lapack_complex_double>(pars.d.maxd(),pars.Dw,pars.L);
-  std::complex<int> qnValue;
-  std::vector<quantumNumber> conservedQNs;
-  for(int iQN=0;iQN<parsIn.QNconserved.size();++iQN){
-    qnValue=std::complex<int>(pars.filling[iQN]*2*dimInfo.L(),pars.QNconserved[iQN].imag());
-    conservedQNs.push_back(quantumNumber(dimInfo,qnValue,pars.QNLocalList[iQN]));
-  }
-  networkState=imps(dimInfo,conservedQNs);
-  pCtr=uncachedMeasurement(&networkH,&networkState);
-  diags.push_back(1.0);
+  pCtr=uncachedMeasurement(&networkH,networkState);
+  pCtr.getContractions(networkState->currentSite());
+  int const lDR=dimInfo.locDimR(networkState->currentSite());
+  diags=std::vector<double>(lDR,1.0);
 }
 
 //---------------------------------------------------------------------------------------------------//
-// Main iDMRG scheme for construction of initial states
+// Interface functions for in/export of states.
 //---------------------------------------------------------------------------------------------------//
 
-void infiniteNetwork::growSystem(){
-  int const L=pars.L;
-  for(int m=0;m<L/2;++m){
-    iDMRGStep();
-  }
+void infiniteNetwork::addDiags(){
   int const lDR=dimInfo.locDimR(i);
   int const lDL=dimInfo.locDimL(i);
   arcomplex<double> *aMatrix;
-  networkState.subMatrixStart(aMatrix,i);
+  networkState->subMatrixStart(aMatrix,i);
   //Multiply the center matrix into an adjacent matrix (destroying normalization) to get the full MPS into the networkState. This way, it can be copied to an mps.
   for(int si=0;si<dimInfo.locd(i);++si){
     for(int ai=0;ai<lDR;++ai){
@@ -82,7 +77,7 @@ int infiniteNetwork::optimize(arcomplex<double> *target){
   int const HPos=(i==0)?0:1;
   pCtr.getLctr(Lterm);
   pCtr.getRctr(Rterm);
-  twositeHMatrix BMat(Rterm,Lterm,&networkH,HPos,dimInfo,&networkState.centralIndexTable);
+  twositeHMatrix BMat(Rterm,Lterm,&networkH,HPos,dimInfo,&(networkState->centralIndexTable));
   BMat.prepareInput(target);
   if(BMat.dim()>1){
     ARCompStdEig<double,twositeHMatrix> eigProblemTwoSite(BMat.dim(),1,&BMat,&twositeHMatrix::MultMvBlocked,"SR",0,simPars.tolInitial,maxIter,BMat.compressedVector);
@@ -123,13 +118,13 @@ void infiniteNetwork::addSite(){
   std::cout<<"\n";
   */
   int info;
-  info=networkState.refineQN(i+1,optLocalQNs);
+  info=networkState->refineQN(i+1,optLocalQNs);
 
-  networkState.addSite(dimInfo.L(),i+1,newQNs);
+  networkState->addSite(dimInfo.L(),i+1,newQNs);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
 void infiniteNetwork::exportState(mps &target){
-  networkState.exportState(target);
+  networkState->exportState(target);
 }
