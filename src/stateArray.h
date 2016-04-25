@@ -3,7 +3,6 @@
 
 #include <vector>
 #include "mkl_complex_defined.h"
-#include "arraycreation.h"
 #include "dimensionTable.h"
 #include "localHSpaces.h"
 #include "baseTensor.h"
@@ -38,15 +37,16 @@ class stateArray{
   int siteDim() const {return dimInfo.d();}
   int length() const {return dimInfo.L();}
   virtual void initialize(dimensionTable const &dimInfoIn);
-  dimensionTable dimInfo;
+  dimensionTable const& getDimInfo()const {return dimInfo;}
  private:
   stateArray(stateArray const &cpyState);
   stateArray& operator=(stateArray const &cpyState);
- protected:
-  int D,L;
   std::vector<baseTensor<lapack_complex_double> > stateArrayAccessStructure;
   void createStateArray(int const Lin);
   std::vector<int> getIndexVec(int si, int ai, int aim) const;
+ protected:
+  int D,L;
+  dimensionTable dimInfo;
 };
 
 #endif

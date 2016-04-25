@@ -3,8 +3,6 @@
 #include "mps.h"
 #include "tmpContainer.h"
 #include "pContraction.h"
-#include <iostream>
-#include <time.h>
 
 //---------------------------------------------------------------------------------------------------//
 // Constructor and initialize() function for the baseMeasurement class.

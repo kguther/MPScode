@@ -4,6 +4,13 @@
 #include "baseMeasurement.h"
 #include <vector>
 
+//---------------------------------------------------------------------------------------------------//
+// A variant of the iterative measurement without a global cache. Only the last update of the partial
+// contractions is stored, drastically reducing memory usage. Applicable in iDMRG, where no global
+// cache is needed.
+//---------------------------------------------------------------------------------------------------//
+
+
 class uncachedMeasurement: public baseMeasurement{
  public:
   uncachedMeasurement();

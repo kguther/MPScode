@@ -1,7 +1,8 @@
 #include "twositeHMatrix.h"
 #include "tmpContainer.h"
+#include <iostream>
 
-twositeHMatrix::twositeHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcomplex<double> > *Hin, int HPos, dimensionTable const &dimInfoIn, twositeQNOrderMatrix *indexTableIn, projector *excitedStateP):
+twositeHMatrix::twositeHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcomplex<double> > *Hin, int HPos, dimensionTable const &dimInfoIn, twositeQNOrderMatrix const* indexTableIn, projector *excitedStateP):
   HMPO(Hin),
   dimInfo(dimInfoIn),
   Lctr(L),

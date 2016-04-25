@@ -1,20 +1,8 @@
 #include "mps.h"
 #include "arrayprocessing.h"
-#include "arraycreation.h"
 #include <cmath>
-#include <iostream>
 #include <memory>
-
-int nancheck(lapack_complex_double *array, int size){
-  for(int m=0;m<size;++m){
-    if(array[m]!=array[m]){
-      std::cout<<"nan in array"<<std::endl;
-      return 1;
-    }
-  }
-  std::cout<<"array nan-clear\n";
-  return 0;
-}
+#include <iostream>
 
 mps::mps():stateArray()
 {}
@@ -152,9 +140,9 @@ int mps::leftNormalizeState(int i){
   ld=locd(i);
   lapack_complex_double *Rcontainer, *Qcontainer, *localMatrix;
   const lapack_complex_double zone=1.0;
-  std::unique_ptr<lapack_complex_double> Qp(new lapack_complex_double[D2]);
+  std::unique_ptr<lapack_complex_double[]> Qp(new lapack_complex_double[D2]);
   Qcontainer=Qp.get();//Used for storage of lapack-internal matrices
-  std::unique_ptr<lapack_complex_double> Rp(new lapack_complex_double[D2*D2]);//Used for storage of R from RQ decomposition
+  std::unique_ptr<lapack_complex_double[]> Rp(new lapack_complex_double[D2*D2]);//Used for storage of R from RQ decomposition
   Rcontainer=Rp.get();
   //Enable use of LAPACK_ROW_MAJOR which is necessary here due to the applied storage scheme
   for(int si=0;si<ld;++si){
@@ -197,8 +185,8 @@ int mps::rightNormalizeState(int i){
   ld=locd(i);
   lapack_complex_double *Rcontainer, *Qcontainer, *localMatrix;
   const lapack_complex_double zone=1.0;
-  std::unique_ptr<lapack_complex_double> QP(new lapack_complex_double[ld*D1]);
-  std::unique_ptr<lapack_complex_double> RP(new lapack_complex_double[D2*D2]);
+  std::unique_ptr<lapack_complex_double[]> QP(new lapack_complex_double[ld*D1]);
+  std::unique_ptr<lapack_complex_double[]> RP(new lapack_complex_double[D2*D2]);
   Qcontainer=QP.get();
   Rcontainer=RP.get();
   //Thats how zgerqf works: the last D2 columns contain the upper trigonal matrix R, to adress them, move D2 from the end
@@ -261,8 +249,8 @@ int mps::leftNormalizeStateBlockwise(int i){
   lDR=locDimR(i);
   lDRR=locDimR(i+1);
   ld=locd(i);
-  std::unique_ptr<lapack_complex_double> RP(new lapack_complex_double[lDR*lDR]);
-  std::unique_ptr<lapack_complex_double> MP, QP, RcP;
+  std::unique_ptr<lapack_complex_double[]> RP(new lapack_complex_double[lDR*lDR]);
+  std::unique_ptr<lapack_complex_double[]> MP, QP, RcP;
   R=RP.get();
   for(int iBlock=0;iBlock<indexTable.numBlocksLP(i);++iBlock){
     rBlockSize=indexTable.rBlockSizeLP(i,iBlock);
@@ -311,7 +299,7 @@ int mps::leftNormalizeStateBlockwise(int i){
     }
   }
   //Finally, multiply the uncompressed matrix R into the next MPS matrix. Block structure does not need to be adressed explicitly, since they both have the required structure.
-  std::unique_ptr<lapack_complex_double> inputAP(new lapack_complex_double[lDR*lDRR]);
+  std::unique_ptr<lapack_complex_double[]> inputAP(new lapack_complex_double[lDR*lDRR]);
   inputA=inputAP.get();
   lapack_complex_double *localMatrix;
   for(int si=0;si<ld;++si){
@@ -337,8 +325,8 @@ int mps::rightNormalizeStateBlockwise(int i){
   lDR=locDimR(i);
   lDLL=locDimL(i-1);
   ld=locd(i);
-  std::unique_ptr<lapack_complex_double> RP(new lapack_complex_double[lDL*lDL]);
-  std::unique_ptr<lapack_complex_double> MP, RcP, QP;
+  std::unique_ptr<lapack_complex_double[]> RP(new lapack_complex_double[lDL*lDL]);
+  std::unique_ptr<lapack_complex_double[]> MP, RcP, QP;
   R=RP.get();
   for(int iBlock=0;iBlock<indexTable.numBlocksRP(i);++iBlock){
     lBlockSize=indexTable.lBlockSizeRP(i,iBlock);
@@ -381,7 +369,7 @@ int mps::rightNormalizeStateBlockwise(int i){
       }
     }
   }
-  std::unique_ptr<lapack_complex_double> inputAP(new lapack_complex_double[lDL*lDLL]);
+  std::unique_ptr<lapack_complex_double[]> inputAP(new lapack_complex_double[lDL*lDLL]);
   lapack_complex_double *localMatrix;
   inputA=inputAP.get();
   for(int si=0;si<ld;++si){
@@ -443,7 +431,7 @@ void mps::getEntanglementSpectrumOC(int i, double &S, std::vector<double> &spect
   lapack_complex_double *currentM;
   std::unique_ptr<double> diagsP(new double[lDR]);
   double *diags=diagsP.get();
-  std::unique_ptr<lapack_complex_double> AnewP(new lapack_complex_double[lDL*lDR*ld]);
+  std::unique_ptr<lapack_complex_double[]> AnewP(new lapack_complex_double[lDL*lDR*ld]);
   lapack_complex_double *Anew=AnewP.get();
   subMatrixStart(currentM,i);
   auxiliary::arraycpy(ld*lDL*lDR,currentM,Anew);

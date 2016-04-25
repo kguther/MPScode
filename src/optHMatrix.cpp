@@ -5,7 +5,7 @@
 #include "optHMatrix.h"
 #include "tmpContainer.h"
 
-optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, mpo<arcomplex<double> > *Hin, dimensionTable &dimInfo, int Dwin, int iIn, projector *excitedStateP, double shiftin, std::vector<quantumNumber> *conservedQNsin):
+optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, mpo<arcomplex<double> > *Hin, dimensionTable const &dimInfo, int Dwin, int iIn, projector *excitedStateP, double shiftin, std::vector<quantumNumber> *conservedQNsin):
   Rctr(Rin),
   Lctr(Lin),
   Dw(Dwin),

@@ -1,4 +1,3 @@
-#include <iostream>
 #include "globalMeasurement.h"
 
 globalMeasurement::globalMeasurement():

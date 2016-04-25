@@ -6,8 +6,6 @@
 #include "quantumNumber.h"
 #include "basisQNOrderMatrix.h"
 
-int nancheck(lapack_complex_double *array, int size);
-
 class mps: public stateArray{
  public:
   mps();
@@ -15,7 +13,7 @@ class mps: public stateArray{
   mps(mps const &source);
   mps& operator=(mps const &source);
   void generate(dimensionTable const &dimInfoIn, std::vector<quantumNumber> const &conservedQNsin);
-  void mpsCpy(mps const &source);
+  virtual void mpsCpy(mps const &source);
   int leftNormalizeState(int i);
   int rightNormalizeState(int i);
   int setParameterD(int Dnew);
@@ -25,6 +23,7 @@ class mps: public stateArray{
   void getEntanglementSpectrum(int i, double &S, std::vector<double> &spectrum);
   void getEntanglementEntropy(std::vector<double> &S, std::vector<std::vector<double> > &spectra);
   void setUpQNs(std::vector<quantumNumber> const &conservedQNs);
+  std::vector<quantumNumber>& getConservedQNs(){return conservedQNs;}
   basisQNOrderMatrix indexTable;
  protected:
   int nQNs;

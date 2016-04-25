@@ -1,7 +1,4 @@
 #include "stateArray.h"
-#include "arrayprocessing.h"
-#include "arraycreation.h"
-#include <iostream>
 
 stateArray::stateArray(){
 }
@@ -90,7 +87,7 @@ int stateArray::setParameterL(int Lnew){
   }
 
   for(int i=0;i<dimInfo.L();++i){
-    std::cout<<stateArrayAccessStructure[i].lDL()<<"x"<<stateArrayAccessStructure[i].lDR()<<std::endl;
+    //std::cout<<stateArrayAccessStructure[i].lDL()<<"x"<<stateArrayAccessStructure[i].lDR()<<std::endl;
   }
   
   L=Lnew;

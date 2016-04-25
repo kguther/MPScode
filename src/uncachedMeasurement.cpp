@@ -32,7 +32,7 @@ void uncachedMeasurement::getContractions(int site){
   for(int j=1;j<=i;++j){
     getLeftCtr(j);
   }
-  for(int j=MPState->dimInfo.L()-1;j>=i;++j){
+  for(int j=MPState->length()-1;j>=i;--j){
     getRightCtr(j);
   }
 }

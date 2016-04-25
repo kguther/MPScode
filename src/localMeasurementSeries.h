@@ -10,7 +10,7 @@
 // sites right to its current site. The operator is not changed.
 //---------------------------------------------------------------------------------------------------//
 
-class localMeasurementSeries: public iterativeMeasurement{
+class localMeasurementSeries: private iterativeMeasurement{
  public:
   localMeasurementSeries(localMpo<lapack_complex_double> *const MPOperator, mps *const MPState);
   void measureFull(std::vector<lapack_complex_double> &lambda);

@@ -13,12 +13,14 @@ infiniteNetwork::infiniteNetwork(problemParameters const &parsIn, simulationPara
   simPars(simParsIn),
   networkState(MPState)
 {
-  dimInfo=networkState->dimInfo;
+  dimInfo=networkState->getDimInfo();
   networkH=mpo<lapack_complex_double>(pars.d.maxd(),pars.Dw,pars.L);
   pCtr=uncachedMeasurement(&networkH,networkState);
+  //Setup of the L/R-terms 
   pCtr.getContractions(networkState->currentSite());
   int const lDR=dimInfo.locDimR(networkState->currentSite());
   diags=std::vector<double>(lDR,1.0);
+  diagsm=diags;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -77,7 +79,7 @@ int infiniteNetwork::optimize(arcomplex<double> *target){
   int const HPos=(i==0)?0:1;
   pCtr.getLctr(Lterm);
   pCtr.getRctr(Rterm);
-  twositeHMatrix BMat(Rterm,Lterm,&networkH,HPos,dimInfo,&(networkState->centralIndexTable));
+  twositeHMatrix BMat(Rterm,Lterm,&networkH,HPos,dimInfo,&(networkState->centralIndexTable()));
   BMat.prepareInput(target);
   if(BMat.dim()>1){
     ARCompStdEig<double,twositeHMatrix> eigProblemTwoSite(BMat.dim(),1,&BMat,&twositeHMatrix::MultMvBlocked,"SR",0,simPars.tolInitial,maxIter,BMat.compressedVector);
@@ -97,6 +99,7 @@ int infiniteNetwork::optimize(arcomplex<double> *target){
 //---------------------------------------------------------------------------------------------------//
 
 void infiniteNetwork::addSite(){
+  //Can only be used after optimization since it relies on the outcome of optimize()
   pCtr.update();
   std::vector<std::complex<int> > newQNs;
   newQNs.resize(pars.QNconserved.size());
@@ -119,12 +122,11 @@ void infiniteNetwork::addSite(){
   */
   int info;
   info=networkState->refineQN(i+1,optLocalQNs);
-
   networkState->addSite(dimInfo.L(),i+1,newQNs);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-void infiniteNetwork::exportState(mps &target){
-  networkState->exportState(target);
+imps* infiniteNetwork::getState(){
+  return networkState;
 }

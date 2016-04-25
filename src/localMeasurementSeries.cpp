@@ -1,7 +1,6 @@
 #include "localMeasurementSeries.h"
 #include "optHMatrix.h"
 #include "globalMeasurement.h"
-#include <iostream>
 
 localMeasurementSeries::localMeasurementSeries(localMpo<lapack_complex_double> *const MPOperator, mps *const MPState):
   iterativeMeasurement(MPOperator,MPState),
@@ -55,7 +54,7 @@ void localMeasurementSeries::getCurrentValue(std::vector<lapack_complex_double> 
   MPState->subMatrixStart(currentM,i);
   //Only the current site has to be contracted explicitly, the rest is stored in the partial contraction. Explicit contraction is carried out using the optHMatrix class multiplication.
   lapack_complex_double *siteMatrixContainer=new lapack_complex_double [ld*lDR*lDL];
-  optHMatrix gather(RTerm,LTerm,MPOperator,MPState->dimInfo,MPOperator->maxDim(),i,0,0,0);
+  optHMatrix gather(RTerm,LTerm,MPOperator,MPState->getDimInfo(),MPOperator->maxDim(),i,0,0,0);
   gather.MultMv(currentM,siteMatrixContainer);
   for(int si=0;si<ld;++si){
     for(int ai=0;ai<lDR;++ai){

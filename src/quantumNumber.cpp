@@ -24,6 +24,7 @@ quantumNumber::quantumNumber(dimensionTable const &dimInfoin, std::complex<int> 
   info=initializeLabelList();
   if(info){
     std::cout<<"Critical error: Target quantum number cannot be reached.\n";
+    std::cout<<"Target quantum number: "<<N<<" with system size "<<dimInfo.L()<<std::endl;
     failed=1;
   }
 }

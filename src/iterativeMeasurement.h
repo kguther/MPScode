@@ -10,15 +10,15 @@
 // contraction as target.
 //---------------------------------------------------------------------------------------------------//
 
-class iterativeMeasurement: public baseMeasurement{
+class iterativeMeasurement: protected baseMeasurement{
  public:
   iterativeMeasurement();
   iterativeMeasurement(mpo<lapack_complex_double> *const MPOperator, mps *const MPState);
   void initialize(mpo<lapack_complex_double> *const MPOperator, mps *const MPState);
   int calcCtrFull(int const direction);
-  void calcCtrIterLeft(int const i);
+  virtual void calcCtrIterLeft(int const i);
   void calcCtrIterRight(int const i);
-  void calcCtrIterRightBase(int i, lapack_complex_double *const target);
+  virtual void calcCtrIterRightBase(int i, lapack_complex_double *const target);
   void calcOuterContainerLeft(int const i, tmpContainer<lapack_complex_double> &outerContainer);
   void calcOuterContainerRight(int const i, tmpContainer<lapack_complex_double> &outerContainer);
   //Containers for caching of partial contractions of the expectation value. This is what distinguishes the iterativeMeasurement

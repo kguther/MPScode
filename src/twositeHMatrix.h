@@ -15,7 +15,7 @@
 
 class twositeHMatrix{
  public:
-  twositeHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcomplex<double> > *Hin, int HPos, dimensionTable const &dimInfo, twositeQNOrderMatrix *indexTable, projector *excitedStateP=0);
+  twositeHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcomplex<double> > *Hin, int HPos, dimensionTable const &dimInfo, twositeQNOrderMatrix const* indexTable, projector *excitedStateP=0);
   ~twositeHMatrix();
   void MultMvBlocked(arcomplex<double> *v, arcomplex<double> *w);
   void readOutput(arcomplex<double> *outputVector);
@@ -33,7 +33,7 @@ class twositeHMatrix{
   dimensionTable dimInfo;
   mpo<arcomplex<double> > *HMPO;
   arcomplex<double> *Lctr, *Rctr, *W;
-  twositeQNOrderMatrix *indexTable;
+  twositeQNOrderMatrix const* indexTable;
   int vecBlockIndex(int iBlock, int j, int k){return k+j*indexTable->lBlockSize(iBlock)+blockOffset[iBlock];}
   int vecIndex(int sip, int air, int si, int aim){return aim+si*lDL*lDRR+air*lDL+sip*ld*lDL*lDRR;}
   int hIndex(int si, int sip, int sit, int sitp, int bir, int bim){return bim+bir*lDwL+sitp*lDwL*lDwRR+sit*ldp*lDwL*lDwRR+sip*ldp*ldp*lDwL*lDwRR+si*lDwL*lDwRR*ld*ldp*ldp;}

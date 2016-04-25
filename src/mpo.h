@@ -2,7 +2,6 @@
 #define MPO_OPERATOR
 
 #include <vector>
-#include <iostream>
 
 //---------------------------------------------------------------------------------------------------//
 // MPO class for handling of sparse mpos.

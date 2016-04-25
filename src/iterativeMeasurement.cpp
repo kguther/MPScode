@@ -1,5 +1,3 @@
-#include <iostream>
-#include <time.h>
 #include "iterativeMeasurement.h"
 
 iterativeMeasurement::iterativeMeasurement(){
@@ -95,7 +93,6 @@ int iterativeMeasurement::calcCtrFull(int const direction){
       return 0;
     }
     else{
-      std::cout<<"CRITICAL ERROR: Invalid sweep direction identifier in calculation of partial contractions\n";
       return -1;
     }
   }

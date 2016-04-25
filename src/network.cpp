@@ -8,6 +8,7 @@
 #include <time.h>
 #include "network.h"
 #include "arrayprocessing.h"
+#include "arraycreation.h"
 #include "optHMatrix.h"
 #include "blockHMatrix.h"
 #include "globalMeasurement.h"
@@ -705,7 +706,7 @@ void network::checkContractions(int i){
 
 int network::checkEqualWeightState(){
   std::vector<quantumNumber> dummy;
-  mps productState(networkState.dimInfo,dummy);
+  mps productState(networkState.getDimInfo(),dummy);
   for(int i=0;i<L;++i){
     getLocalDimensions(i);
     for(int si=0;si<ld;++si){

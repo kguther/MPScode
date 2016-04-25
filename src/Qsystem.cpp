@@ -33,7 +33,7 @@ int Qsystem::getGroundState(){
     TensorNetwork.setSimParameters(simPars);
 
     TensorNetwork.getInitState();
-
+    
     converged=TensorNetwork.solve(E0,dE);
     if(converged==0){
       std::cout<<"SIMULATION CONVERGED\n";

@@ -21,12 +21,11 @@ class infiniteNetwork{
   infiniteNetwork(problemParameters const &parsIn, simulationParameters const &simParsIn, imps *MPState);
   void growTLSystem();
   void iDMRGStep();
-  void addSite();
   void addDiags();
   void statePrediction(arcomplex<double> *target);
   int optimize(arcomplex<double> *target);
   void updateMPS(arcomplex<double> *source);
-  void exportState(mps &target);
+  imps* getState();
   mpo<lapack_complex_double> networkH;
  private:
   int i;
@@ -39,6 +38,7 @@ class infiniteNetwork{
   //Beware that iDMRG builds up a regular system -> only three MPO matrices are referred - in particular is a MPO length of at least 3 required
   uncachedMeasurement pCtr;
   int explicitIndex(int iBlock, int j, int k);
+  void addSite();
 };
 
 #endif

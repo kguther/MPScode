@@ -13,6 +13,8 @@
 // partial contraction from the left. It can not be directly accessed, only via the child classes.
 //---------------------------------------------------------------------------------------------------//
 
+//TODO: MOVE EXPLICIT CONTRACTIONS TO SEPERATE CLASS WITH TENSORS AS ARGUMENTS
+
 class baseMeasurement{
  protected:
   //Result of iteration is stored in target

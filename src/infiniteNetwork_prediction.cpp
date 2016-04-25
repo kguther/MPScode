@@ -23,7 +23,6 @@ void infiniteNetwork::statePrediction(arcomplex<double> *target){
   int const lDL=dimInfo.locDimL(i-1);
   int const lDRR=lDL;
   int const lDR=dimInfo.locDimR(i-1);
-  std::cout<<diags.size()<<" "<<diagsm.size()<<std::endl;
   std::unique_ptr<arcomplex<double> > leftBufP(new arcomplex<double> [lDL*lDR]);
   std::unique_ptr<arcomplex<double> > rightBufP(new arcomplex<double> [lDL*lDR]);
   leftBuf=leftBufP.get();
@@ -71,16 +70,16 @@ void infiniteNetwork::updateMPS(arcomplex<double> *source){
   networkState->subMatrixStart(bMatrix,i+1);
 
   
-  int const nQNs=networkState->centralIndexTable.nQNs();
+  int const nQNs=networkState->centralIndexTable().nQNs();
   optLocalQNs.resize(ld*lDL);
   for(int m=0;m<ld*lDL;++m){
     optLocalQNs[m]=std::complex<int>(-100,2);
   }
 
-  int const numBlocks=networkState->centralIndexTable.numBlocks();
+  int const numBlocks=networkState->centralIndexTable().numBlocks();
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
-    rBlockSize=networkState->centralIndexTable.rBlockSize(iBlock);
-    lBlockSize=networkState->centralIndexTable.lBlockSize(iBlock);
+    rBlockSize=networkState->centralIndexTable().rBlockSize(iBlock);
+    lBlockSize=networkState->centralIndexTable().lBlockSize(iBlock);
     if(lBlockSize!=0 && rBlockSize!=0){
       sourceBlockP.reset(new arcomplex<double>[rBlockSize*lBlockSize]);
       aBlockP.reset(new arcomplex<double>[lBlockSize*lBlockSize]);
@@ -97,24 +96,24 @@ void infiniteNetwork::updateMPS(arcomplex<double> *source){
       }
       LAPACKE_zgesdd(LAPACK_COL_MAJOR,'A',lBlockSize,rBlockSize,sourceBlock,lBlockSize,diagsBlock,aBlock,lBlockSize,bBlock,rBlockSize);
       for(int k=0;k<lBlockSize;++k){
-	aimB=networkState->centralIndexTable.aimBlockIndex(iBlock,k);
-	siB=networkState->centralIndexTable.siBlockIndex(iBlock,k);
+	aimB=networkState->centralIndexTable().aimBlockIndex(iBlock,k);
+	siB=networkState->centralIndexTable().siBlockIndex(iBlock,k);
 	for(int kp=0;kp<lBlockSize;++kp){
-	  airB=networkState->centralIndexTable.aimBlockIndex(iBlock,kp);
-	  sipB=networkState->centralIndexTable.siBlockIndex(iBlock,kp);
+	  airB=networkState->centralIndexTable().aimBlockIndex(iBlock,kp);
+	  sipB=networkState->centralIndexTable().siBlockIndex(iBlock,kp);
 	  aFull[airB+sipB*lDL+aimB*lDL*ld+siB*lDL*lDL*ld]=aBlock[kp+lBlockSize*k];
 	}
 	if(k<rBlockSize){
 	  diagsFull[aimB+lDL*siB]=diagsBlock[k];
-	  optLocalQNs[aimB+lDL*siB]=networkState->centralIndexTable.blockQN(0,iBlock);
+	  optLocalQNs[aimB+lDL*siB]=networkState->centralIndexTable().blockQN(0,iBlock);
 	}
       }
       for(int j=0;j<rBlockSize;++j){
-	aimB=networkState->centralIndexTable.airBlockIndex(iBlock,j);
-	siB=networkState->centralIndexTable.sipBlockIndex(iBlock,j);
+	aimB=networkState->centralIndexTable().airBlockIndex(iBlock,j);
+	siB=networkState->centralIndexTable().sipBlockIndex(iBlock,j);
 	for(int jp=0;jp<rBlockSize;++jp){
-	  airB=networkState->centralIndexTable.airBlockIndex(iBlock,jp);
-	  sipB=networkState->centralIndexTable.sipBlockIndex(iBlock,jp);
+	  airB=networkState->centralIndexTable().airBlockIndex(iBlock,jp);
+	  sipB=networkState->centralIndexTable().sipBlockIndex(iBlock,jp);
 	  bFull[airB+sipB*lDRR+aimB*lDRR*ld+siB*lDRR*lDRR*ld]=bBlock[jp+rBlockSize*j];
 	}
       }	
@@ -166,7 +165,7 @@ void infiniteNetwork::updateMPS(arcomplex<double> *source){
 
 
 int infiniteNetwork::explicitIndex(int iBlock, int j, int k){
-  return networkState->centralIndexTable.aimBlockIndex(iBlock,k)+dimInfo.locDimL(i)*dimInfo.locDimR(i+1)*networkState->centralIndexTable.siBlockIndex(iBlock,k)+networkState->centralIndexTable.airBlockIndex(iBlock,j)*dimInfo.locDimL(i)+networkState->centralIndexTable.sipBlockIndex(iBlock,j)*dimInfo.locDimL(i)*dimInfo.locDimR(i+1)*dimInfo.locd(i);
+  return networkState->centralIndexTable().aimBlockIndex(iBlock,k)+dimInfo.locDimL(i)*dimInfo.locDimR(i+1)*networkState->centralIndexTable().siBlockIndex(iBlock,k)+networkState->centralIndexTable().airBlockIndex(iBlock,j)*dimInfo.locDimL(i)+networkState->centralIndexTable().sipBlockIndex(iBlock,j)*dimInfo.locDimL(i)*dimInfo.locDimR(i+1)*dimInfo.locd(i);
 }
 
 //---------------------------------------------------------------------------------------------------//

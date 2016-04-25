@@ -16,8 +16,8 @@ void exactGroundState::writeExactGroundState(mps &target){
   for(int m=0;m<4;++m){
     localQNsVec.push_back(localQNs[m]);
   }
-  QNsVec.push_back(quantumNumber(target.dimInfo,QNValue,localQNsVec));
-  mps proxy(target.dimInfo,QNsVec);
+  QNsVec.push_back(quantumNumber(target.getDimInfo(),QNValue,localQNsVec));
+  mps proxy(target.getDimInfo(),QNsVec);
   generateExactState(proxy);
   target.stateArray::mpsCpy(proxy);
 }
@@ -27,7 +27,7 @@ void exactGroundState::writeExactGroundState(mps &target){
 void exactGroundState::generateExactState(mps &target){
     //This is the exact ground state at the critical point for fixed particle number and subchain parity. It turns out that this is a nice guess for the ground state of the perturbed system (for small perturbations).
   int ld, lDL, lDR;
-  for(int i=0;i<target.dimInfo.L();++i){
+  for(int i=0;i<target.getDimInfo().L();++i){
     lDL=target.locDimL(i);
     lDR=target.locDimR(i);
     ld=target.locd(i);
