@@ -12,23 +12,24 @@
 // the block structure of the MPS matrices. Usually, this is the index table of the corresponding MPS
 //---------------------------------------------------------------------------------------------------//
 
-class blockHMatrix: public optHMatrix{
+class blockHMatrix: private optHMatrix{
  public: 
   blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcomplex<double> > *Hin, dimensionTable &dimInfo, int Dwin, int iIn, basisQNOrderMatrix *indexTable, projector *excitedStateP, double shift, std::vector<quantumNumber> *conservedQNsin, int const cached=1);
-  ~blockHMatrix();
   void MultMvBlocked(arcomplex<double> *v, arcomplex<double> *w);
   void MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w);
   void storageCompress(arcomplex<double> *v, arcomplex<double> *vCompressed);
   void storageExpand(arcomplex<double> *v, arcomplex<double> *vExpanded);
   void prepareInput(arcomplex<double> *startingVector);
   void readOutput(arcomplex<double> *outputVector);
-  arcomplex<double> *compressedVector;
   void buildSparseHBlocked();
+  virtual int dim()const {return dimension;}
+  arcomplex<double>* getCompressedVector() {return &(compressedVector[0]);}
  private:
   int explicitMv;
   std::vector<quantumNumber> *conservedQNsB;
   std::vector<int> blockOffset;
   std::vector<arcomplex<double> > sparseMatrix;
+  std::vector<arcomplex<double> > compressedVector;
   std::vector<int> rowPtr, colIndices;
   mpo<arcomplex<double> > *HMPO;
   basisQNOrderMatrix *indexTable;

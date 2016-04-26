@@ -25,7 +25,7 @@ twositeHMatrix::twositeHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<a
   
   std::cout<<"Eigenvalue problem dimension: "<<dimension<<std::endl;
 
-  compressedVector=new arcomplex<double>[dimension];
+  compressedVector.resize(dimension);
   i=indexTable->getSite();
   ld=dimInfo.locd(i);
   ldp=dimInfo.locd(i+1);
@@ -37,7 +37,7 @@ twositeHMatrix::twositeHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<a
   D=dimInfo.D();
   int const lDwR=HMPO->locDimR(i);
   arcomplex<double> simpleContainer;
-  W=new arcomplex<double>[ld*ld*ldp*ldp*lDwRR*lDwL];
+  W.resize(ld*ld*ldp*ldp*lDwRR*lDwL);
   for(int si=0;si<ld;++si){
     for(int sip=0;sip<ld;++sip){
       for(int sit=0;sit<ldp;++sit){
@@ -54,11 +54,6 @@ twositeHMatrix::twositeHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<a
       }
     }
   }
-}
-
-twositeHMatrix::~twositeHMatrix(){
-  delete[] compressedVector;
-  delete[] W;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -149,7 +144,7 @@ void twositeHMatrix::storageCompress(arcomplex<double> *v, arcomplex<double> *vC
     rBlockSize=indexTable->rBlockSize(iBlock);
     for(int j=0;j<rBlockSize;++j){
       for(int k=0;k<lBlockSize;++k){
-	vCompressed[vecBlockIndex(iBlock,j,k)]=v[vecIndex(indexTable->sipBlockIndex(iBlock,j),indexTable->airBlockIndex(iBlock,j),indexTable->siBlockIndex(iBlock,k),indexTable->aimBlockIndex(iBlock,k))];
+	vCompressed[vecBlockIndex(iBlock,j,k)]=v[vecIndex(indexTable->sipBlockIndex(iBlock,j),indexTable->siBlockIndex(iBlock,k),indexTable->airBlockIndex(iBlock,j),indexTable->aimBlockIndex(iBlock,k))];
       }
     }
   }
@@ -165,7 +160,7 @@ void twositeHMatrix::storageExpand(arcomplex<double> *v, arcomplex<double> *vExp
     rBlockSize=indexTable->rBlockSize(iBlock);
     for(int j=0;j<rBlockSize;++j){
       for(int k=0;k<lBlockSize;++k){
-	vExpanded[vecIndex(indexTable->sipBlockIndex(iBlock,j),indexTable->airBlockIndex(iBlock,j),indexTable->siBlockIndex(iBlock,k),indexTable->aimBlockIndex(iBlock,k))]=v[vecBlockIndex(iBlock,j,k)];
+	vExpanded[vecIndex(indexTable->sipBlockIndex(iBlock,j),indexTable->siBlockIndex(iBlock,k),indexTable->airBlockIndex(iBlock,j),indexTable->aimBlockIndex(iBlock,k))]=v[vecBlockIndex(iBlock,j,k)];
       }
     }
   }
@@ -174,12 +169,12 @@ void twositeHMatrix::storageExpand(arcomplex<double> *v, arcomplex<double> *vExp
 //---------------------------------------------------------------------------------------------------//
 
 void twositeHMatrix::readOutput(arcomplex<double> *outputVector){
-  storageExpand(compressedVector,outputVector);
+  storageExpand(getCompressedVector(),outputVector);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
 void twositeHMatrix::prepareInput(arcomplex<double> *inputVector){
-  storageCompress(inputVector,compressedVector);
+  storageCompress(inputVector,getCompressedVector());
 }
 

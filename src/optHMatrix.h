@@ -20,7 +20,7 @@ class optHMatrix{
   virtual ~optHMatrix();
   virtual void MultMv(arcomplex<double> *v, arcomplex<double> *w);
   void MultMvQNConserving(arcomplex<double> *v, arcomplex<double> *w);
-  int dim() const {return dimension;}
+  virtual int dim() const {return dimension;}
  protected:
   arcomplex<double> *Rctr;
   arcomplex<double> *Lctr;

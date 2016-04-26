@@ -61,7 +61,6 @@ network::network(problemParameters const &inputpars, simulationParameters const 
   for(int iEigen=1;iEigen<pars.nEigs;++iEigen){
     excitedStateP.storeOrthoState(networkState,iEigen);
   }
-
   if(pars.nQNs){
     if(conservedQNs[0].QNValue().imag()){  
       exactGroundState gsLoader(conservedQNs[0].QNValue());
@@ -82,6 +81,7 @@ network::network(problemParameters const &inputpars, simulationParameters const 
     }  
   }
   excitedStateP.storeOrthoState(networkState,0);
+
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -359,9 +359,10 @@ int network::optimize(int i, int maxIter, double tol, double &iolambda){
     //For some obscure reason, ARPACK++ can not handle the boundary problems with reduced dimension. They have to be solved without using the block structure. Since they have a really tiny dimension, this does not matter at all.
     blockHMatrix BMat(RTerm, LTerm,&networkH,networkDimInfo,Dw,i,&(networkState.indexTable),&excitedStateP,shift,&conservedQNs);
     BMat.prepareInput(currentM);
+    arcomplex<double> *compressedVector=BMat.getCompressedVector();
     if(BMat.dim()>1){
-      ARCompStdEig<double, blockHMatrix> eigProblemBlocked(BMat.dim(),1,&BMat,&blockHMatrix::MultMvBlocked,"SR",0,tol,maxIter,BMat.compressedVector);
-      nconv=eigProblemBlocked.EigenValVectors(BMat.compressedVector,plambda);
+      ARCompStdEig<double, blockHMatrix> eigProblemBlocked(BMat.dim(),1,&BMat,&blockHMatrix::MultMvBlocked,"SR",0,tol,maxIter,compressedVector);
+      nconv=eigProblemBlocked.EigenValVectors(compressedVector,plambda);
     std::cout<<"Number of iterations taken: "<<eigProblemBlocked.GetIter()<<std::endl;
     }
     BMat.readOutput(currentM);
@@ -673,9 +674,9 @@ void network::checkContractions(int i){
   }
   blockHMatrix BMat(RTerm, LTerm,&networkH,networkDimInfo,Dw,i,&(networkState.indexTable),&excitedStateP,0,&conservedQNs);
   BMat.prepareInput(currentM);
-  BMat.MultMvBlocked(BMat.compressedVector,BMat.compressedVector);
-  //ARCompStdEig<double, blockHMatrix> eigProblemBlocked(BMat.dim(),1,&BMat,&blockHMatrix::MultMvBlocked,"SR",0,tol,maxIter,BMat.compressedVector);
-  //eigProblemBlocked.EigenValVectors(BMat.compressedVector,plambda);
+  BMat.MultMvBlocked(BMat.getCompressedVector(),BMat.getCompressedVector());
+  //ARCompStdEig<double, blockHMatrix> eigProblemBlocked(BMat.dim(),1,&BMat,&blockHMatrix::MultMvBlocked,"SR",0,tol,maxIter,BMat.getCompressedVector());
+  //eigProblemBlocked.EigenValVectors(BMat.getCompressedVector(),plambda);
   BMat.readOutput(target);
   lambda=*plambda;
   optHMatrix HMat(RTerm,LTerm,&networkH,networkDimInfo,Dw,i,&excitedStateP,0,&conservedQNs);

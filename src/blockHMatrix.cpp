@@ -27,7 +27,7 @@ blockHMatrix::blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcom
       blockOffset.push_back(blockOffset[iBlock]+cBlockSize);
     }
   }
-  compressedVector=new arcomplex<double>[dimension];
+  compressedVector.resize(dimension);
   std::cout<<"Current eigenvalue problem dimension: "<<dimension<<std::endl;
   if(lDR<350 && lDL<350 && !cached){
     explicitMv=1;
@@ -38,12 +38,6 @@ blockHMatrix::blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcom
   if(explicitMv){
     buildSparseHBlocked();
   }
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-blockHMatrix::~blockHMatrix(){
-  delete[] compressedVector;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -286,11 +280,11 @@ void blockHMatrix::storageCompress(arcomplex<double> *v, arcomplex<double> *vCom
 //---------------------------------------------------------------------------------------------------//
 
 void blockHMatrix::prepareInput(arcomplex<double> *inputVector){
-  storageCompress(inputVector,compressedVector);
+  storageCompress(inputVector,getCompressedVector());
 }
 
 //---------------------------------------------------------------------------------------------------//
 
 void blockHMatrix::readOutput(arcomplex<double> *outputVector){
-  storageExpand(compressedVector,outputVector);
+  storageExpand(getCompressedVector(),outputVector);
 }

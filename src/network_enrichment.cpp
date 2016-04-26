@@ -533,7 +533,7 @@ double network::getCurrentEnergy(int i){
   else{
     blockHMatrix BMat(RTerm,LTerm,&networkH,networkDimInfo,Dw,i,&(networkState.indexTable),0,0,&conservedQNs,1);
     BMat.prepareInput(currentM);
-    BMat.MultMvBlockedLP(BMat.compressedVector,BMat.compressedVector);
+    BMat.MultMvBlockedLP(BMat.getCompressedVector(),BMat.getCompressedVector());
     BMat.readOutput(siteMatrixContainer);
   }
   //Here, we contract the result with the current state. There is a version with and one without the use of QNs

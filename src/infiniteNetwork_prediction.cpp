@@ -5,6 +5,10 @@
 #include <vector>
 #include <algorithm>
 
+
+#include "verifyQN.h"
+#include <iostream>
+
 //---------------------------------------------------------------------------------------------------//
 
 bool compareSortData(sortData const &a, sortData const &b){
@@ -23,10 +27,22 @@ void infiniteNetwork::statePrediction(arcomplex<double> *target){
   int const lDL=dimInfo.locDimL(i-1);
   int const lDRR=lDL;
   int const lDR=dimInfo.locDimR(i-1);
-  std::unique_ptr<arcomplex<double> > leftBufP(new arcomplex<double> [lDL*lDR]);
-  std::unique_ptr<arcomplex<double> > rightBufP(new arcomplex<double> [lDL*lDR]);
+  std::unique_ptr<arcomplex<double>[] > leftBufP(new arcomplex<double> [lDL*lDR]);
+  std::unique_ptr<arcomplex<double>[] > rightBufP(new arcomplex<double> [lDL*lDR]);
   leftBuf=leftBufP.get();
   rightBuf=rightBufP.get();
+
+  int info=checkQNConstraint(*networkState,i-1);
+  if(info){
+    std::cout<<"QN constraint violation at A-matrix"<<std::endl;
+    exit(1);
+  }
+  info=checkQNConstraint(*networkState,i+2);
+  if(info){
+    std::cout<<"QN constraint violation at B-matrix"<<std::endl;
+    exit(1);
+  }
+
   for(int si=0;si<dimInfo.locd(i);++si){
     for(int sip=0;sip<dimInfo.locd(i+1);++sip){
       subMatrix=target+sip*lDL*lDRR+si*dimInfo.locd(i+1)*lDL*lDRR;
@@ -41,7 +57,44 @@ void infiniteNetwork::statePrediction(arcomplex<double> *target){
       cblas_zgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,lDR,lDR,lDL,&zone,leftBuf,lDR,rightBuf,lDL,&zzero,subMatrix,lDR);
     }
   }
+
+
+  for(int m=0;m<dimInfo.locd(i)*dimInfo.locd(i+1)*lDL*lDRR;++m){
+    target[m]=0;
+  }
+  qnEnforcedPrediction(target);
+
+  
+  info=twositeCheck(*networkState,target);
+  if(info){
+    std::cout<<"Twosite constraint violation at site "<<networkState->currentSite()<<std::endl;
+    exit(1);
+  }
 }
+
+
+void infiniteNetwork::qnEnforcedPrediction(arcomplex<double> *target){
+  int const numBlocks=networkState->centralIndexTable().numBlocks();
+  int const ld=dimInfo.locd(i);
+  int const lDL=dimInfo.locDimL(i);
+  int lBlockSize, rBlockSize;
+  int aimB, airB, siB, sipB;
+  for(int iBlock=0;iBlock<numBlocks;++iBlock){
+    lBlockSize=networkState->centralIndexTable().lBlockSize(iBlock);
+    rBlockSize=networkState->centralIndexTable().rBlockSize(iBlock);
+    for(int j=0;j<rBlockSize;++j){
+      airB=networkState->centralIndexTable().airBlockIndex(iBlock,j);
+      sipB=networkState->centralIndexTable().sipBlockIndex(iBlock,j);
+      for(int k=0;k<lBlockSize;++k){
+	aimB=networkState->centralIndexTable().aimBlockIndex(iBlock,k);
+	siB=networkState->centralIndexTable().siBlockIndex(iBlock,k);
+	target[aimB+lDL*airB+sipB*lDL*lDL+siB*ld*lDL*lDL]=1;
+      }
+    }
+  }
+}
+      
+
 
 //---------------------------------------------------------------------------------------------------//
 
@@ -56,12 +109,12 @@ void infiniteNetwork::updateMPS(arcomplex<double> *source){
   int maxTargetBlockSize, maxBlockSize;
   int aimB, siB, airB, sipB;
   arcomplex<double> *aMatrix, *bMatrix;
-  std::unique_ptr<arcomplex<double> > sourceBlockP, aBlockP, bBlockP;
-  std::unique_ptr<arcomplex<double> > aFullP(new arcomplex<double> [ld*lDL*ld*lDL]);
-  std::unique_ptr<arcomplex<double> > bFullP(new arcomplex<double> [ldp*lDRR*ldp*lDRR]);
-  std::unique_ptr<double > diagsFullP(new double [ld*lDL]);
+  std::unique_ptr<arcomplex<double>[] > sourceBlockP, aBlockP, bBlockP;
+  std::unique_ptr<arcomplex<double>[] > aFullP(new arcomplex<double> [ld*lDL*ld*lDL]);
+  std::unique_ptr<arcomplex<double>[] > bFullP(new arcomplex<double> [ldp*lDRR*ldp*lDRR]);
+  std::unique_ptr<double[]> diagsFullP(new double [ld*lDL]);
   arcomplex<double> *sourceBlock, *aBlock, *bBlock, *aFull, *bFull;
-  std::unique_ptr<double> diagsBlockP;
+  std::unique_ptr<double[]> diagsBlockP;
   double *diagsFull, *diagsBlock;
   aFull=aFullP.get();
   bFull=bFullP.get();
@@ -103,6 +156,8 @@ void infiniteNetwork::updateMPS(arcomplex<double> *source){
 	  sipB=networkState->centralIndexTable().siBlockIndex(iBlock,kp);
 	  aFull[airB+sipB*lDL+aimB*lDL*ld+siB*lDL*lDL*ld]=aBlock[kp+lBlockSize*k];
 	}
+
+	//Potentially dangerous since aFull and bFull are filled regardless of this constraint
 	if(k<rBlockSize){
 	  diagsFull[aimB+lDL*siB]=diagsBlock[k];
 	  optLocalQNs[aimB+lDL*siB]=networkState->centralIndexTable().blockQN(0,iBlock);
