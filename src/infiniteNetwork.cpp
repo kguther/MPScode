@@ -58,12 +58,6 @@ void infiniteNetwork::iDMRGStep(){
   if(firstStep==0){
     addSite();
   }
-
-  int info=checkQNConstraint(*networkState);
-  if(info){
-    std::cout<<"Violation at site "<<info-1<<std::endl;
-    exit(1);
-  }
   
   arcomplex<double> *bufferMatrix;
   i=(dimInfo.L()-1)/2;
@@ -152,9 +146,10 @@ void infiniteNetwork::addSite(){
   int info;
 
   //The QNs determined in updateMPS are stored
-  info=networkState->refineQN(i+1,optLocalQNs);
+  info=networkState->refineQN(i+1,optLocalQNsL);
+
   //This is where the actual MPS is grown
-  networkState->addSite(dimInfo.L(),i+1,newQNs);
+  networkState->addSite(dimInfo.L(),i+1,newQNs,optLocalQNsR);
 
 }
 

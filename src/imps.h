@@ -16,7 +16,7 @@ class imps: public impBase, public mps{
   imps();
   virtual ~imps(){}
   imps(dimensionTable const &dimInfo, std::vector<quantumNumber> const &conservedQNsin);
-  virtual void addSite(int Lnew, int i, std::vector<std::complex<int> > const &targetQN);
+  virtual void addSite(int Lnew, int i, std::vector<std::complex<int> > const &targetQN, std::vector<std::complex<int> > const &source);
   void exportState(mps &target);
   void importState(mps const &source);
   virtual void subMatrixStart(lapack_complex_double *&pStart, int i, int si=0){mps::subMatrixStart(pStart,i,si);}

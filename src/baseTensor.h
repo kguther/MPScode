@@ -129,7 +129,7 @@ void baseTensor<T>::initialize(){
   }
   entries.resize(containerSize);
   for(int m=0;m<containerSize;++m){
-    entries[m]=0;
+    entries[m]=T();
   }
 }
 

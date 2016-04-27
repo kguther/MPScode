@@ -51,13 +51,6 @@ int twositeQNOrderMatrix::generateQNIndexTable(){
   }
   writeIndexTables(site-1,ld,lDL,lBlockIndices);
   writeIndexTables(site+1,ldp,lDRR,rBlockIndices);
-
-  std::cout<<"Block-QNs at site "<<site<<":\n";
-  for(int m=0;m<qnLabels[0].size();++m){
-    std::cout<<qnLabels[0][m]<<"\t";
-  }
-  std::cout<<std::endl;
-
   return 0;
 }
 

@@ -14,10 +14,9 @@ imps::imps(dimensionTable const &dimInfoIn, std::vector<quantumNumber> const &co
 
 //---------------------------------------------------------------------------------------------------//
 
-void imps::addSite(int Lnew, int i, std::vector<std::complex<int> > const &targetQN){
+void imps::addSite(int Lnew, int i, std::vector<std::complex<int> > const &targetQN, std::vector<std::complex<int> > const &source){
   for(int iQN=0;iQN<nQNs;++iQN){
-    //Spooky: Somewhere, the old labels linger after growing
-    conservedQNs[iQN].grow(Lnew,i,targetQN[iQN]);
+    conservedQNs[iQN].grow(Lnew,i,targetQN[iQN],source);
   }
   stateArray::setParameterL(Lnew);
   loadIndexTables();

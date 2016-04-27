@@ -7,6 +7,7 @@
 #include "dimensionTable.h"
 #include "uncachedMeasurement.h"
 #include <arcomp.h>
+#include <vector>
 
 struct sortData{
   double lambda;
@@ -15,6 +16,7 @@ struct sortData{
 };
 
 bool compareSortData(sortData const &a, sortData const &b);
+bool compareSortDataQNBased(sortData const &a, sortData const &b);
 
 class infiniteNetwork{
  public:
@@ -35,7 +37,7 @@ class infiniteNetwork{
   simulationParameters simPars;
   dimensionTable dimInfo;
   imps *networkState;
-  std::vector<std::complex<int> > optLocalQNs;
+  std::vector<std::complex<int> > optLocalQNsL, optLocalQNsR;
   std::vector<double> diags, diagsm;
   //Beware that iDMRG builds up a regular system -> only three MPO matrices are referred - in particular is a MPO length of at least 3 required
   uncachedMeasurement pCtr;

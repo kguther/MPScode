@@ -5,14 +5,30 @@
 #include <vector>
 #include <algorithm>
 
-
 #include "verifyQN.h"
 #include <iostream>
 
 //---------------------------------------------------------------------------------------------------//
+// Order sortDatas with respect to lambdas, as it is used to truncate to the largest SVs
+//---------------------------------------------------------------------------------------------------//
+
 
 bool compareSortData(sortData const &a, sortData const &b){
-  return a.lambda>b.lambda;
+  double const tol=1e-10;
+  double buf=(a.lambda>b.lambda)?(a.lambda-b.lambda):(b.lambda-a.lambda);
+  if(buf>tol)
+    return a.lambda>b.lambda;
+  if(a.QN.real()!=b.QN.real())
+    return a.QN.real()>b.QN.real();
+  return a.QN.imag()>b.QN.imag();
+}
+
+bool compareSortDataQNBased(sortData const &a, sortData const &b){
+  if(a.QN.real()!=b.QN.real()){
+    return a.QN.real()>b.QN.real();
+  }
+  return a.QN.imag()>b.QN.imag();  
+  //The ordering has to be strictly deterministic, such that two arrays of sortData with the same entries of lambdas and QNs are ordered in the same way, even if some lambdas are degenerate
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -32,7 +48,7 @@ void infiniteNetwork::statePrediction(arcomplex<double> *target){
   leftBuf=leftBufP.get();
   rightBuf=rightBufP.get();
 
-  int info=0;//checkQNConstraint(*networkState,i-1);
+  int info=checkQNConstraint(*networkState,i-1);
   if(info){
     std::cout<<"QN constraint violation at A-matrix"<<std::endl;
     exit(1);
@@ -111,29 +127,31 @@ void infiniteNetwork::updateMPS(arcomplex<double> *source){
   std::unique_ptr<arcomplex<double>[] > sourceBlockP, aBlockP, bBlockP;
   std::unique_ptr<arcomplex<double>[] > aFullP(new arcomplex<double> [ld*lDL*ld*lDL]);
   std::unique_ptr<arcomplex<double>[] > bFullP(new arcomplex<double> [ldp*lDRR*ldp*lDRR]);
-  std::unique_ptr<double[]> diagsFullP(new double [ld*lDL]);
+  std::unique_ptr<double[]> diagsFullLP(new double [ld*lDL]);
+  std::unique_ptr<double[]> diagsFullRP(new double [ldp*lDRR]);
   arcomplex<double> *sourceBlock, *aBlock, *bBlock, *aFull, *bFull;
   std::unique_ptr<double[]> diagsBlockP;
-  double *diagsFull, *diagsBlock;
+  double *diagsFullL, *diagsFullR, *diagsBlock;
   aFull=aFullP.get();
   bFull=bFullP.get();
-  diagsFull=diagsFullP.get();
+  diagsFullL=diagsFullLP.get();
+  diagsFullR=diagsFullRP.get();
   networkState->subMatrixStart(aMatrix,i);
   networkState->subMatrixStart(bMatrix,i+1);
 
-
-  info=twositeCheck(*networkState,source);
-  if(info){
-    std::cout<<"Twosite constraint violation during updateMPS at site "<<networkState->currentSite()<<std::endl;
-    exit(1);
+  for(int m=0;m<ld*lDL*ld*lDL;++m){
+    aFull[m]=0.0;
   }
+  for(int m=0;m<ldp*lDRR*ldp*lDRR;++m){
+    bFull[m]=0.0;
+  }
+
+  quantumNumber gqn=networkState->getConservedQNs()[0];
 
   //Invalidate block QNs
   int const nQNs=networkState->centralIndexTable().nQNs();
-  optLocalQNs.resize(ld*lDL);
-  for(int m=0;m<ld*lDL;++m){
-    optLocalQNs[m]=std::complex<int>(-100,2);
-  }
+  optLocalQNsL=std::vector<std::complex<int> >(ld*lDL,std::complex<int>(-100,2));
+  optLocalQNsR=optLocalQNsL;
 
   int const numBlocks=networkState->centralIndexTable().numBlocks();
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
@@ -157,6 +175,7 @@ void infiniteNetwork::updateMPS(arcomplex<double> *source){
       }
       //SVD of the current block
       LAPACKE_zgesdd(LAPACK_COL_MAJOR,'A',lBlockSize,rBlockSize,sourceBlock,lBlockSize,diagsBlock,aBlock,lBlockSize,bBlock,rBlockSize);
+
       for(int k=0;k<lBlockSize;++k){
 	aimB=networkState->centralIndexTable().aimBlockIndex(iBlock,k);
 	siB=networkState->centralIndexTable().siBlockIndex(iBlock,k);
@@ -167,12 +186,16 @@ void infiniteNetwork::updateMPS(arcomplex<double> *source){
 	  aFull[airB+sipB*lDL+aimB*lDL*ld+siB*lDL*lDL*ld]=aBlock[kp+lBlockSize*k];
 	}
 
-	//Potentially dangerous since aFull and bFull are filled regardless of this constraint
+	//Get the current block QN and SV for truncation
 	if(k<rBlockSize){
-	  //Get the current block QN and SV for truncation
-	  diagsFull[aimB+lDL*siB]=diagsBlock[k];
-	  optLocalQNs[aimB+lDL*siB]=networkState->centralIndexTable().blockQN(0,iBlock);
+	  diagsFullL[aimB+lDL*siB]=diagsBlock[k];
 	}
+	else{
+	  diagsFullL[aimB+lDL*siB]=0.0;
+	}
+
+	//This label is only bound to the left indices
+	optLocalQNsL[aimB+lDL*siB]=networkState->centralIndexTable().blockQN(0,iBlock);
       }
       for(int j=0;j<rBlockSize;++j){
 	aimB=networkState->centralIndexTable().airBlockIndex(iBlock,j);
@@ -183,43 +206,67 @@ void infiniteNetwork::updateMPS(arcomplex<double> *source){
 	  //Extract the current results into the total, untruncated B
 	  bFull[airB+sipB*lDRR+aimB*lDRR*ld+siB*lDRR*lDRR*ld]=bBlock[jp+rBlockSize*j];
 	}
+
+	if(j<lBlockSize){
+	  diagsFullR[aimB+lDRR*siB]=diagsBlock[j];
+	}
+	else{
+	  diagsFullR[aimB+lDRR*siB]=0.0;
+	}
+	
+	//This label is now only bound to the right indices
+	optLocalQNsR[aimB+lDRR*siB]=networkState->centralIndexTable().blockQN(0,iBlock);
+
       }	
     }
   }
 
   //BLOCKWISE TRUNCATION REQUIRED FOR INITIAL STATE SEARCH
-  std::vector<sortData> comparer;
-  comparer.resize(ld*lDL);
+  std::vector<sortData> comparerL, comparerR;
+  comparerL.resize(ld*lDL);
+  comparerR.resize(ld*lDL);
   for(int ai=0;ai<ld*lDL;++ai){
-    comparer[ai].index=ai;
-    comparer[ai].QN=optLocalQNs[ai];
-    comparer[ai].lambda=diagsFull[ai];
+    comparerL[ai].index=ai;
+    comparerL[ai].QN=optLocalQNsL[ai];
+    comparerL[ai].lambda=diagsFullL[ai];
+
+    comparerR[ai].index=ai;
+    comparerR[ai].QN=optLocalQNsR[ai];
+    comparerR[ai].lambda=diagsFullR[ai];
     //std::cout<<"Available QN: "<<optLocalQNs[ai]<<std::endl;
   }
 
-  sort(comparer.begin(),comparer.end(),compareSortData);
+  std::sort(comparerL.begin(),comparerL.end(),compareSortData);
+  std::sort(comparerR.begin(),comparerR.end(),compareSortData);
+
+  for(int m=0;m<lDR;++m){
+    std::cout<<"Left-bound SV: "<<comparerL[m].lambda<<" Right-bound SV: "<<comparerR[m].lambda<<" Left-bound QN: "<<comparerL[m].QN<<" Right-bound QN: "<<comparerR[m].QN<<std::endl;
+  }
+
+
+  //SOMEHOW, THE ORDER OF INDICES IS BROKEN FOR THE RIGHT-BOUND ONES
 
   //Truncate to lDR largest SVs
-  optLocalQNs.resize(lDR);
+  optLocalQNsL.resize(lDR);
+  optLocalQNsR.resize(lDL);
+
   diags.resize(lDR);
   for(int ai=0;ai<lDR;++ai){
     //Copy the remaining diagonal matrix into diags
-    optLocalQNs[ai]=comparer[ai].QN;
-    diags[ai]=comparer[ai].lambda;
-  }
-   
-  for(int ai=0;ai<lDR;++ai){
-    //std::cout<<"Kept QN label "<<optLocalQNs[ai]<<" with SV "<<diags[ai]<<std::endl;
+    optLocalQNsL[ai]=comparerL[ai].QN;
+    diags[ai]=comparerL[ai].lambda;
   }
 
   //Copy the corresponding columns(A)/rows(B) into the MPS
   for(int ai=0;ai<lDR;++ai){
     for(int si=0;si<ld;++si){
       for(int aim=0;aim<lDL;++aim){
-	aMatrix[aim+ai*lDL+si*lDL*lDR]=aFull[aim+si*lDL+ld*lDL*comparer[ai].index];
+	aMatrix[aim+ai*lDL+si*lDL*lDR]=aFull[aim+si*lDL+ld*lDL*comparerL[ai].index];
       }
       for(int air=0;air<lDRR;++air){
-	bMatrix[ai+air*lDR+si*lDR*lDRR]=bFull[comparer[ai].index+ld*lDRR*air+ld*lDRR*lDRR*si];
+	bMatrix[ai+air*lDR+si*lDR*lDRR]=bFull[comparerR[ai].index+ld*lDRR*air+ld*lDRR*lDRR*si];
+
+	//std::cout<<"Matrix element: "<<bMatrix[ai+air*lDR+si*lDR*lDRR]<<" with labels: "<<comparerL[ai].QN<<"+"<<gqn.QNLabel(si)<<"="<<gqn.QNLabel(i+1,air)<<std::endl;
       }
     }
   }
@@ -234,5 +281,3 @@ void infiniteNetwork::updateMPS(arcomplex<double> *source){
 int infiniteNetwork::explicitIndex(int iBlock, int j, int k){
   return networkState->centralIndexTable().aimBlockIndex(iBlock,k)+dimInfo.locDimL(i)*dimInfo.locDimR(i+1)*networkState->centralIndexTable().siBlockIndex(iBlock,k)+networkState->centralIndexTable().airBlockIndex(iBlock,j)*dimInfo.locDimL(i)+networkState->centralIndexTable().sipBlockIndex(iBlock,j)*dimInfo.locDimL(i)*dimInfo.locDimR(i+1)*dimInfo.locd(i);
 }
-
-//---------------------------------------------------------------------------------------------------//

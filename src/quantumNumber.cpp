@@ -70,16 +70,15 @@ int quantumNumber::setParameterL(int Lnew){
 //---------------------------------------------------------------------------------------------------//
 // Functions for easy manipulation of the index labels during runtime. 
 
-// grow() adds sites to reach length L at site i. The new bonds have undefined indices, except for the
-// last new bond, which takes those of bond i-1. Then, the indices of the right part are shifted by
+// grow() adds sites to reach length L at site i. The new bonds have undefined indices, except for the last one which takes source as indices. Then, the indices of the right part are shifted by
 // targetQN-N such that the new lattice has total charge targetQN.
 
 // refine() defines the indices at site i by using the entries of source. It returns -1 if source is of insufficient size. Use to define labels for bond indices introduces with grow()
 //---------------------------------------------------------------------------------------------------//
 
-int quantumNumber::grow(int L, int i, std::complex<int> const &targetQN){
+int quantumNumber::grow(int L, int i, std::complex<int> const &targetQN, std::vector<std::complex<int> > const &source){
   int const D=dimInfo.D();
-  
+  /*
   std::cout<<"SITE: "<<i<<std::endl;
 
   for(int i=0;i<dimInfo.L()+1;++i){
@@ -89,12 +88,12 @@ int quantumNumber::grow(int L, int i, std::complex<int> const &targetQN){
     std::cout<<std::endl;
   }
   std::cout<<std::endl;
-  
+  */
   int const dL=L-dimInfo.L();
   indexLabel.insert(indexLabel.begin()+(i+1)*D,dL*D,std::complex<int>(-100,2));
   int const lDL=dimInfo.locDimL(i);
   for(int aim=0;aim<lDL;++aim){
-    indexLabel[aim+(i+dL)*D]=indexLabel[aim+i*D];
+    indexLabel[aim+(i+dL)*D]=source[aim];
   }
   int const deltaN=targetQN.real()-N.real();
   for(int j=(i+dL)*D;j<D*(L+1);++j){
@@ -103,7 +102,7 @@ int quantumNumber::grow(int L, int i, std::complex<int> const &targetQN){
   
   dimInfo.setParameterL(L);
 
-  
+  /*
   std::cout<<std::endl;
   for(int i=0;i<dimInfo.L()+1;++i){
     for(int ai=0;ai<D;++ai){
@@ -112,7 +111,7 @@ int quantumNumber::grow(int L, int i, std::complex<int> const &targetQN){
     std::cout<<std::endl;
   }
   std::cout<<std::endl;
-
+  */
   return 0;
 }
 
