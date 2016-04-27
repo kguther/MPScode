@@ -79,7 +79,7 @@ int quantumNumber::setParameterL(int Lnew){
 
 int quantumNumber::grow(int L, int i, std::complex<int> const &targetQN){
   int const D=dimInfo.D();
-  /*
+  
   std::cout<<"SITE: "<<i<<std::endl;
 
   for(int i=0;i<dimInfo.L()+1;++i){
@@ -89,30 +89,30 @@ int quantumNumber::grow(int L, int i, std::complex<int> const &targetQN){
     std::cout<<std::endl;
   }
   std::cout<<std::endl;
-  */
+  
   int const dL=L-dimInfo.L();
-  indexLabel.insert(indexLabel.begin()+(i+1)*D,dL*D,0);
+  indexLabel.insert(indexLabel.begin()+(i+1)*D,dL*D,std::complex<int>(-100,2));
   int const lDL=dimInfo.locDimL(i);
   for(int aim=0;aim<lDL;++aim){
     indexLabel[aim+(i+dL)*D]=indexLabel[aim+i*D];
   }
   int const deltaN=targetQN.real()-N.real();
-  for(int j=(i+1+dL)*D;j<D*L;++j){
+  for(int j=(i+dL)*D;j<D*(L+1);++j){
     indexLabel[j].real(indexLabel[j].real()+deltaN);
   }
   
   dimInfo.setParameterL(L);
 
-  /*
-      std::cout<<std::endl;
-      for(int i=0;i<dimInfo.L()+1;++i){
+  
+  std::cout<<std::endl;
+  for(int i=0;i<dimInfo.L()+1;++i){
     for(int ai=0;ai<D;++ai){
       std::cout<<indexLabel[ai+D*i]<<"\t";
     }
     std::cout<<std::endl;
   }
   std::cout<<std::endl;
-  */
+
   return 0;
 }
 
@@ -151,7 +151,7 @@ int quantumNumber::initializeLabelList(){
   int info;
   leftLabel.resize(dimInfo.D()*(dimInfo.L()+1));
   rightLabel.resize(dimInfo.D()*(dimInfo.L()+1));
-  indexLabel.resize(dimInfo.D()*(dimInfo.L()+1));
+  indexLabel=std::vector<std::complex<int> >(dimInfo.D()*(dimInfo.L()+1),std::complex<int>(-100,2));
   info=initializeLabelListLP();
   if(info)
     return info;
@@ -305,7 +305,7 @@ int quantumNumber::initializeLabelList(int i, int direction){
 	  break;
 	}
 	if(iBlock==validQNLabels.size()-1){
-	  (*cLabel)[aim+i*dimInfo.D()]=std::complex<int>(-100,1);
+	  (*cLabel)[aim+i*dimInfo.D()]=std::complex<int>(-100,2);
 	}
       }
       if(validQNLabels.size()==0){

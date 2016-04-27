@@ -9,6 +9,7 @@
 #include <iomanip>
 #include <mpi.h>
 #include <vector>
+#include <memory>
 
 void sysSolve(info const &parPack, std::string const &fileName, std::vector<double> &energies);
 void getScaling(int L, info const &parPack, double *results, std::string const &fileName);
@@ -167,7 +168,8 @@ int main(int argc, char *argv[]){
     necPars.numPts=1;
     sysSolve(necPars,finalName,energies);
     energies.resize(4);
-    double *energyBuf=new double[4*commsize];
+    std::unique_ptr<double[]> energyBufP(new double[4*commsize]);
+    double *energyBuf=energyBufP.get();
     double results[4];
     results[0]=energies[0];
     results[1]=energies[1];
@@ -179,16 +181,14 @@ int main(int argc, char *argv[]){
     if(myrank==0){
       std::ofstream ofs;
       ofs.open("SB_local_sweep_B.txt");
-      ofs<<"Parameters: J="<<necPars.Jsc<<" g="<<necPars.gsc<<std::endl;
+      ofs<<"Parameters: J="<<1+necPars.Jsc/necPars.scaling<<" g="<<1+necPars.gsc/necPars.scaling<<std::endl;
       ofs<<"System size: "<<necPars.L<<" filling: "<<necPars.rho<<" subchain parity="<<necPars.par<<std::endl;
       ofs<<"SB Position\tGS energy\t excited state energy\t GS accuracy\t excited state accuracy\n";
       for(int rk=0;rk<commsize;++rk){
-	ofs<<rk<<"\t"<<energyBuf[4*rk]<<"\t"<<energyBuf[4*rk+1]<<"\t"<<energyBuf[4*rk+2]<<"\t"<<energyBuf[4*rk+3]<<std::endl;
+	ofs<<rk+12<<"\t"<<energyBuf[4*rk]<<"\t"<<energyBuf[4*rk+1]<<"\t"<<energyBuf[4*rk+2]<<"\t"<<energyBuf[4*rk+3]<<std::endl;
       }
       ofs.close();
     }
-    delete[] energyBuf;
-
   }
   MPI_Finalize();
   return 0;

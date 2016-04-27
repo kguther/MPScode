@@ -40,6 +40,12 @@ void mps::generate(dimensionTable const &dimInfoIn, std::vector<quantumNumber> c
 
 void mps::setUpQNs(std::vector<quantumNumber> const &conservedQNsin){
   conservedQNs=conservedQNsin;
+  loadIndexTables();
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void mps::loadIndexTables(){
   if(conservedQNs.size()){
     nQNs=conservedQNs.size();
   }

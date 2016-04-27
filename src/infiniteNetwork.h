@@ -30,6 +30,7 @@ class infiniteNetwork{
   mpo<lapack_complex_double> networkH;
  private:
   int i;
+  int firstStep;
   problemParameters pars;
   simulationParameters simPars;
   dimensionTable dimInfo;

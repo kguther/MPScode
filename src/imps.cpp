@@ -1,4 +1,5 @@
 #include "imps.h"
+#include <iostream>
 
 imps::imps():mps(),impBase()
 {}
@@ -15,10 +16,23 @@ imps::imps(dimensionTable const &dimInfoIn, std::vector<quantumNumber> const &co
 
 void imps::addSite(int Lnew, int i, std::vector<std::complex<int> > const &targetQN){
   for(int iQN=0;iQN<nQNs;++iQN){
+    //Spooky: Somewhere, the old labels linger after growing
     conservedQNs[iQN].grow(Lnew,i,targetQN[iQN]);
   }
-  setParameterL(Lnew);
-  setUpQNs(conservedQNs);
+  stateArray::setParameterL(Lnew);
+  loadIndexTables();
+
+
+  std::cout<<std::endl;
+  int const D=dimInfo.D();
+  for(int i=-1;i<Lnew;++i){
+    for(int ai=0;ai<D;++ai){
+      std::cout<<conservedQNs[0].QNLabel(i,ai)<<"\t";
+    }
+    std::cout<<std::endl;
+  }
+  std::cout<<std::endl;
+
   centralIndexTableVar=twositeQNOrderMatrix(i,dimInfo,&conservedQNs);
 }
 

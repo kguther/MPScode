@@ -33,6 +33,7 @@ class mps: public stateArray{
   int rightNormalizeStateBlockwise(int i);
   void convertIndicesLP(int i, int j, int k, int iBlock, int &si, int &ai, int &aim);
   void convertIndicesRP(int i, int j, int k, int iBlock, int &si, int &ai, int &aim);
+  void loadIndexTables();
  private:
   void getEntanglementSpectrumOC(int i, double &S, std::vector<double> &spectrum);
 };

@@ -135,8 +135,8 @@ int simulation::singleRun(){
   std::vector<std::vector<std::complex<double> > > localExpectationValues;
 
   
-  J=1;//+parDirection.real();
-  g=1;//+parDirection.imag();
+  J=1+parDirection.real();
+  g=1+parDirection.imag();
   
 
   std::cout<<J<<" "<<g<<std::endl;

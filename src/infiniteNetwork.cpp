@@ -16,6 +16,7 @@
 infiniteNetwork::infiniteNetwork(problemParameters const &parsIn, simulationParameters const &simParsIn, imps *MPState):
   pars(parsIn),
   simPars(simParsIn),
+  firstStep(1),
   networkState(MPState)
 {
   dimInfo=networkState->getDimInfo();
@@ -52,13 +53,24 @@ void infiniteNetwork::addDiags(){
 void infiniteNetwork::iDMRGStep(){
   
   std::cout<<"Adding new sites\n";
+
+  //In the first step, the sites are already there, this is way easier to implement since adding sites requires results for the SVs from the last step (for choice of QN Labels)
+  if(firstStep==0){
+    addSite();
+  }
+
+  int info=checkQNConstraint(*networkState);
+  if(info){
+    std::cout<<"Violation at site "<<info-1<<std::endl;
+    exit(1);
+  }
   
   arcomplex<double> *bufferMatrix;
   i=(dimInfo.L()-1)/2;
   std::unique_ptr<arcomplex<double> > bufferMatrixP(new arcomplex<double>[dimInfo.locd(i)*dimInfo.locd(i+1)*dimInfo.locDimL(i)*dimInfo.locDimR(i+1)]);
   bufferMatrix=bufferMatrixP.get();
 
-  //State prediction needs at least two optimized matrices, not available in the first step
+  //State prediction needs at least two optimized matrices, not available for a two-site system
   if(i!=0){
     statePrediction(bufferMatrix);
   }
@@ -68,14 +80,9 @@ void infiniteNetwork::iDMRGStep(){
     }
   }
   optimize(bufferMatrix);
-  //updateMPS(bufferMatrix);
-  addSite();
+  updateMPS(bufferMatrix);
 
-  int info=checkQNConstraint(*networkState);
-  if(info){
-    std::cout<<"Violation at site "<<info-1<<std::endl;
-    exit(1);
-  }
+  firstStep=0;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -93,6 +100,8 @@ int infiniteNetwork::optimize(arcomplex<double> *target){
   pCtr.getLctr(Lterm);
   pCtr.getRctr(Rterm);
   twositeHMatrix BMat(Rterm,Lterm,&networkH,HPos,dimInfo,&(networkState->centralIndexTable()));
+
+  //Compression and expansion have to be done manually
   BMat.prepareInput(target);
   
   if(BMat.dim()>1){
@@ -108,14 +117,20 @@ int infiniteNetwork::optimize(arcomplex<double> *target){
     std::cout<<"Failed to converge in iterative eigensolver, number of Iterations taken: "<<maxIter<<" With tolerance "<<simPars.tolInitial<<std::endl;
     return 1;
   }
+  else{
+    std::cout<<"Current energy: "<<real(lambda)<<std::endl;
+  }
   return 0;
 }
 
 //---------------------------------------------------------------------------------------------------//
 
 void infiniteNetwork::addSite(){
-  //Can only be used after optimization since it relies on the outcome of optimize()
+  //Can only be used after optimization since it relies on the outcome of optimize() 
   pCtr.update();
+  dimInfo.setParameterL(dimInfo.L()+2);
+
+  //QNs have to be adjusted to fit a larger system
   std::vector<std::complex<int> > newQNs;
   newQNs.resize(pars.QNconserved.size());
   for(int iQN=0;iQN<pars.QNconserved.size();++iQN){
@@ -125,8 +140,6 @@ void infiniteNetwork::addSite(){
   std::cout<<"New global QN: "<<newQNs[0]<<std::endl;
   std::cout<<"Obtained from system length "<<dimInfo.L()<<" and filling "<<pars.filling[0]<<std::endl;
   
-  dimInfo.setParameterL(dimInfo.L()+2);
-
   //Only for a single QN
   
   /*
@@ -137,8 +150,12 @@ void infiniteNetwork::addSite(){
   std::cout<<"\n";
   */
   int info;
+
+  //The QNs determined in updateMPS are stored
   info=networkState->refineQN(i+1,optLocalQNs);
+  //This is where the actual MPS is grown
   networkState->addSite(dimInfo.L(),i+1,newQNs);
+
 }
 
 //---------------------------------------------------------------------------------------------------//

@@ -32,7 +32,7 @@ void infiniteNetwork::statePrediction(arcomplex<double> *target){
   leftBuf=leftBufP.get();
   rightBuf=rightBufP.get();
 
-  int info=checkQNConstraint(*networkState,i-1);
+  int info=0;//checkQNConstraint(*networkState,i-1);
   if(info){
     std::cout<<"QN constraint violation at A-matrix"<<std::endl;
     exit(1);
@@ -59,11 +59,11 @@ void infiniteNetwork::statePrediction(arcomplex<double> *target){
   }
 
 
-  for(int m=0;m<dimInfo.locd(i)*dimInfo.locd(i+1)*lDL*lDRR;++m){
+  for(int m=0;m<dimInfo.locd(i)*dimInfo.locd(i+1)*dimInfo.locDimL(i)*dimInfo.locDimL(i);++m){
     target[m]=0;
   }
-  qnEnforcedPrediction(target);
 
+  qnEnforcedPrediction(target);
   
   info=twositeCheck(*networkState,target);
   if(info){
@@ -72,6 +72,7 @@ void infiniteNetwork::statePrediction(arcomplex<double> *target){
   }
 }
 
+//---------------------------------------------------------------------------------------------------//
 
 void infiniteNetwork::qnEnforcedPrediction(arcomplex<double> *target){
   int const numBlocks=networkState->centralIndexTable().numBlocks();
@@ -88,13 +89,11 @@ void infiniteNetwork::qnEnforcedPrediction(arcomplex<double> *target){
       for(int k=0;k<lBlockSize;++k){
 	aimB=networkState->centralIndexTable().aimBlockIndex(iBlock,k);
 	siB=networkState->centralIndexTable().siBlockIndex(iBlock,k);
-	target[aimB+lDL*airB+sipB*lDL*lDL+siB*ld*lDL*lDL]=1;
+	target[aimB+lDL*airB+siB*lDL*lDL+sipB*ld*lDL*lDL]=1;
       }
     }
   }
 }
-      
-
 
 //---------------------------------------------------------------------------------------------------//
 
@@ -122,7 +121,7 @@ void infiniteNetwork::updateMPS(arcomplex<double> *source){
   networkState->subMatrixStart(aMatrix,i);
   networkState->subMatrixStart(bMatrix,i+1);
 
-  
+  //Invalidate block QNs
   int const nQNs=networkState->centralIndexTable().nQNs();
   optLocalQNs.resize(ld*lDL);
   for(int m=0;m<ld*lDL;++m){
@@ -134,6 +133,7 @@ void infiniteNetwork::updateMPS(arcomplex<double> *source){
     rBlockSize=networkState->centralIndexTable().rBlockSize(iBlock);
     lBlockSize=networkState->centralIndexTable().lBlockSize(iBlock);
     if(lBlockSize!=0 && rBlockSize!=0){
+      //Setup temporary container
       sourceBlockP.reset(new arcomplex<double>[rBlockSize*lBlockSize]);
       aBlockP.reset(new arcomplex<double>[lBlockSize*lBlockSize]);
       bBlockP.reset(new arcomplex<double>[rBlockSize*rBlockSize]);
@@ -144,9 +144,11 @@ void infiniteNetwork::updateMPS(arcomplex<double> *source){
       diagsBlock=diagsBlockP.get();
       for(int j=0;j<rBlockSize;++j){
 	for(int k=0;k<lBlockSize;++k){
+	  //Read the current block
 	  sourceBlock[k+lBlockSize*j]=source[explicitIndex(iBlock,j,k)];
 	}
       }
+      //SVD of the current block
       LAPACKE_zgesdd(LAPACK_COL_MAJOR,'A',lBlockSize,rBlockSize,sourceBlock,lBlockSize,diagsBlock,aBlock,lBlockSize,bBlock,rBlockSize);
       for(int k=0;k<lBlockSize;++k){
 	aimB=networkState->centralIndexTable().aimBlockIndex(iBlock,k);
@@ -154,11 +156,13 @@ void infiniteNetwork::updateMPS(arcomplex<double> *source){
 	for(int kp=0;kp<lBlockSize;++kp){
 	  airB=networkState->centralIndexTable().aimBlockIndex(iBlock,kp);
 	  sipB=networkState->centralIndexTable().siBlockIndex(iBlock,kp);
+	  //Extract the current results into the total, untruncated A
 	  aFull[airB+sipB*lDL+aimB*lDL*ld+siB*lDL*lDL*ld]=aBlock[kp+lBlockSize*k];
 	}
 
 	//Potentially dangerous since aFull and bFull are filled regardless of this constraint
 	if(k<rBlockSize){
+	  //Get the current block QN and SV for truncation
 	  diagsFull[aimB+lDL*siB]=diagsBlock[k];
 	  optLocalQNs[aimB+lDL*siB]=networkState->centralIndexTable().blockQN(0,iBlock);
 	}
@@ -169,6 +173,7 @@ void infiniteNetwork::updateMPS(arcomplex<double> *source){
 	for(int jp=0;jp<rBlockSize;++jp){
 	  airB=networkState->centralIndexTable().airBlockIndex(iBlock,jp);
 	  sipB=networkState->centralIndexTable().sipBlockIndex(iBlock,jp);
+	  //Extract the current results into the total, untruncated B
 	  bFull[airB+sipB*lDRR+aimB*lDRR*ld+siB*lDRR*lDRR*ld]=bBlock[jp+rBlockSize*j];
 	}
       }	
