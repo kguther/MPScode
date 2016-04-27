@@ -121,6 +121,13 @@ void infiniteNetwork::updateMPS(arcomplex<double> *source){
   networkState->subMatrixStart(aMatrix,i);
   networkState->subMatrixStart(bMatrix,i+1);
 
+
+  info=twositeCheck(*networkState,source);
+  if(info){
+    std::cout<<"Twosite constraint violation during updateMPS at site "<<networkState->currentSite()<<std::endl;
+    exit(1);
+  }
+
   //Invalidate block QNs
   int const nQNs=networkState->centralIndexTable().nQNs();
   optLocalQNs.resize(ld*lDL);
