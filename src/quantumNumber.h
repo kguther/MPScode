@@ -4,6 +4,7 @@
 #include <vector>
 #include <complex>
 #include "dimensionTable.h"
+#include "pseudoQuantumNumber.h"
 
 //-------------------------------------------------------------------------------------------//
 // The quantumNumber class contains the quantum number  labels for the MPS matrix indices and
@@ -16,31 +17,22 @@
 // WHY A QN CONSERVING ALGORITHM IS A BIT TRICKY.
 //-------------------------------------------------------------------------------------------//
 
-class quantumNumber{
+class quantumNumber: public pseudoQuantumNumber{
  public:
   quantumNumber();
   quantumNumber(dimensionTable const &dimInfoin, std::complex<int> const &Nin, std::vector<std::complex<int> > const &QNlocin);
   int qnConstraint(int i, int si, int ai, int aim);
-  std::complex<int> QNLabel(int i, int ai)const;
-  std::complex<int> QNLabel(int si)const;
-  std::complex<int> QNValue() const {return N;}
   int primaryIndex(int i, int ai);
   int setParameterD(int Dnew);
   int setParameterL(int Lnew);
   int grow(int L, int i, std::complex<int> const &targetQN, std::vector<std::complex<int> > const &source);
   int refine(int i, std::vector<std::complex<int> > const &source);
-  std::vector<std::complex<int> > localQNValue() const {return QNloc;}
   //The failed flag is set when the given quantum number cannot be reached in the given system or the initialization failed for some other reason. It is set to zero else.
   int failed;
-  std::complex<int> groupOperation(std::complex<int> const &a, std::complex<int> const &b, int pre=1)const;
  private:
-  dimensionTable dimInfo;
   std::vector<std::complex<int> > leftLabel;
   std::vector<std::complex<int> > rightLabel;
-  std::vector<std::complex<int> > indexLabel;
   std::vector<std::vector<int> > primaryIndices;
-  std::complex<int> N;
-  std::vector<std::complex<int> > QNloc;
   int initializeLabelList();
   int initializeLabelListLP();
   int initializeLabelListRP();

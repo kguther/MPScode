@@ -3,7 +3,6 @@
 
 #include "mkl_complex_defined.h"
 #include "quantumNumber.h"
-#include "siteQNOrderMatrix.h"
 #include <vector>
 
 
@@ -14,16 +13,15 @@
 // Index functions returning the global MPS index for given block indices are supplied.
 //---------------------------------------------------------------------------------------------------//
 
-
 struct multInt{
   int aim;
   int si;
 };
 
-
 class basisQNOrderMatrix{
  public:
   basisQNOrderMatrix(dimensionTable &dimin, std::vector<quantumNumber> *conservedQNsin);
+  basisQNOrderMatrix(dimensionTable &dimin, std::vector<pseudoQuantumNumber*> const &conservedQNsin);
   basisQNOrderMatrix();
   ~basisQNOrderMatrix();
   void initialize(dimensionTable &dimin, std::vector<quantumNumber> *conservedQNsin);

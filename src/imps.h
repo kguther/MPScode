@@ -25,6 +25,7 @@ class imps: public impBase, public mps{
   virtual twositeQNOrderMatrix const& centralIndexTable(){return centralIndexTableVar;}
  private:
   twositeQNOrderMatrix centralIndexTableVar;
+  quantumNumber *conservedQNsP;
 };
 
 #endif

@@ -9,10 +9,8 @@ quantumNumber::quantumNumber(){
 //---------------------------------------------------------------------------------------------------//
 
 quantumNumber::quantumNumber(dimensionTable const &dimInfoin, std::complex<int> const &Nin, std::vector<std::complex<int> > const &QNlocin):
-  failed(0),
-  N(Nin),
-  dimInfo(dimInfoin),
-  QNloc(QNlocin)
+  pseudoQuantumNumber(dimInfoin,Nin,QNlocin),
+  failed(0)
 {
   if(imag(N)==0){
     N.imag(0);
@@ -27,18 +25,6 @@ quantumNumber::quantumNumber(dimensionTable const &dimInfoin, std::complex<int> 
     std::cout<<"Target quantum number: "<<N<<" with system size "<<dimInfo.L()<<std::endl;
     failed=1;
   }
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-std::complex<int> quantumNumber::QNLabel(int si)const {
-  return QNloc[si];
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-std::complex<int> quantumNumber::QNLabel(int i, int ai)const {
-  return indexLabel[ai+(i+1)*dimInfo.D()];
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -429,15 +415,5 @@ std::complex<int> quantumNumber::exactLabel(int i, int ai){
     aiReduced-=sigma*pow(dimInfo.d(),j);
   }
   return QNSum;
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-std::complex<int> quantumNumber::groupOperation(std::complex<int> const &a, std::complex<int> const &b, int const pre)const {
-  //Defines the real part as the U(1) part and the imaginary as the Z_2 part of a quantum number
-  std::complex<int> result;
-  result.real(real(a)+pre*real(b));
-  result.imag(imag(a)*imag(b));
-  return result;
 }
 

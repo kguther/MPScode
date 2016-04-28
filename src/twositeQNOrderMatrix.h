@@ -3,6 +3,7 @@
 
 #include "basisQNOrderMatrix.h"
 #include "dimensionTable.h"
+#include "pseudoQuantumNumber.h"
 #include <vector>
 
 //---------------------------------------------------------------------------------------------------//
@@ -13,7 +14,7 @@
 class twositeQNOrderMatrix{
  public:
   twositeQNOrderMatrix();
-  twositeQNOrderMatrix(int i, dimensionTable const &dimIn, std::vector<quantumNumber> const *conservedQNsin);
+  twositeQNOrderMatrix(int i, dimensionTable const &dimIn, pseudoQuantumNumber *conservedQNsin);
   int generateQNIndexTable();
   int aimBlockIndex(int iBlock, int k)const {return lBlockIndices[iBlock][k].aim;}
   int airBlockIndex(int iBlock, int j)const {return rBlockIndices[iBlock][j].aim;}
@@ -23,12 +24,13 @@ class twositeQNOrderMatrix{
   int rBlockSize(int iBlock)const {return rBlockIndices[iBlock].size();}
   std::complex<int> blockQN(int iQN, int iBlock)const {return qnLabels[iQN][iBlock];}
   int numBlocks()const {return qnLabels[0].size();}
-  int nQNs()const {return conservedQNs->size();}
+  //For now, only a single QN can be enforces here
+  int nQNs()const {return 1;}
   int getSite()const {return site;}
  private:
   std::vector<std::vector<multInt> > lBlockIndices, rBlockIndices;
   std::vector<std::vector<std::complex<int> > > qnLabels;
-  std::vector<quantumNumber> const *conservedQNs;
+  pseudoQuantumNumber *conservedQNs;
   dimensionTable dimInfo;
   int site;
   std::complex<int> qnCriterium(int iQN, int i, int ai, int si, int pre=1);
