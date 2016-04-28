@@ -2,7 +2,6 @@
 #include "mpo.h"
 #include "mps.h"
 #include "tmpContainer.h"
-#include "pContraction.h"
 
 //---------------------------------------------------------------------------------------------------//
 // Constructor and initialize() function for the baseMeasurement class.
@@ -28,7 +27,7 @@ void baseMeasurement::initializeBase(){
   MPOperator->setUpSparse();
 }
 
-//---------------------------------------------------------------------------------------------------//  
+//---------------------------------------------------------------------------------------------------//
 
 void baseMeasurement::setupMeasurement(mpo<lapack_complex_double> *const MPOperatorIn, mps *const MPStateIn){
   MPOperator=MPOperatorIn;
@@ -40,7 +39,7 @@ void baseMeasurement::setupMeasurement(mpo<lapack_complex_double> *const MPOpera
 // This does the same as the getLocalDimensions of the network
 //---------------------------------------------------------------------------------------------------//
 
-void baseMeasurement::getLocalDimensions(int const i){
+void baseMeasurement::getLocalDimensions(int i){
   lDL=MPState->locDimL(i);
   lDR=MPState->locDimR(i);
   ld=MPState->locd(i);

@@ -136,13 +136,6 @@ void infiniteNetwork::addSite(){
   
   //Only for a single QN
   
-  /*
-  std::cout<<"Refining with vector\n";
-  for(int m=0;m<optLocalQNs.size();++m){
-    std::cout<<optLocalQNs[m]<<"\t";
-  }
-  std::cout<<"\n";
-  */
   int info;
 
   //The QNs determined in updateMPS are stored

@@ -9,7 +9,7 @@ class impBase{
  public:
   virtual ~impBase(){}
   virtual void subMatrixStart(lapack_complex_double *&pStart, int i, int si=0)=0;
-  virtual void addSite(int Lnew, int i, std::vector<std::complex<int> > const &targetQN, std::vector<std::complex<int> > const &source)=0;
+  virtual int addSite(int Lnew, int i, std::vector<std::complex<int> > const &targetQN, std::vector<std::complex<int> > const &source)=0;
   virtual int refineQN(int i, std::vector<std::complex<int> > const& newQN)=0;
   virtual int currentSite()const =0;
   virtual twositeQNOrderMatrix const& centralIndexTable()=0;

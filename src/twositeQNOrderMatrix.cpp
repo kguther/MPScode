@@ -1,5 +1,4 @@
 #include "twositeQNOrderMatrix.h"
-#include <iostream>
 
 twositeQNOrderMatrix::twositeQNOrderMatrix()
 {}

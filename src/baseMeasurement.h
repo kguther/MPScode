@@ -28,7 +28,7 @@ class baseMeasurement{
   void setupMeasurement(mpo<lapack_complex_double> *const MPOperator, mps *const MPState);
   void initializeBase();
   void calcOuterContainerRightQNOpt(int const i, lapack_complex_double *const source,  tmpContainer<lapack_complex_double> &outerContainer);
-  void getLocalDimensions(int const i);
+  void getLocalDimensions(int i);
   int lDwL, lDwR, lDL, lDR, ld, D, Dw;
   int pctrIndex(int const ai, int const bi, int const aip) {return aip+bi*D+ai*D*Dw;}
   int stateIndex(int const si, int const ai, int const aim) {return aim+ai*lDL+si*lDL*lDR;}

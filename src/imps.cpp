@@ -1,5 +1,4 @@
 #include "imps.h"
-#include <iostream>
 
 imps::imps():mps(),impBase()
 {}
@@ -14,14 +13,15 @@ imps::imps(dimensionTable const &dimInfoIn, std::vector<quantumNumber> const &co
 
 //---------------------------------------------------------------------------------------------------//
 
-void imps::addSite(int Lnew, int i, std::vector<std::complex<int> > const &targetQN, std::vector<std::complex<int> > const &source){
+int imps::addSite(int Lnew, int i, std::vector<std::complex<int> > const &targetQN, std::vector<std::complex<int> > const &source){
+  int info;
   for(int iQN=0;iQN<nQNs;++iQN){
     conservedQNs[iQN].grow(Lnew,i,targetQN[iQN],source);
   }
   stateArray::setParameterL(Lnew);
-  loadIndexTables();
+  info=loadIndexTables();
 
-
+  /*
   std::cout<<std::endl;
   int const D=dimInfo.D();
   for(int i=-1;i<Lnew;++i){
@@ -31,8 +31,10 @@ void imps::addSite(int Lnew, int i, std::vector<std::complex<int> > const &targe
     std::cout<<std::endl;
   }
   std::cout<<std::endl;
+  */
 
   centralIndexTableVar=twositeQNOrderMatrix(i,dimInfo,&conservedQNs);
+  return info;
 }
 
 //---------------------------------------------------------------------------------------------------//

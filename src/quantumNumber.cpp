@@ -96,12 +96,16 @@ int quantumNumber::grow(int L, int i, std::complex<int> const &targetQN, std::ve
     indexLabel[aim+(i+dL)*D]=source[aim];
   }
   int const deltaN=targetQN.real()-N.real();
+
+  std::cout<<"Old target QN: "<<N.real()<<" New target QN: "<<targetQN.real()<<std::endl;
+
   for(int j=(i+dL)*D;j<D*(L+1);++j){
     indexLabel[j].real(indexLabel[j].real()+deltaN);
   }
   
   dimInfo.setParameterL(L);
-
+  N=targetQN;
+  
   /*
   std::cout<<std::endl;
   for(int i=0;i<dimInfo.L()+1;++i){
@@ -124,11 +128,13 @@ int quantumNumber::refine(int i, std::vector<std::complex<int> > const &source){
     return -1;
   }
 
+  
   for(int aim=0;aim<lDL;++aim){
-    std::cout<<"Old label: "<<QNLabel(i-1,aim)<<"\t";
+    //std::cout<<"Old label: "<<QNLabel(i-1,aim)<<"\t";
     indexLabel[aim+i*D]=source[aim];
-    std::cout<<"New label: "<<QNLabel(i-1,aim)<<"\t";
+    //std::cout<<"New label: "<<QNLabel(i-1,aim)<<"\t";
   }
+  
   std::cout<<std::endl;
   return 0;
 }

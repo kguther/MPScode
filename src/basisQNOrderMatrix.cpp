@@ -78,9 +78,9 @@ int basisQNOrderMatrix::generateQNIndexTables(){
   //Check if labeling scheme is valid
   int info=validate();
   if(info){
-    std::cout<<"CRITICAL ERROR: Invalid QN labeling scheme at site "<<info-1<<"\n";
+    std::cout<<"CRITICAL ERROR: Invalid QN labeling scheme at site "<<abs(info)-1<<"\n";
     for(int i=0;i<dimInfo.L();++i){
-      if(i+1==info && 0){
+      if(i+1==abs(info) && 0){
 	// This part is used to test QN labeling schemes for their useability. It prints out the block indices and their QN labels.
 	std::cout<<"Right labels:\n";
 	for(int aim=0;aim<dimInfo.locDimL(i+1);++aim){
@@ -90,26 +90,28 @@ int basisQNOrderMatrix::generateQNIndexTables(){
 	for(int aim=0;aim<dimInfo.locDimL(i);++aim){
 	  std::cout<<aim<<" with label "<<(*conservedQNs)[0].QNLabel(i-1,aim)<<std::endl;
 	}
-	/*
+	if(info>0){
 	  for(int iBlock=0;iBlock<numBlocksRP(i);++iBlock){
-	  std::cout<<"Right indices: "<<std::endl;
-	  for(int j=0;j<rBlockSizeRP(i,iBlock);++j){
-	  std::cout<<aiBlockIndexRP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(i,aiBlockIndexRP(i,iBlock,j))<<"\t"<<siBlockIndexRP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(siBlockIndexRP(i,iBlock,j))<<std::endl;
+	    std::cout<<"Right indices: "<<std::endl;
+	    for(int j=0;j<rBlockSizeRP(i,iBlock);++j){
+	      std::cout<<aiBlockIndexRP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(i,aiBlockIndexRP(i,iBlock,j))<<"\t"<<siBlockIndexRP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(siBlockIndexRP(i,iBlock,j))<<std::endl;
+	    }
+	    std::cout<<"Left indices: \n";
+	    for(int j=0;j<lBlockSizeRP(i,iBlock);++j){
+	      std::cout<<aimBlockIndexRP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(i-1,aimBlockIndexRP(i,iBlock,j))<<std::endl;
+	    }
 	  }
-	  std::cout<<"Left indices: \n";
-	  for(int j=0;j<lBlockSizeRP(i,iBlock);++j){
-	  std::cout<<aimBlockIndexRP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(i-1,aimBlockIndexRP(i,iBlock,j))<<std::endl;
-	  }
-	  }
-	*/
-	for(int iBlock=0;iBlock<numBlocksLP(i);++iBlock){
-	  std::cout<<"Left indices: "<<std::endl;
-	  for(int j=0;j<lBlockSizeLP(i,iBlock);++j){
-	    std::cout<<aimBlockIndexLP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(i-1,aimBlockIndexLP(i,iBlock,j))<<"\t"<<siBlockIndexLP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(siBlockIndexLP(i,iBlock,j))<<std::endl;
-	  }
-	  std::cout<<"Right indices: \n";
-	  for(int j=0;j<rBlockSizeLP(i,iBlock);++j){
-	    std::cout<<aiBlockIndexLP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(i,aiBlockIndexLP(i,iBlock,j))<<std::endl;
+	}
+	else{
+	  for(int iBlock=0;iBlock<numBlocksLP(i);++iBlock){
+	    std::cout<<"Left indices: "<<std::endl;
+	    for(int j=0;j<lBlockSizeLP(i,iBlock);++j){
+	      std::cout<<aimBlockIndexLP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(i-1,aimBlockIndexLP(i,iBlock,j))<<"\t"<<siBlockIndexLP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(siBlockIndexLP(i,iBlock,j))<<std::endl;
+	    }
+	    std::cout<<"Right indices: \n";
+	    for(int j=0;j<rBlockSizeLP(i,iBlock);++j){
+	      std::cout<<aiBlockIndexLP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(i,aiBlockIndexLP(i,iBlock,j))<<std::endl;
+	    }
 	  }
 	}
       }
@@ -289,7 +291,7 @@ int basisQNOrderMatrix::validate()const {
       lBlockSize=lBlockSizeLP(i,iBlock);
       rBlockSize=rBlockSizeLP(i,iBlock);
       if(lBlockSize<rBlockSize && lBlockSize>0){
-	return i+1;
+	return -(i+1);
       }
     }
     for(int iBlock=0;iBlock<numBlocksRP(i);++iBlock){

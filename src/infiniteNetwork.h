@@ -24,7 +24,7 @@ class infiniteNetwork{
   void growTLSystem();
   void iDMRGStep();
   void addDiags();
-  void statePrediction(arcomplex<double> *target);
+  int statePrediction(arcomplex<double> *target);
   void qnEnforcedPrediction(arcomplex<double> *target);
   int optimize(arcomplex<double> *target);
   void updateMPS(arcomplex<double> *source);

@@ -38,24 +38,27 @@ void mps::generate(dimensionTable const &dimInfoIn, std::vector<quantumNumber> c
 
 //---------------------------------------------------------------------------------------------------//
 
-void mps::setUpQNs(std::vector<quantumNumber> const &conservedQNsin){
+int mps::setUpQNs(std::vector<quantumNumber> const &conservedQNsin){
   conservedQNs=conservedQNsin;
-  loadIndexTables();
+  return loadIndexTables();
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-void mps::loadIndexTables(){
+int mps::loadIndexTables(){
+  int info=0;
   if(conservedQNs.size()){
     nQNs=conservedQNs.size();
   }
   else{
     nQNs=0;
+    info=-1;
   }
   if(nQNs){
     indexTable.initialize(dimInfo,&conservedQNs);
-    indexTable.generateQNIndexTables();
+    info=indexTable.generateQNIndexTables();
   }
+  return info;
 }
 
 //---------------------------------------------------------------------------------------------------//
