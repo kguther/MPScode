@@ -3,6 +3,7 @@
 
 #include "mkl_complex_defined.h"
 #include "quantumNumber.h"
+#include "siteQNOrderMatrix.h"
 #include <vector>
 
 
@@ -34,12 +35,12 @@ class basisQNOrderMatrix{
   int aiBlockIndexRP(int i, int iBlock, int k) const{return siaiBlockIndicesRPAccess[reducedIndexFunction(i,iBlock,k)].aim;}
   int siBlockIndexRP(int i, int iBlock, int k) const{return siaiBlockIndicesRPAccess[reducedIndexFunction(i,iBlock,k)].si;}
   int aimBlockIndexRP(int i, int iBlock, int j) const{return aimBlockIndicesRPAccess[reducedIndexFunction(i,iBlock,j)];}
-  int lBlockSizeLP(int const i, int const iBlock) const{return siaimBlockIndicesLP[i][iBlock].size();}
-  int rBlockSizeLP(int const i, int const iBlock) const{return aiBlockIndicesLP[i][iBlock].size();}
-  int lBlockSizeRP(int const i, int const iBlock) const{return aimBlockIndicesRP[i][iBlock].size();}
-  int rBlockSizeRP(int const i, int const iBlock) const{return siaiBlockIndicesRP[i][iBlock].size();}
-  int numBlocksLP(int const i) const{return aiBlockIndicesLP[i].size();}
-  int numBlocksRP(int const i) const{return aimBlockIndicesRP[i].size();}
+  int lBlockSizeLP(int i, int iBlock) const{return siaimBlockIndicesLP[i][iBlock].size();}
+  int rBlockSizeLP(int i, int iBlock) const{return aiBlockIndicesLP[i][iBlock].size();}
+  int lBlockSizeRP(int i, int iBlock) const{return aimBlockIndicesRP[i][iBlock].size();}
+  int rBlockSizeRP(int i, int iBlock) const{return siaiBlockIndicesRP[i][iBlock].size();}
+  int numBlocksLP(int i) const{return aiBlockIndicesLP[i].size();}
+  int numBlocksRP(int i) const{return aimBlockIndicesRP[i].size();}
   int nQNs() const{return conservedQNs->size();}
   int validate()const;
  private:
