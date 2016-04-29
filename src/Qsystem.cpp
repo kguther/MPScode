@@ -45,7 +45,7 @@ int Qsystem::getGroundState(){
 
     //TensorNetwork.getInitState();
 
-    testIDMRG(pars,simPars,TensorNetwork.networkH);
+    //testIDMRG(pars,simPars,TensorNetwork.networkH);
     
     converged=TensorNetwork.solve(E0,dE);
     if(converged==0){

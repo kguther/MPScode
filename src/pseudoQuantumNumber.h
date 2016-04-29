@@ -5,6 +5,13 @@
 #include <vector>
 #include <complex>
 
+//---------------------------------------------------------------------------------------------------//
+// Base class for anything quantumNumber-like. Contains the core functionality of quantumNumbers: 
+// There are label functions and a group operation. How the labeling is constructed is an issue of
+// the child classes
+//---------------------------------------------------------------------------------------------------//
+
+
 class pseudoQuantumNumber{
  public:
   pseudoQuantumNumber(){}

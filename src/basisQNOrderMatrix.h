@@ -52,7 +52,6 @@ class basisQNOrderMatrix{
   std::vector<std::vector<std::vector<multInt> > > siaiBlockIndicesRP;
   dimensionTable dimInfo;
   void generateAccessArrays();
-  void deleteTables();
   std::complex<int> qnCriterium(int const iQN, int const i, int const aim, int const si, int const direction, int const pre);
   int reducedIndexFunction(int i, int iBlock, int k) const{return k+iBlock*maxBlockSize+i*maxBlockSize*maxNumBlocks;}
 };

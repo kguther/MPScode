@@ -28,6 +28,7 @@ class infiniteNetwork{
   void qnEnforcedPrediction(arcomplex<double> *target);
   int optimize(arcomplex<double> *target);
   void updateMPS(arcomplex<double> *source);
+  void setPCtr(std::vector<arcomplex<double> > const &R, std::vector<arcomplex<double> > const &L);
   impBase* getState();
   mpo<lapack_complex_double> networkH;
  private:

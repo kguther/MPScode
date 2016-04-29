@@ -15,6 +15,13 @@ overlap::overlap(){
 
 //---------------------------------------------------------------------------------------------------//
 
+//Comes useful for testing normalization
+overlap::overlap(mps const*const psi, mps const*const phi){
+  loadMPS(psi,phi);
+}
+
+//---------------------------------------------------------------------------------------------------//
+
 overlap::overlap(overlap const &source){
   ovCpy(source);
 }
@@ -36,6 +43,7 @@ overlap& overlap::operator=(overlap const &source){
 //---------------------------------------------------------------------------------------------------//
 
 void overlap::loadMPS(mps const*const psiIn, mps const*const phiIn){
+  //Get two states of which the overlap shall be computed
   phi=phiIn;
   psi=psiIn;
   D=psiIn->maxDim();
@@ -43,8 +51,10 @@ void overlap::loadMPS(mps const*const psiIn, mps const*const phiIn){
   d=psiIn->siteDim();
   delete[] Lctr;
   delete[] Rctr;
+  //Adjust buffers for caching
   Lctr=new lapack_complex_double[L*D*D];
   Rctr=new lapack_complex_double[L*D*D];
+  //Initialize F-Matrix
   F.initialize(psiIn->getDimInfo());
   getF();
 }

@@ -82,7 +82,7 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
   int const sparseSize=HMPO->numEls(i);
   int const nThreads=20;
   int lBlockSize, rBlockSize, siBlockSize, rBlockSizep;
-  int *biIndices, *siIndices, *bimIndices, *sipIndices;
+  int const *biIndices, *siIndices, *bimIndices, *sipIndices;
   HMPO->biSubIndexArrayStart(biIndices,i);
   HMPO->siSubIndexArrayStart(siIndices,i);
   HMPO->bimSubIndexArrayStart(bimIndices,i);
@@ -108,6 +108,7 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
       }
     }
   }
+
 #pragma omp parallel for schedule(static,1)
   for(int si=0;si<d;++si){
     for(int bim=0;bim<lDwL;++bim){
@@ -118,6 +119,7 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
       }
     }
   }
+
 #pragma omp parallel for private(siB,aimB,lBlockSize,rBlockSize,sipS) schedule(dynamic,1)
   for(int ai=0;ai<lDR;++ai){
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
@@ -134,6 +136,7 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
       }
     }	 
   }
+
 #pragma omp parallel for private(simpleContainer,aiB,siB,aimB,lBlockSize,rBlockSize) schedule(dynamic,1)
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
     lBlockSize=indexTable->lBlockSizeLP(i,iBlock);

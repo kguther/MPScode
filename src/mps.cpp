@@ -17,19 +17,6 @@ mps::mps(dimensionTable const &dimInfoIn, std::vector<quantumNumber> const &cons
 
 //---------------------------------------------------------------------------------------------------//
 
-mps::mps(mps const &source){
-  mpsCpy(source);
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-mps& mps::operator=(mps const &source){
-  mpsCpy(source);
-  return *this;
-}
-
-//---------------------------------------------------------------------------------------------------//
-
 void mps::generate(dimensionTable const &dimInfoIn, std::vector<quantumNumber> const &conservedQNsin){
   stateArray::initialize(dimInfoIn);
   setUpQNs(conservedQNsin);
@@ -39,12 +26,15 @@ void mps::generate(dimensionTable const &dimInfoIn, std::vector<quantumNumber> c
 //---------------------------------------------------------------------------------------------------//
 
 int mps::setUpQNs(std::vector<quantumNumber> const &conservedQNsin){
+  //Often-used function for setting the internal quantum numbers of an mps
   conservedQNs=conservedQNsin;
   return loadIndexTables();
 }
 
 //---------------------------------------------------------------------------------------------------//
 
+
+//Is there some bug in here?
 int mps::loadIndexTables(){
   int info=0;
   if(conservedQNs.size()){
@@ -59,13 +49,6 @@ int mps::loadIndexTables(){
     info=indexTableVar.generateQNIndexTables();
   }
   return info;
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-void mps::mpsCpy(mps const &source){
-  stateArray::mpsCpy(source);
-  setUpQNs(source.conservedQNs);
 }
 
 //---------------------------------------------------------------------------------------------------//

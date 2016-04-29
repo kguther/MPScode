@@ -19,9 +19,9 @@ class uncachedMeasurement{
   void update();
   void getLctr(lapack_complex_double *&target){target=&(Lctr[0]);}
   void getRctr(lapack_complex_double *&target){target=&(Rctr[0]);}
-  void getLeftCtr(int i);
-  void getRightCtr(int i);
-  void getContractions(int site);
+  void setContractions(std::vector<lapack_complex_double> const &R, std::vector<lapack_complex_double> const &L);
+  void getLeftCtr();
+  void getRightCtr();
  private:
   impBase *MPState;
   mpo<lapack_complex_double> *MPOperator;

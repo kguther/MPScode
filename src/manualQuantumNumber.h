@@ -3,6 +3,12 @@
 
 #include "pseudoQuantumNumber.h"
 
+//---------------------------------------------------------------------------------------------------//
+// The explicit version of setting the quantumNumber labeling scheme: This class allows for manual
+// setting of the indexLabels using external functions.
+//---------------------------------------------------------------------------------------------------//
+
+
 class manualQuantumNumber: public pseudoQuantumNumber{
  public:
  manualQuantumNumber():pseudoQuantumNumber(){}

@@ -14,12 +14,15 @@ class mpoSiteTensor{
   const T& globalAccess(int si, int sip, int bi, int bim)const {return siteMatrix[bim+Dw*bi+Dw*Dw*sip+Dw*Dw*d*si];}
   T& globalAccess(int si, int sip, int bi, int bim){return siteMatrix[bim+Dw*bi+Dw*Dw*sip+Dw*Dw*d*si];}
   void subMatrixStart(T *&pStart, int si=0, int sip=0){pStart=&(siteMatrix[sip*Dw*Dw+si*Dw*Dw*d]);}
+  void subMatrixStart(T const*&pStart, int si=0, int sip=0)const{pStart=&(siteMatrix[sip*Dw*Dw+si*Dw*Dw*d]);}
   void setUpSparse();
+  void sparseSubMatrixStart(T const*&pStart)const{pStart=&(sparseOperator[0]);}
   void sparseSubMatrixStart(T *&pStart){pStart=&(sparseOperator[0]);}
-  void biSubIndexArrayStart(int *&target){target=&(biIndices[0]);}
-  void bimSubIndexArrayStart(int *&target){target=&(bimIndices[0]);}
-  void siSubIndexArrayStart(int *&target){target=&(siIndices[0]);}
-  void sipSubIndexArrayStart(int *&target){target=&(sipIndices[0]);}
+  void biSubIndexArrayStart(int const*&target)const {target=&(biIndices[0]);}
+  void bimSubIndexArrayStart(int const*&target)const {target=&(bimIndices[0]);}
+  void siSubIndexArrayStart(int const*&target)const {target=&(siIndices[0]);}
+  void sipSubIndexArrayStart(int const*&target)const {target=&(sipIndices[0]);}
+
   int numEls()const {return nNzero;}
  private:
   std::vector<int> siIndices, sipIndices, biIndices, bimIndices;

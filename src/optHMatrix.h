@@ -24,7 +24,7 @@ class optHMatrix{
  protected:
   arcomplex<double> *Rctr;
   arcomplex<double> *Lctr;
-  arcomplex<double> *H;
+  arcomplex<double> const *H;
   double shift;
   projector *P;
   std::vector<quantumNumber> *conservedQNs;

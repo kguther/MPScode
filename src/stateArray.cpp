@@ -11,25 +11,6 @@ stateArray::stateArray(dimensionTable const &dimInfoIn){
 
 //---------------------------------------------------------------------------------------------------//
 
-void stateArray::mpsCpy(stateArray const &source){
-  initialize(source.dimInfo);
-  int lDL, lDR, ld;
-  for(int i=0;i<L;++i){
-    lDL=locDimL(i);
-    lDR=locDimR(i);
-    ld=locd(i);
-    for(int si=0;si<ld;++si){
-      for(int ai=0;ai<lDR;++ai){
-	for(int aim=0;aim<lDL;++aim){
-	  global_access(i,si,ai,aim)=source.global_access(i,si,ai,aim);
-	}
-      }
-    }
-  }
-}
-
-//---------------------------------------------------------------------------------------------------//
-
 void stateArray::initialize(dimensionTable const &dimInfoIn){
   dimInfo=dimInfoIn;
   D=dimInfoIn.D();

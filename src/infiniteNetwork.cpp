@@ -22,11 +22,10 @@ infiniteNetwork::infiniteNetwork(problemParameters const &parsIn, simulationPara
   dimInfo=networkState->getDimInfo();
   networkH=mpo<lapack_complex_double>(pars.d.maxd(),pars.Dw,pars.L);
   pCtr=uncachedMeasurement(&networkH,networkState);
-  //Setup of the L/R-terms 
-  pCtr.getContractions(networkState->currentSite());
   int const lDR=dimInfo.locDimR(networkState->currentSite());
   diags=std::vector<double>(lDR,1.0);
   diagsm=diags;
+  //Setup of the L/R-terms was externalized - is now done via the setPCtr() function
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -48,6 +47,14 @@ void infiniteNetwork::addDiags(){
   }
 }
 
+//---------------------------------------------------------------------------------------------------//
+
+void infiniteNetwork::setPCtr(std::vector<lapack_complex_double> const &R, std::vector<lapack_complex_double> const &L){
+  pCtr.setContractions(R,L);
+}
+
+//---------------------------------------------------------------------------------------------------//
+// Execution of the iDMRG algorithm
 //---------------------------------------------------------------------------------------------------//
 
 void infiniteNetwork::iDMRGStep(){

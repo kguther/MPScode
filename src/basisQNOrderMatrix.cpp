@@ -10,6 +10,8 @@ basisQNOrderMatrix::basisQNOrderMatrix()
 {}
 
 //---------------------------------------------------------------------------------------------------//
+// The basisQNOrderMatrix only relies on the functionality of pseudoQuantumNumbers, therefore, we store pointers to those internally. There still has to be a constructor and an initialize() function for quantumNumbers though, since these are called by the mps (could be adjusted, but has no priority). 
+//---------------------------------------------------------------------------------------------------//
 
 basisQNOrderMatrix::basisQNOrderMatrix(dimensionTable &dimin, std::vector<quantumNumber> *conservedQNsin):
   dimInfo(dimin)
@@ -33,6 +35,7 @@ void basisQNOrderMatrix::initialize(dimensionTable &dimin, std::vector<pseudoQua
   dimInfo=dimin;
   conservedQNs=conservedQNsin;
 }
+
 //---------------------------------------------------------------------------------------------------//
 
 void basisQNOrderMatrix::initialize(dimensionTable &dimin, std::vector<quantumNumber> *conservedQNsin){
@@ -76,7 +79,7 @@ int basisQNOrderMatrix::generateQNIndexTables(){
   if(info){
     std::cout<<"CRITICAL ERROR: Invalid QN labeling scheme at site "<<abs(info)-1<<"\n";
     for(int i=0;i<dimInfo.L();++i){
-      if(i+1==abs(info) && 0){
+      if(i+1==abs(info)){
 	// This part is used to test QN labeling schemes for their useability. It prints out the block indices and their QN labels.
 	std::cout<<"Right labels:\n";
 	for(int aim=0;aim<dimInfo.locDimL(i+1);++aim){
@@ -286,6 +289,7 @@ int basisQNOrderMatrix::validate()const {
     for(int iBlock=0;iBlock<numBlocksLP(i);++iBlock){
       lBlockSize=lBlockSizeLP(i,iBlock);
       rBlockSize=rBlockSizeLP(i,iBlock);
+      //If the right basis of some site matrix contains more indices of some label than can be reached from the left basis, the labeling scheme is not valid and leads to non-normalizable blocks.
       if(lBlockSize<rBlockSize && lBlockSize>0){
 	return -(i+1);
       }
@@ -293,6 +297,7 @@ int basisQNOrderMatrix::validate()const {
     for(int iBlock=0;iBlock<numBlocksRP(i);++iBlock){
       lBlockSize=lBlockSizeRP(i,iBlock);
       rBlockSize=rBlockSizeRP(i,iBlock);
+      //The same is true for reaching the left basis from the right.
       if(rBlockSize<lBlockSize && rBlockSize>0){
 	return i+1;
       }

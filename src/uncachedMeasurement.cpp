@@ -38,3 +38,14 @@ void uncachedMeasurement::getLeftCtr(){
 void uncachedMeasurement::getRightCtr(){
   //calcCtrIterRightBase(i-1,&(Rctr[0]),&(Rctr[0]));
 }
+
+//---------------------------------------------------------------------------------------------------//
+// Load Lctr and Rctr from some external source (necessary when starting with extended system)
+//---------------------------------------------------------------------------------------------------//
+
+void uncachedMeasurement::setContractions(std::vector<lapack_complex_double> const &R, std::vector<lapack_complex_double> const &L){
+  Rctr=R;
+  Lctr=L;
+}
+
+

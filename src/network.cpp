@@ -89,13 +89,13 @@ network::network(problemParameters const &inputpars, simulationParameters const 
 //---------------------------------------------------------------------------------------------------//
 
 void network::loadNetworkState(mps const &source){
-  networkState.mpsCpy(source);
+  networkState=source;
 }
 
 //---------------------------------------------------------------------------------------------------//
 
 void network::exportNetworkState(mps &target){
-  target.mpsCpy(networkState);
+  target=networkState;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -194,6 +194,10 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
     networkState.normalizeFinal(1);
 
     /*
+    overlap test;
+    test.loadMPS(&networkState,&networkState);
+    std::cout<<"Norm: "<<test.getFullOverlap()<<std::endl;
+    
     measure(check,spinCheck);
     measure(checkParity,parCheck);
     std::cout<<"Current particle number (initial): "<<spinCheck<<std::endl;
@@ -217,7 +221,6 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
     pCtr.calcCtrIterRightBase(-1,&expectationValue);
     std::cout<<"Initial energy: "<<expectationValue<<std::endl;
     lambda[iEigen]=real(expectationValue);
-    
     for(int iSweep=0;iSweep<simPars.nSweeps;++iSweep){
       if(!nConverged[iEigen]){
 	break;

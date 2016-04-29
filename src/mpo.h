@@ -30,13 +30,19 @@ class mpo{
   int length() const{return L;}
   void shift(T const delta);
   int loadTI(mpo<T> const &source);
-  void subMatrixStart(T *&pStart, int const i, int const si=0, int const sip=0);
+
+  //Submatrix access functions
+  void subMatrixStart(T *&pStart, int i, int si=0, int sip=0){Qoperator[i].subMatrixStart(pStart,si,sip);}
+  void subMatrixStart(T const*&pStart, int i, int si=0, int sip=0)const {Qoperator[i].subMatrixStart(pStart,si,sip);}
+  
+  //Sparse structure access functions
+  void sparseSubMatrixStart(T const*&pStart, int i)const {Qoperator[i].sparseSubMatrixStart(pStart);}
+  void biSubIndexArrayStart(int const*&target, int i)const {Qoperator[i].biSubIndexArrayStart(target);}
+  void bimSubIndexArrayStart(int const*&target, int i)const {Qoperator[i].bimSubIndexArrayStart(target);}
+  void siSubIndexArrayStart(int const*&target, int i)const {Qoperator[i].siSubIndexArrayStart(target);}
+  void sipSubIndexArrayStart(int const*&target, int i)const {Qoperator[i].sipSubIndexArrayStart(target);}
+
   void setUpSparse();
-  void sparseSubMatrixStart(T *&pStart, int i){Qoperator[i].sparseSubMatrixStart(pStart);}
-  void biSubIndexArrayStart(int *&target, int i){Qoperator[i].biSubIndexArrayStart(target);}
-  void bimSubIndexArrayStart(int *&target, int i){Qoperator[i].bimSubIndexArrayStart(target);}
-  void siSubIndexArrayStart(int *&target, int i){Qoperator[i].siSubIndexArrayStart(target);}
-  void sipSubIndexArrayStart(int *&target, int i){Qoperator[i].sipSubIndexArrayStart(target);}
   int numEls(int const i) const {return Qoperator[i].numEls();}
   mpoSiteTensor<T>const & getSiteTensor(int i){return Qoperator[i];}
   
@@ -115,14 +121,6 @@ void mpo<T>::setUpSiteSparse(int const i){
   //Extract the nonzero entries at site i
   Qoperator[i].setUpSparse();
 }  
-
-//---------------------------------------------------------------------------------------------------//
-
-template<typename T>
-void mpo<T>::subMatrixStart(T *&pStart, int const i, int const si, int const sip){
-  //Allows for fast access by setting a pointer directly to some subarray start
-  Qoperator[i].subMatrixStart(pStart,si,sip);
-}
 
 //---------------------------------------------------------------------------------------------------//
 // These are the local bond dimensions of the mpo. While comparable to those of an mps in principle,

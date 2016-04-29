@@ -111,13 +111,13 @@ void projector::updateScalarProducts(int i, int direction){
 
 
 void projector::storeOrthoState(mps const &source, int iEigen){
-  orthoStates[iEigen].mpsCpy(source);
+  orthoStates[iEigen]=source;
 }
 
 //---------------------------------------------------------------------------------------------------//
 
 void projector::storeCurrentState(mps const &source){
-  orthoStates[nCurrentEigen].mpsCpy(source);
+  orthoStates[nCurrentEigen]=source;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -129,7 +129,7 @@ void projector::getStoredState(mps *&target, int iEigen){
 //---------------------------------------------------------------------------------------------------//
 
 int projector::loadNextState(mps &target, int iEigen){
-  target.mpsCpy(orthoStates[iEigen]);
+  target=orthoStates[iEigen];
   return 0;
 }
 
@@ -137,7 +137,7 @@ int projector::loadNextState(mps &target, int iEigen){
 
 int projector::loadNextState(mps &target){
   if(nCurrentEigen<(nEigs-1)){
-    target.mpsCpy(orthoStates[nCurrentEigen+1]);
+    target=orthoStates[nCurrentEigen+1];
     return 0;
   }
   return 1;

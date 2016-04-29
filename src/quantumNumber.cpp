@@ -244,6 +244,7 @@ int quantumNumber::initializeLabelList(int i, int direction){
     }
     for(int iBlock=0;iBlock<qnLabels.size();++iBlock){
       validBlock=1;
+      //Check if the Block can be meaningful (i.e. can be reached from both sides). This should always be true in the final run, but better check it.
       if(real(qnLabels[iBlock])>maximalLabel || real(qnLabels[iBlock])<minimalLabel){
 	validBlock=0;
       }
@@ -283,6 +284,7 @@ int quantumNumber::initializeLabelList(int i, int direction){
     for(int j=0;j<validQNLabels.size();++j){
       blockOccupations[j]=0;
     }
+    //Evenly distribute the bond indices to the available labels - this might not be optimal, but it always results in a valid scheme
     int blockCounter=0;
     for(int aim=0;aim<dimInfo.locDimL(i);++aim){
       for(int iBlock=0;iBlock<validQNLabels.size();++iBlock){

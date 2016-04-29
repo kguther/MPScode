@@ -17,6 +17,7 @@ class overlap{
  public:
   overlap();
   overlap(overlap const &source);
+  overlap(mps const*const psi, mps const*const phi);
   ~overlap();
   overlap& operator=(overlap const &source);
   stateArray F;

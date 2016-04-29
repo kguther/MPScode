@@ -10,10 +10,7 @@ class mps: public stateArray{
  public:
   mps();
   mps(dimensionTable const &dimInfoIn, std::vector<quantumNumber> const &conservedQNsin);
-  mps(mps const &source);
-  mps& operator=(mps const &source);
   void generate(dimensionTable const &dimInfoIn, std::vector<quantumNumber> const &conservedQNsin);
-  virtual void mpsCpy(mps const &source);
   int leftNormalizeState(int i);
   int rightNormalizeState(int i);
   int setParameterD(int Dnew);
@@ -24,7 +21,7 @@ class mps: public stateArray{
   void getEntanglementEntropy(std::vector<double> &S, std::vector<std::vector<double> > &spectra);
   int setUpQNs(std::vector<quantumNumber> const &conservedQNs);
   std::vector<quantumNumber>& getConservedQNs(){return conservedQNs;}
-  virtual basisQNOrderMatrix const& indexTable()const {return indexTableVar;}
+  basisQNOrderMatrix const& indexTable()const {return indexTableVar;}
  protected:
   int nQNs;
   std::vector<quantumNumber> conservedQNs;

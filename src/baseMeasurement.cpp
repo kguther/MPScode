@@ -106,8 +106,9 @@ void baseMeasurement::calcCtrIterLeftBaseQNOpt(int const i, lapack_complex_doubl
 }
 
 void baseMeasurement::calcOuterContainerLeftQNOpt(int const i, lapack_complex_double *const source, tmpContainer<lapack_complex_double> &outercontainer){
-  int *biIndices, *bimIndices, *siIndices, *sipIndices;
-  lapack_complex_double *siteMatrixH, *siteMatrixState;
+  int const *biIndices, *bimIndices, *siIndices, *sipIndices;
+  lapack_complex_double *siteMatrixState;
+  lapack_complex_double const *siteMatrixH;
   int biS, bimS, siS, sipS, aiB, aimB, siB;
   int lBlockSize, rBlockSize;
   int const sparseSize=MPOperator->numEls(i-1);
@@ -223,8 +224,8 @@ void baseMeasurement::calcOuterContainerRightQNOpt(int const i, lapack_complex_d
   int lBlockSize, rBlockSize;
   MPState->subMatrixStart(siteMatrixState,i+1);
   getLocalDimensions(i+1);
-  lapack_complex_double *siteMatrixH;
-  int *biIndices, *bimIndices, *siIndices, *sipIndices;
+  lapack_complex_double const *siteMatrixH;
+  int const *biIndices, *bimIndices, *siIndices, *sipIndices;
   int const sparseSize=MPOperator->numEls(i+1);
   int biS, bimS, siS, sipS;
   MPOperator->sparseSubMatrixStart(siteMatrixH,i+1);
@@ -294,8 +295,9 @@ void baseMeasurement::calcCtrIterRightBase(int const i, lapack_complex_double *c
   }
   else{
     lapack_complex_double simpleContainer;
-    lapack_complex_double *siteMatrixState, *siteMatrixH;
-    int *biIndices, *bimIndices, *siIndices, *sipIndices;
+    lapack_complex_double *siteMatrixState;
+    lapack_complex_double const *siteMatrixH;
+    int const *biIndices, *bimIndices, *siIndices, *sipIndices;
     int const sparseSize=MPOperator->numEls(i+1);
     int biS, bimS, siS, sipS;
     clock_t curtime;

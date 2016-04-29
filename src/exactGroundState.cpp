@@ -19,7 +19,7 @@ void exactGroundState::writeExactGroundState(mps &target){
   QNsVec.push_back(quantumNumber(target.getDimInfo(),QNValue,localQNsVec));
   mps proxy(target.getDimInfo(),QNsVec);
   generateExactState(proxy);
-  target.stateArray::mpsCpy(proxy);
+  target.setStateArray(proxy);
 }
 
 //---------------------------------------------------------------------------------------------------//

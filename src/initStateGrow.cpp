@@ -52,7 +52,7 @@ void initStateGrow::prepareInitialState(mps &target){
   //The network class works with mps while the infiniteNetwork uses the imps child class. A dummy mps is used for conversion.
   mps dummy;
   preRun.exportNetworkState(dummy);
-  networkState.importState(dummy);
+  networkState=imps(dummy);
 
   growSystem();
   //Write the resulting initial state into the target

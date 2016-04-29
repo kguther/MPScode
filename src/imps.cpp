@@ -12,6 +12,14 @@ imps::imps(dimensionTable const &dimInfoIn, std::vector<quantumNumber> const &co
   centralIndexTableVar=twositeQNOrderMatrix((dimInfo.L()-1)/2,dimInfo,conservedQNs);
 }
 
+imps::imps(mps const &source):
+  impBase(source.getDimInfo()),
+  mps(source)
+{
+  centralIndexTableVar=twositeQNOrderMatrix((dimInfo.L()-1)/2,dimInfo,conservedQNs);
+}
+  
+
 //---------------------------------------------------------------------------------------------------//
 
 int imps::addSite(int Lnew, int i, std::vector<std::complex<int> > const &targetQN, std::vector<std::complex<int> > const &source){
@@ -36,13 +44,6 @@ int imps::addSite(int Lnew, int i, std::vector<std::complex<int> > const &target
 
   centralIndexTableVar=twositeQNOrderMatrix(i,dimInfo,conservedQNs);
   return info;
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-void imps::importState(mps const &source){
-  mps::mpsCpy(source);
-  centralIndexTableVar=twositeQNOrderMatrix((dimInfo.L()-1)/2,dimInfo,conservedQNs);
 }
 
 //---------------------------------------------------------------------------------------------------//
