@@ -14,7 +14,8 @@
 class twositeQNOrderMatrix{
  public:
   twositeQNOrderMatrix();
-  twositeQNOrderMatrix(int i, dimensionTable const &dimIn, pseudoQuantumNumber *conservedQNsin);
+  twositeQNOrderMatrix(int i, dimensionTable const &dimIn, std::vector<pseudoQuantumNumber*> const &conservedQNsin);
+  twositeQNOrderMatrix(int i, dimensionTable const &dimIn, std::vector<quantumNumber>  &conservedQNsin);
   int generateQNIndexTable();
   int aimBlockIndex(int iBlock, int k)const {return lBlockIndices[iBlock][k].aim;}
   int airBlockIndex(int iBlock, int j)const {return rBlockIndices[iBlock][j].aim;}
@@ -30,7 +31,7 @@ class twositeQNOrderMatrix{
  private:
   std::vector<std::vector<multInt> > lBlockIndices, rBlockIndices;
   std::vector<std::vector<std::complex<int> > > qnLabels;
-  pseudoQuantumNumber *conservedQNs;
+  std::vector<pseudoQuantumNumber*> conservedQNs;
   dimensionTable dimInfo;
   int site;
   std::complex<int> qnCriterium(int iQN, int i, int ai, int si, int pre=1);

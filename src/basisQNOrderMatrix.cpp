@@ -6,44 +6,41 @@
 // the blocks of the MPS matrices.
 //---------------------------------------------------------------------------------------------------//
 
-basisQNOrderMatrix::basisQNOrderMatrix():
-  aiBlockIndicesLP(0),
-  siaimBlockIndicesLP(0),
-  aimBlockIndicesRP(0),
-  siaiBlockIndicesRP(0)
+basisQNOrderMatrix::basisQNOrderMatrix()
 {}
 
 //---------------------------------------------------------------------------------------------------//
 
 basisQNOrderMatrix::basisQNOrderMatrix(dimensionTable &dimin, std::vector<quantumNumber> *conservedQNsin):
+  dimInfo(dimin)
+{
+  conservedQNs.resize(conservedQNsin->size());
+  for(int m=0;m<conservedQNs.size();++m){
+    conservedQNs[m]=&((*conservedQNsin)[m]);
+  }
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+basisQNOrderMatrix::basisQNOrderMatrix(dimensionTable &dimin, std::vector<pseudoQuantumNumber*> const &conservedQNsin):
   dimInfo(dimin),
-  conservedQNs(conservedQNsin),
-  aiBlockIndicesLP(0),
-  siaimBlockIndicesLP(0),
-  aimBlockIndicesRP(0),
-  siaiBlockIndicesRP(0)
+  conservedQNs(conservedQNsin)
 {}
 
 //---------------------------------------------------------------------------------------------------//
 
-basisQNOrderMatrix::~basisQNOrderMatrix(){
-  deleteTables();
+void basisQNOrderMatrix::initialize(dimensionTable &dimin, std::vector<pseudoQuantumNumber*> &conservedQNsin){
+  dimInfo=dimin;
+  conservedQNs=conservedQNsin;
 }
-
-//---------------------------------------------------------------------------------------------------//
-
-void basisQNOrderMatrix::deleteTables(){
-  delete[] aiBlockIndicesLP;
-  delete[] siaimBlockIndicesLP;
-  delete[] siaiBlockIndicesRP;
-  delete[] aimBlockIndicesRP;
-}
-
 //---------------------------------------------------------------------------------------------------//
 
 void basisQNOrderMatrix::initialize(dimensionTable &dimin, std::vector<quantumNumber> *conservedQNsin){
   dimInfo=dimin;
-  conservedQNs=conservedQNsin;
+  conservedQNs.resize(conservedQNsin->size());
+  for(int m=0;m<conservedQNs.size();++m){
+    conservedQNs[m]=&((*conservedQNsin)[m]);
+  }
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -54,11 +51,10 @@ int basisQNOrderMatrix::generateQNIndexTables(){
   int L=dimInfo.L();
   int cumulativeBlockSize;
   int failed=0;
-  deleteTables();
-  aiBlockIndicesLP=new std::vector<std::vector<int> >[L];
-  siaimBlockIndicesLP=new std::vector<std::vector<multInt> >[L];
-  aimBlockIndicesRP=new std::vector<std::vector<int> >[L];
-  siaiBlockIndicesRP=new std::vector<std::vector<multInt> >[L];
+  aiBlockIndicesLP.resize(L);
+  siaimBlockIndicesLP.resize(L);
+  aimBlockIndicesRP.resize(L);
+  siaiBlockIndicesRP.resize(L);
   for(int i=0;i<dimInfo.L();++i){
     blockStructure(i,0,aiBlockIndicesLP[i],siaimBlockIndicesLP[i]);
     blockStructure(i,1,aimBlockIndicesRP[i],siaiBlockIndicesRP[i]);
@@ -84,21 +80,21 @@ int basisQNOrderMatrix::generateQNIndexTables(){
 	// This part is used to test QN labeling schemes for their useability. It prints out the block indices and their QN labels.
 	std::cout<<"Right labels:\n";
 	for(int aim=0;aim<dimInfo.locDimL(i+1);++aim){
-	  std::cout<<aim<<" with label "<<(*conservedQNs)[0].QNLabel(i,aim)<<std::endl;
+	  std::cout<<aim<<" with label "<<(conservedQNs[0])->QNLabel(i,aim)<<std::endl;
 	}
 	std::cout<<"Left labels:\n";
 	for(int aim=0;aim<dimInfo.locDimL(i);++aim){
-	  std::cout<<aim<<" with label "<<(*conservedQNs)[0].QNLabel(i-1,aim)<<std::endl;
+	  std::cout<<aim<<" with label "<<(conservedQNs[0])->QNLabel(i-1,aim)<<std::endl;
 	}
 	if(info>0){
 	  for(int iBlock=0;iBlock<numBlocksRP(i);++iBlock){
 	    std::cout<<"Right indices: "<<std::endl;
 	    for(int j=0;j<rBlockSizeRP(i,iBlock);++j){
-	      std::cout<<aiBlockIndexRP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(i,aiBlockIndexRP(i,iBlock,j))<<"\t"<<siBlockIndexRP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(siBlockIndexRP(i,iBlock,j))<<std::endl;
+	      std::cout<<aiBlockIndexRP(i,iBlock,j)<<" with label "<<(conservedQNs[0])->QNLabel(i,aiBlockIndexRP(i,iBlock,j))<<"\t"<<siBlockIndexRP(i,iBlock,j)<<" with label "<<(conservedQNs[0])->QNLabel(siBlockIndexRP(i,iBlock,j))<<std::endl;
 	    }
 	    std::cout<<"Left indices: \n";
 	    for(int j=0;j<lBlockSizeRP(i,iBlock);++j){
-	      std::cout<<aimBlockIndexRP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(i-1,aimBlockIndexRP(i,iBlock,j))<<std::endl;
+	      std::cout<<aimBlockIndexRP(i,iBlock,j)<<" with label "<<(conservedQNs[0])->QNLabel(i-1,aimBlockIndexRP(i,iBlock,j))<<std::endl;
 	    }
 	  }
 	}
@@ -106,11 +102,11 @@ int basisQNOrderMatrix::generateQNIndexTables(){
 	  for(int iBlock=0;iBlock<numBlocksLP(i);++iBlock){
 	    std::cout<<"Left indices: "<<std::endl;
 	    for(int j=0;j<lBlockSizeLP(i,iBlock);++j){
-	      std::cout<<aimBlockIndexLP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(i-1,aimBlockIndexLP(i,iBlock,j))<<"\t"<<siBlockIndexLP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(siBlockIndexLP(i,iBlock,j))<<std::endl;
+	      std::cout<<aimBlockIndexLP(i,iBlock,j)<<" with label "<<(conservedQNs[0])->QNLabel(i-1,aimBlockIndexLP(i,iBlock,j))<<"\t"<<siBlockIndexLP(i,iBlock,j)<<" with label "<<(conservedQNs[0])->QNLabel(siBlockIndexLP(i,iBlock,j))<<std::endl;
 	    }
 	    std::cout<<"Right indices: \n";
 	    for(int j=0;j<rBlockSizeLP(i,iBlock);++j){
-	      std::cout<<aiBlockIndexLP(i,iBlock,j)<<" with label "<<(*conservedQNs)[0].QNLabel(i,aiBlockIndexLP(i,iBlock,j))<<std::endl;
+	      std::cout<<aiBlockIndexLP(i,iBlock,j)<<" with label "<<(conservedQNs[0])->QNLabel(i,aiBlockIndexLP(i,iBlock,j))<<std::endl;
 	    }
 	  }
 	}
@@ -187,7 +183,7 @@ void basisQNOrderMatrix::generateAccessArrays(){
 //---------------------------------------------------------------------------------------------------//
 
 int basisQNOrderMatrix::blockStructure(int const i, int const direction, std::vector<std::vector<int> > &aiIndices, std::vector<std::vector<multInt> > &siaimIndices){
-  int const nQNs=(*conservedQNs).size();
+  int const nQNs=conservedQNs.size();
   if(nQNs==0){
     return 1;
   }
@@ -217,7 +213,7 @@ int basisQNOrderMatrix::blockStructure(int const i, int const direction, std::ve
     isNew=1;
     for(int iBlock=0;iBlock<qnLabels[0].size();++iBlock){
       for(int iQN=0;iQN<nQNs;++iQN){
-	if((*conservedQNs)[iQN].QNLabel(i-direction,ai)!=qnLabels[iQN][iBlock]){
+	if((conservedQNs[iQN])->QNLabel(i-direction,ai)!=qnLabels[iQN][iBlock]){
 	  break;
 	}
 	if(iQN==nQNs-1){
@@ -227,7 +223,7 @@ int basisQNOrderMatrix::blockStructure(int const i, int const direction, std::ve
     }
     if(isNew){
       for(int iQN=0;iQN<nQNs;++iQN){
-	qnLabels[iQN].push_back((*conservedQNs)[iQN].QNLabel(i-direction,ai));
+	qnLabels[iQN].push_back((conservedQNs[iQN])->QNLabel(i-direction,ai));
       }
     }
   }
@@ -257,7 +253,7 @@ int basisQNOrderMatrix::blockStructure(int const i, int const direction, std::ve
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
       matchBlock=1;
       for(int iQN=0;iQN<nQNs;++iQN){
-	if((*conservedQNs)[iQN].QNLabel(i-direction,ai)!=qnLabels[iQN][iBlock]){
+	if((conservedQNs[iQN])->QNLabel(i-direction,ai)!=qnLabels[iQN][iBlock]){
 	  matchBlock=0;
 	}
       }
@@ -274,9 +270,9 @@ int basisQNOrderMatrix::blockStructure(int const i, int const direction, std::ve
 
 std::complex<int> basisQNOrderMatrix::qnCriterium(int const iQN, int const i, int const aim, int const si, int const direction, int const pre){
   std::complex<int> criterium;
-  //criterium.real(real((*conservedQNs)[iQN].QNLabel(i-1+direction,aim))+pre*real((*conservedQNs)[iQN].QNLabel(si)));
-  //criterium.imag(imag((*conservedQNs)[iQN].QNLabel(i-1+direction,aim))*imag((*conservedQNs)[iQN].QNLabel(si)));
-  criterium=(*conservedQNs)[iQN].groupOperation((*conservedQNs)[iQN].QNLabel(i-1+direction,aim),(*conservedQNs)[iQN].QNLabel(si),pre);
+  //criterium.real(real((conservedQNs[iQN])->QNLabel(i-1+direction,aim))+pre*real((conservedQNs[iQN])->QNLabel(si)));
+  //criterium.imag(imag((conservedQNs[iQN])->QNLabel(i-1+direction,aim))*imag((conservedQNs[iQN])->QNLabel(si)));
+  criterium=(conservedQNs[iQN])->groupOperation((conservedQNs[iQN])->QNLabel(i-1+direction,aim),(conservedQNs[iQN])->QNLabel(si),pre);
   return criterium;
 }
 

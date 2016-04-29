@@ -23,8 +23,8 @@ class basisQNOrderMatrix{
   basisQNOrderMatrix(dimensionTable &dimin, std::vector<quantumNumber> *conservedQNsin);
   basisQNOrderMatrix(dimensionTable &dimin, std::vector<pseudoQuantumNumber*> const &conservedQNsin);
   basisQNOrderMatrix();
-  ~basisQNOrderMatrix();
   void initialize(dimensionTable &dimin, std::vector<quantumNumber> *conservedQNsin);
+  void initialize(dimensionTable &dimin, std::vector<pseudoQuantumNumber*> &conservedQNsin);
   int generateQNIndexTables();
   int blockStructure(int const i, int const direction, std::vector<std::vector<int> > &aiIndices, std::vector<std::vector<multInt> > &siaimIndices);
   int aiBlockIndexLP(int i, int iBlock, int j) const{return aiBlockIndicesLPAccess[reducedIndexFunction(i,iBlock,j)];}
@@ -39,19 +39,17 @@ class basisQNOrderMatrix{
   int rBlockSizeRP(int i, int iBlock) const{return siaiBlockIndicesRP[i][iBlock].size();}
   int numBlocksLP(int i) const{return aiBlockIndicesLP[i].size();}
   int numBlocksRP(int i) const{return aimBlockIndicesRP[i].size();}
-  int nQNs() const{return conservedQNs->size();}
+  int nQNs() const{return conservedQNs.size();}
   int validate()const;
  private:
   int maxNumBlocks, maxBlockSize;
-  basisQNOrderMatrix(basisQNOrderMatrix const &source);
-  basisQNOrderMatrix& operator=(basisQNOrderMatrix const &source);
-  std::vector<quantumNumber> *conservedQNs;
+  std::vector<pseudoQuantumNumber*> conservedQNs;
   std::vector<int> aiBlockIndicesLPAccess, aimBlockIndicesRPAccess;
   std::vector<multInt> siaimBlockIndicesLPAccess, siaiBlockIndicesRPAccess;
-  std::vector<std::vector<int> > *aiBlockIndicesLP;
-  std::vector<std::vector<multInt> > *siaimBlockIndicesLP;
-  std::vector<std::vector<int> > *aimBlockIndicesRP;
-  std::vector<std::vector<multInt> > *siaiBlockIndicesRP;
+  std::vector<std::vector<std::vector<int> > > aiBlockIndicesLP;
+  std::vector<std::vector<std::vector<multInt> > > siaimBlockIndicesLP;
+  std::vector<std::vector<std::vector<int> > > aimBlockIndicesRP;
+  std::vector<std::vector<std::vector<multInt> > > siaiBlockIndicesRP;
   dimensionTable dimInfo;
   void generateAccessArrays();
   void deleteTables();

@@ -47,7 +47,9 @@ int infiniteNetwork::statePrediction(arcomplex<double> *target){
   std::unique_ptr<arcomplex<double>[] > rightBufP(new arcomplex<double> [lDL*lDR]);
   leftBuf=leftBufP.get();
   rightBuf=rightBufP.get();
-
+  
+  int info;
+  /*
   int info=checkQNConstraint(*networkState,i-1);
   if(info){
     std::cout<<"QN constraint violation at A-matrix"<<std::endl;
@@ -58,6 +60,7 @@ int infiniteNetwork::statePrediction(arcomplex<double> *target){
     std::cout<<"QN constraint violation at B-matrix"<<std::endl;
     return 1;
   }
+  */
 
   for(int si=0;si<dimInfo.locd(i);++si){
     for(int sip=0;sip<dimInfo.locd(i+1);++sip){

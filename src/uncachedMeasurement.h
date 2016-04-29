@@ -2,6 +2,7 @@
 #define UNCACHED_ITERATIVE_MEASUREMENT
 
 #include "baseMeasurement.h"
+#include "impBase.h"
 #include <vector>
 
 //---------------------------------------------------------------------------------------------------//
@@ -11,10 +12,10 @@
 //---------------------------------------------------------------------------------------------------//
 
 
-class uncachedMeasurement: public baseMeasurement{
+class uncachedMeasurement{
  public:
   uncachedMeasurement();
-  uncachedMeasurement(mpo<lapack_complex_double> *const MPOperator, mps *const MPState);
+  uncachedMeasurement(mpo<lapack_complex_double> *const MPOperatorIn, impBase *const MPStateIn);
   void update();
   void getLctr(lapack_complex_double *&target){target=&(Lctr[0]);}
   void getRctr(lapack_complex_double *&target){target=&(Rctr[0]);}
@@ -22,6 +23,8 @@ class uncachedMeasurement: public baseMeasurement{
   void getRightCtr(int i);
   void getContractions(int site);
  private:
+  impBase *MPState;
+  mpo<lapack_complex_double> *MPOperator;
   std::vector<lapack_complex_double> Rctr, Lctr;
 };
 

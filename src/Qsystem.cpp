@@ -4,6 +4,17 @@
 #include "Qsystem.h"
 #include "network.h"
 #include "parameters.h"
+#include "infiniteQsystem.h"
+
+//---------------------------------------------------------------------------------------------------//
+
+void testIDMRG(problemParameters pars, simulationParameters simPars, mpo<std::complex<double> > const &H){
+  infiniteQsystem test(pars,simPars,H);
+  test.solve();
+  exit(1);
+}
+
+//---------------------------------------------------------------------------------------------------//
 
 Qsystem::Qsystem(problemParameters &inputpars, simulationParameters &inputsimPars):
   pars(inputpars),
@@ -33,6 +44,8 @@ int Qsystem::getGroundState(){
     TensorNetwork.setSimParameters(simPars);
 
     //TensorNetwork.getInitState();
+
+    testIDMRG(pars,simPars,TensorNetwork.networkH);
     
     converged=TensorNetwork.solve(E0,dE);
     if(converged==0){

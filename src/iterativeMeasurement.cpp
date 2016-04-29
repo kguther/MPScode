@@ -61,7 +61,7 @@ void iterativeMeasurement::calcOuterContainerLeft(int const i, tmpContainer<lapa
 //---------------------------------------------------------------------------------------------------//
 
 void iterativeMeasurement::calcOuterContainerRight(int const i, tmpContainer<lapack_complex_double> &outercontainer){
-  if(MPState->indexTable.nQNs()){
+  if(MPState->indexTable().nQNs()){
     lapack_complex_double *sourcePctr;
     Rctr.subContractionStart(sourcePctr,i+1);
     baseMeasurement::calcOuterContainerRightQNOpt(i,sourcePctr,outercontainer);

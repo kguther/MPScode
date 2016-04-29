@@ -5,7 +5,20 @@ twositeQNOrderMatrix::twositeQNOrderMatrix()
 
 //---------------------------------------------------------------------------------------------------//
 
-twositeQNOrderMatrix::twositeQNOrderMatrix(int i, dimensionTable const &dimIn, pseudoQuantumNumber *conservedQNsin):
+twositeQNOrderMatrix::twositeQNOrderMatrix(int i, dimensionTable const &dimIn, std::vector<quantumNumber> &conservedQNsin):
+  dimInfo(dimIn),
+  site(i)
+{
+  conservedQNs.resize(conservedQNsin.size());
+  for(int m=0;m<conservedQNs.size();++m){
+    conservedQNs[m]=&(conservedQNsin[m]);
+  }
+  generateQNIndexTable();
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+twositeQNOrderMatrix::twositeQNOrderMatrix(int i, dimensionTable const &dimIn, std::vector<pseudoQuantumNumber*> const &conservedQNsin):
   conservedQNs(conservedQNsin),
   dimInfo(dimIn),
   site(i)
@@ -83,5 +96,5 @@ void twositeQNOrderMatrix::writeIndexTables(int i, int ld, int lD, std::vector<s
 //---------------------------------------------------------------------------------------------------//
 
 std::complex<int> twositeQNOrderMatrix::qnCriterium(int iQN, int i, int ai, int si, int pre){
-  return conservedQNs->groupOperation(conservedQNs->QNLabel(i,ai),conservedQNs->QNLabel(si),pre);
+  return (conservedQNs[iQN])->groupOperation((conservedQNs[iQN])->QNLabel(i,ai),(conservedQNs[iQN])->QNLabel(si),pre);
 }

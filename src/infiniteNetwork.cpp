@@ -11,9 +11,9 @@
 #include <iostream>
 
 //CHANGE: The iDMRG algorithm (infiniteNetwork class) shall be seperated from state management (new class)
-//THEN: the infiniteNetwork shall contain an imps* networkState which is given at creation. This can then be either a imps or a timps. The state preparation class can now hand over an imps of size 10 or so. The uncached measurement class has to be updated to initialize its left/right container according to the size of the imps. Initialize diags with locD ones.
+//THEN: the infiniteNetwork shall contain an impBase* networkState which is given at creation. This can then be either a impBase or a timpBase. The state preparation class can now hand over an impBase of size 10 or so. The uncached measurement class has to be updated to initialize its left/right container according to the size of the impBase. Initialize diags with locD ones.
 
-infiniteNetwork::infiniteNetwork(problemParameters const &parsIn, simulationParameters const &simParsIn, imps *MPState):
+infiniteNetwork::infiniteNetwork(problemParameters const &parsIn, simulationParameters const &simParsIn, impBase *MPState):
   pars(parsIn),
   simPars(simParsIn),
   firstStep(1),
@@ -60,7 +60,8 @@ void infiniteNetwork::iDMRGStep(){
   }
   
   arcomplex<double> *bufferMatrix;
-  i=(dimInfo.L()-1)/2;
+  i=networkState->currentSite();
+
   std::unique_ptr<arcomplex<double> > bufferMatrixP(new arcomplex<double>[dimInfo.locd(i)*dimInfo.locd(i+1)*dimInfo.locDimL(i)*dimInfo.locDimR(i+1)]);
   bufferMatrix=bufferMatrixP.get();
 
@@ -148,6 +149,6 @@ void infiniteNetwork::addSite(){
 
 //---------------------------------------------------------------------------------------------------//
 
-imps* infiniteNetwork::getState(){
+impBase* infiniteNetwork::getState(){
   return networkState;
 }

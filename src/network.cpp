@@ -357,7 +357,7 @@ int network::optimize(int i, int maxIter, double tol, double &iolambda){
   double lambdaCont;
   if(pars.nQNs && i!=0 && i!=(L-1)){
     //For some obscure reason, ARPACK++ can not handle the boundary problems with reduced dimension. They have to be solved without using the block structure. Since they have a really tiny dimension, this does not matter at all.
-    blockHMatrix BMat(RTerm, LTerm,&networkH,networkDimInfo,Dw,i,&(networkState.indexTable),&excitedStateP,shift,&conservedQNs);
+    blockHMatrix BMat(RTerm, LTerm,&networkH,networkDimInfo,Dw,i,&(networkState.indexTable()),&excitedStateP,shift,&conservedQNs);
     BMat.prepareInput(currentM);
     arcomplex<double> *compressedVector=BMat.getCompressedVector();
     if(BMat.dim()>1){
@@ -632,11 +632,11 @@ void network::checkContractions(int i){
     getLocalDimensions(i);
     pCtr.Rctr.subContractionStart(RTerm,i);
     if(!store){
-      for(int iBlock=0;iBlock<networkState.indexTable.numBlocksLP(i);++iBlock){
+      for(int iBlock=0;iBlock<networkState.indexTable().numBlocksLP(i);++iBlock){
 	for(int bi=0;bi<lDwR;++bi){
-	  for(int j=0;j<networkState.indexTable.rBlockSizeLP(i,iBlock);++j){
-	    for(int jp=0;jp<networkState.indexTable.rBlockSizeLP(i,iBlock);++jp){
-	      if(abs(RTerm[networkState.indexTable.aiBlockIndexLP(i,iBlock,jp)+bi*lDR+lDR*lDwR*networkState.indexTable.aiBlockIndexLP(i,iBlock,j)]-backupCtr[networkState.indexTable.aiBlockIndexLP(i,iBlock,jp)+bi*lDR+lDR*lDwR*networkState.indexTable.aiBlockIndexLP(i,iBlock,j)])>1e-20)
+	  for(int j=0;j<networkState.indexTable().rBlockSizeLP(i,iBlock);++j){
+	    for(int jp=0;jp<networkState.indexTable().rBlockSizeLP(i,iBlock);++jp){
+	      if(abs(RTerm[networkState.indexTable().aiBlockIndexLP(i,iBlock,jp)+bi*lDR+lDR*lDwR*networkState.indexTable().aiBlockIndexLP(i,iBlock,j)]-backupCtr[networkState.indexTable().aiBlockIndexLP(i,iBlock,jp)+bi*lDR+lDR*lDwR*networkState.indexTable().aiBlockIndexLP(i,iBlock,j)])>1e-20)
 	      change=1;
 	    }
 	  }
@@ -672,7 +672,7 @@ void network::checkContractions(int i){
   for(int m=0;m<ld*lDL*lDR;++m){
     target[m]=0;
   }
-  blockHMatrix BMat(RTerm, LTerm,&networkH,networkDimInfo,Dw,i,&(networkState.indexTable),&excitedStateP,0,&conservedQNs);
+  blockHMatrix BMat(RTerm, LTerm,&networkH,networkDimInfo,Dw,i,&(networkState.indexTable()),&excitedStateP,0,&conservedQNs);
   BMat.prepareInput(currentM);
   BMat.MultMvBlocked(BMat.getCompressedVector(),BMat.getCompressedVector());
   //ARCompStdEig<double, blockHMatrix> eigProblemBlocked(BMat.dim(),1,&BMat,&blockHMatrix::MultMvBlocked,"SR",0,tol,maxIter,BMat.getCompressedVector());

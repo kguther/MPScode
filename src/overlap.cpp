@@ -90,7 +90,7 @@ void overlap::calcCtrIterLeft(int i){
     source=&zone;
   }
   subContractionStartLeft(target,i);
-  if(phi->indexTable.nQNs() && psi->indexTable.nQNs()){
+  if(phi->indexTable().nQNs() && psi->indexTable().nQNs()){
     calcCtrIterLeftQNOpt(i,source,target);
   }
   else{
@@ -137,7 +137,7 @@ void overlap::calcCtrIterRight(int i){
     source=&zone;
   }
   subContractionStartRight(target,i);
-  if(phi->indexTable.nQNs() && psi->indexTable.nQNs()){
+  if(phi->indexTable().nQNs() && psi->indexTable().nQNs()){
     calcCtrIterRightQNOpt(i,source,target);
   }
   else{
@@ -187,16 +187,16 @@ void overlap::calcCtrIterLeftQNOpt(int i, lapack_complex_double const*const sour
   phi->subMatrixStart(localMatrix,i);
   int numBlocks, lBlockSize, rBlockSize;
   int aiB, aimB, siB;
-  numBlocks=phi->indexTable.numBlocksLP(i);
+  numBlocks=phi->indexTable().numBlocksLP(i);
   for(int aim=0;aim<lDL;++aim){
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
-      lBlockSize=phi->indexTable.lBlockSizeLP(i,iBlock);
-      rBlockSize=phi->indexTable.rBlockSizeLP(i,iBlock);
+      lBlockSize=phi->indexTable().lBlockSizeLP(i,iBlock);
+      rBlockSize=phi->indexTable().rBlockSizeLP(i,iBlock);
       for(int k=0;k<lBlockSize;++k){
-	aimB=phi->indexTable.aimBlockIndexLP(i,iBlock,k);
-	siB=phi->indexTable.siBlockIndexLP(i,iBlock,k);
+	aimB=phi->indexTable().aimBlockIndexLP(i,iBlock,k);
+	siB=phi->indexTable().siBlockIndexLP(i,iBlock,k);
 	for(int j=0;j<rBlockSize;++j){
-	  aiB=phi->indexTable.aiBlockIndexLP(i,iBlock,j);
+	  aiB=phi->indexTable().aiBlockIndexLP(i,iBlock,j);
 	  innerContainer.global_access(0,siB,aiB,aim)+=source[pCtrLocalIndex(aimB,aim)]*localMatrix[aimB+aiB*lDL+siB*lDL*lDR];
 	}
       }
@@ -208,16 +208,16 @@ void overlap::calcCtrIterLeftQNOpt(int i, lapack_complex_double const*const sour
     }
   }
   psi->subMatrixStart(localMatrix,i);
-  numBlocks=psi->indexTable.numBlocksLP(i);
+  numBlocks=psi->indexTable().numBlocksLP(i);
   for(int ai=0;ai<lDR;++ai){
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
-      lBlockSize=psi->indexTable.lBlockSizeLP(i,iBlock);
-      rBlockSize=psi->indexTable.rBlockSizeLP(i,iBlock);
+      lBlockSize=psi->indexTable().lBlockSizeLP(i,iBlock);
+      rBlockSize=psi->indexTable().rBlockSizeLP(i,iBlock);
       for(int k=0;k<lBlockSize;++k){
-	aimB=psi->indexTable.aimBlockIndexLP(i,iBlock,k);
-	siB=psi->indexTable.siBlockIndexLP(i,iBlock,k);
+	aimB=psi->indexTable().aimBlockIndexLP(i,iBlock,k);
+	siB=psi->indexTable().siBlockIndexLP(i,iBlock,k);
 	for(int j=0;j<rBlockSize;++j){
-	  aiB=psi->indexTable.aiBlockIndexLP(i,iBlock,j);
+	  aiB=psi->indexTable().aiBlockIndexLP(i,iBlock,j);
 	  target[pCtrLocalIndex(ai,aiB)]+=innerContainer.global_access(0,siB,ai,aimB)*conj(localMatrix[aimB+aiB*lDL+siB*lDL*lDR]);
 	}
       }
@@ -242,17 +242,17 @@ void overlap::calcCtrIterRightQNOpt(int i, lapack_complex_double const*const sou
   }
   int numBlocks, lBlockSize, rBlockSize;
   int aiB, aimB, siB;
-  numBlocks=phi->indexTable.numBlocksLP(i);
+  numBlocks=phi->indexTable().numBlocksLP(i);
   phi->subMatrixStart(localMatrix,i);
   for(int ai=0;ai<lDR;++ai){
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
-      lBlockSize=phi->indexTable.lBlockSizeLP(i,iBlock);
-      rBlockSize=phi->indexTable.rBlockSizeLP(i,iBlock);
+      lBlockSize=phi->indexTable().lBlockSizeLP(i,iBlock);
+      rBlockSize=phi->indexTable().rBlockSizeLP(i,iBlock);
       for(int k=0;k<lBlockSize;++k){
-	aimB=phi->indexTable.aimBlockIndexLP(i,iBlock,k);
-	siB=phi->indexTable.siBlockIndexLP(i,iBlock,k);
+	aimB=phi->indexTable().aimBlockIndexLP(i,iBlock,k);
+	siB=phi->indexTable().siBlockIndexLP(i,iBlock,k);
 	for(int j=0;j<rBlockSize;++j){
-	  aiB=phi->indexTable.aiBlockIndexLP(i,iBlock,j);
+	  aiB=phi->indexTable().aiBlockIndexLP(i,iBlock,j);
 	  innerContainer.global_access(0,siB,ai,aimB)+=source[pCtrLocalIndex(aiB,ai)]*localMatrix[aimB+aiB*lDL+siB*lDL*lDR];
 	}
       }
@@ -263,17 +263,17 @@ void overlap::calcCtrIterRightQNOpt(int i, lapack_complex_double const*const sou
       target[pCtrLocalIndex(aim,aimp)]=0;
     }
   }
-  numBlocks=psi->indexTable.numBlocksLP(i);
+  numBlocks=psi->indexTable().numBlocksLP(i);
   psi->subMatrixStart(localMatrix,i);
   for(int aim=0;aim<lDL;++aim){
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
-      lBlockSize=psi->indexTable.lBlockSizeLP(i,iBlock);
-      rBlockSize=psi->indexTable.rBlockSizeLP(i,iBlock);
+      lBlockSize=psi->indexTable().lBlockSizeLP(i,iBlock);
+      rBlockSize=psi->indexTable().rBlockSizeLP(i,iBlock);
       for(int k=0;k<lBlockSize;++k){
-	aimB=psi->indexTable.aimBlockIndexLP(i,iBlock,k);
-	siB=psi->indexTable.siBlockIndexLP(i,iBlock,k);
+	aimB=psi->indexTable().aimBlockIndexLP(i,iBlock,k);
+	siB=psi->indexTable().siBlockIndexLP(i,iBlock,k);
 	for(int j=0;j<rBlockSize;++j){
-	  aiB=psi->indexTable.aiBlockIndexLP(i,iBlock,j);
+	  aiB=psi->indexTable().aiBlockIndexLP(i,iBlock,j);
 	  target[pCtrLocalIndex(aim,aimB)]+=innerContainer.global_access(0,siB,aiB,aim)*conj(localMatrix[aimB+aiB*lDL+siB*lDL*lDR]);
 	}
       }

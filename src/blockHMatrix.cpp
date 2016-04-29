@@ -8,7 +8,7 @@
 #include "mkl_complex_defined.h"
 
 
-blockHMatrix::blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcomplex<double> > *Hin, dimensionTable &dimInfo, int Dwin, int iIn, basisQNOrderMatrix *indexTablein, projector *excitedStateP, double shift, std::vector<quantumNumber> *conservedQNsin, int const cached):
+blockHMatrix::blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcomplex<double> > *Hin, dimensionTable &dimInfo, int Dwin, int iIn, basisQNOrderMatrix const *indexTablein, projector *excitedStateP, double shift, std::vector<quantumNumber> *conservedQNsin, int const cached):
   optHMatrix(R,L,Hin,dimInfo,Dwin,iIn,excitedStateP,shift,conservedQNsin),
   indexTable(indexTablein),
   conservedQNsB(conservedQNsin),

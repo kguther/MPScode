@@ -2,7 +2,7 @@
 #define NETWORK_CLASS_FOR_IDMRG
 
 #include "parameters.h"
-#include "imps.h"
+#include "impBase.h"
 #include "quantumNumber.h"
 #include "dimensionTable.h"
 #include "uncachedMeasurement.h"
@@ -20,7 +20,7 @@ bool compareSortDataQNBased(sortData const &a, sortData const &b);
 
 class infiniteNetwork{
  public:
-  infiniteNetwork(problemParameters const &parsIn, simulationParameters const &simParsIn, imps *MPState);
+  infiniteNetwork(problemParameters const &parsIn, simulationParameters const &simParsIn, impBase *MPState);
   void growTLSystem();
   void iDMRGStep();
   void addDiags();
@@ -28,7 +28,7 @@ class infiniteNetwork{
   void qnEnforcedPrediction(arcomplex<double> *target);
   int optimize(arcomplex<double> *target);
   void updateMPS(arcomplex<double> *source);
-  imps* getState();
+  impBase* getState();
   mpo<lapack_complex_double> networkH;
  private:
   int i;
@@ -36,7 +36,7 @@ class infiniteNetwork{
   problemParameters pars;
   simulationParameters simPars;
   dimensionTable dimInfo;
-  imps *networkState;
+  impBase *networkState;
   std::vector<std::complex<int> > optLocalQNsL, optLocalQNsR;
   std::vector<double> diags, diagsm;
   //Beware that iDMRG builds up a regular system -> only three MPO matrices are referred - in particular is a MPO length of at least 3 required

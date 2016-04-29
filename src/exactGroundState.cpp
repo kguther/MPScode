@@ -39,14 +39,14 @@ void exactGroundState::generateExactState(mps &target){
       }
     }
     int numBlocks, lBlockSize, rBlockSize;
-    numBlocks=target.indexTable.numBlocksLP(i);
+    numBlocks=target.indexTable().numBlocksLP(i);
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
-      rBlockSize=target.indexTable.rBlockSizeLP(i,iBlock);
-      lBlockSize=target.indexTable.lBlockSizeLP(i,iBlock);
+      rBlockSize=target.indexTable().rBlockSizeLP(i,iBlock);
+      lBlockSize=target.indexTable().lBlockSizeLP(i,iBlock);
       for(int j=0;j<rBlockSize;++j){
 	for(int k=0;k<lBlockSize;++k){
-	  if(QNsVec[0].primaryIndex(i,target.indexTable.aiBlockIndexLP(i,iBlock,j)) && QNsVec[0].primaryIndex(i-1,target.indexTable.aimBlockIndexLP(i,iBlock,k))){
-	    target.global_access(i,target.indexTable.siBlockIndexLP(i,iBlock,k),target.indexTable.aiBlockIndexLP(i,iBlock,j),target.indexTable.aimBlockIndexLP(i,iBlock,k))=exactGroundStateEntry(i,target.indexTable.siBlockIndexLP(i,iBlock,k),target.indexTable.aiBlockIndexLP(i,iBlock,j),target.indexTable.aimBlockIndexLP(i,iBlock,k));
+	  if(QNsVec[0].primaryIndex(i,target.indexTable().aiBlockIndexLP(i,iBlock,j)) && QNsVec[0].primaryIndex(i-1,target.indexTable().aimBlockIndexLP(i,iBlock,k))){
+	    target.global_access(i,target.indexTable().siBlockIndexLP(i,iBlock,k),target.indexTable().aiBlockIndexLP(i,iBlock,j),target.indexTable().aimBlockIndexLP(i,iBlock,k))=exactGroundStateEntry(i,target.indexTable().siBlockIndexLP(i,iBlock,k),target.indexTable().aiBlockIndexLP(i,iBlock,j),target.indexTable().aimBlockIndexLP(i,iBlock,k));
 	  }
 	}
       }

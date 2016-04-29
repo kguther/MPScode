@@ -1,13 +1,13 @@
 #include "uncachedMeasurement.h"
 
-uncachedMeasurement::uncachedMeasurement():
-  baseMeasurement()
-{}
+uncachedMeasurement::uncachedMeasurement(){
+}
 
 //---------------------------------------------------------------------------------------------------//
 
-uncachedMeasurement::uncachedMeasurement(mpo<lapack_complex_double> *const MPOperator, mps *const MPState):
-  baseMeasurement(MPOperator,MPState)
+uncachedMeasurement::uncachedMeasurement(mpo<lapack_complex_double> *const MPOperatorIn, impBase *const MPStateIn):
+  MPState(MPStateIn),
+  MPOperator(MPOperatorIn)
 {
   Lctr.resize(MPState->maxDim()*MPState->maxDim()*MPOperator->maxDim());
   Rctr.resize(MPState->maxDim()*MPState->maxDim()*MPOperator->maxDim());
@@ -20,31 +20,21 @@ uncachedMeasurement::uncachedMeasurement(mpo<lapack_complex_double> *const MPOpe
 //---------------------------------------------------------------------------------------------------//
 
 void uncachedMeasurement::update(){
-  int i=(MPState->length())/2;
-  getLeftCtr(i);
-  getRightCtr(i);
+  getLeftCtr();
+  getRightCtr();
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-void uncachedMeasurement::getContractions(int site){
-  int const i=site+1;
-  for(int j=1;j<=i;++j){
-    getLeftCtr(j);
-  }
-  for(int j=MPState->length()-1;j>=i;--j){
-    getRightCtr(j);
-  }
+void uncachedMeasurement::getLeftCtr(){
+  int iGlobal=MPState->currentSite();
+  int iInternal=MPState->internalSite();
+  lapack_complex_double *container;
+  //calcCtrIterLeftBase(i,&(Lctr[0]),&(Lctr[0]));
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-void uncachedMeasurement::getLeftCtr(int i){
-  calcCtrIterLeftBase(i,&(Lctr[0]),&(Lctr[0]));
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-void uncachedMeasurement::getRightCtr(int i){
-  calcCtrIterRightBase(i-1,&(Rctr[0]),&(Rctr[0]));
+void uncachedMeasurement::getRightCtr(){
+  //calcCtrIterRightBase(i-1,&(Rctr[0]),&(Rctr[0]));
 }

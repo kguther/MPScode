@@ -60,7 +60,7 @@ void baseMeasurement::calcCtrIterLeftBase(int const i, lapack_complex_double *co
 //---------------------------------------------------------------------------------------------------//
 
 void baseMeasurement::calcOuterContainerLeft(int const i, lapack_complex_double *const source, tmpContainer<lapack_complex_double> &outercontainer){
-  if(MPState->indexTable.nQNs()){
+  if(MPState->indexTable().nQNs()){
     calcOuterContainerLeftQNOpt(i,source,outercontainer);
   }
   else{
@@ -73,7 +73,7 @@ void baseMeasurement::calcOuterContainerLeft(int const i, lapack_complex_double 
 void baseMeasurement::calcCtrIterLeftBaseQNOpt(int const i, lapack_complex_double *const source, lapack_complex_double *const targetPctr){
   lapack_complex_double simpleContainer;
   lapack_complex_double *siteMatrixState;
-  int const numBlocks=MPState->indexTable.numBlocksLP(i-1);
+  int const numBlocks=MPState->indexTable().numBlocksLP(i-1);
   int aiB, aimB, siB;
   int lBlockSize, rBlockSize;
   clock_t curtime;
@@ -85,15 +85,15 @@ void baseMeasurement::calcCtrIterLeftBaseQNOpt(int const i, lapack_complex_doubl
 #pragma omp parallel for private(simpleContainer,lBlockSize,rBlockSize,aiB,siB,aimB)
   for(int aip=0;aip<lDR;++aip){
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
-      lBlockSize=MPState->indexTable.lBlockSizeLP(i-1,iBlock);
-      rBlockSize=MPState->indexTable.rBlockSizeLP(i-1,iBlock);
+      lBlockSize=MPState->indexTable().lBlockSizeLP(i-1,iBlock);
+      rBlockSize=MPState->indexTable().rBlockSizeLP(i-1,iBlock);
       for(int j=0;j<rBlockSize;++j){
-	aiB=MPState->indexTable.aiBlockIndexLP(i-1,iBlock,j);
+	aiB=MPState->indexTable().aiBlockIndexLP(i-1,iBlock,j);
 	for(int bi=0;bi<lDwR;++bi){
 	  simpleContainer=0;
 	  for(int k=0;k<lBlockSize;++k){
-	    siB=MPState->indexTable.siBlockIndexLP(i-1,iBlock,k);
-	    aimB=MPState->indexTable.aimBlockIndexLP(i-1,iBlock,k);
+	    siB=MPState->indexTable().siBlockIndexLP(i-1,iBlock,k);
+	    aimB=MPState->indexTable().aimBlockIndexLP(i-1,iBlock,k);
 	    simpleContainer+=conj(siteMatrixState[stateIndex(siB,aiB,aimB)])*outercontainer.global_access(siB,bi,aip,aimB);
 	  }
 	  targetPctr[pctrIndex(aiB,bi,aip)]=simpleContainer;
@@ -111,7 +111,7 @@ void baseMeasurement::calcOuterContainerLeftQNOpt(int const i, lapack_complex_do
   int biS, bimS, siS, sipS, aiB, aimB, siB;
   int lBlockSize, rBlockSize;
   int const sparseSize=MPOperator->numEls(i-1);
-  int const numBlocks=MPState->indexTable.numBlocksLP(i-1);
+  int const numBlocks=MPState->indexTable().numBlocksLP(i-1);
   clock_t curtime;
   MPState->subMatrixStart(siteMatrixState,i-1);
   getLocalDimensions(i-1);
@@ -136,13 +136,13 @@ void baseMeasurement::calcOuterContainerLeftQNOpt(int const i, lapack_complex_do
 #pragma omp parallel for private(lBlockSize,rBlockSize,aiB,aimB,siB)
   for(int bim=0;bim<lDwL;++bim){
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
-      lBlockSize=MPState->indexTable.lBlockSizeLP(i-1,iBlock);
-      rBlockSize=MPState->indexTable.rBlockSizeLP(i-1,iBlock);
+      lBlockSize=MPState->indexTable().lBlockSizeLP(i-1,iBlock);
+      rBlockSize=MPState->indexTable().rBlockSizeLP(i-1,iBlock);
       for(int k=0;k<lBlockSize;++k){
-	aimB=MPState->indexTable.aimBlockIndexLP(i-1,iBlock,k);
-	siB=MPState->indexTable.siBlockIndexLP(i-1,iBlock,k);
+	aimB=MPState->indexTable().aimBlockIndexLP(i-1,iBlock,k);
+	siB=MPState->indexTable().siBlockIndexLP(i-1,iBlock,k);
 	for(int j=0;j<rBlockSize;++j){
-	  aiB=MPState->indexTable.aiBlockIndexLP(i-1,iBlock,j);
+	  aiB=MPState->indexTable().aiBlockIndexLP(i-1,iBlock,j);
 	  for(int aim=0;aim<lDL;++aim){
 	    innercontainer.global_access(siB,aiB,bim,aim)+=source[pctrIndex(aim,bim,aimB)]*siteMatrixState[stateIndex(siB,aiB,aimB)];
 	  }
@@ -156,10 +156,10 @@ void baseMeasurement::calcOuterContainerLeftQNOpt(int const i, lapack_complex_do
 #pragma omp parallel for private(lBlockSize,rBlockSize,siB,aimB,siS,biS,bimS,sipS)
   for(int aip=0;aip<lDR;++aip){
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
-      lBlockSize=MPState->indexTable.lBlockSizeLP(i-1,iBlock);
+      lBlockSize=MPState->indexTable().lBlockSizeLP(i-1,iBlock);
       for(int k=0;k<lBlockSize;++k){
-	siB=MPState->indexTable.siBlockIndexLP(i-1,iBlock,k);
-	aimB=MPState->indexTable.aimBlockIndexLP(i-1,iBlock,k);
+	siB=MPState->indexTable().siBlockIndexLP(i-1,iBlock,k);
+	aimB=MPState->indexTable().aimBlockIndexLP(i-1,iBlock,k);
 	for(int bi=0;bi<lDwR;++bi){
 	  outercontainer.global_access(siB,bi,aip,aimB)=0;
 	}
@@ -185,7 +185,7 @@ void baseMeasurement::calcOuterContainerLeftQNOpt(int const i, lapack_complex_do
 void baseMeasurement::calcCtrIterRightBaseQNOpt(int const i, lapack_complex_double *const sourcePctr, lapack_complex_double *const targetPctr){
   lapack_complex_double simpleContainer;
   lapack_complex_double *siteMatrixState;
-  int const numBlocks=MPState->indexTable.numBlocksRP(i+1);
+  int const numBlocks=MPState->indexTable().numBlocksRP(i+1);
   int aiB, siB, aimB;
   int lBlockSize, rBlockSize;
   MPState->subMatrixStart(siteMatrixState,i+1);
@@ -196,15 +196,15 @@ void baseMeasurement::calcCtrIterRightBaseQNOpt(int const i, lapack_complex_doub
 #pragma omp parallel for private(simpleContainer,lBlockSize,rBlockSize,aimB,aiB,siB)  
   for(int aimp=0;aimp<lDL;++aimp){
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
-      lBlockSize=MPState->indexTable.lBlockSizeRP(i+1,iBlock);
-      rBlockSize=MPState->indexTable.rBlockSizeRP(i+1,iBlock);
+      lBlockSize=MPState->indexTable().lBlockSizeRP(i+1,iBlock);
+      rBlockSize=MPState->indexTable().rBlockSizeRP(i+1,iBlock);
       for(int k=0;k<lBlockSize;++k){
-	aimB=MPState->indexTable.aimBlockIndexRP(i+1,iBlock,k);
+	aimB=MPState->indexTable().aimBlockIndexRP(i+1,iBlock,k);
 	for(int bim=0;bim<lDwL;++bim){
 	  simpleContainer=0;
 	  for(int j=0;j<rBlockSize;++j){
-	    siB=MPState->indexTable.siBlockIndexRP(i+1,iBlock,j);
-	    aiB=MPState->indexTable.aiBlockIndexRP(i+1,iBlock,j);
+	    siB=MPState->indexTable().siBlockIndexRP(i+1,iBlock,j);
+	    aiB=MPState->indexTable().aiBlockIndexRP(i+1,iBlock,j);
 	    simpleContainer+=conj(siteMatrixState[stateIndex(siB,aiB,aimB)])*outercontainer.global_access(aimp,bim,siB,aiB);
 	  }
 	  targetPctr[pctrIndex(aimB,bim,aimp)]=simpleContainer;
@@ -218,7 +218,7 @@ void baseMeasurement::calcCtrIterRightBaseQNOpt(int const i, lapack_complex_doub
 
 void baseMeasurement::calcOuterContainerRightQNOpt(int const i, lapack_complex_double *const sourcePctr, tmpContainer<lapack_complex_double> &outercontainer){
   lapack_complex_double *siteMatrixState;
-  int const numBlocks=MPState->indexTable.numBlocksRP(i+1);
+  int const numBlocks=MPState->indexTable().numBlocksRP(i+1);
   int aiB, siB, aimB;
   int lBlockSize, rBlockSize;
   MPState->subMatrixStart(siteMatrixState,i+1);
@@ -247,13 +247,13 @@ void baseMeasurement::calcOuterContainerRightQNOpt(int const i, lapack_complex_d
 #pragma omp parallel for private(lBlockSize,rBlockSize,aiB,siB,aimB)
   for(int ai=0;ai<lDR;++ai){
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
-      lBlockSize=MPState->indexTable.lBlockSizeRP(i+1,iBlock);
-      rBlockSize=MPState->indexTable.rBlockSizeRP(i+1,iBlock);
+      lBlockSize=MPState->indexTable().lBlockSizeRP(i+1,iBlock);
+      rBlockSize=MPState->indexTable().rBlockSizeRP(i+1,iBlock);
       for(int j=0;j<rBlockSize;++j){
-	aiB=MPState->indexTable.aiBlockIndexRP(i+1,iBlock,j);
-	siB=MPState->indexTable.siBlockIndexRP(i+1,iBlock,j);
+	aiB=MPState->indexTable().aiBlockIndexRP(i+1,iBlock,j);
+	siB=MPState->indexTable().siBlockIndexRP(i+1,iBlock,j);
 	for(int k=0;k<lBlockSize;++k){
-	  aimB=MPState->indexTable.aimBlockIndexRP(i+1,iBlock,k);
+	  aimB=MPState->indexTable().aimBlockIndexRP(i+1,iBlock,k);
 	  for(int bi=0;bi<lDwR;++bi){
 	    innercontainer.global_access(siB,bi,ai,aimB)+=sourcePctr[pctrIndex(ai,bi,aiB)]*siteMatrixState[stateIndex(siB,aiB,aimB)];
 	  }
@@ -264,10 +264,10 @@ void baseMeasurement::calcOuterContainerRightQNOpt(int const i, lapack_complex_d
 #pragma omp parallel for private(lBlockSize,rBlockSize,aiB,siB,siS,sipS,biS,bimS)
   for(int aim=0;aim<lDL;++aim){
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
-      rBlockSize=MPState->indexTable.rBlockSizeRP(i+1,iBlock);
+      rBlockSize=MPState->indexTable().rBlockSizeRP(i+1,iBlock);
       for(int j=0;j<rBlockSize;++j){
-	siB=MPState->indexTable.siBlockIndexRP(i+1,iBlock,j);
-	aiB=MPState->indexTable.aiBlockIndexRP(i+1,iBlock,j);
+	siB=MPState->indexTable().siBlockIndexRP(i+1,iBlock,j);
+	aiB=MPState->indexTable().aiBlockIndexRP(i+1,iBlock,j);
 	for(int bim=0;bim<lDwL;++bim){
 	  outercontainer.global_access(aim,bim,siB,aiB)=0;
 	}
@@ -288,7 +288,7 @@ void baseMeasurement::calcOuterContainerRightQNOpt(int const i, lapack_complex_d
 //---------------------------------------------------------------------------------------------------//
 
 void baseMeasurement::calcCtrIterRightBase(int const i, lapack_complex_double *const sourcePctr, lapack_complex_double *const targetPctr){
-  if(MPState->indexTable.nQNs()){
+  if(MPState->indexTable().nQNs()){
     //Only this is usually relevant
     calcCtrIterRightBaseQNOpt(i,sourcePctr,targetPctr);
   }

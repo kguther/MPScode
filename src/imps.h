@@ -22,10 +22,12 @@ class imps: public impBase, public mps{
   virtual void subMatrixStart(lapack_complex_double *&pStart, int i, int si=0){mps::subMatrixStart(pStart,i,si);}
   virtual int refineQN(int i, std::vector<std::complex<int> > const &source);
   virtual int currentSite()const {return dimInfo.L()/2-1;}
-  virtual twositeQNOrderMatrix const& centralIndexTable(){return centralIndexTableVar;}
+  virtual int internalSite()const {return currentSite();}
+  virtual twositeQNOrderMatrix const& centralIndexTable() const{return centralIndexTableVar;}
+  virtual basisQNOrderMatrix const& indexTable() const{return indexTableVar;}
+  virtual pseudoQuantumNumber* getConservedQNs(int iQN){return &(conservedQNs[iQN]);}
  private:
   twositeQNOrderMatrix centralIndexTableVar;
-  quantumNumber *conservedQNsP;
 };
 
 #endif

@@ -233,11 +233,11 @@ void network::leftEnrichmentBlockwise(int i){
   pExpression=pEP.get();
   R=Rp.get();
   getPExpressionLeft(i,pExpression);
-  numBlocks=networkState.indexTable.numBlocksLP(i);
+  numBlocks=networkState.indexTable().numBlocksLP(i);
   networkState.subMatrixStart(localMatrix,i);
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
-    lBlockSize=networkState.indexTable.lBlockSizeLP(i,iBlock);
-    rBlockSize=networkState.indexTable.rBlockSizeLP(i,iBlock);
+    lBlockSize=networkState.indexTable().lBlockSizeLP(i,iBlock);
+    rBlockSize=networkState.indexTable().rBlockSizeLP(i,iBlock);
     blockDimL=lBlockSize;
     blockDimR=rBlockSize*(1+lDwR);
     maxDim=(blockDimL>blockDimR)?blockDimL:blockDimR;
@@ -245,10 +245,10 @@ void network::leftEnrichmentBlockwise(int i){
       MP.reset(new lapack_complex_double[blockDimL*blockDimR]);
       Mnew=MP.get();
       for(int j=0;j<rBlockSize;++j){
-	aiCurrent=networkState.indexTable.aiBlockIndexLP(i,iBlock,j);
+	aiCurrent=networkState.indexTable().aiBlockIndexLP(i,iBlock,j);
       	for(int k=0;k<lBlockSize;++k){
-	  aimCurrent=networkState.indexTable.aimBlockIndexLP(i,iBlock,k);
-	  siCurrent=networkState.indexTable.siBlockIndexLP(i,iBlock,k);
+	  aimCurrent=networkState.indexTable().aimBlockIndexLP(i,iBlock,k);
+	  siCurrent=networkState.indexTable().siBlockIndexLP(i,iBlock,k);
 	  Mnew[k+j*lBlockSize]=localMatrix[stateIndex(siCurrent,aiCurrent,aimCurrent)];
 	  for(int bi=0;bi<lDwR;++bi){
 	    Mnew[k+j*lBlockSize+(bi+1)*lBlockSize*rBlockSize]=alpha*pExpression[aimCurrent+lDL*siCurrent+bi*lDL*ld*lDR+aiCurrent*lDL*ld];
@@ -285,18 +285,18 @@ void network::leftEnrichmentBlockwise(int i){
       }
       for(int b=0;b<(1+lDwR);++b){
 	for(int jp=0;jp<rBlockSize;++jp){
-	  aipCurrent=networkState.indexTable.aiBlockIndexLP(i,iBlock,jp);
+	  aipCurrent=networkState.indexTable().aiBlockIndexLP(i,iBlock,jp);
 	  for(int j=0;j<rBlockSize;++j){
-	    aiCurrent=networkState.indexTable.aiBlockIndexLP(i,iBlock,j);
+	    aiCurrent=networkState.indexTable().aiBlockIndexLP(i,iBlock,j);
 	    R[aiCurrent+lDR*aipCurrent+lDR*lDR*b]=VT[j+blockDimR*jp+blockDimR*rBlockSize*b];
 	  }
 	}
       }
       for(int j=0;j<rBlockSize;++j){
-	aiCurrent=networkState.indexTable.aiBlockIndexLP(i,iBlock,j);
+	aiCurrent=networkState.indexTable().aiBlockIndexLP(i,iBlock,j);
 	for(int k=0;k<lBlockSize;++k){
-	  aimCurrent=networkState.indexTable.aimBlockIndexLP(i,iBlock,k);
-	  siCurrent=networkState.indexTable.siBlockIndexLP(i,iBlock,k);
+	  aimCurrent=networkState.indexTable().aimBlockIndexLP(i,iBlock,k);
+	  siCurrent=networkState.indexTable().siBlockIndexLP(i,iBlock,k);
 	  localMatrix[stateIndex(siCurrent,aiCurrent,aimCurrent)]=U[k+lBlockSize*j];
 	}
       }
@@ -358,11 +358,11 @@ void network::rightEnrichmentBlockwise(int i){
   R=Rp.get();
   pExpression=pEP.get();
   getPExpressionRight(i,pExpression);
-  numBlocks=networkState.indexTable.numBlocksRP(i);
+  numBlocks=networkState.indexTable().numBlocksRP(i);
   networkState.subMatrixStart(localMatrix,i);
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
-    lBlockSize=networkState.indexTable.lBlockSizeRP(i,iBlock);
-    rBlockSize=networkState.indexTable.rBlockSizeRP(i,iBlock);
+    lBlockSize=networkState.indexTable().lBlockSizeRP(i,iBlock);
+    rBlockSize=networkState.indexTable().rBlockSizeRP(i,iBlock);
     blockDimL=lBlockSize*(1+lDwL);
     blockDimR=rBlockSize;
     maxDim=(blockDimL>blockDimR)?blockDimL:blockDimR;
@@ -370,10 +370,10 @@ void network::rightEnrichmentBlockwise(int i){
       MP.reset(new lapack_complex_double[lBlockSize*rBlockSize*(1+lDwL)]);
       Mnew=MP.get();
       for(int j=0;j<rBlockSize;++j){
-	aiCurrent=networkState.indexTable.aiBlockIndexRP(i,iBlock,j);
-	siCurrent=networkState.indexTable.siBlockIndexRP(i,iBlock,j);
+	aiCurrent=networkState.indexTable().aiBlockIndexRP(i,iBlock,j);
+	siCurrent=networkState.indexTable().siBlockIndexRP(i,iBlock,j);
       	for(int k=0;k<lBlockSize;++k){
-	  aimCurrent=networkState.indexTable.aimBlockIndexRP(i,iBlock,k);
+	  aimCurrent=networkState.indexTable().aimBlockIndexRP(i,iBlock,k);
 	  Mnew[k+j*blockDimL]=localMatrix[stateIndex(siCurrent,aiCurrent,aimCurrent)];
 	  for(int bim=0;bim<lDwL;++bim){
 	    Mnew[k+j*blockDimL+(bim+1)*lBlockSize]=alpha*pExpression[aimCurrent*lDwL+lDR*lDwL*lDL*siCurrent+bim+aiCurrent*lDL*lDwL];
@@ -409,18 +409,18 @@ void network::rightEnrichmentBlockwise(int i){
       }
       for(int b=0;b<(1+lDwL);++b){
 	for(int kp=0;kp<lBlockSize;++kp){
-	  aimpCurrent=networkState.indexTable.aimBlockIndexRP(i,iBlock,kp);
+	  aimpCurrent=networkState.indexTable().aimBlockIndexRP(i,iBlock,kp);
 	  for(int k=0;k<lBlockSize;++k){
-	    aimCurrent=networkState.indexTable.aimBlockIndexRP(i,iBlock,k);
+	    aimCurrent=networkState.indexTable().aimBlockIndexRP(i,iBlock,k);
 	    R[aimCurrent+lDL*(1+lDwL)*aimpCurrent+lDL*b]=U[k+blockDimL*kp+lBlockSize*b];
 	  }
 	}
       }
       for(int j=0;j<rBlockSize;++j){
-	aiCurrent=networkState.indexTable.aiBlockIndexRP(i,iBlock,j);
-	siCurrent=networkState.indexTable.siBlockIndexRP(i,iBlock,j);
+	aiCurrent=networkState.indexTable().aiBlockIndexRP(i,iBlock,j);
+	siCurrent=networkState.indexTable().siBlockIndexRP(i,iBlock,j);
 	for(int k=0;k<lBlockSize;++k){
-	  aimCurrent=networkState.indexTable.aimBlockIndexRP(i,iBlock,k);
+	  aimCurrent=networkState.indexTable().aimBlockIndexRP(i,iBlock,k);
 	  localMatrix[stateIndex(siCurrent,aiCurrent,aimCurrent)]=VT[k+blockDimR*j];
 	}
       }
@@ -459,7 +459,7 @@ void network::rightEnrichmentBlockwise(int i){
 //---------------------------------------------------------------------------------------------------//
 
 void network::getPExpressionLeft(int const i, lapack_complex_double *pExpr){
-  int const numBlocks=networkState.indexTable.numBlocksLP(i);
+  int const numBlocks=networkState.indexTable().numBlocksLP(i);
   int lBlockSize, rBlockSize;
   int aiCurrent, siCurrent, aimCurrent;
   getLocalDimensions(i);
@@ -471,13 +471,13 @@ void network::getPExpressionLeft(int const i, lapack_complex_double *pExpr){
   }
   //Copying has to be done explicitly for an optimized storage scheme of pExpr
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
-    lBlockSize=networkState.indexTable.lBlockSizeLP(i,iBlock);
-    rBlockSize=networkState.indexTable.rBlockSizeLP(i,iBlock);
+    lBlockSize=networkState.indexTable().lBlockSizeLP(i,iBlock);
+    rBlockSize=networkState.indexTable().rBlockSizeLP(i,iBlock);
     for(int k=0;k<lBlockSize;++k){
-      aimCurrent=networkState.indexTable.aimBlockIndexLP(i,iBlock,k);
-      siCurrent=networkState.indexTable.siBlockIndexLP(i,iBlock,k);
+      aimCurrent=networkState.indexTable().aimBlockIndexLP(i,iBlock,k);
+      siCurrent=networkState.indexTable().siBlockIndexLP(i,iBlock,k);
       for(int j=0;j<rBlockSize;++j){
-	aiCurrent=networkState.indexTable.aiBlockIndexLP(i,iBlock,j);
+	aiCurrent=networkState.indexTable().aiBlockIndexLP(i,iBlock,j);
 	for(int bi=0;bi<lDwR;++bi){
 	  pExpr[aimCurrent+lDL*siCurrent+bi*lDL*ld*lDR+aiCurrent*lDL*ld]=outerContainer.global_access(siCurrent,bi,aiCurrent,aimCurrent);
 	}
@@ -490,20 +490,20 @@ void network::getPExpressionLeft(int const i, lapack_complex_double *pExpr){
 
 void network::getPExpressionRight(int i, lapack_complex_double *pExpr){
   //This works just like the left version, except for the shape of the used storage scheme (and other functions are called to get the right expression)
-  int const numBlocks=networkState.indexTable.numBlocksRP(i);
+  int const numBlocks=networkState.indexTable().numBlocksRP(i);
   int lBlockSize, rBlockSize;
   int aiCurrent, siCurrent, aimCurrent;
   getLocalDimensions(i);
   tmpContainer<lapack_complex_double> outerContainer(lDL,lDwL,ld,lDR);
   pCtr.calcOuterContainerRight(i-1,outerContainer);
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
-    lBlockSize=networkState.indexTable.lBlockSizeRP(i,iBlock);
-    rBlockSize=networkState.indexTable.rBlockSizeRP(i,iBlock);
+    lBlockSize=networkState.indexTable().lBlockSizeRP(i,iBlock);
+    rBlockSize=networkState.indexTable().rBlockSizeRP(i,iBlock);
     for(int j=0;j<rBlockSize;++j){
-      aiCurrent=networkState.indexTable.aiBlockIndexRP(i,iBlock,j);
-      siCurrent=networkState.indexTable.siBlockIndexRP(i,iBlock,j);
+      aiCurrent=networkState.indexTable().aiBlockIndexRP(i,iBlock,j);
+      siCurrent=networkState.indexTable().siBlockIndexRP(i,iBlock,j);
       for(int k=0;k<lBlockSize;++k){
-	aimCurrent=networkState.indexTable.aimBlockIndexRP(i,iBlock,k);
+	aimCurrent=networkState.indexTable().aimBlockIndexRP(i,iBlock,k);
 	for(int bim=0;bim<lDwL;++bim){
 	  pExpr[aimCurrent*lDwL+lDR*lDwL*lDL*siCurrent+bim+aiCurrent*lDL*lDwL]=outerContainer.global_access(aimCurrent,bim,siCurrent,aiCurrent);
 	}
@@ -531,24 +531,24 @@ double network::getCurrentEnergy(int i){
     gather.MultMv(currentM,siteMatrixContainer);
   }
   else{
-    blockHMatrix BMat(RTerm,LTerm,&networkH,networkDimInfo,Dw,i,&(networkState.indexTable),0,0,&conservedQNs,1);
+    blockHMatrix BMat(RTerm,LTerm,&networkH,networkDimInfo,Dw,i,&(networkState.indexTable()),0,0,&conservedQNs,1);
     BMat.prepareInput(currentM);
     BMat.MultMvBlockedLP(BMat.getCompressedVector(),BMat.getCompressedVector());
     BMat.readOutput(siteMatrixContainer);
   }
   //Here, we contract the result with the current state. There is a version with and one without the use of QNs
   if(pars.nQNs){
-    int const numBlocks=networkState.indexTable.numBlocksLP(i);
+    int const numBlocks=networkState.indexTable().numBlocksLP(i);
     int lBlockSize, rBlockSize;
     int siCurrent, aiCurrent, aimCurrent;
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
-      lBlockSize=networkState.indexTable.lBlockSizeLP(i,iBlock);
-      rBlockSize=networkState.indexTable.rBlockSizeLP(i,iBlock);
+      lBlockSize=networkState.indexTable().lBlockSizeLP(i,iBlock);
+      rBlockSize=networkState.indexTable().rBlockSizeLP(i,iBlock);
       for(int k=0;k<lBlockSize;++k){
-	aimCurrent=networkState.indexTable.aimBlockIndexLP(i,iBlock,k);
-	siCurrent=networkState.indexTable.siBlockIndexLP(i,iBlock,k);
+	aimCurrent=networkState.indexTable().aimBlockIndexLP(i,iBlock,k);
+	siCurrent=networkState.indexTable().siBlockIndexLP(i,iBlock,k);
 	for(int j=0;j<rBlockSize;++j){
-	  aiCurrent=networkState.indexTable.aiBlockIndexLP(i,iBlock,j);
+	  aiCurrent=networkState.indexTable().aiBlockIndexLP(i,iBlock,j);
 	  simpleContainer+=conj(currentM[aimCurrent+aiCurrent*lDL+siCurrent*lDR*lDL])*siteMatrixContainer[aimCurrent+aiCurrent*lDL+siCurrent*lDL*lDR];
 	}
       }
