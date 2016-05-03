@@ -2,6 +2,7 @@
 #define ITERATIVE_MEASUREMENT
 
 #include "baseMeasurement.h"
+#include "pContraction.h"
 
 //---------------------------------------------------------------------------------------------------//
 // This measurement class is used for computing the expectation value of some operator during the 
@@ -13,17 +14,17 @@
 class iterativeMeasurement: protected baseMeasurement{
  public:
   iterativeMeasurement();
-  iterativeMeasurement(mpo<lapack_complex_double> *const MPOperator, mps *const MPState);
-  void initialize(mpo<lapack_complex_double> *const MPOperator, mps *const MPState);
+  iterativeMeasurement(mpo<arcomplex<double> > *const MPOperator, mps *const MPState);
+  void initialize(mpo<arcomplex<double> > *const MPOperator, mps *const MPState);
   int calcCtrFull(int const direction);
   virtual void calcCtrIterLeft(int const i);
   void calcCtrIterRight(int const i);
-  virtual void calcCtrIterRightBase(int i, lapack_complex_double *const target);
-  void calcOuterContainerLeft(int const i, tmpContainer<lapack_complex_double> &outerContainer);
-  void calcOuterContainerRight(int const i, tmpContainer<lapack_complex_double> &outerContainer);
+  virtual void calcCtrIterRightBase(int i, arcomplex<double> *const target);
+  void calcOuterContainerLeft(int const i, tmpContainer<arcomplex<double> > &outerContainer);
+  void calcOuterContainerRight(int const i, tmpContainer<arcomplex<double> > &outerContainer);
   //Containers for caching of partial contractions of the expectation value. This is what distinguishes the iterativeMeasurement
-  pContraction<lapack_complex_double> Lctr;
-  pContraction<lapack_complex_double> Rctr;
+  pContraction<arcomplex<double> > Lctr;
+  pContraction<arcomplex<double> > Rctr;
 };
 
 #endif

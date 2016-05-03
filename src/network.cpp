@@ -197,12 +197,12 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
     overlap test;
     test.loadMPS(&networkState,&networkState);
     std::cout<<"Norm: "<<test.getFullOverlap()<<std::endl;
-    
+    */
     measure(check,spinCheck);
     measure(checkParity,parCheck);
     std::cout<<"Current particle number (initial): "<<spinCheck<<std::endl;
     std::cout<<"Current subchain parity (initial): "<<parCheck<<std::endl;
-    */
+    
 
     std::cout<<"Computing partial contractions\n";
     pCtr.Lctr.global_access(0,0,0,0)=1;

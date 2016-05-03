@@ -5,8 +5,6 @@
 #include <arscomp.h>
 #include <memory>
 
-#include "mkl_complex_defined.h"
-
 #include "verifyQN.h"
 #include <iostream>
 
@@ -19,8 +17,8 @@ infiniteNetwork::infiniteNetwork(problemParameters const &parsIn, simulationPara
   firstStep(1),
   networkState(MPState)
 {
-  dimInfo=networkState->getDimInfo();
-  networkH=mpo<lapack_complex_double>(pars.d.maxd(),pars.Dw,pars.L);
+  dimInfo=networkState->impBase::getDimInfo();
+  networkH=mpo<arcomplex<double> >(pars.d.maxd(),pars.Dw,pars.L);
   pCtr=uncachedMeasurement(&networkH,networkState);
   int const lDR=dimInfo.locDimR(networkState->currentSite());
   diags=std::vector<double>(lDR,1.0);
@@ -49,7 +47,7 @@ void infiniteNetwork::addDiags(){
 
 //---------------------------------------------------------------------------------------------------//
 
-void infiniteNetwork::setPCtr(std::vector<lapack_complex_double> const &R, std::vector<lapack_complex_double> const &L){
+void infiniteNetwork::setPCtr(std::vector<arcomplex<double> > const &R, std::vector<arcomplex<double> > const &L){
   pCtr.setContractions(R,L);
 }
 
@@ -149,6 +147,9 @@ void infiniteNetwork::addSite(){
   //The QNs determined in updateMPS are stored
   info=networkState->refineQN(i+1,optLocalQNsL);
 
+  //Cache results
+  aBuf=networkState->getSiteTensor(i);
+  bBuf=networkState->getSiteTensor(i+1);
   //This is where the actual MPS is grown
   networkState->addSite(dimInfo.L(),i+1,newQNs,optLocalQNsR);
 

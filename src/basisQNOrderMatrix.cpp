@@ -30,23 +30,6 @@ basisQNOrderMatrix::basisQNOrderMatrix(dimensionTable &dimin, std::vector<pseudo
 {}
 
 //---------------------------------------------------------------------------------------------------//
-
-void basisQNOrderMatrix::initialize(dimensionTable &dimin, std::vector<pseudoQuantumNumber*> &conservedQNsin){
-  dimInfo=dimin;
-  conservedQNs=conservedQNsin;
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-void basisQNOrderMatrix::initialize(dimensionTable &dimin, std::vector<quantumNumber> *conservedQNsin){
-  dimInfo=dimin;
-  conservedQNs.resize(conservedQNsin->size());
-  for(int m=0;m<conservedQNs.size();++m){
-    conservedQNs[m]=&((*conservedQNsin)[m]);
-  }
-}
-
-//---------------------------------------------------------------------------------------------------//
 // Generates the tables containing the virtual bond indices for the block indices. Returns 0 at success, 1 if the quantum number targeted is invalid and 2 if the labeling scheme itself is invalid (i.e. contains non-normalizable blocks).
 //---------------------------------------------------------------------------------------------------//
 
@@ -76,7 +59,7 @@ int basisQNOrderMatrix::generateQNIndexTables(){
   
   //Check if labeling scheme is valid
   int info=validate();
-  if(info){
+  if(info && 0){
     std::cout<<"CRITICAL ERROR: Invalid QN labeling scheme at site "<<abs(info)-1<<"\n";
     for(int i=0;i<dimInfo.L();++i){
       if(i+1==abs(info)){

@@ -1,10 +1,9 @@
 #ifndef MATRIX_TO_CREATE_QN_BLOCK_ORDERING
 #define MATRIX_TO_CREATE_QN_BLOCK_ORDERING
 
-#include "mkl_complex_defined.h"
 #include "quantumNumber.h"
+#include "multInt.h"
 #include <vector>
-
 
 //---------------------------------------------------------------------------------------------------//
 // The basisQNOrderMatrix class (which has a somewhat strange name) contains the indices of all blocks
@@ -13,10 +12,7 @@
 // Index functions returning the global MPS index for given block indices are supplied.
 //---------------------------------------------------------------------------------------------------//
 
-struct multInt{
-  int aim;
-  int si;
-};
+//TODO: SPLIT INTO LOCAL OBJECTS
 
 class basisQNOrderMatrix{
  public:

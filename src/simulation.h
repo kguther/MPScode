@@ -7,8 +7,6 @@
 #include "parameters.h"
 #include "problemOperators.h"
 #include "localMpo.h"
-#include "mps.h"
-#include "network.h"
 #include "Qsystem.h"
 
 class simulation{

@@ -20,16 +20,26 @@ DCFLAGS=$(DMKL)
 MPI_COMPILE_FLAGS=$(shell mpic++ --showme:compile)
 MPI_LINK_FLAGS=$(shell mpic++ --showme:link)
 CFLAGS=-Wall -std=c++11 -fopenmp -O3 $(MKL_INCLUDE)
+CFLAGS_DEBUG=-Wall -std=c++11 -fopenmp -g $(MKL_INCLUDE)
 APCK_INCLUDE=-I/usr/include/arpack++
 MKL_INCLUDE=-I$(MKL_INCLUDE_PATH)
+DEBUG_NAME=scMPScode
 OBJECTS=network.o arrayprocessing.o Qsystem.o optHMatrix.o mps.o globalMeasurement.o baseMeasurement.o iterativeMeasurement.o overlap.o stateArray.o network_enrichment.o projector.o quantumNumber.o dimensionTable.o basisQNOrderMatrix.o blockHMatrix.o localHSpaces.o localMeasurementSeries.o simulation.o problemOperators.o interface.o main.o parameters.o exactGroundState.o imps.o uncachedMeasurement.o twositeQNOrderMatrix.o twositeHMatrix.o infiniteNetwork.o infiniteNetwork_prediction.o initStateGrow.o verifyQN.o pseudoQuantumNumber.o timps.o infiniteQsystem.o
-TEMPLATES=arraycreation.h mpo.h pContraction.h tmpContainer.h localMpo.h baseTensor.h
+OBJECTS_DEBUG=$(OBJECTS:.o=.dbg)
+TEMPLATES=arraycreation.h mpo.h pContraction.h tmpContainer.h localMpo.h baseTensor.h contractor.h
 
 all: $(OBJECTS)
 	$(CC) -o $(NAME) $(OBJECTS) $(APCK_LIB) $(CFLAGS) $(LFLAGS) $(DCFLAGS)
 
+debug: $(OBJECTS_DEBUG)
+	$(CC) -o $(DEBUG_NAME) $(OBJECTS_DEBUG) $(APCK_LIB) $(CFLAGS_DEBUG) $(LFLAGS) $(DCFLAGS)
+
 $(OBJECTS): %.o: %.cpp $(TEMPLATES)
 	$(CC) -c $(CFLAGS) $(APCK_INCLUDE) $(MPI_COMPILE_FLAGS) $(DCFLAGS) $< -o $@
 
+$(OBJECTS_DEBUG): %.dbg: %.cpp $(TEMPLATES)
+	$(CC) -c $(CFLAGS_DEBUG) $(APCK_INCLUDE) $(MPI_COMPILE_FLAGS) $(DCFLAGS) $< -o $@
+
 clean:
 	\rm *.o
+	\rm *.dbg

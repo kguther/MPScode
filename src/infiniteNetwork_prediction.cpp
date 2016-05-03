@@ -1,6 +1,5 @@
 #include "infiniteNetwork.h"
 #include "mkl_complex_defined.h"
-#include "arrayprocessing.h"
 #include <memory>
 #include <vector>
 #include <algorithm>
@@ -48,7 +47,7 @@ int infiniteNetwork::statePrediction(arcomplex<double> *target){
   leftBuf=leftBufP.get();
   rightBuf=rightBufP.get();
   
-  int info;
+  int info=0;
   /*
   int info=checkQNConstraint(*networkState,i-1);
   if(info){
@@ -65,8 +64,8 @@ int infiniteNetwork::statePrediction(arcomplex<double> *target){
   for(int si=0;si<dimInfo.locd(i);++si){
     for(int sip=0;sip<dimInfo.locd(i+1);++sip){
       subMatrix=target+sip*lDL*lDRR+si*dimInfo.locd(i+1)*lDL*lDRR;
-      networkState->subMatrixStart(bMatrix,i+2,si);
-      networkState->subMatrixStart(aMatrix,i-1,sip);
+      bBuf.getPtr(bMatrix,si);
+      aBuf.getPtr(aMatrix,sip);
       for(int ai=0;ai<lDR;++ai){
 	for(int aim=0;aim<lDL;++aim){
 	  leftBuf[ai+lDR*aim]=bMatrix[ai+lDR*aim]*diags[ai];
@@ -84,7 +83,7 @@ int infiniteNetwork::statePrediction(arcomplex<double> *target){
 
   qnEnforcedPrediction(target);
   
-  info=twositeCheck(*networkState,target);
+  //info=twositeCheck(*networkState,target);
   if(info){
     std::cout<<"Twosite constraint violation at site "<<networkState->currentSite()<<std::endl;
     return 2;

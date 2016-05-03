@@ -54,7 +54,7 @@ int stateArray::setParameterL(int Lnew){
   }
   else{
     startPos=L/2-deltaL/2;
-    baseTensor<lapack_complex_double> dummyTensor;
+    baseTensor<arcomplex<double> > dummyTensor;
     std::vector<int> localDims(3,0);
     int cPos;
     for(int dI=0;dI<deltaL;++dI){
@@ -62,7 +62,7 @@ int stateArray::setParameterL(int Lnew){
       localDims[0]=locd(cPos);
       localDims[1]=locDimR(cPos);
       localDims[2]=locDimL(cPos);
-      dummyTensor=baseTensor<lapack_complex_double>(localDims);
+      dummyTensor=baseTensor<arcomplex<double> >(localDims);
       stateArrayAccessStructure.insert(stateArrayAccessStructure.begin()+cPos,dummyTensor);
     }
   }

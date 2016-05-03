@@ -1,15 +1,15 @@
 #ifndef TWO_SITE_QN_ORDER_MATRIX
 #define TWO_SITE_QN_ORDER_MATRIX
 
-#include "basisQNOrderMatrix.h"
 #include "dimensionTable.h"
 #include "pseudoQuantumNumber.h"
+#include "quantumNumber.h"
+#include "multInt.h"
 #include <vector>
 
 //---------------------------------------------------------------------------------------------------//
 // A class containing index tables for the entries of a twosite compound matrix that fullfill the qn constraint (i.e. the twosite constraint). It works much like the basisQNOrderMatrix, however, there is no left/right pairing since the pairing is always si/aim and sip/air in our case. The twosite approach is used in iDMRG. Since the table has to be generated before each step, it would be highly inefficient to make it global. Therefore, this table only describes the indices for two sites instead of the whole MPS.
 //---------------------------------------------------------------------------------------------------//
-
 
 class twositeQNOrderMatrix{
  public:

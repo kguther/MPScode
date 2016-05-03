@@ -155,7 +155,7 @@ int main(int argc, char *argv[]){
       }
     */
     necPars.tReal=0;
-    necPars.tPos=myrank+12;
+    necPars.tPos=myrank;
   }
   //The output filename is generated
   if(necPars.simType!=1){
@@ -180,7 +180,7 @@ int main(int argc, char *argv[]){
     //For scaling, all results are written in the same file. This is done by the poor man's solution: only the main process writes.
     if(myrank==0){
       std::ofstream ofs;
-      ofs.open("SB_local_sweep_B.txt");
+      ofs.open("SB_local_sweep.txt");
       ofs<<"Parameters: J="<<1+necPars.Jsc/necPars.scaling<<" g="<<1+necPars.gsc/necPars.scaling<<std::endl;
       ofs<<"System size: "<<necPars.L<<" filling: "<<necPars.rho<<" subchain parity="<<necPars.par<<std::endl;
       ofs<<"SB Position\tGS energy\t excited state energy\t GS accuracy\t excited state accuracy\n";
@@ -387,7 +387,7 @@ void getFileName(info const &necPars, char *fNBuf, int commsize, int myrank, std
     type="_point";
   }
   if(necPars.simType==3){
-    type="_position_scan_SB_2";
+    type="_position_scan_SB";
     /*
     switch(myrank){
     case 0:

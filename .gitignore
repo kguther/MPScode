@@ -2,3 +2,4 @@
 results/
 parfiles/
 *.o
+*.dbg

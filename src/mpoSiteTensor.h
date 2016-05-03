@@ -24,6 +24,8 @@ class mpoSiteTensor{
   void sipSubIndexArrayStart(int const*&target)const {target=&(sipIndices[0]);}
 
   int numEls()const {return nNzero;}
+  int locDimL()const {return lDwL;}
+  int locDimR()const {return lDwR;}
  private:
   std::vector<int> siIndices, sipIndices, biIndices, bimIndices;
   int nNzero, Dw, d, lDwL, lDwR;

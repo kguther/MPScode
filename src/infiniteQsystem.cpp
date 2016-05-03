@@ -5,7 +5,7 @@
 infiniteQsystem::infiniteQsystem(problemParameters parsIn, simulationParameters simParsIn, mpo<std::complex<double> > const &HIn):
   pars(parsIn),
   simPars(simParsIn),
-  unitCellSize(4),
+  unitCellSize(2),
   networkH(HIn)
 {
   //Generate initial state with the desired quantum numbers

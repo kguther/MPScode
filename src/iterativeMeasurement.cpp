@@ -5,7 +5,7 @@ iterativeMeasurement::iterativeMeasurement(){
 
 //---------------------------------------------------------------------------------------------------//
 
-iterativeMeasurement::iterativeMeasurement(mpo<lapack_complex_double> *const MPOperatorIn, mps *const MPStateIn):
+iterativeMeasurement::iterativeMeasurement(mpo<arcomplex<double> > *const MPOperatorIn, mps *const MPStateIn):
   baseMeasurement(MPOperatorIn,MPStateIn)
 {
   Rctr.initialize(MPOperator->length(),MPState->maxDim(),MPOperator->maxDim());
@@ -14,7 +14,7 @@ iterativeMeasurement::iterativeMeasurement(mpo<lapack_complex_double> *const MPO
 
 //---------------------------------------------------------------------------------------------------//
 
-void iterativeMeasurement::initialize(mpo<lapack_complex_double> *const MPOperatorIn, mps *const MPStateIn){
+void iterativeMeasurement::initialize(mpo<arcomplex<double> > *const MPOperatorIn, mps *const MPStateIn){
   MPOperator=MPOperatorIn;
   MPState=MPStateIn;
   initializeBase();
@@ -28,7 +28,7 @@ void iterativeMeasurement::initialize(mpo<lapack_complex_double> *const MPOperat
 //---------------------------------------------------------------------------------------------------//
 
 void iterativeMeasurement::calcCtrIterLeft(int const i){
-  lapack_complex_double *targetPctr, *sourcePctr;
+  arcomplex<double> *targetPctr, *sourcePctr;
   Lctr.subContractionStart(sourcePctr,i-1);
   Lctr.subContractionStart(targetPctr,i);
   calcCtrIterLeftBase(i,sourcePctr,targetPctr);
@@ -37,32 +37,32 @@ void iterativeMeasurement::calcCtrIterLeft(int const i){
 //---------------------------------------------------------------------------------------------------//
 
 void iterativeMeasurement::calcCtrIterRight(int const i){
-  lapack_complex_double *targetPctr;
+  arcomplex<double> *targetPctr;
   Rctr.subContractionStart(targetPctr,i);
   calcCtrIterRightBase(i,targetPctr);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-void iterativeMeasurement::calcCtrIterRightBase(int i, lapack_complex_double *const targetPctr){
-  lapack_complex_double *sourcePctr;
+void iterativeMeasurement::calcCtrIterRightBase(int i, arcomplex<double>  *const targetPctr){
+  arcomplex<double> *sourcePctr;
   Rctr.subContractionStart(sourcePctr,i+1);
   baseMeasurement::calcCtrIterRightBase(i,sourcePctr,targetPctr);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-void iterativeMeasurement::calcOuterContainerLeft(int const i, tmpContainer<lapack_complex_double> &outercontainer){
-  lapack_complex_double *sourcePctr;
+void iterativeMeasurement::calcOuterContainerLeft(int const i, tmpContainer<arcomplex<double> > &outercontainer){
+  arcomplex<double> *sourcePctr;
   Lctr.subContractionStart(sourcePctr,i-1);
   baseMeasurement::calcOuterContainerLeft(i,sourcePctr,outercontainer);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-void iterativeMeasurement::calcOuterContainerRight(int const i, tmpContainer<lapack_complex_double> &outercontainer){
+void iterativeMeasurement::calcOuterContainerRight(int const i, tmpContainer<arcomplex<double> > &outercontainer){
   if(MPState->indexTable().nQNs()){
-    lapack_complex_double *sourcePctr;
+    arcomplex<double> *sourcePctr;
     Rctr.subContractionStart(sourcePctr,i+1);
     baseMeasurement::calcOuterContainerRightQNOpt(i,sourcePctr,outercontainer);
   }

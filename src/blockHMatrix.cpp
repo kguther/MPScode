@@ -3,15 +3,11 @@
 #include "arrayprocessing.h"
 #include <iostream>
 #include <memory>
-#include <time.h>
-#include <omp.h>
-#include "mkl_complex_defined.h"
 
 
 blockHMatrix::blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcomplex<double> > *Hin, dimensionTable &dimInfo, int Dwin, int iIn, basisQNOrderMatrix const *indexTablein, projector *excitedStateP, double shift, std::vector<quantumNumber> *conservedQNsin, int const cached):
   optHMatrix(R,L,Hin,dimInfo,Dwin,iIn,excitedStateP,shift,conservedQNsin),
   indexTable(indexTablein),
-  conservedQNsB(conservedQNsin),
   HMPO(Hin)
 {
   int cBlockSize;
@@ -49,8 +45,8 @@ blockHMatrix::blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcom
 
 void blockHMatrix::MultMvBlocked(arcomplex<double> *v, arcomplex<double> *w){
   if(explicitMv){
-    std::unique_ptr<lapack_complex_double> proxyP(new lapack_complex_double[dimension]);
-    lapack_complex_double *proxy=proxyP.get();
+    std::unique_ptr<arcomplex<double>[]> proxyP(new arcomplex<double>[dimension]);
+    arcomplex<double> *proxy=proxyP.get();
     excitedStateProject(v);
     auxiliary::arraycpy(dimension,v,proxy);
     arcomplex<double> simpleContainer;
@@ -162,9 +158,7 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
 //---------------------------------------------------------------------------------------------------//
 
 void blockHMatrix::buildSparseHBlocked(){
-  clock_t curtime;
   int siB, aiB, aimB, aimpB, sipB;
-  curtime=clock();
   double treshold=1e-12;
   arcomplex<double> currentEntry;
   int lBlockSize, rBlockSize, lBlockSizep, rBlockSizep;
@@ -200,8 +194,6 @@ void blockHMatrix::buildSparseHBlocked(){
     }
   }
   rowPtr.push_back(sparseMatrix.size());
-  curtime=clock()-curtime;
-  std::cout<<"Matrix construction took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
 }
 
 //---------------------------------------------------------------------------------------------------//

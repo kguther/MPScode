@@ -2,18 +2,18 @@
 #define BASE_CLASS_FOR_MP_CONSTRUCTS
 
 #include <complex>
-#include "mkl_complex_defined.h"
 #include "twositeQNOrderMatrix.h"
 #include "basisQNOrderMatrix.h"
 #include "dimensionTable.h"
 #include "pseudoQuantumNumber.h"
+#include "baseTensor.h"
 
 class impBase{
  public:
   impBase(){}
- impBase(dimensionTable const &dimInfoIn):dimInfoBase(dimInfoIn){}
+ impBase(dimensionTable const &dimInfoBaseIn):dimInfoBase(dimInfoBaseIn){}
   virtual ~impBase(){}
-  virtual void subMatrixStart(lapack_complex_double *&pStart, int i, int si=0)=0;
+  virtual void subMatrixStart(std::complex<double> *&pStart, int i, int si=0)=0;
   virtual int addSite(int Lnew, int i, std::vector<std::complex<int> > const &targetQN, std::vector<std::complex<int> > const &source)=0;
   virtual int refineQN(int i, std::vector<std::complex<int> > const& newQN)=0;
   virtual int currentSite()const =0;
@@ -24,7 +24,8 @@ class impBase{
   virtual twositeQNOrderMatrix const& centralIndexTable()const=0;
   virtual basisQNOrderMatrix const& indexTable()const=0;
   virtual pseudoQuantumNumber* getConservedQNs(int i)=0;
- private:
+  virtual baseTensor<std::complex<double> > const& getSiteTensor(int i)=0;
+ protected:
   dimensionTable dimInfoBase;
 };
 

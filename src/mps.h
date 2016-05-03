@@ -1,7 +1,6 @@
 #ifndef MATRIX_PRODUCT_STATE
 #define MATRIX_PRODUCT_STATE
 
-#include <vector>
 #include "stateArray.h"
 #include "quantumNumber.h"
 #include "basisQNOrderMatrix.h"

@@ -3,7 +3,6 @@
 
 #include <vector>
 #include "optHMatrix.h"
-#include "quantumNumber.h"
 #include "basisQNOrderMatrix.h"
 
 //---------------------------------------------------------------------------------------------------//
@@ -26,7 +25,6 @@ class blockHMatrix: private optHMatrix{
   arcomplex<double>* getCompressedVector() {return &(compressedVector[0]);}
  private:
   int explicitMv;
-  std::vector<quantumNumber> *conservedQNsB;
   std::vector<int> blockOffset;
   std::vector<arcomplex<double> > sparseMatrix;
   std::vector<arcomplex<double> > compressedVector;

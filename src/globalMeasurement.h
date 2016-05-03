@@ -12,8 +12,8 @@
 class globalMeasurement: public baseMeasurement{
  public:
   globalMeasurement();
-  globalMeasurement(mpo<lapack_complex_double> *const MPOperator, mps *const MPState);
-  void setupMeasurement(mpo<lapack_complex_double> *const MPOperator, mps *const MPState);
+  globalMeasurement(mpo<arcomplex<double> > *const MPOperator, mps *const MPState);
+  void setupMeasurement(mpo<arcomplex<double> > *const MPOperator, mps *const MPState);
   void measureFull(double &lambda);
 };
 

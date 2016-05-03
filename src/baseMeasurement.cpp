@@ -2,6 +2,7 @@
 #include "mpo.h"
 #include "mps.h"
 #include "tmpContainer.h"
+#include "contractor.h"
 
 //---------------------------------------------------------------------------------------------------//
 // Constructor and initialize() function for the baseMeasurement class.
@@ -12,11 +13,11 @@ baseMeasurement::baseMeasurement(){
 
 //---------------------------------------------------------------------------------------------------//
 
-baseMeasurement::baseMeasurement(mpo<lapack_complex_double> *const MPOperatorIn, mps *const MPStateIn):
+baseMeasurement::baseMeasurement(mpo<arcomplex<double> > *const MPOperatorIn, mps *const MPStateIn):
   MPOperator(MPOperatorIn),
   MPState(MPStateIn)
 {
-  initializeBase();
+  initializeBase();  
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -25,11 +26,12 @@ void baseMeasurement::initializeBase(){
   Dw=MPOperator->maxDim();
   D=MPState->maxDim();
   MPOperator->setUpSparse();
+  calcer=contractor(MPOperator->maxDim(),MPState->getDimInfo(),MPState->indexTable());
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-void baseMeasurement::setupMeasurement(mpo<lapack_complex_double> *const MPOperatorIn, mps *const MPStateIn){
+void baseMeasurement::setupMeasurement(mpo<arcomplex<double> > *const MPOperatorIn, mps *const MPStateIn){
   MPOperator=MPOperatorIn;
   MPState=MPStateIn;
   initializeBase();
@@ -53,13 +55,13 @@ void baseMeasurement::getLocalDimensions(int i){
 // which will usually be the next subcontraction of Rctr.
 //---------------------------------------------------------------------------------------------------//
 
-void baseMeasurement::calcCtrIterLeftBase(int const i, lapack_complex_double *const source, lapack_complex_double *const targetPctr){
+void baseMeasurement::calcCtrIterLeftBase(int const i, arcomplex<double>  *const source, arcomplex<double>  *const targetPctr){
   calcCtrIterLeftBaseQNOpt(i,source,targetPctr);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-void baseMeasurement::calcOuterContainerLeft(int const i, lapack_complex_double *const source, tmpContainer<lapack_complex_double> &outercontainer){
+void baseMeasurement::calcOuterContainerLeft(int const i, arcomplex<double>  *const source, tmpContainer<arcomplex<double> > &outercontainer){
   if(MPState->indexTable().nQNs()){
     calcOuterContainerLeftQNOpt(i,source,outercontainer);
   }
@@ -70,9 +72,16 @@ void baseMeasurement::calcOuterContainerLeft(int const i, lapack_complex_double 
 
 //---------------------------------------------------------------------------------------------------//
 
-void baseMeasurement::calcCtrIterLeftBaseQNOpt(int const i, lapack_complex_double *const source, lapack_complex_double *const targetPctr){
-  lapack_complex_double simpleContainer;
-  lapack_complex_double *siteMatrixState;
+void baseMeasurement::calcCtrIterLeftBaseQNOpt(int const i, arcomplex<double>  *const source, arcomplex<double>  *const targetPctr){
+  
+  arcomplex<double>  *siteMatrixState;
+  MPState->subMatrixStart(siteMatrixState,i-1);
+  calcer.calcLeftContraction(i,i,siteMatrixState,MPOperator->getSiteTensor(i-1),source,targetPctr);
+  
+  
+  /*
+  arcomplex<double>  simpleContainer;
+  arcomplex<double>  *siteMatrixState;
   int const numBlocks=MPState->indexTable().numBlocksLP(i-1);
   int aiB, aimB, siB;
   int lBlockSize, rBlockSize;
@@ -80,7 +89,7 @@ void baseMeasurement::calcCtrIterLeftBaseQNOpt(int const i, lapack_complex_doubl
   MPState->subMatrixStart(siteMatrixState,i-1);
   getLocalDimensions(i-1);
   //container arrays to significantly reduce computational effort by storing intermediate results
-  tmpContainer<lapack_complex_double> outercontainer(ld,lDwR,lDR,lDL);
+  tmpContainer<arcomplex<double> > outercontainer(ld,lDwR,lDR,lDL);
   calcOuterContainerLeftQNOpt(i,source,outercontainer);
 #pragma omp parallel for private(simpleContainer,lBlockSize,rBlockSize,aiB,siB,aimB)
   for(int aip=0;aip<lDR;++aip){
@@ -103,12 +112,21 @@ void baseMeasurement::calcCtrIterLeftBaseQNOpt(int const i, lapack_complex_doubl
   }
   curtime=clock()-curtime;
   //std::cout<<"Total left contraction took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
+  */
 }
 
-void baseMeasurement::calcOuterContainerLeftQNOpt(int const i, lapack_complex_double *const source, tmpContainer<lapack_complex_double> &outercontainer){
+//---------------------------------------------------------------------------------------------------//
+
+void baseMeasurement::calcOuterContainerLeftQNOpt(int const i, arcomplex<double>  *const source, tmpContainer<arcomplex<double> > &outercontainer){
+
+  arcomplex<double>  *siteMatrixState;
+  MPState->subMatrixStart(siteMatrixState,i-1);
+  calcer.calcLeftOuterContainer(i,i,siteMatrixState,MPOperator->getSiteTensor(i-1),source,outercontainer);
+  
+  /*
   int const *biIndices, *bimIndices, *siIndices, *sipIndices;
-  lapack_complex_double *siteMatrixState;
-  lapack_complex_double const *siteMatrixH;
+  arcomplex<double>  *siteMatrixState;
+  arcomplex<double>  const *siteMatrixH;
   int biS, bimS, siS, sipS, aiB, aimB, siB;
   int lBlockSize, rBlockSize;
   int const sparseSize=MPOperator->numEls(i-1);
@@ -121,7 +139,7 @@ void baseMeasurement::calcOuterContainerLeftQNOpt(int const i, lapack_complex_do
   MPOperator->bimSubIndexArrayStart(bimIndices,i-1);
   MPOperator->siSubIndexArrayStart(siIndices,i-1);
   MPOperator->sipSubIndexArrayStart(sipIndices,i-1);
-  tmpContainer<lapack_complex_double> innercontainer(ld,lDR,lDwL,lDL);
+  tmpContainer<arcomplex<double> > innercontainer(ld,lDR,lDwL,lDL);
   curtime=clock();
   //horrible construct to efficiently compute the partial contraction
 #pragma omp parallel for
@@ -179,19 +197,26 @@ void baseMeasurement::calcOuterContainerLeftQNOpt(int const i, lapack_complex_do
   curtime=clock()-curtime;
   //std::cout<<"Inner contraction took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
   curtime=clock();
+  */
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-void baseMeasurement::calcCtrIterRightBaseQNOpt(int const i, lapack_complex_double *const sourcePctr, lapack_complex_double *const targetPctr){
-  lapack_complex_double simpleContainer;
-  lapack_complex_double *siteMatrixState;
+void baseMeasurement::calcCtrIterRightBaseQNOpt(int const i, arcomplex<double>  *const sourcePctr, arcomplex<double>  *const targetPctr){
+  
+  arcomplex<double>  *siteMatrixState;
+  MPState->subMatrixStart(siteMatrixState,i+1);
+  calcer.calcRightContraction(i,i,siteMatrixState,MPOperator->getSiteTensor(i+1),sourcePctr,targetPctr);
+  
+  /*
+  arcomplex<double>  simpleContainer;
+  arcomplex<double>  *siteMatrixState;
   int const numBlocks=MPState->indexTable().numBlocksRP(i+1);
   int aiB, siB, aimB;
   int lBlockSize, rBlockSize;
   MPState->subMatrixStart(siteMatrixState,i+1);
   getLocalDimensions(i+1);
-  tmpContainer<lapack_complex_double> outercontainer(lDL,lDwL,ld,lDR);
+  tmpContainer<arcomplex<double> > outercontainer(lDL,lDwL,ld,lDR);
   //The calculation of the first two contractions has to be done in other functions, too. It therefore has an extra function. 
   calcOuterContainerRightQNOpt(i,sourcePctr,outercontainer);
 #pragma omp parallel for private(simpleContainer,lBlockSize,rBlockSize,aimB,aiB,siB)  
@@ -213,18 +238,26 @@ void baseMeasurement::calcCtrIterRightBaseQNOpt(int const i, lapack_complex_doub
       }
     }
   }
+  */
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-void baseMeasurement::calcOuterContainerRightQNOpt(int const i, lapack_complex_double *const sourcePctr, tmpContainer<lapack_complex_double> &outercontainer){
-  lapack_complex_double *siteMatrixState;
+void baseMeasurement::calcOuterContainerRightQNOpt(int const i, arcomplex<double>  *const sourcePctr, tmpContainer<arcomplex<double> > &outercontainer){
+
+  
+  arcomplex<double>  *siteMatrixState;
+  MPState->subMatrixStart(siteMatrixState,i+1);
+  calcer.calcRightOuterContainer(i,i,siteMatrixState,MPOperator->getSiteTensor(i+1),sourcePctr,outercontainer);
+  
+  /*
+  arcomplex<double>  *siteMatrixState;
   int const numBlocks=MPState->indexTable().numBlocksRP(i+1);
   int aiB, siB, aimB;
   int lBlockSize, rBlockSize;
   MPState->subMatrixStart(siteMatrixState,i+1);
   getLocalDimensions(i+1);
-  lapack_complex_double const *siteMatrixH;
+  arcomplex<double>  const *siteMatrixH;
   int const *biIndices, *bimIndices, *siIndices, *sipIndices;
   int const sparseSize=MPOperator->numEls(i+1);
   int biS, bimS, siS, sipS;
@@ -233,7 +266,7 @@ void baseMeasurement::calcOuterContainerRightQNOpt(int const i, lapack_complex_d
   MPOperator->bimSubIndexArrayStart(bimIndices,i+1);
   MPOperator->siSubIndexArrayStart(siIndices,i+1);
   MPOperator->sipSubIndexArrayStart(sipIndices,i+1);
-  tmpContainer<lapack_complex_double> innercontainer(ld,lDwR,lDR,lDL);
+  tmpContainer<arcomplex<double> > innercontainer(ld,lDwR,lDR,lDL);
 #pragma omp parallel for
   for(int sip=0;sip<ld;++sip){                                  
     for(int bi=0;bi<lDwR;++bi){
@@ -284,19 +317,20 @@ void baseMeasurement::calcOuterContainerRightQNOpt(int const i, lapack_complex_d
       }
     }
   }
+  */
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-void baseMeasurement::calcCtrIterRightBase(int const i, lapack_complex_double *const sourcePctr, lapack_complex_double *const targetPctr){
+void baseMeasurement::calcCtrIterRightBase(int const i, arcomplex<double>  *const sourcePctr, arcomplex<double>  *const targetPctr){
   if(MPState->indexTable().nQNs()){
     //Only this is usually relevant
     calcCtrIterRightBaseQNOpt(i,sourcePctr,targetPctr);
   }
   else{
-    lapack_complex_double simpleContainer;
-    lapack_complex_double *siteMatrixState;
-    lapack_complex_double const *siteMatrixH;
+    arcomplex<double>  simpleContainer;
+    arcomplex<double>  *siteMatrixState;
+    arcomplex<double>  const *siteMatrixH;
     int const *biIndices, *bimIndices, *siIndices, *sipIndices;
     int const sparseSize=MPOperator->numEls(i+1);
     int biS, bimS, siS, sipS;
@@ -308,8 +342,8 @@ void baseMeasurement::calcCtrIterRightBase(int const i, lapack_complex_double *c
     MPOperator->siSubIndexArrayStart(siIndices,i+1);
     MPOperator->sipSubIndexArrayStart(sipIndices,i+1);
     getLocalDimensions(i+1);
-    tmpContainer<lapack_complex_double> innercontainer(ld,lDwR,lDR,lDL);
-    tmpContainer<lapack_complex_double> outercontainer(lDL,lDwL,ld,lDR);
+    tmpContainer<arcomplex<double> > innercontainer(ld,lDwR,lDR,lDL);
+    tmpContainer<arcomplex<double> > outercontainer(lDL,lDwL,ld,lDR);
     curtime=clock();
     for(int sip=0;sip<ld;++sip){                                                       
       for(int bi=0;bi<lDwR;++bi){

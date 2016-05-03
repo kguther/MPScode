@@ -3,6 +3,7 @@
 
 #include "baseMeasurement.h"
 #include "impBase.h"
+#include "contractor.h"
 #include <vector>
 
 //---------------------------------------------------------------------------------------------------//
@@ -15,17 +16,18 @@
 class uncachedMeasurement{
  public:
   uncachedMeasurement();
-  uncachedMeasurement(mpo<lapack_complex_double> *const MPOperatorIn, impBase *const MPStateIn);
+  uncachedMeasurement(mpo<arcomplex<double> > *const MPOperatorIn, impBase *const MPStateIn);
   void update();
-  void getLctr(lapack_complex_double *&target){target=&(Lctr[0]);}
-  void getRctr(lapack_complex_double *&target){target=&(Rctr[0]);}
-  void setContractions(std::vector<lapack_complex_double> const &R, std::vector<lapack_complex_double> const &L);
+  void getLctr(arcomplex<double>  *&target){target=&(Lctr[0]);}
+  void getRctr(arcomplex<double>  *&target){target=&(Rctr[0]);}
+  void setContractions(std::vector<arcomplex<double> > const &R, std::vector<arcomplex<double> > const &L);
   void getLeftCtr();
   void getRightCtr();
  private:
   impBase *MPState;
-  mpo<lapack_complex_double> *MPOperator;
-  std::vector<lapack_complex_double> Rctr, Lctr;
+  mpo<arcomplex<double> > *MPOperator;
+  contractor calcer;
+  std::vector<arcomplex<double> > Rctr, Lctr;
 };
 
 #endif

@@ -3,9 +3,9 @@
 
 #include "parameters.h"
 #include "impBase.h"
-#include "quantumNumber.h"
 #include "dimensionTable.h"
 #include "uncachedMeasurement.h"
+#include "baseTensor.h"
 #include <arcomp.h>
 #include <vector>
 
@@ -30,7 +30,7 @@ class infiniteNetwork{
   void updateMPS(arcomplex<double> *source);
   void setPCtr(std::vector<arcomplex<double> > const &R, std::vector<arcomplex<double> > const &L);
   impBase* getState();
-  mpo<lapack_complex_double> networkH;
+  mpo<arcomplex<double> > networkH;
  private:
   int i;
   int firstStep;
@@ -42,6 +42,7 @@ class infiniteNetwork{
   std::vector<double> diags, diagsm;
   //Beware that iDMRG builds up a regular system -> only three MPO matrices are referred - in particular is a MPO length of at least 3 required
   uncachedMeasurement pCtr;
+  baseTensor<arcomplex<double> > aBuf, bBuf;
   int explicitIndex(int iBlock, int j, int k);
   void addSite();
 };
