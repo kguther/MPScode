@@ -4,6 +4,7 @@
 #include "stateArray.h"
 #include "quantumNumber.h"
 #include "basisQNOrderMatrix.h"
+#include "siteQNOrderMatrix.h"
 
 class mps: public stateArray{
  public:
@@ -27,8 +28,8 @@ class mps: public stateArray{
   void createInitialState();
   int leftNormalizeStateBlockwise(int  i);
   int rightNormalizeStateBlockwise(int i);
-  void convertIndicesLP(int i, int j, int k, int iBlock, int &si, int &ai, int &aim);
-  void convertIndicesRP(int i, int j, int k, int iBlock, int &si, int &ai, int &aim);
+  void convertIndicesLP(siteQNOrderMatrix const& localIndexTable, int j, int k, int iBlock, int &si, int &ai, int &aim);
+  void convertIndicesRP(siteQNOrderMatrix const& localIndexTable, int j, int k, int iBlock, int &si, int &ai, int &aim);
   int loadIndexTables();
   basisQNOrderMatrix indexTableVar;
  private:

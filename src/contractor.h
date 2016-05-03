@@ -11,21 +11,20 @@
 class contractor{
  public:
   contractor(){}
- contractor(int DwIn, dimensionTable const &dimInfoIn, basisQNOrderMatrix const &indexTableIn):dimInfo(dimInfoIn), indexTable(&indexTableIn),Dw(DwIn){nQNs=indexTable->nQNs(); D=dimInfo.D();}
+ contractor(int DwIn, int nQNsIn, dimensionTable const &dimInfoIn):dimInfo(dimInfoIn), Dw(DwIn), nQNs(nQNsIn){D=dimInfo.D();}
 
   template<typename T>
-    void calcLeftContraction(int i, int internalSite, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, T *const target);
+    void calcLeftContraction(int i, siteQNOrderMatrix const &localIndexTable, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, T *const target);
   template<typename T>
-    void calcRightContraction(int i, int internalSite, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, T *const target);
+    void calcRightContraction(int i, siteQNOrderMatrix const &localIndexTable, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, T *const target);
   template<typename T>
-    void calcLeftOuterContainer(int i, int internalSite, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, tmpContainer<T> &outerContainer);
+    void calcLeftOuterContainer(int i, siteQNOrderMatrix const &localIndexTable, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, tmpContainer<T> &outerContainer);
  template<typename T>
-    void calcRightOuterContainer(int i, int internalSite, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, tmpContainer<T> &outerContainer);
+    void calcRightOuterContainer(int i, siteQNOrderMatrix const &localIndexTable, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, tmpContainer<T> &outerContainer);
 
  private:
   dimensionTable dimInfo;
   int lDL, lDR, ld, lDwR, lDwL;
-  basisQNOrderMatrix const *indexTable;
   int nQNs;
   int D, Dw;
   //Index functions
@@ -41,52 +40,52 @@ class contractor{
   
   //Versions of contractions optimized for systems with conserved QNs (are called automatically when available)
   template<typename T>
-    void calcLeftContractionQNOpt(int i, int internalSite, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, T *const target);
+    void calcLeftContractionQNOpt(int i, siteQNOrderMatrix const &localIndexTable, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, T *const target);
   template<typename T>
-    void calcRightContractionQNOpt(int i, int internalSite, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, T *const target);
+    void calcRightContractionQNOpt(int i, siteQNOrderMatrix const &localIndexTable, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, T *const target);
   template<typename T>
-    void calcLeftOuterContainerQNOpt(int i, int internalSite, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, tmpContainer<T> &outerContainer);
+    void calcLeftOuterContainerQNOpt(int i, siteQNOrderMatrix const &localIndexTable, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, tmpContainer<T> &outerContainer);
   template<typename T>
-    void calcRightOuterContainerQNOpt(int i, int internalSite, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, tmpContainer<T> &outerContainer);
+    void calcRightOuterContainerQNOpt(int i, siteQNOrderMatrix const &localIndexTable, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, tmpContainer<T> &outerContainer);
 };
 
 //---------------------------------------------------------------------------------------------------//
 
 //Currently, these are just forwarding to the QN-optimized versions. This is very efficient when symmetries are used but gives an overhead when they are disabled. For specialization for unsymmetric systems, reimplement the general versions.
 template<typename T>
-void contractor::calcLeftContraction(int i, int internalSite, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, T *const target){
+void contractor::calcLeftContraction(int i, siteQNOrderMatrix const &localIndexTable, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, T *const target){
   if(nQNs){
-    calcLeftContractionQNOpt(i,internalSite,siteMatrixState,H,source,target);
+    calcLeftContractionQNOpt(i,localIndexTable,siteMatrixState,H,source,target);
   }
 }
 
 template<typename T>
-void contractor::calcRightContraction(int i, int internalSite, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, T *const target){
+void contractor::calcRightContraction(int i, siteQNOrderMatrix const &localIndexTable, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, T *const target){
   if(nQNs){
-    calcRightContractionQNOpt(i,internalSite,siteMatrixState,H,source,target);
+    calcRightContractionQNOpt(i,localIndexTable,siteMatrixState,H,source,target);
   }
 }
 
 template<typename T>
-void contractor::calcLeftOuterContainer(int i, int internalSite, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, tmpContainer<T> &outerContainer){
+void contractor::calcLeftOuterContainer(int i, siteQNOrderMatrix const &localIndexTable, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, tmpContainer<T> &outerContainer){
   if(nQNs){
-    calcLeftOuterContainerQNOpt(i,internalSite,siteMatrixState,H,source,outerContainer);
+    calcLeftOuterContainerQNOpt(i,localIndexTable,siteMatrixState,H,source,outerContainer);
   }
 }
 
 template<typename T>
-void contractor::calcRightOuterContainer(int i, int internalSite, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, tmpContainer<T> &outerContainer){
+void contractor::calcRightOuterContainer(int i, siteQNOrderMatrix const &localIndexTable, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, tmpContainer<T> &outerContainer){
   if(nQNs){
-    calcRightOuterContainerQNOpt(i,internalSite,siteMatrixState,H,source,outerContainer);
+    calcRightOuterContainerQNOpt(i,localIndexTable,siteMatrixState,H,source,outerContainer);
   }
 }
 
 //---------------------------------------------------------------------------------------------------//
 
 template<typename T>
-void contractor::calcLeftContractionQNOpt(int i, int internalSite, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, T *const target){
+void contractor::calcLeftContractionQNOpt(int i, siteQNOrderMatrix const &localIndexTable, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, T *const target){
   T simpleContainer;
-  int const numBlocks=indexTable->numBlocksLP(internalSite-1);
+  int const numBlocks=localIndexTable.numBlocksLP();
   int lBlockSize, rBlockSize;
   int aiB, siB, aimB;
   getLocalDimensions(i-1);
@@ -94,19 +93,19 @@ void contractor::calcLeftContractionQNOpt(int i, int internalSite, T *const site
   lDwL=H.locDimL();
   //container arrays to significantly reduce computational effort by storing intermediate results
   tmpContainer<T> outercontainer(ld,lDwR,lDR,lDL);
-  calcLeftOuterContainerQNOpt(i,internalSite,siteMatrixState,H,source,outercontainer);
+  calcLeftOuterContainerQNOpt(i,localIndexTable,siteMatrixState,H,source,outercontainer);
 #pragma omp parallel for private(simpleContainer,lBlockSize,rBlockSize,aiB,siB,aimB)
   for(int aip=0;aip<lDR;++aip){
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
-      lBlockSize=indexTable->lBlockSizeLP(internalSite-1,iBlock);
-      rBlockSize=indexTable->rBlockSizeLP(internalSite-1,iBlock);
+      lBlockSize=localIndexTable.lBlockSizeLP(iBlock);
+      rBlockSize=localIndexTable.rBlockSizeLP(iBlock);
       for(int j=0;j<rBlockSize;++j){
-	aiB=indexTable->aiBlockIndexLP(i-1,iBlock,j);
+	aiB=localIndexTable.aiBlockIndexLP(iBlock,j);
 	for(int bi=0;bi<lDwR;++bi){
 	  simpleContainer=0;
 	  for(int k=0;k<lBlockSize;++k){
-	    siB=indexTable->siBlockIndexLP(internalSite-1,iBlock,k);
-	    aimB=indexTable->aimBlockIndexLP(internalSite-1,iBlock,k);
+	    siB=localIndexTable.siBlockIndexLP(iBlock,k);
+	    aimB=localIndexTable.aimBlockIndexLP(iBlock,k);
 	    simpleContainer+=conj(siteMatrixState[stateIndex(siB,aiB,aimB)])*outercontainer.global_access(siB,bi,aip,aimB);
 	  }
 	  target[pctrIndex(aiB,bi,aip)]=simpleContainer;
@@ -119,13 +118,13 @@ void contractor::calcLeftContractionQNOpt(int i, int internalSite, T *const site
 //---------------------------------------------------------------------------------------------------//
 
 template<typename T>
-void contractor::calcLeftOuterContainerQNOpt(int i, int internalSite, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, tmpContainer<T> &outerContainer){
+void contractor::calcLeftOuterContainerQNOpt(int i, siteQNOrderMatrix const &localIndexTable, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, tmpContainer<T> &outerContainer){
   int const *biIndices, *bimIndices, *siIndices, *sipIndices;
   T const *siteMatrixH;
   int biS, bimS, siS, sipS, aiB, aimB, siB;
   int lBlockSize, rBlockSize;
   int const sparseSize=H.numEls();
-  int const numBlocks=indexTable->numBlocksLP(internalSite-1);
+  int const numBlocks=localIndexTable.numBlocksLP();
   getLocalDimensions(i-1);
   lDwR=H.locDimR();
   lDwL=H.locDimL();
@@ -149,13 +148,13 @@ void contractor::calcLeftOuterContainerQNOpt(int i, int internalSite, T *const s
 #pragma omp parallel for private(lBlockSize,rBlockSize,aiB,aimB,siB)
   for(int bim=0;bim<lDwL;++bim){
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
-      lBlockSize=indexTable->lBlockSizeLP(internalSite-1,iBlock);
-      rBlockSize=indexTable->rBlockSizeLP(internalSite-1,iBlock);
+      lBlockSize=localIndexTable.lBlockSizeLP(iBlock);
+      rBlockSize=localIndexTable.rBlockSizeLP(iBlock);
       for(int k=0;k<lBlockSize;++k){
-	aimB=indexTable->aimBlockIndexLP(internalSite-1,iBlock,k);
-	siB=indexTable->siBlockIndexLP(internalSite-1,iBlock,k);
+	aimB=localIndexTable.aimBlockIndexLP(iBlock,k);
+	siB=localIndexTable.siBlockIndexLP(iBlock,k);
 	for(int j=0;j<rBlockSize;++j){
-	  aiB=indexTable->aiBlockIndexLP(internalSite-1,iBlock,j);
+	  aiB=localIndexTable.aiBlockIndexLP(iBlock,j);
 	  for(int aim=0;aim<lDL;++aim){
 	    innercontainer.global_access(siB,aiB,bim,aim)+=source[pctrIndex(aim,bim,aimB)]*siteMatrixState[stateIndex(siB,aiB,aimB)];
 	  }
@@ -167,10 +166,10 @@ void contractor::calcLeftOuterContainerQNOpt(int i, int internalSite, T *const s
 #pragma omp parallel for private(lBlockSize,rBlockSize,siB,aimB,siS,biS,bimS,sipS)
   for(int aip=0;aip<lDR;++aip){
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
-      lBlockSize=indexTable->lBlockSizeLP(internalSite-1,iBlock);
+      lBlockSize=localIndexTable.lBlockSizeLP(iBlock);
       for(int k=0;k<lBlockSize;++k){
-	siB=indexTable->siBlockIndexLP(internalSite-1,iBlock,k);
-	aimB=indexTable->aimBlockIndexLP(internalSite-1,iBlock,k);
+	siB=localIndexTable.siBlockIndexLP(iBlock,k);
+	aimB=localIndexTable.aimBlockIndexLP(iBlock,k);
 	for(int bi=0;bi<lDwR;++bi){
 	  outerContainer.global_access(siB,bi,aip,aimB)=0;
 	}
@@ -191,9 +190,9 @@ void contractor::calcLeftOuterContainerQNOpt(int i, int internalSite, T *const s
 //---------------------------------------------------------------------------------------------------//
 
 template<typename T>
-void contractor::calcRightContractionQNOpt(int i, int internalSite, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, T *const target){
+void contractor::calcRightContractionQNOpt(int i, siteQNOrderMatrix const &localIndexTable, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, T *const target){
   T simpleContainer;
-  int const numBlocks=indexTable->numBlocksRP(internalSite+1);
+  int const numBlocks=localIndexTable.numBlocksRP();
   int aiB, siB, aimB;
   int lBlockSize, rBlockSize;
   getLocalDimensions(i+1);
@@ -201,19 +200,19 @@ void contractor::calcRightContractionQNOpt(int i, int internalSite, T *const sit
   lDwR=H.locDimR();
   tmpContainer<T> outercontainer(lDL,lDwL,ld,lDR);
   //The calculation of the first two contractions has to be done in other functions, too. It therefore has an extra function. 
-  calcRightOuterContainerQNOpt(i,internalSite,siteMatrixState,H,source,outercontainer);
+  calcRightOuterContainerQNOpt(i,localIndexTable,siteMatrixState,H,source,outercontainer);
 #pragma omp parallel for private(simpleContainer,lBlockSize,rBlockSize,aimB,aiB,siB)  
   for(int aimp=0;aimp<lDL;++aimp){
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
-      lBlockSize=indexTable->lBlockSizeRP(internalSite+1,iBlock);
-      rBlockSize=indexTable->rBlockSizeRP(internalSite+1,iBlock);
+      lBlockSize=localIndexTable.lBlockSizeRP(iBlock);
+      rBlockSize=localIndexTable.rBlockSizeRP(iBlock);
       for(int k=0;k<lBlockSize;++k){
-	aimB=indexTable->aimBlockIndexRP(internalSite+1,iBlock,k);
+	aimB=localIndexTable.aimBlockIndexRP(iBlock,k);
 	for(int bim=0;bim<lDwL;++bim){
 	  simpleContainer=0;
 	  for(int j=0;j<rBlockSize;++j){
-	    siB=indexTable->siBlockIndexRP(internalSite+1,iBlock,j);
-	    aiB=indexTable->aiBlockIndexRP(internalSite+1,iBlock,j);
+	    siB=localIndexTable.siBlockIndexRP(iBlock,j);
+	    aiB=localIndexTable.aiBlockIndexRP(iBlock,j);
 	    simpleContainer+=conj(siteMatrixState[stateIndex(siB,aiB,aimB)])*outercontainer.global_access(aimp,bim,siB,aiB);
 	  }
 	  target[pctrIndex(aimB,bim,aimp)]=simpleContainer;
@@ -226,8 +225,8 @@ void contractor::calcRightContractionQNOpt(int i, int internalSite, T *const sit
 //---------------------------------------------------------------------------------------------------//
 
 template<typename T>
-void contractor::calcRightOuterContainerQNOpt(int i, int internalSite, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, tmpContainer<T> &outerContainer){
-  int const numBlocks=indexTable->numBlocksRP(internalSite+1);
+void contractor::calcRightOuterContainerQNOpt(int i, siteQNOrderMatrix const &localIndexTable, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, tmpContainer<T> &outerContainer){
+  int const numBlocks=localIndexTable.numBlocksRP();
   int aiB, siB, aimB;
   int lBlockSize, rBlockSize;
   getLocalDimensions(i+1);
@@ -257,13 +256,13 @@ void contractor::calcRightOuterContainerQNOpt(int i, int internalSite, T *const 
 #pragma omp parallel for private(lBlockSize,rBlockSize,aiB,siB,aimB)
   for(int ai=0;ai<lDR;++ai){
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
-      lBlockSize=indexTable->lBlockSizeRP(internalSite+1,iBlock);
-      rBlockSize=indexTable->rBlockSizeRP(internalSite+1,iBlock);
+      lBlockSize=localIndexTable.lBlockSizeRP(iBlock);
+      rBlockSize=localIndexTable.rBlockSizeRP(iBlock);
       for(int j=0;j<rBlockSize;++j){
-	aiB=indexTable->aiBlockIndexRP(internalSite+1,iBlock,j);
-	siB=indexTable->siBlockIndexRP(internalSite+1,iBlock,j);
+	aiB=localIndexTable.aiBlockIndexRP(iBlock,j);
+	siB=localIndexTable.siBlockIndexRP(iBlock,j);
 	for(int k=0;k<lBlockSize;++k){
-	  aimB=indexTable->aimBlockIndexRP(internalSite+1,iBlock,k);
+	  aimB=localIndexTable.aimBlockIndexRP(iBlock,k);
 	  for(int bi=0;bi<lDwR;++bi){
 	    innercontainer.global_access(siB,bi,ai,aimB)+=source[pctrIndex(ai,bi,aiB)]*siteMatrixState[stateIndex(siB,aiB,aimB)];
 	  }
@@ -274,10 +273,10 @@ void contractor::calcRightOuterContainerQNOpt(int i, int internalSite, T *const 
 #pragma omp parallel for private(lBlockSize,rBlockSize,aiB,siB,siS,sipS,biS,bimS)
   for(int aim=0;aim<lDL;++aim){
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
-      rBlockSize=indexTable->rBlockSizeRP(internalSite+1,iBlock);
+      rBlockSize=localIndexTable.rBlockSizeRP(iBlock);
       for(int j=0;j<rBlockSize;++j){
-	siB=indexTable->siBlockIndexRP(internalSite+1,iBlock,j);
-	aiB=indexTable->aiBlockIndexRP(internalSite+1,iBlock,j);
+	siB=localIndexTable.siBlockIndexRP(iBlock,j);
+	aiB=localIndexTable.aiBlockIndexRP(iBlock,j);
 	for(int bim=0;bim<lDwL;++bim){
 	  outerContainer.global_access(aim,bim,siB,aiB)=0;
 	}

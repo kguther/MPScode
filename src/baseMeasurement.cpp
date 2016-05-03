@@ -26,7 +26,7 @@ void baseMeasurement::initializeBase(){
   Dw=MPOperator->maxDim();
   D=MPState->maxDim();
   MPOperator->setUpSparse();
-  calcer=contractor(MPOperator->maxDim(),MPState->getDimInfo(),MPState->indexTable());
+  calcer=contractor(MPOperator->maxDim(),MPState->indexTable().nQNs(),MPState->getDimInfo());
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -76,7 +76,7 @@ void baseMeasurement::calcCtrIterLeftBaseQNOpt(int const i, arcomplex<double>  *
   
   arcomplex<double>  *siteMatrixState;
   MPState->subMatrixStart(siteMatrixState,i-1);
-  calcer.calcLeftContraction(i,i,siteMatrixState,MPOperator->getSiteTensor(i-1),source,targetPctr);
+  calcer.calcLeftContraction(i,MPState->indexTable().getLocalIndexTable(i-1),siteMatrixState,MPOperator->getSiteTensor(i-1),source,targetPctr);
   
   
   /*
@@ -121,7 +121,7 @@ void baseMeasurement::calcOuterContainerLeftQNOpt(int const i, arcomplex<double>
 
   arcomplex<double>  *siteMatrixState;
   MPState->subMatrixStart(siteMatrixState,i-1);
-  calcer.calcLeftOuterContainer(i,i,siteMatrixState,MPOperator->getSiteTensor(i-1),source,outercontainer);
+  calcer.calcLeftOuterContainer(i,MPState->indexTable().getLocalIndexTable(i-1),siteMatrixState,MPOperator->getSiteTensor(i-1),source,outercontainer);
   
   /*
   int const *biIndices, *bimIndices, *siIndices, *sipIndices;
@@ -206,7 +206,7 @@ void baseMeasurement::calcCtrIterRightBaseQNOpt(int const i, arcomplex<double>  
   
   arcomplex<double>  *siteMatrixState;
   MPState->subMatrixStart(siteMatrixState,i+1);
-  calcer.calcRightContraction(i,i,siteMatrixState,MPOperator->getSiteTensor(i+1),sourcePctr,targetPctr);
+  calcer.calcRightContraction(i,MPState->indexTable().getLocalIndexTable(i+1),siteMatrixState,MPOperator->getSiteTensor(i+1),sourcePctr,targetPctr);
   
   /*
   arcomplex<double>  simpleContainer;
@@ -248,7 +248,7 @@ void baseMeasurement::calcOuterContainerRightQNOpt(int const i, arcomplex<double
   
   arcomplex<double>  *siteMatrixState;
   MPState->subMatrixStart(siteMatrixState,i+1);
-  calcer.calcRightOuterContainer(i,i,siteMatrixState,MPOperator->getSiteTensor(i+1),sourcePctr,outercontainer);
+  calcer.calcRightOuterContainer(i,MPState->indexTable().getLocalIndexTable(i+1),siteMatrixState,MPOperator->getSiteTensor(i+1),sourcePctr,outercontainer);
   
   /*
   arcomplex<double>  *siteMatrixState;

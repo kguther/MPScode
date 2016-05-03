@@ -45,8 +45,7 @@ int mps::loadIndexTables(){
     info=-1;
   }
   if(nQNs){
-    indexTableVar.initialize(dimInfo,&conservedQNs);
-    info=indexTableVar.generateQNIndexTables();
+    indexTableVar=basisQNOrderMatrix(dimInfo,&conservedQNs);
   }
   return info;
 }
@@ -71,14 +70,16 @@ void mps::createInitialState(){
   else{
     //This sets all entries with indices fullfilling the QN constraint to 1.
     int numBlocks, lBlockSize, rBlockSize;
+    siteQNOrderMatrix tmp;
     for(int i=0;i<L;++i){
-      numBlocks=indexTableVar.numBlocksLP(i);
+      tmp=indexTableVar.getLocalIndexTable(i);
+      numBlocks=tmp.numBlocksLP();
       for(int iBlock=0;iBlock<numBlocks;++iBlock){
-	rBlockSize=indexTableVar.rBlockSizeLP(i,iBlock);
-	lBlockSize=indexTableVar.lBlockSizeLP(i,iBlock);
+	rBlockSize=tmp.rBlockSizeLP(iBlock);
+	lBlockSize=tmp.lBlockSizeLP(iBlock);
 	for(int j=0;j<rBlockSize;++j){
 	  for(int k=0;k<lBlockSize;++k){
-	    global_access(i,indexTableVar.siBlockIndexLP(i,iBlock,k),indexTableVar.aiBlockIndexLP(i,iBlock,j),indexTableVar.aimBlockIndexLP(i,iBlock,k))=1;
+	    global_access(i,tmp.siBlockIndexLP(iBlock,k),tmp.aiBlockIndexLP(iBlock,j),tmp.aimBlockIndexLP(iBlock,k))=1;
 	  }
 	}
       }
@@ -94,8 +95,7 @@ int mps::setParameterD(int Dnew){
     conservedQNs[iQN].setParameterD(Dnew);
   }
   if(nQNs){
-    indexTableVar.initialize(dimInfo,&conservedQNs);
-    indexTableVar.generateQNIndexTables();
+    indexTableVar=basisQNOrderMatrix(dimInfo,&conservedQNs);
   }
   return stateArray::setParameterD(Dnew);
 }
@@ -108,8 +108,7 @@ int mps::setParameterL(int Lnew){
     conservedQNs[iQN].setParameterL(Lnew);
   }
   if(nQNs){
-    indexTableVar.initialize(dimInfo,&conservedQNs);
-    indexTableVar.generateQNIndexTables();
+    indexTableVar=basisQNOrderMatrix(dimInfo,&conservedQNs);
   }
   return stateArray::setParameterL(Lnew);
 }
@@ -244,9 +243,10 @@ int mps::leftNormalizeStateBlockwise(int i){
   std::unique_ptr<lapack_complex_double[]> RP(new lapack_complex_double[lDR*lDR]);
   std::unique_ptr<lapack_complex_double[]> MP, QP, RcP;
   R=RP.get();
-  for(int iBlock=0;iBlock<indexTableVar.numBlocksLP(i);++iBlock){
-    rBlockSize=indexTableVar.rBlockSizeLP(i,iBlock);
-    lBlockSize=indexTableVar.lBlockSizeLP(i,iBlock);
+  siteQNOrderMatrix const localIndexTable=indexTableVar.getLocalIndexTable(i);
+  for(int iBlock=0;iBlock<localIndexTable.numBlocksLP();++iBlock){
+    rBlockSize=localIndexTable.rBlockSizeLP(iBlock);
+    lBlockSize=localIndexTable.lBlockSizeLP(iBlock);
     //rBlockSize is required to be smaller than or equal to lBlockSize
     if(rBlockSize!=0 && lBlockSize!=0){
       //We do not normalize empty blocks
@@ -255,7 +255,7 @@ int mps::leftNormalizeStateBlockwise(int i){
       //First, copy the content of the block to some dummy array
       for(int j=0;j<rBlockSize;++j){
 	for(int k=0;k<lBlockSize;++k){
-	  convertIndicesLP(i,j,k,iBlock,siCurrent,aiCurrent,aimCurrent);
+	  convertIndicesLP(localIndexTable,j,k,iBlock,siCurrent,aiCurrent,aimCurrent);
 	  M[k+j*lBlockSize]=global_access(i,siCurrent,aiCurrent,aimCurrent);
 	}
       }
@@ -278,13 +278,13 @@ int mps::leftNormalizeStateBlockwise(int i){
       //Copy the resulting Q-matrix back into the block of the MPS matrix
       for(int j=0;j<rBlockSize;++j){
 	for(int k=0;k<lBlockSize;++k){
-	  convertIndicesLP(i,j,k,iBlock,siCurrent,aiCurrent,aimCurrent);
+	  convertIndicesLP(localIndexTable,j,k,iBlock,siCurrent,aiCurrent,aimCurrent);
 	  global_access(i,siCurrent,aiCurrent,aimCurrent)=M[k+j*lBlockSize];
 	}
 	//And the resulting R-matrix into the corresponding elements of a uncompressed matrix R
 	for(int l=0;l<rBlockSize;++l){
-	  aiCurrent=indexTableVar.aiBlockIndexLP(i,iBlock,j);
-	  aipCurrent=indexTableVar.aiBlockIndexLP(i,iBlock,l);
+	  aiCurrent=localIndexTable.aiBlockIndexLP(iBlock,j);
+	  aipCurrent=localIndexTable.aiBlockIndexLP(iBlock,l);
 	  R[aipCurrent+aiCurrent*lDR]=Rcontainer[l+j*rBlockSize];
 	}
       }
@@ -320,16 +320,17 @@ int mps::rightNormalizeStateBlockwise(int i){
   std::unique_ptr<lapack_complex_double[]> RP(new lapack_complex_double[lDL*lDL]);
   std::unique_ptr<lapack_complex_double[]> MP, RcP, QP;
   R=RP.get();
+  siteQNOrderMatrix const localIndexTable=indexTableVar.getLocalIndexTable(i);
   for(int iBlock=0;iBlock<indexTableVar.numBlocksRP(i);++iBlock){
-    lBlockSize=indexTableVar.lBlockSizeRP(i,iBlock);
-    rBlockSize=indexTableVar.rBlockSizeRP(i,iBlock);
+    lBlockSize=localIndexTable.lBlockSizeRP(iBlock);
+    rBlockSize=localIndexTable.rBlockSizeRP(iBlock);
     //lBlockSize is required to be smaller than or equal to rBlockSize
     if(rBlockSize!=0 && lBlockSize!=0){
       MP.reset(new lapack_complex_double[lBlockSize*rBlockSize]);
       M=MP.get();
       for(int j=0;j<rBlockSize;++j){
 	for(int k=0;k<lBlockSize;++k){
-	  convertIndicesRP(i,j,k,iBlock,siCurrent,aiCurrent,aimCurrent);
+	  convertIndicesRP(localIndexTable,j,k,iBlock,siCurrent,aiCurrent,aimCurrent);
 	  M[k+j*lBlockSize]=global_access(i,siCurrent,aiCurrent,aimCurrent);
 	}
       }
@@ -350,12 +351,12 @@ int mps::rightNormalizeStateBlockwise(int i){
       }
       for(int j=0;j<lBlockSize;++j){
 	for(int k=0;k<rBlockSize;++k){
-	  convertIndicesRP(i,k,j,iBlock,siCurrent,aiCurrent,aimCurrent);
+	  convertIndicesRP(localIndexTable,k,j,iBlock,siCurrent,aiCurrent,aimCurrent);
 	  global_access(i,siCurrent,aiCurrent,aimCurrent)=M[j+k*lBlockSize];
 	}
 	for(int l=0;l<lBlockSize;++l){
-	  aimCurrent=indexTableVar.aimBlockIndexRP(i,iBlock,j);
-	  aimpCurrent=indexTableVar.aimBlockIndexRP(i,iBlock,l);
+	  aimCurrent=localIndexTable.aimBlockIndexRP(iBlock,j);
+	  aimpCurrent=localIndexTable.aimBlockIndexRP(iBlock,l);
 	  R[aimpCurrent+aimCurrent*lDL]=Rcontainer[l+j*lBlockSize];
 	}
       }
@@ -376,18 +377,18 @@ int mps::rightNormalizeStateBlockwise(int i){
 // These functions convert block-internal indices to normal MPS bond indices.
 //---------------------------------------------------------------------------------------------------//
 
-void mps::convertIndicesLP(int i, int j, int k, int iBlock, int &si, int &ai, int &aim){
-  ai=indexTableVar.aiBlockIndexLP(i,iBlock,j);
-  aim=indexTableVar.aimBlockIndexLP(i,iBlock,k);
-  si=indexTableVar.siBlockIndexLP(i,iBlock,k);
+void mps::convertIndicesLP(siteQNOrderMatrix const &localIndexTable, int j, int k, int iBlock, int &si, int &ai, int &aim){
+  ai=localIndexTable.aiBlockIndexLP(iBlock,j);
+  aim=localIndexTable.aimBlockIndexLP(iBlock,k);
+  si=localIndexTable.siBlockIndexLP(iBlock,k);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-void mps::convertIndicesRP(int i, int j, int k, int iBlock, int &si, int &ai, int &aim){
-  aim=indexTableVar.aimBlockIndexRP(i,iBlock,k);
-  ai=indexTableVar.aiBlockIndexRP(i,iBlock,j);
-  si=indexTableVar.siBlockIndexRP(i,iBlock,j);
+void mps::convertIndicesRP(siteQNOrderMatrix const &localIndexTable, int j, int k, int iBlock, int &si, int &ai, int &aim){
+  aim=localIndexTable.aimBlockIndexRP(iBlock,k);
+  ai=localIndexTable.aiBlockIndexRP(iBlock,j);
+  si=localIndexTable.siBlockIndexRP(iBlock,j);
 }
 
 //---------------------------------------------------------------------------------------------------//

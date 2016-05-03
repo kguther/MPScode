@@ -5,19 +5,19 @@
 #include <memory>
 
 
-blockHMatrix::blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcomplex<double> > *Hin, dimensionTable &dimInfo, int Dwin, int iIn, basisQNOrderMatrix const *indexTablein, projector *excitedStateP, double shift, std::vector<quantumNumber> *conservedQNsin, int const cached):
+blockHMatrix::blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcomplex<double> > *Hin, dimensionTable &dimInfo, int Dwin, int iIn, siteQNOrderMatrix const *indexTablein, projector *excitedStateP, double shift, std::vector<quantumNumber> *conservedQNsin, int const cached):
   optHMatrix(R,L,Hin,dimInfo,Dwin,iIn,excitedStateP,shift,conservedQNsin),
   indexTable(indexTablein),
   HMPO(Hin)
 {
   int cBlockSize;
   int numBlocks;
-  numBlocks=indexTable->numBlocksLP(i);
+  numBlocks=indexTable->numBlocksLP();
   dimension=0;
   blockOffset.clear();
   blockOffset.push_back(0);
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
-    cBlockSize=(indexTable->lBlockSizeLP(i,iBlock))*(indexTable->rBlockSizeLP(i,iBlock));
+    cBlockSize=(indexTable->lBlockSizeLP(iBlock))*(indexTable->rBlockSizeLP(iBlock));
     dimension+=cBlockSize;
     if(iBlock<numBlocks-1){
       blockOffset.push_back(blockOffset[iBlock]+cBlockSize);
@@ -74,7 +74,7 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
   tmpContainer<arcomplex<double> > innerContainer(d,lDL,lDR,lDwR);
   tmpContainer<arcomplex<double> > outerContainer(d,lDwL,lDR,lDL);
   arcomplex<double> simpleContainer;
-  int const numBlocks=indexTable->numBlocksLP(i);
+  int const numBlocks=indexTable->numBlocksLP();
   int const sparseSize=HMPO->numEls(i);
   int const nThreads=20;
   int lBlockSize, rBlockSize, siBlockSize, rBlockSizep;
@@ -89,15 +89,15 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
 #pragma omp parallel for private(simpleContainer,siB,aimB,lBlockSize,rBlockSize) schedule(dynamic,1)
   for(int aip=0;aip<lDR;++aip){
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
-      lBlockSize=indexTable->lBlockSizeLP(i,iBlock);
-      rBlockSize=indexTable->rBlockSizeLP(i,iBlock);
+      lBlockSize=indexTable->lBlockSizeLP(iBlock);
+      rBlockSize=indexTable->rBlockSizeLP(iBlock);
       for(int k=0;k<lBlockSize;++k){
-	siB=indexTable->siBlockIndexLP(i,iBlock,k);
-	aimB=indexTable->aimBlockIndexLP(i,iBlock,k);
+	siB=indexTable->siBlockIndexLP(iBlock,k);
+	aimB=indexTable->aimBlockIndexLP(iBlock,k);
       	for(int bi=0;bi<lDwR;++bi){
 	  simpleContainer=0;
 	  for(int j=0;j<rBlockSize;++j){
-	    simpleContainer+=Rctr[ctrIndex(aip,bi,indexTable->aiBlockIndexLP(i,iBlock,j))]*v[vecBlockIndexLP(iBlock,j,k)];
+	    simpleContainer+=Rctr[ctrIndex(aip,bi,indexTable->aiBlockIndexLP(iBlock,j))]*v[vecBlockIndexLP(iBlock,j,k)];
 	  }
 	  innerContainer.global_access(siB,aimB,aip,bi)=simpleContainer;
 	}
@@ -119,10 +119,10 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
 #pragma omp parallel for private(siB,aimB,lBlockSize,rBlockSize,sipS) schedule(dynamic,1)
   for(int ai=0;ai<lDR;++ai){
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
-      lBlockSize=indexTable->lBlockSizeLP(i,iBlock);
+      lBlockSize=indexTable->lBlockSizeLP(iBlock);
       for(int k=0;k<lBlockSize;++k){
-	siB=indexTable->siBlockIndexLP(i,iBlock,k);
-	aimB=indexTable->aimBlockIndexLP(i,iBlock,k);
+	siB=indexTable->siBlockIndexLP(iBlock,k);
+	aimB=indexTable->aimBlockIndexLP(iBlock,k);
 	for(int nSparse=0;nSparse<sparseSize;++nSparse){
 	  sipS=sipIndices[nSparse];
 	  if(sipS==siB){
@@ -135,13 +135,13 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
 
 #pragma omp parallel for private(simpleContainer,aiB,siB,aimB,lBlockSize,rBlockSize) schedule(dynamic,1)
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
-    lBlockSize=indexTable->lBlockSizeLP(i,iBlock);
-    rBlockSize=indexTable->rBlockSizeLP(i,iBlock);
+    lBlockSize=indexTable->lBlockSizeLP(iBlock);
+    rBlockSize=indexTable->rBlockSizeLP(iBlock);
     for(int k=0;k<lBlockSize;++k){
-      siB=indexTable->siBlockIndexLP(i,iBlock,k);
-      aimB=indexTable->aimBlockIndexLP(i,iBlock,k);
+      siB=indexTable->siBlockIndexLP(iBlock,k);
+      aimB=indexTable->aimBlockIndexLP(iBlock,k);
       for(int j=0;j<rBlockSize;++j){
-	aiB=indexTable->aiBlockIndexLP(i,iBlock,j);
+	aiB=indexTable->aiBlockIndexLP(iBlock,j);
 	simpleContainer=0;
 	for(int aim=0;aim<lDL;++aim){
 	  for(int bim=0;bim<lDwL;++bim){
@@ -165,24 +165,24 @@ void blockHMatrix::buildSparseHBlocked(){
   sparseMatrix.clear();
   rowPtr.clear();
   colIndices.clear();
-  int const numBlocks=indexTable->numBlocksLP(i);
+  int const numBlocks=indexTable->numBlocksLP();
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
-    lBlockSize=indexTable->lBlockSizeLP(i,iBlock);
-    rBlockSize=indexTable->rBlockSizeLP(i,iBlock);
+    lBlockSize=indexTable->lBlockSizeLP(iBlock);
+    rBlockSize=indexTable->rBlockSizeLP(iBlock);
     for(int j=0;j<rBlockSize;++j){
-      aiB=indexTable->aiBlockIndexLP(i,iBlock,j);
+      aiB=indexTable->aiBlockIndexLP(iBlock,j);
       for(int k=0;k<lBlockSize;++k){
-	siB=indexTable->siBlockIndexLP(i,iBlock,k);
-	aimB=indexTable->aimBlockIndexLP(i,iBlock,k);
+	siB=indexTable->siBlockIndexLP(iBlock,k);
+	aimB=indexTable->aimBlockIndexLP(iBlock,k);
 	rowPtr.push_back(sparseMatrix.size());
 	for(int iBlockp=0;iBlockp<numBlocks;++iBlockp){
-	  lBlockSizep=indexTable->lBlockSizeLP(i,iBlockp);
-	  rBlockSizep=indexTable->rBlockSizeLP(i,iBlockp);
+	  lBlockSizep=indexTable->lBlockSizeLP(iBlockp);
+	  rBlockSizep=indexTable->rBlockSizeLP(iBlockp);
 	  for(int kp=0;kp<lBlockSizep;++kp){
-	    sipB=indexTable->siBlockIndexLP(i,iBlockp,kp);
-	    aimpB=indexTable->aimBlockIndexLP(i,iBlockp,kp);
+	    sipB=indexTable->siBlockIndexLP(iBlockp,kp);
+	    aimpB=indexTable->aimBlockIndexLP(iBlockp,kp);
 	    for(int jp=0;jp<rBlockSizep;++jp){
-	      currentEntry=HEffEntry(siB,aimB,aiB,sipB,aimpB,indexTable->aiBlockIndexLP(i,iBlockp,jp));
+	      currentEntry=HEffEntry(siB,aimB,aiB,sipB,aimpB,indexTable->aiBlockIndexLP(iBlockp,jp));
 	      if(abs(currentEntry)>treshold){
 		sparseMatrix.push_back(currentEntry);
 		colIndices.push_back(vecBlockIndexLP(iBlockp,jp,kp));
@@ -244,13 +244,13 @@ void blockHMatrix::excitedStateProject(arcomplex<double> *v){
 
 void blockHMatrix::storageExpand(arcomplex<double> *v, arcomplex<double> *vExpanded){
   int rBlockSize, lBlockSize;
-  int const numBlocks=indexTable->numBlocksLP(i);
+  int const numBlocks=indexTable->numBlocksLP();
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
-    lBlockSize=indexTable->lBlockSizeLP(i,iBlock);
-    rBlockSize=indexTable->rBlockSizeLP(i,iBlock);
+    lBlockSize=indexTable->lBlockSizeLP(iBlock);
+    rBlockSize=indexTable->rBlockSizeLP(iBlock);
     for(int j=0;j<rBlockSize;++j){
       for(int k=0;k<lBlockSize;++k){
-	vExpanded[vecIndex(indexTable->siBlockIndexLP(i,iBlock,k),indexTable->aiBlockIndexLP(i,iBlock,j),indexTable->aimBlockIndexLP(i,iBlock,k))]=v[vecBlockIndexLP(iBlock,j,k)];
+	vExpanded[vecIndex(indexTable->siBlockIndexLP(iBlock,k),indexTable->aiBlockIndexLP(iBlock,j),indexTable->aimBlockIndexLP(iBlock,k))]=v[vecBlockIndexLP(iBlock,j,k)];
       }
     }
   }
@@ -260,13 +260,13 @@ void blockHMatrix::storageExpand(arcomplex<double> *v, arcomplex<double> *vExpan
 
 void blockHMatrix::storageCompress(arcomplex<double> *v, arcomplex<double> *vCompressed){
   int rBlockSize, lBlockSize;
-  int const numBlocks=indexTable->numBlocksLP(i);
+  int const numBlocks=indexTable->numBlocksLP();
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
-    lBlockSize=indexTable->lBlockSizeLP(i,iBlock);
-    rBlockSize=indexTable->rBlockSizeLP(i,iBlock);
+    lBlockSize=indexTable->lBlockSizeLP(iBlock);
+    rBlockSize=indexTable->rBlockSizeLP(iBlock);
     for(int j=0;j<rBlockSize;++j){
       for(int k=0;k<lBlockSize;++k){
-	vCompressed[vecBlockIndexLP(iBlock,j,k)]=v[vecIndex(indexTable->siBlockIndexLP(i,iBlock,k),indexTable->aiBlockIndexLP(i,iBlock,j),indexTable->aimBlockIndexLP(i,iBlock,k))];
+	vCompressed[vecBlockIndexLP(iBlock,j,k)]=v[vecIndex(indexTable->siBlockIndexLP(iBlock,k),indexTable->aiBlockIndexLP(iBlock,j),indexTable->aimBlockIndexLP(iBlock,k))];
       }
     }
   }

@@ -1,8 +1,8 @@
 #ifndef MATRIX_TO_CREATE_QN_BLOCK_ORDERING
 #define MATRIX_TO_CREATE_QN_BLOCK_ORDERING
 
+#include "siteQNOrderMatrix.h"
 #include "quantumNumber.h"
-#include "multInt.h"
 #include <vector>
 
 //---------------------------------------------------------------------------------------------------//
@@ -12,44 +12,27 @@
 // Index functions returning the global MPS index for given block indices are supplied.
 //---------------------------------------------------------------------------------------------------//
 
-//TODO: SPLIT INTO LOCAL OBJECTS
-
 class basisQNOrderMatrix{
  public:
   basisQNOrderMatrix(dimensionTable &dimin, std::vector<quantumNumber> *conservedQNsin);
   basisQNOrderMatrix(dimensionTable &dimin, std::vector<pseudoQuantumNumber*> const &conservedQNsin);
   basisQNOrderMatrix();
-  void initialize(dimensionTable &dimin, std::vector<quantumNumber> *conservedQNsin);
-  void initialize(dimensionTable &dimin, std::vector<pseudoQuantumNumber*> &conservedQNsin);
-  int generateQNIndexTables();
-  int blockStructure(int const i, int const direction, std::vector<std::vector<int> > &aiIndices, std::vector<std::vector<multInt> > &siaimIndices);
-  int aiBlockIndexLP(int i, int iBlock, int j) const{return aiBlockIndicesLPAccess[reducedIndexFunction(i,iBlock,j)];}
-  int siBlockIndexLP(int i, int iBlock, int k) const{return siaimBlockIndicesLPAccess[reducedIndexFunction(i,iBlock,k)].si;}
-  int aimBlockIndexLP(int i, int iBlock, int k) const{return siaimBlockIndicesLPAccess[reducedIndexFunction(i,iBlock,k)].aim;}
-  int aiBlockIndexRP(int i, int iBlock, int k) const{return siaiBlockIndicesRPAccess[reducedIndexFunction(i,iBlock,k)].aim;}
-  int siBlockIndexRP(int i, int iBlock, int k) const{return siaiBlockIndicesRPAccess[reducedIndexFunction(i,iBlock,k)].si;}
-  int aimBlockIndexRP(int i, int iBlock, int j) const{return aimBlockIndicesRPAccess[reducedIndexFunction(i,iBlock,j)];}
-  int lBlockSizeLP(int i, int iBlock) const{return siaimBlockIndicesLP[i][iBlock].size();}
-  int rBlockSizeLP(int i, int iBlock) const{return aiBlockIndicesLP[i][iBlock].size();}
-  int lBlockSizeRP(int i, int iBlock) const{return aimBlockIndicesRP[i][iBlock].size();}
-  int rBlockSizeRP(int i, int iBlock) const{return siaiBlockIndicesRP[i][iBlock].size();}
-  int numBlocksLP(int i) const{return aiBlockIndicesLP[i].size();}
-  int numBlocksRP(int i) const{return aimBlockIndicesRP[i].size();}
-  int nQNs() const{return conservedQNs.size();}
+  void generateQNIndexTables();
+
+  int numBlocksLP(int i)const {return localIndexTables[i].numBlocksLP();}
+  int numBlocksRP(int i)const {return localIndexTables[i].numBlocksRP();}
+  int lBlockSizeLP(int i, int iBlock)const {return localIndexTables[i].lBlockSizeLP(iBlock);}
+  int rBlockSizeLP(int i, int iBlock)const {return localIndexTables[i].rBlockSizeLP(iBlock);}
+  int lBlockSizeRP(int i, int iBlock)const {return localIndexTables[i].lBlockSizeRP(iBlock);}
+  int rBlockSizeRP(int i, int iBlock)const {return localIndexTables[i].rBlockSizeRP(iBlock);}
+
+  int nQNs() const{return localIndexTables[0].nQNs();}
   int validate()const;
+  siteQNOrderMatrix const& getLocalIndexTable(int i)const;
  private:
-  int maxNumBlocks, maxBlockSize;
+  std::vector<siteQNOrderMatrix> localIndexTables;
   std::vector<pseudoQuantumNumber*> conservedQNs;
-  std::vector<int> aiBlockIndicesLPAccess, aimBlockIndicesRPAccess;
-  std::vector<multInt> siaimBlockIndicesLPAccess, siaiBlockIndicesRPAccess;
-  std::vector<std::vector<std::vector<int> > > aiBlockIndicesLP;
-  std::vector<std::vector<std::vector<multInt> > > siaimBlockIndicesLP;
-  std::vector<std::vector<std::vector<int> > > aimBlockIndicesRP;
-  std::vector<std::vector<std::vector<multInt> > > siaiBlockIndicesRP;
   dimensionTable dimInfo;
-  void generateAccessArrays();
-  std::complex<int> qnCriterium(int const iQN, int const i, int const aim, int const si, int const direction, int const pre);
-  int reducedIndexFunction(int i, int iBlock, int k) const{return k+iBlock*maxBlockSize+i*maxBlockSize*maxNumBlocks;}
 };
 
 #endif

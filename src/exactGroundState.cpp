@@ -27,7 +27,9 @@ void exactGroundState::writeExactGroundState(mps &target){
 void exactGroundState::generateExactState(mps &target){
     //This is the exact ground state at the critical point for fixed particle number and subchain parity. It turns out that this is a nice guess for the ground state of the perturbed system (for small perturbations).
   int ld, lDL, lDR;
+  siteQNOrderMatrix localIndexTable;
   for(int i=0;i<target.getDimInfo().L();++i){
+    localIndexTable=target.indexTable().getLocalIndexTable(i);
     lDL=target.locDimL(i);
     lDR=target.locDimR(i);
     ld=target.locd(i);
@@ -39,14 +41,14 @@ void exactGroundState::generateExactState(mps &target){
       }
     }
     int numBlocks, lBlockSize, rBlockSize;
-    numBlocks=target.indexTable().numBlocksLP(i);
+    numBlocks=localIndexTable.numBlocksLP();
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
-      rBlockSize=target.indexTable().rBlockSizeLP(i,iBlock);
-      lBlockSize=target.indexTable().lBlockSizeLP(i,iBlock);
+      rBlockSize=localIndexTable.rBlockSizeLP(iBlock);
+      lBlockSize=localIndexTable.lBlockSizeLP(iBlock);
       for(int j=0;j<rBlockSize;++j){
 	for(int k=0;k<lBlockSize;++k){
-	  if(QNsVec[0].primaryIndex(i,target.indexTable().aiBlockIndexLP(i,iBlock,j)) && QNsVec[0].primaryIndex(i-1,target.indexTable().aimBlockIndexLP(i,iBlock,k))){
-	    target.global_access(i,target.indexTable().siBlockIndexLP(i,iBlock,k),target.indexTable().aiBlockIndexLP(i,iBlock,j),target.indexTable().aimBlockIndexLP(i,iBlock,k))=exactGroundStateEntry(i,target.indexTable().siBlockIndexLP(i,iBlock,k),target.indexTable().aiBlockIndexLP(i,iBlock,j),target.indexTable().aimBlockIndexLP(i,iBlock,k));
+	  if(QNsVec[0].primaryIndex(i,localIndexTable.aiBlockIndexLP(iBlock,j)) && QNsVec[0].primaryIndex(i-1,localIndexTable.aimBlockIndexLP(iBlock,k))){
+	    target.global_access(i,localIndexTable.siBlockIndexLP(iBlock,k),localIndexTable.aiBlockIndexLP(iBlock,j),localIndexTable.aimBlockIndexLP(iBlock,k))=exactGroundStateEntry(i,localIndexTable.siBlockIndexLP(iBlock,k),localIndexTable.aiBlockIndexLP(iBlock,j),localIndexTable.aimBlockIndexLP(iBlock,k));
 	  }
 	}
       }

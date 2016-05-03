@@ -3,7 +3,7 @@
 
 #include <vector>
 #include "optHMatrix.h"
-#include "basisQNOrderMatrix.h"
+#include "siteQNOrderMatrix.h"
 
 //---------------------------------------------------------------------------------------------------//
 // The blockHMatrix class is an expansion of the optHMatrix class which is designed to exploit good
@@ -13,7 +13,7 @@
 
 class blockHMatrix: private optHMatrix{
  public: 
-  blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcomplex<double> > *Hin, dimensionTable &dimInfo, int Dwin, int iIn, basisQNOrderMatrix const *indexTable, projector *excitedStateP, double shift, std::vector<quantumNumber> *conservedQNsin, int const cached=1);
+  blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcomplex<double> > *Hin, dimensionTable &dimInfo, int Dwin, int iIn, siteQNOrderMatrix const *indexTable, projector *excitedStateP, double shift, std::vector<quantumNumber> *conservedQNsin, int const cached=1);
   void MultMvBlocked(arcomplex<double> *v, arcomplex<double> *w);
   void MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w);
   void storageCompress(arcomplex<double> *v, arcomplex<double> *vCompressed);
@@ -30,8 +30,8 @@ class blockHMatrix: private optHMatrix{
   std::vector<arcomplex<double> > compressedVector;
   std::vector<int> rowPtr, colIndices;
   mpo<arcomplex<double> > *HMPO;
-  basisQNOrderMatrix const *indexTable;
-  int vecBlockIndexLP(int const iBlock, int const j, int const k){return k+j*indexTable->lBlockSizeLP(i,iBlock)+blockOffset[iBlock];}
+  siteQNOrderMatrix const *indexTable;
+  int vecBlockIndexLP(int const iBlock, int const j, int const k){return k+j*indexTable->lBlockSizeLP(iBlock)+blockOffset[iBlock];}
   void excitedStateProject(arcomplex<double> *v);
   arcomplex<double> HEffEntry(int const si, int const aim, int const ai, int const sip, int const aimp, int const aip);
 };

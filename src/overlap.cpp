@@ -178,13 +178,13 @@ void overlap::calcCtrIterRight(int i){
 
 //---------------------------------------------------------------------------------------------------//
 // Optimized versions of calcCtrIterLeft/Right for the case both, psi and phi are QN-Blocked.
-// Still have to be tested!
 //---------------------------------------------------------------------------------------------------//
 
 void overlap::calcCtrIterLeftQNOpt(int i, lapack_complex_double const*const source, lapack_complex_double *const target){
   int lDL=phi->locDimL(i);
   int ld=phi->locd(i);
   int lDR=phi->locDimR(i);
+  siteQNOrderMatrix localIndexTable=phi->indexTable().getLocalIndexTable(i);
   lapack_complex_double const *localMatrix;
   tmpContainer<lapack_complex_double> innerContainer(1,ld,lDR,lDL);
   for(int si=0;si<ld;++si){
@@ -197,16 +197,16 @@ void overlap::calcCtrIterLeftQNOpt(int i, lapack_complex_double const*const sour
   phi->subMatrixStart(localMatrix,i);
   int numBlocks, lBlockSize, rBlockSize;
   int aiB, aimB, siB;
-  numBlocks=phi->indexTable().numBlocksLP(i);
+  numBlocks=localIndexTable.numBlocksLP();
   for(int aim=0;aim<lDL;++aim){
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
-      lBlockSize=phi->indexTable().lBlockSizeLP(i,iBlock);
-      rBlockSize=phi->indexTable().rBlockSizeLP(i,iBlock);
+      lBlockSize=localIndexTable.lBlockSizeLP(iBlock);
+      rBlockSize=localIndexTable.rBlockSizeLP(iBlock);
       for(int k=0;k<lBlockSize;++k){
-	aimB=phi->indexTable().aimBlockIndexLP(i,iBlock,k);
-	siB=phi->indexTable().siBlockIndexLP(i,iBlock,k);
+	aimB=localIndexTable.aimBlockIndexLP(iBlock,k);
+	siB=localIndexTable.siBlockIndexLP(iBlock,k);
 	for(int j=0;j<rBlockSize;++j){
-	  aiB=phi->indexTable().aiBlockIndexLP(i,iBlock,j);
+	  aiB=localIndexTable.aiBlockIndexLP(iBlock,j);
 	  innerContainer.global_access(0,siB,aiB,aim)+=source[pCtrLocalIndex(aimB,aim)]*localMatrix[aimB+aiB*lDL+siB*lDL*lDR];
 	}
       }
@@ -217,17 +217,18 @@ void overlap::calcCtrIterLeftQNOpt(int i, lapack_complex_double const*const sour
       target[pCtrLocalIndex(ai,aip)]=0;
     }
   }
+  localIndexTable=psi->indexTable().getLocalIndexTable(i);
   psi->subMatrixStart(localMatrix,i);
-  numBlocks=psi->indexTable().numBlocksLP(i);
+  numBlocks=localIndexTable.numBlocksLP();
   for(int ai=0;ai<lDR;++ai){
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
-      lBlockSize=psi->indexTable().lBlockSizeLP(i,iBlock);
-      rBlockSize=psi->indexTable().rBlockSizeLP(i,iBlock);
+      lBlockSize=localIndexTable.lBlockSizeLP(iBlock);
+      rBlockSize=localIndexTable.rBlockSizeLP(iBlock);
       for(int k=0;k<lBlockSize;++k){
-	aimB=psi->indexTable().aimBlockIndexLP(i,iBlock,k);
-	siB=psi->indexTable().siBlockIndexLP(i,iBlock,k);
+	aimB=localIndexTable.aimBlockIndexLP(iBlock,k);
+	siB=localIndexTable.siBlockIndexLP(iBlock,k);
 	for(int j=0;j<rBlockSize;++j){
-	  aiB=psi->indexTable().aiBlockIndexLP(i,iBlock,j);
+	  aiB=localIndexTable.aiBlockIndexLP(iBlock,j);
 	  target[pCtrLocalIndex(ai,aiB)]+=innerContainer.global_access(0,siB,ai,aimB)*conj(localMatrix[aimB+aiB*lDL+siB*lDL*lDR]);
 	}
       }
@@ -241,6 +242,7 @@ void overlap::calcCtrIterRightQNOpt(int i, lapack_complex_double const*const sou
   int lDL=phi->locDimL(i);
   int ld=phi->locd(i);
   int lDR=phi->locDimR(i);
+  siteQNOrderMatrix localIndexTable=phi->indexTable().getLocalIndexTable(i);
   tmpContainer<lapack_complex_double> innerContainer(1,ld,lDR,lDL);
   lapack_complex_double const *localMatrix;
   for(int si=0;si<ld;++si){
@@ -252,17 +254,17 @@ void overlap::calcCtrIterRightQNOpt(int i, lapack_complex_double const*const sou
   }
   int numBlocks, lBlockSize, rBlockSize;
   int aiB, aimB, siB;
-  numBlocks=phi->indexTable().numBlocksLP(i);
+  numBlocks=localIndexTable.numBlocksLP();
   phi->subMatrixStart(localMatrix,i);
   for(int ai=0;ai<lDR;++ai){
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
-      lBlockSize=phi->indexTable().lBlockSizeLP(i,iBlock);
-      rBlockSize=phi->indexTable().rBlockSizeLP(i,iBlock);
+      lBlockSize=localIndexTable.lBlockSizeLP(iBlock);
+      rBlockSize=localIndexTable.rBlockSizeLP(iBlock);
       for(int k=0;k<lBlockSize;++k){
-	aimB=phi->indexTable().aimBlockIndexLP(i,iBlock,k);
-	siB=phi->indexTable().siBlockIndexLP(i,iBlock,k);
+	aimB=localIndexTable.aimBlockIndexLP(iBlock,k);
+	siB=localIndexTable.siBlockIndexLP(iBlock,k);
 	for(int j=0;j<rBlockSize;++j){
-	  aiB=phi->indexTable().aiBlockIndexLP(i,iBlock,j);
+	  aiB=localIndexTable.aiBlockIndexLP(iBlock,j);
 	  innerContainer.global_access(0,siB,ai,aimB)+=source[pCtrLocalIndex(aiB,ai)]*localMatrix[aimB+aiB*lDL+siB*lDL*lDR];
 	}
       }
@@ -273,17 +275,18 @@ void overlap::calcCtrIterRightQNOpt(int i, lapack_complex_double const*const sou
       target[pCtrLocalIndex(aim,aimp)]=0;
     }
   }
-  numBlocks=psi->indexTable().numBlocksLP(i);
+  localIndexTable=psi->indexTable().getLocalIndexTable(i);
+  numBlocks=localIndexTable.numBlocksLP();
   psi->subMatrixStart(localMatrix,i);
   for(int aim=0;aim<lDL;++aim){
     for(int iBlock=0;iBlock<numBlocks;++iBlock){
-      lBlockSize=psi->indexTable().lBlockSizeLP(i,iBlock);
-      rBlockSize=psi->indexTable().rBlockSizeLP(i,iBlock);
+      lBlockSize=localIndexTable.lBlockSizeLP(iBlock);
+      rBlockSize=localIndexTable.rBlockSizeLP(iBlock);
       for(int k=0;k<lBlockSize;++k){
-	aimB=psi->indexTable().aimBlockIndexLP(i,iBlock,k);
-	siB=psi->indexTable().siBlockIndexLP(i,iBlock,k);
+	aimB=localIndexTable.aimBlockIndexLP(iBlock,k);
+	siB=localIndexTable.siBlockIndexLP(iBlock,k);
 	for(int j=0;j<rBlockSize;++j){
-	  aiB=psi->indexTable().aiBlockIndexLP(i,iBlock,j);
+	  aiB=localIndexTable.aiBlockIndexLP(iBlock,j);
 	  target[pCtrLocalIndex(aim,aimB)]+=innerContainer.global_access(0,siB,aiB,aim)*conj(localMatrix[aimB+aiB*lDL+siB*lDL*lDR]);
 	}
       }

@@ -54,8 +54,7 @@ void timps::setUpTables(){
   
   //Initialize index table for efficient contractions
   //MAJOR PROBLEM: basisQNORderMatrix is global, BUT CAN ONLY USE LOCAL QNs AT THE UNIT CELL -> USE LOCAL siteQNORDER matrices
-  indexTableVar.initialize(dimInfoBase,buf);
-  indexTableVar.generateQNIndexTables();
+  indexTableVar=basisQNOrderMatrix(dimInfoBase,buf);
 }
 
 //---------------------------------------------------------------------------------------------------//
