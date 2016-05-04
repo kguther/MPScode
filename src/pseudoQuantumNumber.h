@@ -22,11 +22,13 @@ class pseudoQuantumNumber{
   std::complex<int> groupOperation(std::complex<int> const &a, std::complex<int> const &b, int pre=1)const;
   std::vector<std::complex<int> > localQNValue() const {return QNloc;}
   std::vector<std::complex<int> > const& indexLabelAccess() const{return indexLabel;}
+  int isInvalid(std::complex<int> const &label);
  protected:
   dimensionTable dimInfo;
   std::vector<std::complex<int> > indexLabel;
   std::complex<int> N;
   std::vector<std::complex<int> > QNloc;
+  static std::complex<int> const invalidQN;
 };
 
 #endif

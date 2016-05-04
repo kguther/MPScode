@@ -318,6 +318,7 @@ void network::leftEnrichmentBlockwise(int i){
       }
     }
   }
+
   lapack_complex_double zone=1.0;
   lapack_complex_double zzero=0.0;
   for(int si=0;si<ldp;++si){

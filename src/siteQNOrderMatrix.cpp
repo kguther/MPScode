@@ -93,7 +93,7 @@ void siteQNOrderMatrix::blockStructure(int direction, std::vector<std::vector<in
       for(int iBlock=0;iBlock<numBlocks;++iBlock){
 	matchBlock=1;
 	for(int iQN=0;iQN<nQNs;++iQN){
-	  if(qnCriterium(iQN,aim,si,direction,pre)!=qnLabels[iQN][iBlock] || real(qnLabels[iQN][iBlock])<-2){
+	  if(qnCriterium(iQN,aim,si,direction,pre)!=qnLabels[iQN][iBlock] || conservedQNs[iQN]->isInvalid(qnLabels[iQN][iBlock])){
 	    matchBlock=0;
 	  }
 	}

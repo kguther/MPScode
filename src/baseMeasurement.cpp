@@ -26,7 +26,7 @@ void baseMeasurement::initializeBase(){
   Dw=MPOperator->maxDim();
   D=MPState->maxDim();
   MPOperator->setUpSparse();
-  calcer=contractor(MPOperator->maxDim(),MPState->indexTable().nQNs(),MPState->getDimInfo());
+  calcer=contractor(MPOperator->maxDim(),MPState->getDimInfo());
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -349,7 +349,7 @@ void baseMeasurement::calcCtrIterRightBase(int const i, arcomplex<double>  *cons
       for(int bi=0;bi<lDwR;++bi){
 	for(int ai=0;ai<lDR;++ai){
 	  for(int aimp=0;aimp<lDL;++aimp){
-	    simpleContainer=0;
+	    simpleContainer=0.0;
 	    for(int aip=0;aip<lDR;++aip){
 	      simpleContainer+=sourcePctr[pctrIndex(ai,bi,aip)]*siteMatrixState[stateIndex(sip,aip,aimp)];
 	    }

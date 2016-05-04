@@ -2,12 +2,14 @@
 #include "tmpContainer.h"
 #include <iostream>
 
-twositeHMatrix::twositeHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcomplex<double> > *Hin, int HPos, dimensionTable const &dimInfoIn, twositeQNOrderMatrix const* indexTableIn, projector *excitedStateP):
+twositeHMatrix::twositeHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcomplex<double> > *Hin, int HPosL, int HPosR, dimensionTable const &dimInfoIn, twositeQNOrderMatrix const* indexTableIn, double shiftIn, projector *excitedStateP):
   HMPO(Hin),
   dimInfo(dimInfoIn),
   Lctr(L),
   Rctr(R),
-  HMatrixPos(HPos),
+  HMatrixPosL(HPosL),
+  HMatrixPosR(HPosR),
+  shift(shiftIn),
   indexTable(indexTableIn)
 {
   int cBlockSize;
@@ -31,12 +33,14 @@ twositeHMatrix::twositeHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<a
   ldp=dimInfo.locd(i+1);
   lDL=dimInfo.locDimL(i);
   lDRR=dimInfo.locDimR(i+1);
-  lDwL=HMPO->locDimL(i);
-  lDwRR=HMPO->locDimR(i+1);
+  lDwL=HMPO->locDimL(HMatrixPosL);
+  lDwRR=HMPO->locDimR(HMatrixPosR);
   Dw=HMPO->maxDim();
   D=dimInfo.D();
-  int const lDwR=HMPO->locDimR(i);
+  int const lDwR=HMPO->locDimR(HMatrixPosL);
   arcomplex<double> simpleContainer;
+  //For twosite optimization, the mpo matrices for the two considered sites have to be contracted
+  //W is the action of the hamiltonian on the two sites
   W.resize(ld*ld*ldp*ldp*lDwRR*lDwL);
   for(int si=0;si<ld;++si){
     for(int sip=0;sip<ld;++sip){
@@ -46,8 +50,9 @@ twositeHMatrix::twositeHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<a
 	    for(int bim=0;bim<lDwL;++bim){
 	      simpleContainer=0;
 	      for(int bi=0;bi<lDwR;++bi){
-		simpleContainer+=HMPO->global_access(HMatrixPos,si,sip,bi,bim)*HMPO->global_access(HMatrixPos+1,sit,sitp,bir,bi);
+		simpleContainer+=HMPO->global_access(HMatrixPosL,si,sip,bi,bim)*HMPO->global_access(HMatrixPosR,sit,sitp,bir,bi);
 	      }
+	      W[hIndex(si,sip,sit,sitp,bir,bim)]=simpleContainer;
 	    }
 	  }
 	}
@@ -56,6 +61,8 @@ twositeHMatrix::twositeHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<a
   }
 }
 
+//---------------------------------------------------------------------------------------------------//
+// Blockwise matrix-vector multiplication for the twosite algorithm
 //---------------------------------------------------------------------------------------------------//
 
 void twositeHMatrix::MultMvBlocked(arcomplex<double> *v, arcomplex<double> *w){
@@ -80,7 +87,7 @@ void twositeHMatrix::MultMvBlocked(arcomplex<double> *v, arcomplex<double> *w){
 	siB=indexTable->siBlockIndex(iBlock,k);
 	for(int aim=0;aim<lDL;++aim){
 	  for(int bim=0;bim<lDwL;++bim){
-	    innerContainer.global_access(siB,sipB,aim,airB,bim)+=v[vecIndex(sipB,airB,siB,aimB)]*Lctr[ctrIndex(aim,bim,aimB)];
+	    innerContainer.global_access(siB,sipB,aim,airB,bim)+=v[vecBlockIndex(iBlock,j,k)]*Lctr[ctrIndex(aim,bim,aimB)];
 	  }
 	}
       }
@@ -123,17 +130,80 @@ void twositeHMatrix::MultMvBlocked(arcomplex<double> *v, arcomplex<double> *w){
       for(int k=0;k<lBlockSize;++k){
 	aimB=indexTable->aimBlockIndex(iBlock,k);
 	siB=indexTable->siBlockIndex(iBlock,k);
-	simpleContainer=0;
+	simpleContainer=0.0;
 	for(int bir=0;bir<lDwRR;++bir){
 	  for(int air=0;air<lDRR;++air){
 	    simpleContainer+=outerContainer.global_access(siB,sipB,aimB,bir,air)*Rctr[ctrIndex(airB,bir,air)];
 	  }
 	}
+	w[vecBlockIndex(iBlock,j,k)]=simpleContainer+shift*v[vecBlockIndex(iBlock,j,k)];
       }
     }
   }	    
 }
 
+//---------------------------------------------------------------------------------------------------//
+// The explicit version is needed in the first step for obscure reasons (something with arpack)
+//---------------------------------------------------------------------------------------------------//
+
+void twositeHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
+  dynamic5DContainer<arcomplex<double> > innerContainer, outerContainer;
+  innerContainer.generate(ld,ldp,lDL,lDRR,lDwL); 
+  arcomplex<double> simpleContainer;
+  for(int si=0;si<ld;++si){
+    for(int sip=0;sip<ld;++sip){
+      for(int aim=0;aim<lDL;++aim){
+	for(int air=0;air<lDRR;++air){
+	  for(int bim=0;bim<lDwL;++bim){
+	    simpleContainer=0.0;
+	    for(int aimp=0;aimp<lDL;++aimp){ 
+	      simpleContainer+=v[vecIndex(si,sip,air,aim)]*Lctr[ctrIndex(aim,bim,aimp)];
+	    }
+	    innerContainer.global_access(si,sip,aim,air,bim)=simpleContainer;
+	  }
+	}
+      }
+    }
+  }
+  outerContainer.generate(ld,ldp,lDL,lDwRR,lDRR);
+  for(int si=0;si<ld;++si){
+    for(int sip=0;sip<ld;++sip){
+      for(int aim=0;aim<lDL;++aim){
+	for(int bir=0;bir<lDwRR;++bir){
+	  for(int air=0;air<lDRR;++air){
+	    simpleContainer=0.0;
+	    for(int sit=0;sit<ld;++sit){
+	      for(int sitp=0;sitp<ld;++sitp){
+		for(int bim=0;bim<lDwL;++bim){
+		  simpleContainer+=innerContainer.global_access(sit,sitp,aim,air,bim)*W[hIndex(sit,si,sitp,sip,bim,bir)];
+		}
+	      }
+	    }		  
+	    outerContainer.global_access(si,sip,aim,bir,air)=simpleContainer;
+	  }
+	}
+      }
+    }
+  }
+  for(int si=0;si<ld;++si){
+    for(int sip=0;sip<ld;++sip){
+      for(int aim=0;aim<lDL;++aim){
+	for(int air=0;air<lDRR;++air){
+	  simpleContainer=0.0;
+	  for(int bir=0;bir<lDwRR;++bir){
+	    for(int airp=0;airp<lDRR;++airp){
+	      simpleContainer+=Rctr[ctrIndex(air,bir,airp)]*outerContainer.global_access(si,sip,aim,bir,airp);
+	    }
+	  }
+	  w[vecIndex(si,sip,air,aim)]=simpleContainer;
+	}
+      }
+    }
+  }
+}
+
+//---------------------------------------------------------------------------------------------------//
+// Storage functions to switch between the fast blockwise storage and the more general explicit storage
 //---------------------------------------------------------------------------------------------------//
 
 void twositeHMatrix::storageCompress(arcomplex<double> *v, arcomplex<double> *vCompressed){

@@ -63,7 +63,7 @@ void infiniteNetwork::iDMRGStep(){
   if(firstStep==0){
     addSite();
   }
-  
+
   arcomplex<double> *bufferMatrix;
   i=networkState->currentSite();
 
@@ -96,29 +96,34 @@ int infiniteNetwork::optimize(arcomplex<double> *target){
   int nconv=0;
   int const maxIter=2000;
   //In the first step, the endpoints 0 and 1 of the MPO are used, in all other steps, the middle part is used. Due to translation invariance, we always use the site matrices of i==1 and i==2.
-  int const HPos=(i==0)?0:1;
+  int const HPosL=(i==0)?0:1;
+  int const HPosR=(i==0)?networkH.length()-1:1;
   pCtr.getLctr(Lterm);
   pCtr.getRctr(Rterm);
-  twositeHMatrix BMat(Rterm,Lterm,&networkH,HPos,dimInfo,&(networkState->centralIndexTable()));
+  double const shift=-100;
+  twositeHMatrix BMat(Rterm,Lterm,&networkH,HPosL,HPosR,dimInfo,&(networkState->centralIndexTable()),shift);
 
   //Compression and expansion have to be done manually
-  BMat.prepareInput(target);
   
-  if(BMat.dim()>1){
+  if(i!=0){
+    BMat.prepareInput(target);
     arcomplex<double> *compressedVector=BMat.getCompressedVector();
+    verifyCompression(compressedVector,BMat.dim());
     ARCompStdEig<double,twositeHMatrix> eigProblemTwoSite(BMat.dim(),1,&BMat,&twositeHMatrix::MultMvBlocked,"SR",0,simPars.tolInitial,maxIter,compressedVector);
     nconv=eigProblemTwoSite.EigenValVectors(compressedVector,pLambda);
+    BMat.readOutput(target);
   }
   else{
-    nconv=1;
+    ARCompStdEig<double,twositeHMatrix> eigProblemTwoSite(BMat.dimFull(),1,&BMat,&twositeHMatrix::MultMv,"SR",0,simPars.tolInitial,maxIter,target);
+    nconv=eigProblemTwoSite.EigenValVectors(target,pLambda);
   }
-  BMat.readOutput(target);
+
   if(nconv!=1){
     std::cout<<"Failed to converge in iterative eigensolver, number of Iterations taken: "<<maxIter<<" With tolerance "<<simPars.tolInitial<<std::endl;
     return 1;
   }
   else{
-    std::cout<<"Current energy: "<<real(lambda)<<std::endl;
+    std::cout<<"Current energy: "<<real(lambda)-shift<<std::endl;
   }
   return 0;
 }
@@ -127,31 +132,33 @@ int infiniteNetwork::optimize(arcomplex<double> *target){
 
 void infiniteNetwork::addSite(){
   //Can only be used after optimization since it relies on the outcome of optimize() 
-  pCtr.update();
-  dimInfo.setParameterL(dimInfo.L()+2);
 
   //QNs have to be adjusted to fit a larger system
   std::vector<std::complex<int> > newQNs;
   newQNs.resize(pars.QNconserved.size());
   for(int iQN=0;iQN<pars.QNconserved.size();++iQN){
-    newQNs[iQN].real(static_cast<int>(pars.filling[iQN]*dimInfo.L()));
+    newQNs[iQN].real(static_cast<int>(pars.filling[iQN]*(2+dimInfo.L())));
     newQNs[iQN].imag(pars.QNconserved[iQN].imag());
   }
   std::cout<<"New global QN: "<<newQNs[0]<<std::endl;
-  std::cout<<"Obtained from system length "<<dimInfo.L()<<" and filling "<<pars.filling[0]<<std::endl;
+  std::cout<<"Obtained from system length "<<dimInfo.L()+2<<" and filling "<<pars.filling[0]<<std::endl;
   
   //Only for a single QN
-  
-  int info;
+
+  optLocalQNsL.resize(dimInfo.D());
+  optLocalQNsR.resize(dimInfo.D());
 
   //The QNs determined in updateMPS are stored
-  info=networkState->refineQN(i+1,optLocalQNsL);
+  networkState->refineQN(i+1,optLocalQNsL,optLocalQNsR,newQNs);
+  //The update of the contractions uses the new QNs
+  pCtr.update();
 
+  dimInfo.setParameterL(dimInfo.L()+2);
   //Cache results
   aBuf=networkState->getSiteTensor(i);
   bBuf=networkState->getSiteTensor(i+1);
   //This is where the actual MPS is grown
-  networkState->addSite(dimInfo.L(),i+1,newQNs,optLocalQNsR);
+  networkState->addSite(dimInfo.L(),i+1);
 
 }
 

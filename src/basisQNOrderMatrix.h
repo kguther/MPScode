@@ -16,9 +16,9 @@ class basisQNOrderMatrix{
  public:
   basisQNOrderMatrix(dimensionTable &dimin, std::vector<quantumNumber> *conservedQNsin);
   basisQNOrderMatrix(dimensionTable &dimin, std::vector<pseudoQuantumNumber*> const &conservedQNsin);
+  basisQNOrderMatrix(int iStart, int iStop, dimensionTable &dimin, std::vector<pseudoQuantumNumber*> const &conservedQNsin);
   basisQNOrderMatrix();
   void generateQNIndexTables();
-
   int numBlocksLP(int i)const {return localIndexTables[i].numBlocksLP();}
   int numBlocksRP(int i)const {return localIndexTables[i].numBlocksRP();}
   int lBlockSizeLP(int i, int iBlock)const {return localIndexTables[i].lBlockSizeLP(iBlock);}

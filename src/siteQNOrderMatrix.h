@@ -4,6 +4,12 @@
 #include "multInt.h"
 #include "quantumNumber.h"
 
+//---------------------------------------------------------------------------------------------------//
+// For the iDMRG, it proved to be useful to have as much stuff local as possible. Therefore, the index
+// tables are now stored in separate objects for each site. There is no performance penalty, because
+// in all applications, only the indices of a single site have to be considered.
+//---------------------------------------------------------------------------------------------------//
+
 class siteQNOrderMatrix{
  public:
   siteQNOrderMatrix(){}

@@ -15,19 +15,22 @@
 
 class twositeHMatrix{
  public:
-  twositeHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcomplex<double> > *Hin, int HPos, dimensionTable const &dimInfo, twositeQNOrderMatrix const* indexTable, projector *excitedStateP=0);
+  twositeHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcomplex<double> > *Hin, int HPosL, int HPosR, dimensionTable const &dimInfo, twositeQNOrderMatrix const* indexTable, double shift=0.0, projector *excitedStateP=0);
   void MultMvBlocked(arcomplex<double> *v, arcomplex<double> *w);
+  void MultMv(arcomplex<double> *v, arcomplex<double> *w);
   void readOutput(arcomplex<double> *outputVector);
   void prepareInput(arcomplex<double> *inputVector);
   void storageCompress(arcomplex<double> *v, arcomplex<double> *vCompressed);
   void storageExpand(arcomplex<double> *v, arcomplex<double> *vExpanded);
   int dim()const {return dimension;}
+  int dimFull()const {return ld*ld*lDL*lDRR;}
   arcomplex<double>* getCompressedVector() {return &(compressedVector[0]);}
  private:
   int dimension;
   int i, ld, ldp, lDL, lDRR;
   int lDwL, lDwRR;
-  int D, Dw, HMatrixPos;
+  int D, Dw, HMatrixPosL, HMatrixPosR;
+  double shift;
   std::vector<int> blockOffset;
   dimensionTable dimInfo;
   mpo<arcomplex<double> > *HMPO;

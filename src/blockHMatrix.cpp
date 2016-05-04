@@ -95,7 +95,7 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
 	siB=indexTable->siBlockIndexLP(iBlock,k);
 	aimB=indexTable->aimBlockIndexLP(iBlock,k);
       	for(int bi=0;bi<lDwR;++bi){
-	  simpleContainer=0;
+	  simpleContainer=0.0;
 	  for(int j=0;j<rBlockSize;++j){
 	    simpleContainer+=Rctr[ctrIndex(aip,bi,indexTable->aiBlockIndexLP(iBlock,j))]*v[vecBlockIndexLP(iBlock,j,k)];
 	  }
@@ -110,7 +110,7 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
     for(int bim=0;bim<lDwL;++bim){
       for(int ai=0;ai<lDR;++ai){
 	for(int aim=0;aim<lDL;++aim){
-	  outerContainer.global_access(si,bim,ai,aim)=0;
+	  outerContainer.global_access(si,bim,ai,aim)=0.0;
 	}
       }
     }
@@ -142,7 +142,7 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
       aimB=indexTable->aimBlockIndexLP(iBlock,k);
       for(int j=0;j<rBlockSize;++j){
 	aiB=indexTable->aiBlockIndexLP(iBlock,j);
-	simpleContainer=0;
+	simpleContainer=0.0;
 	for(int aim=0;aim<lDL;++aim){
 	  for(int bim=0;bim<lDwL;++bim){
 	    simpleContainer+=Lctr[ctrIndex(aimB,bim,aim)]*outerContainer.global_access(siB,bim,aiB,aim);

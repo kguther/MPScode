@@ -207,8 +207,10 @@ int quantumNumber::initializeLabelList(int i, int direction){
   std::vector<std::complex<int> > validQNLabels;
   std::vector<int> blockOccupations;
   std::vector<int> maxBlockSizes;
-  minimalLabel=(0>real(N)-2*(dimInfo.L()-i))?0:real(N)-2*(dimInfo.L()-i);
-  maximalLabel=(2*i>real(N))?real(N):2*i;
+  int const leftVacuum=0;
+  int const maxCharge=2*i;
+  minimalLabel=(leftVacuum>real(N)-2*(dimInfo.L()-i))?leftVacuum:real(N)-2*(dimInfo.L()-i);
+  maximalLabel=(maxCharge>real(N))?real(N):maxCharge;
   if(direction==1){
     cLabel=&rightLabel;
   }
@@ -245,29 +247,35 @@ int quantumNumber::initializeLabelList(int i, int direction){
     for(int iBlock=0;iBlock<qnLabels.size();++iBlock){
       validBlock=1;
       //Check if the Block can be meaningful (i.e. can be reached from both sides). This should always be true in the final run, but better check it.
+      
       if(real(qnLabels[iBlock])>maximalLabel || real(qnLabels[iBlock])<minimalLabel){
 	validBlock=0;
       }
-      if(real(qnLabels[iBlock])==0 && real(qnLabels[iBlock])==real(N)-2*(dimInfo.L()-i) && integerParity(dimInfo.L()-i)!=imag(N)){
+      if(real(qnLabels[iBlock])==leftVacuum && real(qnLabels[iBlock])==real(N)-2*(dimInfo.L()-i) && integerParity(dimInfo.L()-i)!=imag(N)){
 	if(imag(N)){
 	  validBlock=0;
 	}
       }
-      if(real(qnLabels[iBlock])==real(N) && real(qnLabels[iBlock])==2*i && integerParity(i)!=imag(N)){
+      if(real(qnLabels[iBlock])==real(N) && real(qnLabels[iBlock])==maxCharge && integerParity(i)!=imag(N)){
 	if(imag(N)){
 	  validBlock=0;
 	}
       }
-      if((real(qnLabels[iBlock])==0 && imag(qnLabels[iBlock])!=1) || (real(qnLabels[iBlock])==real(N)-2*(dimInfo.L()-i) && imag(qnLabels[iBlock])!=integerParity(dimInfo.L()-i)*imag(N))){
+      if((real(qnLabels[iBlock])==leftVacuum && imag(qnLabels[iBlock])!=1) || (real(qnLabels[iBlock])==real(N)-2*(dimInfo.L()-i) && imag(qnLabels[iBlock])!=integerParity(dimInfo.L()-i)*imag(N))){
 	if(imag(N)){
 	  validBlock=0;
 	}
       }
-      if((real(qnLabels[iBlock])==2*i && imag(qnLabels[iBlock])!=integerParity(i)) || (real(qnLabels[iBlock])==real(N) && imag(qnLabels[iBlock])!=imag(N))){
+      if((real(qnLabels[iBlock])==maxCharge && imag(qnLabels[iBlock])!=integerParity(i)) || (real(qnLabels[iBlock])==real(N) && imag(qnLabels[iBlock])!=imag(N))){
 	if(imag(N)){
 	  validBlock=0;
 	}
       }
+
+      if(!validBlock && direction==-1){
+	std::cout<<"Invalid label at site "<<i<<std::endl;
+      }
+      
       if(validBlock){
 	if(direction!=-1){
 	  allowedBlockSize=aimIndices[iBlock];

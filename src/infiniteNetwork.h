@@ -18,6 +18,8 @@ struct sortData{
 bool compareSortData(sortData const &a, sortData const &b);
 bool compareSortDataQNBased(sortData const &a, sortData const &b);
 
+void verifyCompression(arcomplex<double> *cVector, int dim);
+
 class infiniteNetwork{
  public:
   infiniteNetwork(problemParameters const &parsIn, simulationParameters const &simParsIn, impBase *MPState);

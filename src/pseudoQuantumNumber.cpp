@@ -27,3 +27,14 @@ std::complex<int> pseudoQuantumNumber::groupOperation(std::complex<int> const &a
   result.imag(imag(a)*imag(b));
   return result;
 }
+
+//---------------------------------------------------------------------------------------------------//
+
+int pseudoQuantumNumber::isInvalid(std::complex<int> const &a){
+  if(a==invalidQN){
+    return 1;
+  }
+  return 0;
+}
+
+std::complex<int> const pseudoQuantumNumber::invalidQN=std::complex<int>(-100,2);

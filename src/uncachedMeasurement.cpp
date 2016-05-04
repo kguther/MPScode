@@ -8,7 +8,7 @@ uncachedMeasurement::uncachedMeasurement(){
 uncachedMeasurement::uncachedMeasurement(mpo<arcomplex<double> > *const MPOperatorIn, impBase *const MPStateIn):
   MPState(MPStateIn),
   MPOperator(MPOperatorIn),
-  calcer(contractor(MPOperatorIn->maxDim(),MPState->indexTable().nQNs(),MPStateIn->getDimInfo()))
+  calcer(contractor(MPOperatorIn->maxDim(),MPStateIn->getDimInfo()))
 {
   Lctr.resize(MPState->maxDim()*MPState->maxDim()*MPOperator->maxDim());
   Rctr.resize(MPState->maxDim()*MPState->maxDim()*MPOperator->maxDim());
@@ -22,28 +22,29 @@ uncachedMeasurement::uncachedMeasurement(mpo<arcomplex<double> > *const MPOperat
 //---------------------------------------------------------------------------------------------------//
 
 void uncachedMeasurement::update(){
-  getLeftCtr();
   getRightCtr();
+  getLeftCtr();
 }
 
 //---------------------------------------------------------------------------------------------------//
 
 void uncachedMeasurement::getLeftCtr(){
   int iGlobal=MPState->currentSite();
-  int iInternal=MPState->internalSite();
+  int const iH=(iGlobal==0)?0:1;
   arcomplex<double> *container;
   MPState->subMatrixStart(container,iGlobal);
-  calcer.calcLeftContraction(iGlobal+1,MPState->indexTable().getLocalIndexTable(iInternal),container,MPOperator->getSiteTensor(iInternal),&(Lctr[0]),&(Lctr[0]));
+  //Here, we have to differ between left- and right index table
+  calcer.calcLeftContraction(iGlobal+1,container,MPOperator->getSiteTensor(iH),&(Lctr[0]),&(Lctr[0]));
 }
 
 //---------------------------------------------------------------------------------------------------//
 
 void uncachedMeasurement::getRightCtr(){
   int iGlobal=MPState->currentSite();
-  int iInternal=MPState->internalSite();
+  int const iH=(iGlobal==0)?(MPOperator->length()-1):1;
   arcomplex<double> *container;
   MPState->subMatrixStart(container,iGlobal+1);
-  calcer.calcRightContraction(iGlobal,MPState->indexTable().getLocalIndexTable(iInternal+1),container,MPOperator->getSiteTensor(iInternal+1),&(Rctr[0]),&(Rctr[0]));
+  calcer.calcRightContraction(iGlobal,container,MPOperator->getSiteTensor(iH),&(Rctr[0]),&(Rctr[0]));
 }
 
 //---------------------------------------------------------------------------------------------------//

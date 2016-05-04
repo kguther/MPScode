@@ -13,7 +13,7 @@ infiniteQsystem::infiniteQsystem(problemParameters parsIn, simulationParameters 
   std::complex<int> qnValue;
   std::vector<quantumNumber> conservedQNs;
   for(int iQN=0;iQN<parsIn.QNconserved.size();++iQN){
-    qnValue=std::complex<int>(pars.filling[iQN]*2*unitCellSize,pars.QNconserved[iQN].imag());
+    qnValue=std::complex<int>(pars.filling[iQN]*unitCellSize,pars.QNconserved[iQN].imag());
     conservedQNs.push_back(quantumNumber(dimInfo,qnValue,pars.QNLocalList[iQN]));
   }
   networkState=timps(unitCellSize,dimInfo,conservedQNs);
@@ -22,7 +22,7 @@ infiniteQsystem::infiniteQsystem(problemParameters parsIn, simulationParameters 
 void infiniteQsystem::solve(){
   infiniteNetwork sys(pars,simPars,&networkState);
   int const maxSteps=10;
-  for(int nStep=0;nStep=maxSteps;++nStep){
+  for(int nStep=0;nStep<maxSteps;++nStep){
     sys.iDMRGStep();
   }
 }

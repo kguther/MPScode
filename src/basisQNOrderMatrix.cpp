@@ -34,6 +34,22 @@ basisQNOrderMatrix::basisQNOrderMatrix(dimensionTable &dimin, std::vector<pseudo
 
 //---------------------------------------------------------------------------------------------------//
 
+basisQNOrderMatrix::basisQNOrderMatrix(int iStart, int iStop, dimensionTable &dimin, std::vector<pseudoQuantumNumber*> const &conservedQNsin):
+  dimInfo(dimin),
+  conservedQNs(conservedQNsin)
+{
+  int cI;
+  localIndexTables.resize(iStop-iStart+1);
+  for(int i=0;i<localIndexTables.size();++i){
+    cI=i+iStart;
+    //Write only a few local index tables, for sites in range from iStart to iStop (including both)
+    localIndexTables[i]=siteQNOrderMatrix(cI,dimInfo.locDimL(cI),dimInfo.locDimR(cI),dimInfo.locd(cI),conservedQNs);
+    //ADD EXCEPTION
+  }
+}
+
+//---------------------------------------------------------------------------------------------------//
+
 siteQNOrderMatrix const& basisQNOrderMatrix::getLocalIndexTable(int i)const {
   //ADD EXCEPTION
   return localIndexTables[i];

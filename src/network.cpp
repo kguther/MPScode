@@ -14,7 +14,6 @@
 #include "globalMeasurement.h"
 #include "localMeasurementSeries.h"
 #include "exactGroundState.h"
-#include "initStateGrow.h"
 
 //BEWARE: ALL MPS AND MPO NETWORK MATRICES ARE STORED WITH A CONTIGOUS COLUMN INDEX (i.e. transposed with respect to C standard, for better compatibility with LAPACK)
 
@@ -61,7 +60,7 @@ network::network(problemParameters const &inputpars, simulationParameters const 
   for(int iEigen=1;iEigen<pars.nEigs;++iEigen){
     excitedStateP.storeOrthoState(networkState,iEigen);
   }
-  if(pars.nQNs){
+  if(pars.nQNs && pars.d.maxd()==4 && networkH.maxDim()==12){
     if(conservedQNs[0].QNValue().imag()){  
       exactGroundState gsLoader(conservedQNs[0].QNValue());
       gsLoader.writeExactGroundState(networkState);
@@ -109,14 +108,15 @@ void network::resetConvergence(){
 //---------------------------------------------------------------------------------------------------//
 // Function to invoke the iDMRG algorithm to get an initial state. Has to be called externally because
 // the iDMRG algorithm makes use of the network class, too.
+// Does not yield a valid QN labeling scheme. Usefulness is highly questionable
 //---------------------------------------------------------------------------------------------------//
-
+/*
 void network::getInitState(){
   initStateGrow setup(pars,simPars,networkH);
   setup.prepareInitialState(networkState);
   exit(1);
 }
-
+*/
 //---------------------------------------------------------------------------------------------------//
 // These functions can be employed to alter the algorithm parameters nSweeps and D during lifetime of a 
 // network object. This allows for iteratively increasing D. They completely take care of all required
@@ -198,11 +198,12 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
     test.loadMPS(&networkState,&networkState);
     std::cout<<"Norm: "<<test.getFullOverlap()<<std::endl;
     */
+    /*
     measure(check,spinCheck);
     measure(checkParity,parCheck);
     std::cout<<"Current particle number (initial): "<<spinCheck<<std::endl;
     std::cout<<"Current subchain parity (initial): "<<parCheck<<std::endl;
-    
+    */
 
     std::cout<<"Computing partial contractions\n";
     pCtr.Lctr.global_access(0,0,0,0)=1;
@@ -385,6 +386,20 @@ int network::optimize(int i, int maxIter, double tol, double &iolambda){
     //So far it seems that the eigensolver either converges quite fast or not at all (i.e. very slow, such that the maximum number of iterations is hit) depending strongly on the tolerance
     nconv=eigProblem.EigenValVectors(currentM,plambda);
   }
+
+  /*
+  getLocalDimensions(i);
+  for(int si=0;si<ld;++si){
+    for(int ai=0;ai<lDR;++ai){
+      for(int aim=0;aim<lDL;++aim){
+	std::cout<<"Entry: "<<currentM[aim+lDL*ai+lDL*lDR*si]<<"\twith labels "<<conservedQNs[0].QNLabel(i-1,aim)<<"+"<<conservedQNs[0].QNLabel(si)<<"="<<conservedQNs[0].QNLabel(i,ai)<<std::endl;
+      }
+    }
+  }
+  exit(1);
+  */
+  
+
   if(nconv!=1){
     std::cout<<"Failed to converge in iterative eigensolver, number of Iterations taken: "<<maxIter<<" With tolerance "<<tol<<std::endl;
     return 1;

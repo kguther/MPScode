@@ -30,6 +30,20 @@ bool compareSortDataQNBased(sortData const &a, sortData const &b){
   //The ordering has to be strictly deterministic, such that two arrays of sortData with the same entries of lambdas and QNs are ordered in the same way, even if some lambdas are degenerate
 }
 
+void verifyCompression(arcomplex<double> *cVector, int dim){
+  double const norm=cblas_dznrm2(dim,cVector,1);
+  double const tol=1e-7;
+  if(norm<tol){
+    std::cout<<"WARNING: STARTING VECTOR IS ZERO\n";
+    //Maybe use sqrt(dim), but this will most likely not do a lot 
+    arcomplex<double> defaultEntry=1.0/static_cast<double>(dim);
+    for(int m=0;m<dim;++m){
+      cVector[m]=defaultEntry;
+    }
+  }
+  std::cout<<"Checked vector norm\n";
+}
+
 //---------------------------------------------------------------------------------------------------//
 
 int infiniteNetwork::statePrediction(arcomplex<double> *target){
@@ -60,7 +74,7 @@ int infiniteNetwork::statePrediction(arcomplex<double> *target){
     return 1;
   }
   */
-
+  int const tol=1e-12;
   for(int si=0;si<dimInfo.locd(i);++si){
     for(int sip=0;sip<dimInfo.locd(i+1);++sip){
       subMatrix=target+sip*lDL*lDRR+si*dimInfo.locd(i+1)*lDL*lDRR;
@@ -69,19 +83,29 @@ int infiniteNetwork::statePrediction(arcomplex<double> *target){
       for(int ai=0;ai<lDR;++ai){
 	for(int aim=0;aim<lDL;++aim){
 	  leftBuf[ai+lDR*aim]=bMatrix[ai+lDR*aim]*diags[ai];
-	  rightBuf[aim+lDL*ai]=aMatrix[aim+lDL*ai]*diags[ai]/diagsm[aim];
+	  if(diagsm[aim]>tol){
+	    //SVs are always positive
+	    //ADD EXCEPTION
+	    rightBuf[aim+lDL*ai]=aMatrix[aim+lDL*ai]*diags[ai]/diagsm[aim];
+	  }
+	  else{
+	    rightBuf[aim+lDL*ai]=0;
+	  }
 	}
       }
       cblas_zgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,lDR,lDR,lDL,&zone,leftBuf,lDR,rightBuf,lDL,&zzero,subMatrix,lDR);
     }
   }
 
-
+  /*
   for(int m=0;m<dimInfo.locd(i)*dimInfo.locd(i+1)*dimInfo.locDimL(i)*dimInfo.locDimL(i);++m){
     target[m]=0;
   }
 
   qnEnforcedPrediction(target);
+  */
+
+  std::cout<<"Guess norm: "<<cblas_dznrm2(lDL*lDL*dimInfo.locd(i)*dimInfo.locd(i+1),target,1)<<std::endl;
   
   //info=twositeCheck(*networkState,target);
   if(info){
@@ -256,11 +280,16 @@ void infiniteNetwork::updateMPS(arcomplex<double> *source){
   }
   */
 
+  //We will need to declare D labels, even in the rare case less than D labels are used
+  int const D=dimInfo.D();
+  optLocalQNsL.resize(D);
+  optLocalQNsR.resize(D);
+  
+  //In this rare case, the additional labels are never called, and do not need to be set
+  
   //Truncate to lDR largest SVs
-  optLocalQNsL.resize(lDR);
-  optLocalQNsR.resize(lDR);
-
   diags.resize(lDR);
+
   for(int ai=0;ai<lDR;++ai){
     //Copy the remaining diagonal matrix into diags
     optLocalQNsL[ai]=comparerL[ai].QN;

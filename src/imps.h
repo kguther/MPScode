@@ -25,6 +25,8 @@ class imps: public impBase, public mps{
   virtual int internalSite()const {return currentSite();}
   virtual twositeQNOrderMatrix const& centralIndexTable() const{return centralIndexTableVar;}
   basisQNOrderMatrix const& indexTable() const{return indexTableVar;}
+  virtual siteQNOrderMatrix const& leftIndexTable()const {return indexTableVar.getLocalIndexTable(currentSite());}
+virtual siteQNOrderMatrix const& rightIndexTable()const {return indexTableVar.getLocalIndexTable(1+currentSite());}
   virtual pseudoQuantumNumber* getConservedQNs(int iQN){return &(conservedQNs[iQN]);}
   virtual baseTensor<arcomplex<double> > const& getSiteTensor(int i){return getStateArrayEntry(i);}
  private:

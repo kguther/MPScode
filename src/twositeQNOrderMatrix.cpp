@@ -46,7 +46,7 @@ int twositeQNOrderMatrix::generateQNIndexTable(){
       isNew=1;
       for(int iBlock=0;iBlock<qnLabels[0].size();++iBlock){
 	for(int iQN=0;iQN<nQNs();++iQN){
-	  if(qnCriterium(iQN,site-1,aim,si,1)!=qnLabels[iQN][iBlock] && qnCriterium(iQN,site-1,aim,si,1).real()>-1){
+	  if(qnCriterium(iQN,site-1,aim,si,1)!=qnLabels[iQN][iBlock] && !(conservedQNs[iQN]->isInvalid(qnCriterium(iQN,site-1,aim,si,1).real()))){
 	    break;
 	  }
 	  if(iQN==nQNs()-1){
