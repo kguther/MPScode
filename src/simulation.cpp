@@ -104,13 +104,14 @@ int simulation::run(){
   int info;
   for(int nRun=1;nRun<pathLength+1;++nRun){
 
-    /*
+    
     if(abs(parDirection)>1e-20){
       parDirection*=1.0/(scaling*abs(parDirection))*nRun;
     }
-    */
+    
     //Now: disorder scaling
-    if(pathLength>1){
+    
+    if(pathLength>1 && 0){
       deltaP=(nRun-1)*targetDelta/(pathLength-1);
     }
     else{
@@ -184,6 +185,7 @@ int simulation::singleRun(){
 	fileName=finalName+".txt";
       }
       std::cout<<finalName<<std::endl;
+      
       ofs.open(fileName.c_str());
       ofs<<"Values for state number "<<iEigen<<" with energy "<<E0[iEigen]<<" and energy variance "<<dE[iEigen]<<std::endl;
       //The problem parameters are written into the first lines
@@ -259,7 +261,7 @@ int simulation::singleRun(){
 	}
       }
       ofs.close();
-    }
+      }
   }
   csystem.TensorNetwork.resetConvergence();
   return 0;

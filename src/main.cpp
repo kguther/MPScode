@@ -19,22 +19,6 @@ void sysSetMeasurements(simulation &sim, int d, int L, int meas);
 void getFileName(info const &necPars, char *fNBuf, int commsize, int myrank, std::string &finalName);
 //results has to be at least of size 4 (in the sense of a C array)
 
-int other(int argc, char *argv[]){
-  std::vector<double> E0, dE;
-  localHSpaces localHilbertSpaceDims(2);
-  std::complex<int> QNValue[1]={std::complex<int>(4,1)};
-  std::complex<int> QNList[2]={std::complex<int>(-1,1),std::complex<int>(1,1)};
-  int const nEigs=1;
-  int const L=50;
-  problemParameters pars(localHilbertSpaceDims,L,5,nEigs,1,QNValue,QNList);
-  simulationParameters simPars(100,12,1);
-  network sys(pars,simPars);
-  generateHeisenbergHamiltonian(L,sys.networkH);
-  sys.solve(E0,dE);
-  std::cout<<"GS energy: "<<E0[0]<<std::endl;
-  return 0;
-}
-
 int main(int argc, char *argv[]){
   //Here, the parameters are distributed via MPI to the processes. Each process then individually solves the system for a specific set of parameters - great paralellization.
   //There are currently two settings: scaling and correlation. The former computes the behaivour of the gap with increasing system size and the latter computes correlations etc across the parameter space for fixed system size
@@ -95,11 +79,11 @@ int main(int argc, char *argv[]){
   //Each process calculates its own couplings/system size
   
 
-  int const range=4;
+  int const range=8;
   int const redRank=myrank/2;
   int WStage=redRank/range;
   if(necPars.simType==0){
-    necPars.Wsc+=(1+WStage)/2*0.2*pow(-1,WStage);
+    necPars.Wsc+=(1+WStage)/2*0.4*pow(-1,WStage);
     necPars.par=2*(myrank%2)-1;
   }
   alpha=(necPars.alphaMax-necPars.alphaMin)*((redRank%range)/static_cast<double>(range))+necPars.alphaMin;

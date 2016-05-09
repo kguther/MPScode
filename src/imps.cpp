@@ -22,13 +22,12 @@ imps::imps(mps const &source):
 
 //---------------------------------------------------------------------------------------------------//
 
-int imps::addSite(int Lnew, int i, std::vector<std::complex<int> > const &targetQN, std::vector<std::complex<int> > const &source){
-  int info;
+int imps::addSite(int Lnew, int i){
   for(int iQN=0;iQN<nQNs;++iQN){
-    conservedQNs[iQN].grow(Lnew,i,targetQN[iQN],source);
+    conservedQNs[iQN].grow(Lnew,i,internalTargetQNBuffer[iQN],internalSourceBuffer);
   }
   stateArray::setParameterL(Lnew);
-  info=loadIndexTables();
+  loadIndexTables();
 
   /*
   std::cout<<std::endl;
@@ -43,7 +42,7 @@ int imps::addSite(int Lnew, int i, std::vector<std::complex<int> > const &target
   */
 
   centralIndexTableVar=twositeQNOrderMatrix(i,dimInfo,conservedQNs);
-  return info;
+  return 0;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -67,7 +66,12 @@ void imps::exportState(mps &target){
 }
 
 //---------------------------------------------------------------------------------------------------//
+// Beware, refineQN only stores the rightSideLabels right now, the global adaption can only be done 
+// when the system is grown. 
+//---------------------------------------------------------------------------------------------------//
 
-int imps::refineQN(int i, std::vector<std::complex<int> > const &source){
-  return conservedQNs[0].refine(i,source);
+int imps::refineQN(int i, std::vector<std::complex<int> > const &leftSideLabels, std::vector<std::complex<int> > const &rightSideLabels, std::vector<std::complex<int> > const &targetQN){
+  internalTargetQNBuffer=targetQN;
+  internalSourceBuffer=rightSideLabels;
+  return conservedQNs[0].refine(i,leftSideLabels);
 }

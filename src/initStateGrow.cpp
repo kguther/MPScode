@@ -25,6 +25,9 @@ void initStateGrow::growSystem(){
   //Starting from a system of size initialLength, one of the target size L is generated
   int const L=pars.L;
   infiniteNetwork growingNetwork(pars,simPars,&networkState);
+
+  //load uncachedMeasurement of infiniteNetwork
+
   growingNetwork.networkH=networkH;
 
   for(int m=0;m<(L-initialLength)/2+1;++m){

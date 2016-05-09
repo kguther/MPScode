@@ -30,15 +30,18 @@ int writeHamiltonian(network &sys, double J, double g, double W, std::complex<do
     else{
       prefactor=2;
     }
-    gD=g*(1+disorder(deltaP));
+    //disorder() is a stochastic function, therefore, scaleA!=scaleB
+    double const scaleA=(1+disorder(deltaP));
+    double const scaleB=(1+disorder(deltaP));
+    gD=g*scaleB;
     if(tSite<0){
       tD=t*tLocalScale(i);
     }
     else{
       tD=t*tSingleSite(i,tSite);
     }
-    JD=J*(1+disorder(deltaP));
-    preD=pre*(1+disorder(deltaP));
+    JD=J*scaleB;
+    preD=pre*scaleB;
     for(int si=0;si<sys.locd(i);++si){
       for(int sip=0;sip<sys.locd(i);++sip){
 	for(int bi=0;bi<lDwR;++bi){
@@ -104,16 +107,16 @@ int writeHamiltonian(network &sys, double J, double g, double W, std::complex<do
 		  break;		  
 		case 1:
 		  //THIS IS TRICKY: By construction, a and b anticommute, but only for the same site. For the nearest-neigbhour hopping, one has to take into account extra signs from anticommutation of operators on adjacent sites. All other terms are at least quadratic in the local fermionic operators, so this problem only occurs here. 
-		  sys.networkH(i,si,sip,bi,bim)=-aMatrix(sip,si)*(delta(sip,0)-delta(sip,2));
+		  sys.networkH(i,si,sip,bi,bim)=-scaleA*aMatrix(sip,si)*(delta(sip,0)-delta(sip,2));
 		  break;
 		case 2:
-		  sys.networkH(i,si,sip,bi,bim)=-bMatrix(sip,si)*(delta(sip,0)-delta(sip,1));
+		  sys.networkH(i,si,sip,bi,bim)=-scaleA*bMatrix(sip,si)*(delta(sip,0)-delta(sip,1));
 		  break;
 		case 3:
-		  sys.networkH(i,si,sip,bi,bim)=aMatrix(si,sip)*(delta(sip,3)-delta(sip,1));
+		  sys.networkH(i,si,sip,bi,bim)=scaleA*aMatrix(si,sip)*(delta(sip,3)-delta(sip,1));
 		  break;
 		case 4:
-		  sys.networkH(i,si,sip,bi,bim)=bMatrix(si,sip)*(delta(sip,3)-delta(sip,2));
+		  sys.networkH(i,si,sip,bi,bim)=scaleA*bMatrix(si,sip)*(delta(sip,3)-delta(sip,2));
 		  break;
 		case 5:
 		  sys.networkH(i,si,sip,bi,bim)=-2*JD*delta(si,sip)*(delta(si,1)+delta(si,3));

@@ -14,6 +14,7 @@
 #include "globalMeasurement.h"
 #include "localMeasurementSeries.h"
 #include "exactGroundState.h"
+#include "initStateGrow.h"
 
 //BEWARE: ALL MPS AND MPO NETWORK MATRICES ARE STORED WITH A CONTIGOUS COLUMN INDEX (i.e. transposed with respect to C standard, for better compatibility with LAPACK)
 
@@ -110,13 +111,13 @@ void network::resetConvergence(){
 // the iDMRG algorithm makes use of the network class, too.
 // Does not yield a valid QN labeling scheme. Usefulness is highly questionable
 //---------------------------------------------------------------------------------------------------//
-/*
+
 void network::getInitState(){
   initStateGrow setup(pars,simPars,networkH);
   setup.prepareInitialState(networkState);
   exit(1);
 }
-*/
+
 //---------------------------------------------------------------------------------------------------//
 // These functions can be employed to alter the algorithm parameters nSweeps and D during lifetime of a 
 // network object. This allows for iteratively increasing D. They completely take care of all required
@@ -350,6 +351,7 @@ int network::optimize(int i, int maxIter, double tol, double &iolambda){
   networkState.subMatrixStart(currentM,i);
 
   //Check step useful whenever something in the normalization or optimization is adjusted
+  //Add some flags to manage this automatically
   /*
   double spinCheck=0;
   double parCheck=0;
@@ -386,19 +388,6 @@ int network::optimize(int i, int maxIter, double tol, double &iolambda){
     //So far it seems that the eigensolver either converges quite fast or not at all (i.e. very slow, such that the maximum number of iterations is hit) depending strongly on the tolerance
     nconv=eigProblem.EigenValVectors(currentM,plambda);
   }
-
-  /*
-  getLocalDimensions(i);
-  for(int si=0;si<ld;++si){
-    for(int ai=0;ai<lDR;++ai){
-      for(int aim=0;aim<lDL;++aim){
-	std::cout<<"Entry: "<<currentM[aim+lDL*ai+lDL*lDR*si]<<"\twith labels "<<conservedQNs[0].QNLabel(i-1,aim)<<"+"<<conservedQNs[0].QNLabel(si)<<"="<<conservedQNs[0].QNLabel(i,ai)<<std::endl;
-      }
-    }
-  }
-  exit(1);
-  */
-  
 
   if(nconv!=1){
     std::cout<<"Failed to converge in iterative eigensolver, number of Iterations taken: "<<maxIter<<" With tolerance "<<tol<<std::endl;

@@ -76,7 +76,7 @@ int quantumNumber::grow(int L, int i, std::complex<int> const &targetQN, std::ve
   std::cout<<std::endl;
   */
   int const dL=L-dimInfo.L();
-  indexLabel.insert(indexLabel.begin()+(i+1)*D,dL*D,std::complex<int>(-100,2));
+  indexLabel.insert(indexLabel.begin()+(i+1)*D,dL*D,invalidQN);
   int const lDL=dimInfo.locDimL(i);
   for(int aim=0;aim<lDL;++aim){
     indexLabel[aim+(i+dL)*D]=source[aim];
@@ -142,7 +142,7 @@ int quantumNumber::initializeLabelList(){
   int info;
   leftLabel.resize(dimInfo.D()*(dimInfo.L()+1));
   rightLabel.resize(dimInfo.D()*(dimInfo.L()+1));
-  indexLabel=std::vector<std::complex<int> >(dimInfo.D()*(dimInfo.L()+1),std::complex<int>(-100,2));
+  indexLabel=std::vector<std::complex<int> >(dimInfo.D()*(dimInfo.L()+1),invalidQN);
   info=initializeLabelListLP();
   if(info)
     return info;
@@ -248,6 +248,7 @@ int quantumNumber::initializeLabelList(int i, int direction){
       validBlock=1;
       //Check if the Block can be meaningful (i.e. can be reached from both sides). This should always be true in the final run, but better check it.
       
+      //I did not believe this, but this checks in the warmup are actually required. The scheme does not work without
       if(real(qnLabels[iBlock])>maximalLabel || real(qnLabels[iBlock])<minimalLabel){
 	validBlock=0;
       }
@@ -306,7 +307,7 @@ int quantumNumber::initializeLabelList(int i, int direction){
 	  break;
 	}
 	if(iBlock==validQNLabels.size()-1){
-	  (*cLabel)[aim+i*dimInfo.D()]=std::complex<int>(-100,2);
+	  (*cLabel)[aim+i*dimInfo.D()]=invalidQN;
 	}
       }
       if(validQNLabels.size()==0){
@@ -370,7 +371,7 @@ void quantumNumber::gatherBlocks(int i, std::vector<int> &aimIndices, std::vecto
   for(int si=0;si<dimInfo.locd(i);++si){
     for(int aim=0;aim<lD;++aim){
       for(int iBlock=0;iBlock<qnLabels.size();++iBlock){
-	if((groupOperation((this->*labelFunction)(i-1+direction,aim),QNLabel(si),pre)==qnLabels[iBlock] && real((this->*labelFunction)(i-1+direction,aim))>-2)){
+	if((groupOperation((this->*labelFunction)(i-1+direction,aim),QNLabel(si),pre)==qnLabels[iBlock] && !isInvalid((this->*labelFunction)(i-1+direction,aim)))){
 	  aimIndexTable[iBlock].push_back(aim);
 	}
       }
@@ -406,7 +407,7 @@ int quantumNumber::integerParity(int n){
 //---------------------------------------------------------------------------------------------------//
 
 int quantumNumber::qnConstraint(int i, int si, int ai, int aim){
-  if(QNLabel(i,ai)!=groupOperation(QNLabel(i-1,aim),QNLabel(si)) && real(QNLabel(i,ai))>-2){
+  if(QNLabel(i,ai)!=groupOperation(QNLabel(i-1,aim),QNLabel(si)) || isInvalid(QNLabel(i,ai))){
     return 1;
   }
   return 0;

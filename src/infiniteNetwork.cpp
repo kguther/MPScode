@@ -24,6 +24,13 @@ infiniteNetwork::infiniteNetwork(problemParameters const &parsIn, simulationPara
   diags=std::vector<double>(lDR,1.0);
   diagsm=diags;
   //Setup of the L/R-terms was externalized - is now done via the setPCtr() function
+
+  //Setup of A/B backups
+  i=networkState->currentSite();
+  if(i>0){
+    aBuf=networkState->getSiteTensor(i-1);
+    bBuf=networkState->getSiteTensor(i+2);
+  }
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -71,7 +78,7 @@ void infiniteNetwork::iDMRGStep(){
   bufferMatrix=bufferMatrixP.get();
 
   //State prediction needs at least two optimized matrices, not available for a two-site system
-  if(i!=0){
+  if(i>0){
     statePrediction(bufferMatrix);
   }
   else{
