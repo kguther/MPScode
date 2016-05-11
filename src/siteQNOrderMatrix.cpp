@@ -120,7 +120,16 @@ void siteQNOrderMatrix::blockStructure(int direction, std::vector<std::vector<in
       }
     }
   }
+  if(direction==0){
+    qnLabelsLP=qnLabels[0];
+  }
+  else{
+    qnLabelsRP=qnLabels[0];
+  }
+
 }
+
+//---------------------------------------------------------------------------------------------------//
 
 std::complex<int> siteQNOrderMatrix::qnCriterium(int iQN, int aim, int si, int direction, int pre){
   std::complex<int> criterium;
