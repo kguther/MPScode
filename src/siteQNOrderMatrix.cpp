@@ -51,6 +51,8 @@ void siteQNOrderMatrix::setUpTable(){
 }
 
 //---------------------------------------------------------------------------------------------------//
+// setUpTableFull() uses the full blockstructure including empty blocks (see below)
+//---------------------------------------------------------------------------------------------------//
 
 void siteQNOrderMatrix::setUpTableFull(){
   blockStructureFull(0,aiBlockIndicesLP,siaimBlockIndicesLP);
@@ -182,6 +184,8 @@ int siteQNOrderMatrix::validate()const {
   return 0;
 }
 
+//---------------------------------------------------------------------------------------------------//
+// The index tables generated via blockStructureFull
 //---------------------------------------------------------------------------------------------------//
 
 void siteQNOrderMatrix::blockStructureFull(int direction, std::vector<std::vector<int> > &aiIndices, std::vector<std::vector<multInt> > &siaimIndices){

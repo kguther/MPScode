@@ -248,12 +248,12 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
       for(int prev=0;prev<iEigen;++prev){
 	std::cout<<"Overlap with state "<<prev<<" is: "<<excitedStateP.fullOverlap(prev)<<std::endl;
       }
-      /*
+      
       measure(check,spinCheck);
       measure(checkParity,parCheck);
       std::cout<<"Current particle number (final): "<<spinCheck<<std::endl;
       std::cout<<"Current subchain parity (final): "<<parCheck<<std::endl;
-      */
+      
     }
     printQNLabels(networkState);
     stepRet=gotoNextEigen();
@@ -288,9 +288,6 @@ void network::sweep(double maxIter, double tol, double &lambda){
   std::cout<<"STARTING RIGHTSWEEP\n\n";
   for(int i=0;i<(L-1);++i){
     //Step of leftsweep
-
-    std::cout<<"Norm: "<<test.getFullOverlap()<<std::endl;
-
     std::cout<<"Optimizing site matrix"<<std::endl;
     lambdaCont=lambda;
     curtime=clock();
@@ -321,7 +318,6 @@ void network::sweep(double maxIter, double tol, double &lambda){
     
     //Execute right-sided enrichment step and update the coefficient of the expansion term
     normalize(i,0,expFlag);
-    std::cout<<"Norm: "<<test.getFullOverlap()<<std::endl;
     if(expFlag){
       getNewAlpha(i,lambda,lambdaCont);
     }
@@ -360,12 +356,14 @@ int network::optimize(int i, int maxIter, double tol, double &iolambda){
 
   //Check step useful whenever something in the normalization or optimization is adjusted
   //Add some flags to manage this automatically
+  /*
   double spinCheck=0;
   double parCheck=0;
   measure(check,spinCheck);
   measure(checkParity,parCheck);
   std::cout<<"Current particle number (opt): "<<spinCheck<<std::endl;
   std::cout<<"Current subchain parity (opt): "<<parCheck<<std::endl;
+  */
     
   double lambdaCont;
   if(pars.nQNs){// && i!=0 && i!=(L-1)){

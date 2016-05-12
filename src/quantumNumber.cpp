@@ -117,17 +117,15 @@ int quantumNumber::refine(int i, std::vector<std::complex<int> > const &source){
 
   
   for(int aim=0;aim<lDL;++aim){
-    std::cout<<"Old label: "<<QNLabel(i-1,aim)<<"\t";
+    //std::cout<<"Old label: "<<QNLabel(i-1,aim)<<"\t";
     indexLabel[aim+i*D]=source[aim];
-    std::cout<<"New label: "<<QNLabel(i-1,aim)<<"\t"<<"Index: "<<aim<<"\n";
+    //std::cout<<"New label: "<<QNLabel(i-1,aim)<<"\t"<<"Index: "<<aim<<"\n";
   }
-  
-  std::cout<<std::endl;
   return 0;
 }
 
 //---------------------------------------------------------------------------------------------------//
-// This is the new, dynamic labeling scheme, where first, starting with the vacuum labels for the 
+// This is the new, static labeling scheme, where first, starting with the vacuum labels for the 
 // leftmost index, the allowed blocks of the next site are constructed - these are those blocks
 // that allow for fullfilling the QN constraints - for all sites from the left. 
 // This yields an index list, called leftLabel. The same is now done from the right, starting with
