@@ -4,7 +4,10 @@
 #include "network.h"
 #include "optHMatrix.h"
 #include "blockHMatrix.h"
+#include "truncation.h"
+#include "verifyQN.h"
 #include <cmath>
+#include <algorithm>
 #include <iostream>
 #include <memory>
 
@@ -200,18 +203,21 @@ void network::rightEnrichment(int i){
 // They do essentially the same thing, but expand and decompose the matrices blockwise, thus preserving
 // the block structure. In principle, therefore, the expansion term P is also modified. It is unknown
 // if the truncated P is as useful as the heuristic ansatz by Hubig
+
+// Also, the QN labeling scheme is dynamically updated during enrichment
 //---------------------------------------------------------------------------------------------------//
 
 void network::leftEnrichmentBlockwise(int i){
   lapack_complex_double *Mnew;
-  lapack_complex_double *Bnew, *R, *BStart, *networkB, *localMatrix;
+  lapack_complex_double *Bnew, *R, *BStart, *localMatrix;
   lapack_complex_double *pExpression;
-  lapack_complex_double *U, *VT;
+  lapack_complex_double *U, *VT, *globalU, *globalVT;
   double *diags;
+  int info;
   int blockDimR, blockDimL, maxDim;
   int containerDim;
   int lDRR, ldp;
-  int siCurrent, aiCurrent, aimCurrent, aipCurrent;
+  int siCurrent, aiCurrent, aimCurrent, aipCurrent, sipCurrent;
   int numBlocks, lBlockSize, rBlockSize;
   getLocalDimensions(i);
   int const MNumCols=lDR*(1+lDwR);
@@ -219,15 +225,17 @@ void network::leftEnrichmentBlockwise(int i){
   lDRR=networkState.locDimR(i+1);
   ldp=locd(i+1);
 
-  siteQNOrderMatrix const localIndexTable=networkState.indexTable().getLocalIndexTable(i);
+  //siteQNOrderMatrix const localIndexTable=networkState.indexTable().getLocalIndexTable(i);
+  siteQNOrderMatrix localIndexTableFull;
+  localIndexTableFull.generateFull(networkState.indexTable().getLocalIndexTable(i));
 
-  std::unique_ptr<lapack_complex_double[]> Rp(new lapack_complex_double[lDR*lDR*(1+lDwR)]);
+  std::unique_ptr<lapack_complex_double[]> Rp(new lapack_complex_double[lDR*MNumCols]);
   std::unique_ptr<lapack_complex_double[]> pEP(new lapack_complex_double[ld*lDL*lDR*lDwR]);
   std::unique_ptr<lapack_complex_double[]> MP, UP, VTP;
-  std::unique_ptr<double> diagsP;
+  std::unique_ptr<double[]> diagsP;
 #ifndef USE_MKL
-  std::unique_ptr<int> iworkP;
-  std::unique_ptr<double> rworkP;
+  std::unique_ptr<int[]> iworkP;
+  std::unique_ptr<double[]> rworkP;
   std::unique_ptr<lapack_complex_double[]> workP;
   int *iwork;
   double *rwork;
@@ -235,30 +243,58 @@ void network::leftEnrichmentBlockwise(int i){
 #endif
   pExpression=pEP.get();
   R=Rp.get();
+  
+  //Prepare global containers
+  std::unique_ptr<lapack_complex_double[]> globalUP(new lapack_complex_double[MNumRows*MNumRows]);
+  std::unique_ptr<lapack_complex_double[]> globalVTP(new lapack_complex_double[MNumCols*MNumCols]);
+  std::vector<auxiliary::sortData> comparer(MNumRows);
+  globalU=globalUP.get();
+  globalVT=globalVTP.get();
+  //Initialize with 0:
+  for(int m=0;m<MNumRows*MNumRows;++m){
+    globalU[m]=0.0;
+  }
+  for(int m=0;m<MNumCols*MNumCols;++m){
+    globalVT[m]=0.0;
+  }
+  //Also diags, although not strictly necessary
+  for(int m=0;m<comparer.size();++m){
+    comparer[m].lambda=0.0;
+  }
+
+  //Buffer for indices
+  std::unique_ptr<int[]> globalVTIndices;
+  int rowOffsetVT=0;
+
   getPExpressionLeft(i,pExpression);
-  numBlocks=localIndexTable.numBlocksLP();
+  numBlocks=localIndexTableFull.numBlocksLP();
   networkState.subMatrixStart(localMatrix,i);
+
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
-    lBlockSize=localIndexTable.lBlockSizeLP(iBlock);
-    rBlockSize=localIndexTable.rBlockSizeLP(iBlock);
+    lBlockSize=localIndexTableFull.lBlockSizeLP(iBlock);
+    rBlockSize=localIndexTableFull.rBlockSizeLP(iBlock);
     blockDimL=lBlockSize;
-    blockDimR=rBlockSize*(1+lDwR);
+    blockDimR=rBlockSize+lDR*lDwR;
     maxDim=(blockDimL>blockDimR)?blockDimL:blockDimR;
-    if(lBlockSize!=0 && rBlockSize!=0){
+    //rBlockSize may be zero, then, only the expansion term is taken into account
+    if(lBlockSize!=0){
       MP.reset(new lapack_complex_double[blockDimL*blockDimR]);
       Mnew=MP.get();
-      for(int j=0;j<rBlockSize;++j){
-	aiCurrent=localIndexTable.aiBlockIndexLP(iBlock,j);
-      	for(int k=0;k<lBlockSize;++k){
-	  aimCurrent=localIndexTable.aimBlockIndexLP(iBlock,k);
-	  siCurrent=localIndexTable.siBlockIndexLP(iBlock,k);
+      for(int k=0;k<lBlockSize;++k){
+	aimCurrent=localIndexTableFull.aimBlockIndexLP(iBlock,k);
+	siCurrent=localIndexTableFull.siBlockIndexLP(iBlock,k);
+	for(int j=0;j<rBlockSize;++j){
+	  aiCurrent=localIndexTableFull.aiBlockIndexLP(iBlock,j);
 	  Mnew[k+j*lBlockSize]=localMatrix[stateIndex(siCurrent,aiCurrent,aimCurrent)];
+	}
+	//The expansion term only has a charge associated with (si,aim) but not with ai
+	for(int ai=0;ai<lDR;++ai){
 	  for(int bi=0;bi<lDwR;++bi){
-	    Mnew[k+j*lBlockSize+(bi+1)*lBlockSize*rBlockSize]=alpha*pExpression[aimCurrent+lDL*siCurrent+bi*lDL*ld*lDR+aiCurrent*lDL*ld];
+	    Mnew[rBlockSize*lBlockSize+k+lBlockSize*(ai+lDR*bi)]=alpha*pExpression[aimCurrent+lDL*siCurrent+bi*lDL*ld*lDR+ai*lDL*ld];
 	  }
 	}
       }
-      containerDim=(lBlockSize>(rBlockSize*(1+lDwR)))?rBlockSize*(1+lDwR):lBlockSize;
+      containerDim=(blockDimL>blockDimR)?blockDimR:blockDimL;
       diagsP.reset(new double[containerDim]);
       UP.reset(new lapack_complex_double[blockDimL*blockDimL]);
       VTP.reset(new lapack_complex_double[blockDimR*blockDimR]);
@@ -280,31 +316,85 @@ void network::leftEnrichmentBlockwise(int i){
       iwork=iworkP.get();
       LAPACKE_zgesdd_work(LAPACK_COL_MAJOR,'A',blockDimL,blockDimR,Mnew,blockDimL,diags,U,blockDimL,VT,blockDimR,work,lwork,rwork,iwork);
 #endif
-      for(int mi=0;mi<blockDimR;++mi){
-	for(int j=0;j<rBlockSize;++j){
-	  //It should be blockDimR as leading dimension, since this is the structure of VT
-	  VT[j+mi*blockDimR]*=diags[j];
+      //Insert the block matrices into the global ones at the respective position
+
+      //Insert VT into globalVT (b does not carry a qn label)
+      globalVTIndices.reset(new int[containerDim]);
+      for(int j=0;j<containerDim;++j){
+	globalVTIndices[j]=rowOffsetVT+j;
+      }
+      rowOffsetVT+=containerDim;
+      //Only the first containerDim rows of VT are used (only that many SVs are nonzero)
+      for(int jp=0;jp<rBlockSize;++jp){
+	for(int j=0;j<containerDim;++j){
+	  //Only the first lDL cols of VT are used, the rest is multiplied with 0
+	  aiCurrent=localIndexTableFull.aiBlockIndexLP(iBlock,jp);
+	  globalVT[globalVTIndices[j]+MNumCols*aiCurrent]=VT[j+blockDimR*jp];
 	}
       }
-      for(int b=0;b<(1+lDwR);++b){
-	for(int jp=0;jp<rBlockSize;++jp){
-	  aipCurrent=localIndexTable.aiBlockIndexLP(iBlock,jp);
-	  for(int j=0;j<rBlockSize;++j){
-	    aiCurrent=localIndexTable.aiBlockIndexLP(iBlock,j);
-	    R[aiCurrent+lDR*aipCurrent+lDR*lDR*b]=VT[j+blockDimR*jp+blockDimR*rBlockSize*b];
-	  }
+      std::cout<<rowOffsetVT<<std::endl;
+      std::cout<<"Dimensions: containerDim="<<containerDim<<" blockDimR="<<blockDimR<<" blockDimL="<<blockDimL<<" MNumCols="<<MNumCols<<" locdims: "<<lDL<<"x"<<lDR<<std::endl;
+      
+      //Insert U into globalU (storage scheme for globalU: (sip,aip,si,ai)
+      for(int kp=0;kp<blockDimL;++kp){
+	aiCurrent=localIndexTableFull.aimBlockIndexLP(iBlock,kp);
+	sipCurrent=localIndexTableFull.siBlockIndexLP(iBlock,kp);
+	for(int k=0;k<blockDimL;++k){
+	  aimCurrent=localIndexTableFull.aimBlockIndexLP(iBlock,k);
+	  siCurrent=localIndexTableFull.siBlockIndexLP(iBlock,k);
+	  globalU[aimCurrent+lDL*siCurrent+lDL*ld*aiCurrent+lDL*lDL*ld*sipCurrent]=U[k+blockDimL*kp];
 	}
       }
-      for(int j=0;j<rBlockSize;++j){
-	aiCurrent=localIndexTable.aiBlockIndexLP(iBlock,j);
-	for(int k=0;k<lBlockSize;++k){
-	  aimCurrent=localIndexTable.aimBlockIndexLP(iBlock,k);
-	  siCurrent=localIndexTable.siBlockIndexLP(iBlock,k);
-	  localMatrix[stateIndex(siCurrent,aiCurrent,aimCurrent)]=U[k+lBlockSize*j];
-	}
+     
+      //Insert diags into comparer (for label-tracking truncation)
+      auxiliary::sortData sortDataBuf;
+      for(int j=0;j<containerDim;++j){
+	//containerDim<=lBlockSize -> no conversion needed
+	aimCurrent=localIndexTableFull.aimBlockIndexLP(iBlock,j);
+	siCurrent=localIndexTableFull.siBlockIndexLP(iBlock,j);
+	sortDataBuf.lambda=diags[j];
+        sortDataBuf.QN=localIndexTableFull.qnLabelLP(iBlock);
+	sortDataBuf.index=aimCurrent+lDL*siCurrent;
+        sortDataBuf.indexExp=globalVTIndices[j];
+	comparer[aimCurrent+lDL*siCurrent]=sortDataBuf;
       }
     }
   }
+
+  //For testing
+  quantumNumber gqn=networkState.getConservedQNs()[0];
+
+  //Get the columns of globalU corresponding to the lDR highest SVs and copy them to A
+  std::sort(comparer.begin(),comparer.end(),auxiliary::compareSortData);
+  for(int si=0;si<ld;++si){
+    networkState.subMatrixStart(localMatrix,i,si);
+    for(int ai=0;ai<lDR;++ai){
+      for(int aim=0;aim<lDL;++aim){
+	localMatrix[aim+lDL*ai]=globalU[aim+lDL*si+lDL*ld*comparer[ai].index];
+      }
+    }
+  }
+
+  //Check globalVT
+  for(int ai=0;ai<lDR;++ai){
+    for(int m=0;m<lDR;++m){
+      if(abs(globalVT[comparer[m].indexExp+MNumCols*ai])>1e-12)
+	std::cout<<"Entry in VT at "<<comparer[m].QN<<"="<<gqn.QNLabel(i,ai)<<" with indices "<<comparer[m].indexExp<<" "<<ai<<std::endl;
+    }
+  }
+
+  //Construct the matrix R=SVT (truncated, lDRxlDR*(1+lDwR))
+  for(int m=0;m<MNumCols;++m){
+    for(int ai=0;ai<lDR;++ai){
+      R[ai+lDR*m]=globalVT[comparer[ai].indexExp+MNumCols*m]*comparer[ai].lambda;
+
+      //if(abs(R[ai+lDR*m])>1e-12 && m<lDR)
+      //std::cout<<"Entry at "<<gqn.QNLabel(i,ai)<<"->"<<comparer[ai].QN<<std::endl;
+    }
+  }
+  std::cout<<"Entry at "<<gqn.QNLabel(i,0)<<"->"<<comparer[0].QN<<"="<<gqn.QNLabel(i,8)<<std::endl;
+
+  //Add zeros to the B-Matrix (using an external container)
   std::unique_ptr<lapack_complex_double[]> BP(new lapack_complex_double[ldp*lDRR*lDR*(1+lDwR)]);
   Bnew=BP.get();
   networkState.subMatrixStart(localMatrix,i+1);
@@ -318,13 +408,51 @@ void network::leftEnrichmentBlockwise(int i){
       }
     }
   }
-
+  
+  //Multiply R into B to get a guess for the next matrix
   lapack_complex_double zone=1.0;
   lapack_complex_double zzero=0.0;
   for(int si=0;si<ldp;++si){
-    networkState.subMatrixStart(networkB,i+1,si);
+    networkState.subMatrixStart(localMatrix,i+1,si);
     BStart=Bnew+si*lDRR*MNumCols;
-    cblas_zgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,lDR,lDRR,lDR*(1+lDwR),&zone,R,lDR,BStart,lDR*(1+lDwR),&zzero,networkB,lDR);
+    cblas_zgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,lDR,lDRR,lDR*(1+lDwR),&zone,R,lDR,BStart,lDR*(1+lDwR),&zzero,localMatrix,lDR);
+  }
+ 
+  //Refine QN
+  std::vector<std::complex<int> > newLabels(lDR);
+  for(int ai=0;ai<lDR;++ai){
+    newLabels[ai]=comparer[ai].QN;
+  }
+  networkState.refineQNLabels(i+1,0,newLabels);
+
+  //Works nicely, A and B keep the QNC
+
+  info=0;
+  std::cout<<"Applied enrichment\n";
+  info=checkQNConstraint(networkState,i);
+  if(info)
+    std::cout<<"Matrix A violates QNC\n";
+  info=checkQNConstraint(networkState,i+1);
+  if(info)
+    std::cout<<"Matrix B violates QNC\n";
+
+  for(int i=0;i<L;++i){
+    info+=checkQNConstraint(networkState,i);
+  }
+  if(info){
+    
+    /*
+    std::cout<<"Error in :\n";
+    BStart=Bnew+3*lDRR*MNumCols;
+    for(int m=0;m<MNumCols;++m){
+      std::cout<<BStart[m+MNumCols]<<"*"<<R[m*lDR]<<"+";
+      if(abs(BStart[m+MNumCols]*R[m*lDR])>1e-12)
+	std::cout<<std::endl<<"VIOLATION AT "<<m<<std::endl;
+    }
+    std::cout<<std::endl;
+    */
+    std::cout<<"QNC VIOLATION DETECTED\n";
+    exit(1);
   }
 }
 
@@ -334,27 +462,55 @@ void network::rightEnrichmentBlockwise(int i){
   lapack_complex_double *Mnew;
   lapack_complex_double *Anew, *R, *networkA, *localMatrix;
   lapack_complex_double *pExpression;
-  lapack_complex_double *U, *VT;
+  lapack_complex_double *U, *VT, *globalU, *globalVT;
   double *diags;
   int blockDimR, blockDimL, maxDim;
   int containerDim;
   int lDLL, ldm;
-  int siCurrent, aiCurrent, aimCurrent, aimpCurrent;
+  int siCurrent, aiCurrent, aimCurrent, aimpCurrent, sipCurrent, aipCurrent;
   int numBlocks, lBlockSize, rBlockSize;
   getLocalDimensions(i);
   int const MNumCols=lDR*ld;
   int const MNumRows=lDL*(1+lDwL);
   lDLL=networkState.locDimL(i-1);
   ldm=locd(i-1);
-  siteQNOrderMatrix const localIndexTable=networkState.indexTable().getLocalIndexTable(i);
 
-  std::unique_ptr<lapack_complex_double[]> Rp(new lapack_complex_double[lDL*lDL*(1+lDwL)]);
+  //MPS index table
+  //siteQNOrderMatrix const localIndexTable=networkState.indexTable().getLocalIndexTable(i);
+  //Full index table, derived using the reachable indices (contains empty blocks, therefore slower and not used in the other components)
+  siteQNOrderMatrix localIndexTableFull;
+  localIndexTableFull.generateFull(networkState.indexTable().getLocalIndexTable(i));
+
+  //Prepare global containers
+  std::unique_ptr<lapack_complex_double[]> globalUP(new lapack_complex_double[MNumRows*MNumRows]);
+  std::unique_ptr<lapack_complex_double[]> globalVTP(new lapack_complex_double[MNumCols*MNumCols]);
+  //comparer has to have at least size min(MNumCols,MNumRows)
+  std::vector<auxiliary::sortData> comparer(MNumCols);
+  globalU=globalUP.get();
+  globalVT=globalVTP.get();
+  //Initialize with zero - this is important since not all entries of VT and U are set
+  for(int m=0;m<MNumCols*MNumCols;++m){
+    globalVT[m]=0.0;
+  }
+  for(int m=0;m<MNumRows*MNumRows;++m){
+    globalU[m]=0.0;
+  }
+  for(int m=0;m<MNumCols;++m){
+    comparer[m].lambda=0.0;
+  }
+  //Buffer for indices
+  std::unique_ptr<int[]> globalUIndices;
+  int const uBlockPos=lDL;
+  int colOffsetU=0;
+
+  //Prepare local containers
+  std::unique_ptr<lapack_complex_double[]> Rp(new lapack_complex_double[lDL*MNumRows]);
   std::unique_ptr<lapack_complex_double[]> pEP(new lapack_complex_double[ld*lDL*lDR*lDwL]);
   std::unique_ptr<lapack_complex_double[]> MP, UP, VTP;
-  std::unique_ptr<double> diagsP;
+  std::unique_ptr<double[]> diagsP;
 #ifndef USE_MKL
-  std::unique_ptr<int> iworkP;
-  std::unique_ptr<double> rworkP;
+  std::unique_ptr<int[]> iworkP;
+  std::unique_ptr<double[]> rworkP;
   std::unique_ptr<lapack_complex_double[]> workP;
   int *iwork;
   double *rwork;
@@ -363,25 +519,30 @@ void network::rightEnrichmentBlockwise(int i){
   R=Rp.get();
   pExpression=pEP.get();
   getPExpressionRight(i,pExpression);
-  numBlocks=localIndexTable.numBlocksRP();
+  numBlocks=localIndexTableFull.numBlocksRP();
   networkState.subMatrixStart(localMatrix,i);
+
+  //Parallelize?
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
-    lBlockSize=localIndexTable.lBlockSizeRP(iBlock);
-    rBlockSize=localIndexTable.rBlockSizeRP(iBlock);
-    blockDimL=lBlockSize*(1+lDwL);
+    lBlockSize=localIndexTableFull.lBlockSizeRP(iBlock);
+    rBlockSize=localIndexTableFull.rBlockSizeRP(iBlock);
+    blockDimL=lBlockSize+lDwL*lDL;
     blockDimR=rBlockSize;
     maxDim=(blockDimL>blockDimR)?blockDimL:blockDimR;
-    if(lBlockSize!=0 && rBlockSize!=0){
-      MP.reset(new lapack_complex_double[lBlockSize*rBlockSize*(1+lDwL)]);
+    //By construction of localIndexTableFull, rBlockSize can not be 0 (that is, such blocks are not listed in localIndexTableFull)
+    if(rBlockSize!=0){
+      MP.reset(new lapack_complex_double[blockDimL*blockDimR]);
       Mnew=MP.get();
       for(int j=0;j<rBlockSize;++j){
-	aiCurrent=localIndexTable.aiBlockIndexRP(iBlock,j);
-	siCurrent=localIndexTable.siBlockIndexRP(iBlock,j);
+	aiCurrent=localIndexTableFull.aiBlockIndexRP(iBlock,j);
+	siCurrent=localIndexTableFull.siBlockIndexRP(iBlock,j);
       	for(int k=0;k<lBlockSize;++k){
-	  aimCurrent=localIndexTable.aimBlockIndexRP(iBlock,k);
+	  aimCurrent=localIndexTableFull.aimBlockIndexRP(iBlock,k);
 	  Mnew[k+j*blockDimL]=localMatrix[stateIndex(siCurrent,aiCurrent,aimCurrent)];
+	}
+	for(int aim=0;aim<lDL;++aim){
 	  for(int bim=0;bim<lDwL;++bim){
-	    Mnew[k+j*blockDimL+(bim+1)*lBlockSize]=alpha*pExpression[aimCurrent*lDwL+lDR*lDwL*lDL*siCurrent+bim+aiCurrent*lDL*lDwL];
+	    Mnew[lBlockSize+(aim+lDL*bim)+j*blockDimL]=alpha*pExpression[aim*lDwL+lDR*lDwL*lDL*siCurrent+bim+aiCurrent*lDL*lDwL];
 	  }
 	}
       }
@@ -406,31 +567,80 @@ void network::rightEnrichmentBlockwise(int i){
       iwork=iworkP.get();
       LAPACKE_zgesdd_work(LAPACK_COL_MAJOR,'A',blockDimL,blockDimR,Mnew,blockDimL,diags,U,blockDimL,VT,blockDimR,work,lwork,rwork,iwork);
 #endif
-      for(int mi=0;mi<blockDimL;++mi){
-	for(int k=0;k<lBlockSize;++k){
-	  //It should be blockDimL as leading dimension, since this is the structure of U
-	  U[mi+k*blockDimL]*=diags[k];
+
+      //Insert VT into globalVT (storage scheme for VT: (sip,aip,si,ai)
+      for(int j=0;j<blockDimR;++j){
+	aiCurrent=localIndexTableFull.aiBlockIndexRP(iBlock,j);
+	siCurrent=localIndexTableFull.siBlockIndexRP(iBlock,j);
+	for(int jp=0;jp<blockDimR;++jp){
+	  aipCurrent=localIndexTableFull.aiBlockIndexRP(iBlock,jp);
+	  sipCurrent=localIndexTableFull.siBlockIndexRP(iBlock,jp);
+	  globalVT[aipCurrent+lDR*sipCurrent+ld*lDR*(aiCurrent+lDR*siCurrent)]=VT[jp+blockDimR*j];
 	}
       }
-      for(int b=0;b<(1+lDwL);++b){
+      
+      //Insert U into globalU
+      //The right indices of U can be given any order
+      globalUIndices.reset(new int[containerDim]);
+      for(int k=0;k<containerDim;++k){
+	globalUIndices[k]=colOffsetU+k;
+      }
+      colOffsetU+=containerDim;
+      //Only the first containerDim cols of U are used
+      for(int k=0;k<containerDim;++k){
 	for(int kp=0;kp<lBlockSize;++kp){
-	  aimpCurrent=localIndexTable.aimBlockIndexRP(iBlock,kp);
-	  for(int k=0;k<lBlockSize;++k){
-	    aimCurrent=localIndexTable.aimBlockIndexRP(iBlock,k);
-	    R[aimCurrent+lDL*(1+lDwL)*aimpCurrent+lDL*b]=U[k+blockDimL*kp+lBlockSize*b];
-	  }
+	  //The left indices need to respect the order of A in the first lDL rows of U
+	  aimCurrent=localIndexTableFull.aimBlockIndexRP(iBlock,kp);
+	  globalU[aimCurrent+MNumRows*globalUIndices[k]]=U[kp+blockDimL*k];
 	}
       }
-      for(int j=0;j<rBlockSize;++j){
-	aiCurrent=localIndexTable.aiBlockIndexRP(iBlock,j);
-	siCurrent=localIndexTable.siBlockIndexRP(iBlock,j);
-	for(int k=0;k<lBlockSize;++k){
-	  aimCurrent=localIndexTable.aimBlockIndexRP(iBlock,k);
-	  localMatrix[stateIndex(siCurrent,aiCurrent,aimCurrent)]=VT[k+blockDimR*j];
-	}
+      
+      //Insert diags into comparer
+      auxiliary::sortData sortDataBuf;
+      for(int k=0;k<containerDim;++k){
+	//containerDim<=rBlockSize -> no conversion needed
+	aiCurrent=localIndexTableFull.aiBlockIndexRP(iBlock,k);
+	siCurrent=localIndexTableFull.siBlockIndexRP(iBlock,k);
+	sortDataBuf.lambda=diags[k];
+	sortDataBuf.QN=localIndexTableFull.qnLabelRP(iBlock);
+	sortDataBuf.index=aiCurrent+lDR*siCurrent;
+	sortDataBuf.indexExp=globalUIndices[k];
+	comparer[aiCurrent+lDR*siCurrent]=sortDataBuf;
       }
     }
   }
+  //For testing
+  quantumNumber gqn=networkState.getConservedQNs()[0];
+
+  //Sort comparer, only the first lDL elements are used from now on
+  std::sort(comparer.begin(),comparer.end(),auxiliary::compareSortData);
+
+  //Get the rows of globalVT corresponding to the lDL highest SVs and copy them to B
+  for(int si=0;si<ld;++si){
+    networkState.subMatrixStart(localMatrix,i,si);
+    for(int ai=0;ai<lDR;++ai){
+      for(int aim=0;aim<lDL;++aim){
+	localMatrix[aim+lDL*ai]=globalVT[comparer[aim].index+ld*lDR*(ai+lDR*si)];
+
+	//if(abs(localMatrix[aim+lDL*ai])>1e-10)
+	//std::cout<<"Entry "<<localMatrix[aim+lDL*ai]<<" at "<<comparer[aim].QN<<"+"<<gqn.QNLabel(si)<<"="<<gqn.QNLabel(i,ai)<<std::endl;
+      }
+    }
+  }
+  
+  //Construct the matrix R=US (truncated, lDL*(lDL+lDL*lDwL))
+  for(int m=0;m<MNumRows;++m){
+    for(int aimp=0;aimp<lDL;++aimp){
+      R[m+MNumRows*aimp]=globalU[m+MNumRows*comparer[aimp].indexExp]*comparer[aimp].lambda;
+      //Label of m and comparer[aimp].QN should match
+      //Translation is done label(m)->comparer[aimp].QN
+      
+      //if(abs(R[m+MNumRows*aimp])>1e-10 && m<lDL)
+      //std::cout<<"Entry at "<<gqn.QNLabel(i-1,m)<<"->"<<comparer[aimp].QN<<" with indices "<<m<<"->"<<aimp<<"("<<comparer[aimp].indexExp<<")"<<std::endl;
+    }
+  }    
+  
+  //Add zeros to the A-Matrix (using an external container)
   std::unique_ptr<lapack_complex_double[]> AP(new lapack_complex_double[ldm*lDLL*lDL*(1+lDwL)]);
   Anew=AP.get();
   networkState.subMatrixStart(localMatrix,i-1);
@@ -444,18 +654,49 @@ void network::rightEnrichmentBlockwise(int i){
       }
     }
   }
+
+  //Multiply R into A to get a guess for the next matrix
   lapack_complex_double zone=1.0;
   lapack_complex_double zzero=0.0;
   std::unique_ptr<lapack_complex_double[]> ASP(new lapack_complex_double[lDLL*MNumRows]);
   lapack_complex_double *AStart=ASP.get();
   for(int si=0;si<ldm;++si){
     networkState.subMatrixStart(networkA,i-1,si);
+    //Anew is the expanded A, but it does not allow for direct access to the si-submatrix
+    //Therefore, the si-submatrix has to be copied manually
     for(int mi=0;mi<MNumRows;++mi){
       for(int aimm=0;aimm<lDLL;++aimm){
 	AStart[aimm+mi*lDLL]=Anew[aimm+si*lDLL+mi*ld*lDLL];
       }
     }
+    //And multiplied with R to give the si-component of the next guess
     cblas_zgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,lDLL,lDL,MNumRows,&zone,AStart,lDLL,R,MNumRows,&zzero,networkA,lDLL);
+  }
+
+  //Refine QN labels
+  std::vector<std::complex<int> > newLabels(lDL);
+  for(int aim=0;aim<lDL;++aim){
+    newLabels[aim]=comparer[aim].QN;
+  }
+  networkState.refineQNLabels(i,0,newLabels);
+
+  //Check for QNC conservation
+
+  int info=0;
+  std::cout<<"Applied enrichment\n";
+  info=checkQNConstraint(networkState,i-1);
+  if(info)
+    std::cout<<"Matrix A violates QNC\n";
+  info=checkQNConstraint(networkState,i);
+  if(info)
+    std::cout<<"Matrix B violates QNC\n";
+
+  for(int i=0;i<L;++i){
+    info+=checkQNConstraint(networkState,i);
+  }
+  if(info){
+    std::cout<<"QNC VIOLATION DETECTED\n";
+    exit(1);
   }
 }
 
@@ -600,6 +841,6 @@ void network::getNewAlpha(int i, double lambda, double prevLambda){
   */
   //This is numerically somewhat simpler and works also quite nice.
   //alpha*=0.9765;
-  alpha*=pow(0.5,1/static_cast<double>(2*L));
+  alpha*=pow(0.1,1/static_cast<double>(2*L));
   std::cout<<"New alpha="<<alpha<<std::endl;
 }

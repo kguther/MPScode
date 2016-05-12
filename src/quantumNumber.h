@@ -26,7 +26,9 @@ class quantumNumber: public pseudoQuantumNumber{
   int setParameterD(int Dnew);
   int setParameterL(int Lnew);
   int grow(int L, int i, std::complex<int> const &targetQN, std::vector<std::complex<int> > const &source);
+  //Refine sets the left-side index labels on bond i to source
   int refine(int i, std::vector<std::complex<int> > const &source);
+  virtual int validQN(int i, std::complex<int> const &label)const;
   //The failed flag is set when the given quantum number cannot be reached in the given system or the initialization failed for some other reason. It is set to zero else.
   int failed;
  private:
@@ -43,7 +45,7 @@ class quantumNumber: public pseudoQuantumNumber{
   std::complex<int> QNLabelLP(int i, int ai);
   std::complex<int> QNLabelRP(int i, int ai);
   std::complex<int> pre(std::complex<int> a, int direction);
-  int integerParity(int n);
+  int integerParity(int n) const;
 };
 
 template<typename T>

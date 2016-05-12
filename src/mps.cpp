@@ -52,6 +52,13 @@ int mps::loadIndexTables(){
 
 //---------------------------------------------------------------------------------------------------//
 
+void mps::refineQNLabels(int i, int iQN, std::vector<std::complex<int> > const &source){
+  conservedQNs[iQN].refine(i,source);
+  loadIndexTables();
+}
+
+//---------------------------------------------------------------------------------------------------//
+
 void mps::createInitialState(){
   int lDL, lDR, ld;
   if(!nQNs){
@@ -118,83 +125,24 @@ int mps::setParameterL(int Lnew){
 // optimization and multiplying the remainder to the matrices of the site to the left/right.
 //---------------------------------------------------------------------------------------------------//
 
-int mps::leftNormalizeState(int i){
+void mps::leftNormalizeState(int i){
   if(nQNs){
-    return leftNormalizeStateBlockwise(i);
+    leftNormalizeStateBlockwise(i);
   }
-  lapack_int info;
-  int D1, D2, D3, ld;
-  //Yep, the local dimensions are just named D1, D2, D3 - the decomposition is of a d*D1xD2 matrix
-  D1=locDimL(i);
-  D2=locDimR(i);
-  D3=locDimR(i+1);
-  ld=locd(i);
-  lapack_complex_double *Rcontainer, *Qcontainer, *localMatrix;
-  const lapack_complex_double zone=1.0;
-  std::unique_ptr<lapack_complex_double[]> Qp(new lapack_complex_double[D2]);
-  Qcontainer=Qp.get();//Used for storage of lapack-internal matrices
-  std::unique_ptr<lapack_complex_double[]> Rp(new lapack_complex_double[D2*D2]);//Used for storage of R from RQ decomposition
-  Rcontainer=Rp.get();
-  //Enable use of LAPACK_ROW_MAJOR which is necessary here due to the applied storage scheme
-  for(int si=0;si<ld;++si){
-    subMatrixStart(localMatrix,i,si);
-    auxiliary::transp(D2,D1,localMatrix);
+  else{
+    leftNormalizePrimitive(i);
   }
-  //Use thin QR decomposition
-  subMatrixStart(localMatrix,i);
-  info=LAPACKE_zgeqrf(LAPACK_ROW_MAJOR,ld*D1,D2,localMatrix,D2,Qcontainer);
-  auxiliary::upperdiag(D2,D2,localMatrix,Rcontainer);
-  //Only first D2 columns are used -> thin QR (below icrit, this is equivalent to a full QR)
-  info=LAPACKE_zungqr(LAPACK_ROW_MAJOR,ld*D1,D2,D2,localMatrix,D2,Qcontainer);
-  if(info){
-    std::cout<<"Error in LAPACKE_zungqr: "<<info<<" At site: "<<i<<" With dimensions: "<<D2<<"x"<<D1<<" and local Hilbert space dimension: "<<ld<<std::endl;
-    return info;
-  }
-  auxiliary::transp(D2,D2,Rcontainer);
-  for(int si=0;si<ld;++si){
-    subMatrixStart(localMatrix,i,si);
-    auxiliary::transp(D1,D2,localMatrix);
-    subMatrixStart(localMatrix,i+1,si);
-    cblas_ztrmm(CblasColMajor,CblasLeft,CblasUpper,CblasNoTrans,CblasNonUnit,D2,D3,&zone,Rcontainer,D2,localMatrix,D2);
-    //here, R is packed into the matrices of the next site
-  }                                                //POSSIBLE TESTS: TEST FOR Q*R - DONE: WORKS THE WAY INTENDED
-  return 0;  //TODO: Add exception throw
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-int mps::rightNormalizeState(int i){
+void mps::rightNormalizeState(int i){
   if(nQNs){
     return rightNormalizeStateBlockwise(i);
   }
-  lapack_int info;
-  //This time, we decompose a D2xd*D1 matrix and multiply the D2xD2 matrix R with a D3xD2 matrix
-  int D1,D2,D3,ld;
-  D1=locDimR(i);
-  D2=locDimL(i);
-  D3=locDimL(i-1);
-  ld=locd(i);
-  lapack_complex_double *Rcontainer, *Qcontainer, *localMatrix;
-  const lapack_complex_double zone=1.0;
-  std::unique_ptr<lapack_complex_double[]> QP(new lapack_complex_double[ld*D1]);
-  std::unique_ptr<lapack_complex_double[]> RP(new lapack_complex_double[D2*D2]);
-  Qcontainer=QP.get();
-  Rcontainer=RP.get();
-  //Thats how zgerqf works: the last D2 columns contain the upper trigonal matrix R, to adress them, move D2 from the end
-  subMatrixStart(localMatrix,i);
-  info=LAPACKE_zgerqf(LAPACK_COL_MAJOR,D2,ld*D1,localMatrix,D2,Qcontainer);
-  //lowerdiag does get an upper trigonal matrix in column major ordering, dont get confused
-  auxiliary::lowerdiag(D2,D2,localMatrix+D2*(ld*D1-D2),Rcontainer);
-  info=LAPACKE_zungrq(LAPACK_COL_MAJOR,D2,ld*D1,D2,localMatrix,D2,Qcontainer);
-  if(info){
-    std::cout<<"ERROR IN LAPACKE_zungrq:"<<info<<" At site: "<<i<<" With dimensions: "<<D2<<"x"<<D1<<" and local Hilbert space dimension: "<<ld<<std::endl;
-    return info;
+  else{
+    rightNormalizePrimitive(i);
   }
-  for(int si=0;si<ld;++si){
-    subMatrixStart(localMatrix,i-1,si);
-    cblas_ztrmm(CblasColMajor,CblasRight,CblasUpper,CblasNoTrans,CblasNonUnit,D3,D2,&zone,Rcontainer,D2,localMatrix,D3);
-  }                                                //POSSIBLE TESTS: TEST FOR R*Q - DONE: WORKS THE WAY INTENDED
-  return 0;  //TODO: Add exception throw
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -227,7 +175,7 @@ void mps::normalizeFinal(int i){
 // THAT EACH BLOCK CAN BE BROUGHT INTO CANONICAL FORM. THIS IS A NONTRIVIAL CONSTRAINT.
 //---------------------------------------------------------------------------------------------------//
 
-int mps::leftNormalizeStateBlockwise(int i){
+void mps::leftNormalizeStateBlockwise(int i){
   int ld, lDR, lDL, lDRR;
   int lBlockSize,rBlockSize;
   int aiCurrent, siCurrent, aimCurrent, aipCurrent;
@@ -267,13 +215,11 @@ int mps::leftNormalizeStateBlockwise(int i){
       info=LAPACKE_zgeqrf(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,M,lBlockSize,Qcontainer);
       if(info){
 	std::cout<<"Error in LAPACKE_zgeqrf: "<<info<<" with block sizes: "<<lBlockSize<<"x"<<rBlockSize<<" at site "<<i<<std::endl;
-        return info;
       }
       auxiliary::lowerdiag(rBlockSize,rBlockSize,M,Rcontainer,lBlockSize);
       info=LAPACKE_zungqr(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,rBlockSize,M,lBlockSize,Qcontainer);
       if(info){
 	std::cout<<"Error in LAPACKE_zungqr: "<<info<<" with block sizes: "<<lBlockSize<<"x"<<rBlockSize<<" at site "<<i<<std::endl;
-	return info;
       }
       //Copy the resulting Q-matrix back into the block of the MPS matrix
       for(int j=0;j<rBlockSize;++j){
@@ -299,12 +245,11 @@ int mps::leftNormalizeStateBlockwise(int i){
     auxiliary::arraycpy(lDRR,lDR,localMatrix,inputA);
     cblas_zgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,lDR,lDRR,lDR,&zone,R,lDR,inputA,lDR,&zzero,localMatrix,lDR);
   }
-  return 0;
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-int mps::rightNormalizeStateBlockwise(int i){
+void mps::rightNormalizeStateBlockwise(int i){
   int ld, lDR, lDL, lDLL;
   int lBlockSize,rBlockSize;
   int aiCurrent, siCurrent, aimCurrent, aimpCurrent;
@@ -341,13 +286,11 @@ int mps::rightNormalizeStateBlockwise(int i){
       info=LAPACKE_zgerqf(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,M,lBlockSize,Qcontainer);
       if(info){
 	std::cout<<"Error in LAPACKE_zgerqf: "<<info<<" with block sizes: "<<lBlockSize<<"x"<<rBlockSize<<" at site "<<i<<std::endl;
-        return info;
       }
       auxiliary::lowerdiag(lBlockSize,lBlockSize,M+(rBlockSize-lBlockSize)*lBlockSize,Rcontainer);
       info=LAPACKE_zungrq(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,lBlockSize,M,lBlockSize,Qcontainer);
       if(info){
 	std::cout<<"Error in LAPACKE_zungrq: "<<info<<" with block sizes: "<<lBlockSize<<"x"<<rBlockSize<<" at site "<<i<<std::endl;
-        return info;
       }
       for(int j=0;j<lBlockSize;++j){
 	for(int k=0;k<rBlockSize;++k){
@@ -370,7 +313,80 @@ int mps::rightNormalizeStateBlockwise(int i){
     auxiliary::arraycpy(lDLL*lDL,localMatrix,inputA);
     cblas_zgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,lDLL,lDL,lDL,&zone,inputA,lDLL,R,lDL,&zzero,localMatrix,lDLL);
   }
-  return 0;
+}
+
+//---------------------------------------------------------------------------------------------------//
+// Simple, non-blockwise version of left/right normalization. Does not require a valid QN labeling 
+// scheme
+//---------------------------------------------------------------------------------------------------//
+
+void mps::leftNormalizePrimitive(int i){
+  lapack_int info;
+  int D1, D2, D3, ld;
+  //Yep, the local dimensions are just named D1, D2, D3 - the decomposition is of a d*D1xD2 matrix
+  D1=locDimL(i);
+  D2=locDimR(i);
+  D3=locDimR(i+1);
+  ld=locd(i);
+  lapack_complex_double *Rcontainer, *Qcontainer, *localMatrix;
+  const lapack_complex_double zone=1.0;
+  std::unique_ptr<lapack_complex_double[]> Qp(new lapack_complex_double[D2]);
+  Qcontainer=Qp.get();//Used for storage of lapack-internal matrices
+  std::unique_ptr<lapack_complex_double[]> Rp(new lapack_complex_double[D2*D2]);//Used for storage of R from RQ decomposition
+  Rcontainer=Rp.get();
+  //Enable use of LAPACK_ROW_MAJOR which is necessary here due to the applied storage scheme
+  for(int si=0;si<ld;++si){
+    subMatrixStart(localMatrix,i,si);
+    auxiliary::transp(D2,D1,localMatrix);
+  }
+  //Use thin QR decomposition
+  subMatrixStart(localMatrix,i);
+  info=LAPACKE_zgeqrf(LAPACK_ROW_MAJOR,ld*D1,D2,localMatrix,D2,Qcontainer);
+  auxiliary::upperdiag(D2,D2,localMatrix,Rcontainer);
+  //Only first D2 columns are used -> thin QR (below icrit, this is equivalent to a full QR)
+  info=LAPACKE_zungqr(LAPACK_ROW_MAJOR,ld*D1,D2,D2,localMatrix,D2,Qcontainer);
+  if(info){
+    std::cout<<"Error in LAPACKE_zungqr: "<<info<<" At site: "<<i<<" With dimensions: "<<D2<<"x"<<D1<<" and local Hilbert space dimension: "<<ld<<std::endl;
+  }
+  auxiliary::transp(D2,D2,Rcontainer);
+  for(int si=0;si<ld;++si){
+    subMatrixStart(localMatrix,i,si);
+    auxiliary::transp(D1,D2,localMatrix);
+    subMatrixStart(localMatrix,i+1,si);
+    cblas_ztrmm(CblasColMajor,CblasLeft,CblasUpper,CblasNoTrans,CblasNonUnit,D2,D3,&zone,Rcontainer,D2,localMatrix,D2);
+    //here, R is packed into the matrices of the next site
+  }                                             
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void mps::rightNormalizePrimitive(int i){
+  lapack_int info;
+  //This time, we decompose a D2xd*D1 matrix and multiply the D2xD2 matrix R with a D3xD2 matrix
+  int D1,D2,D3,ld;
+  D1=locDimR(i);
+  D2=locDimL(i);
+  D3=locDimL(i-1);
+  ld=locd(i);
+  lapack_complex_double *Rcontainer, *Qcontainer, *localMatrix;
+  const lapack_complex_double zone=1.0;
+  std::unique_ptr<lapack_complex_double[]> QP(new lapack_complex_double[ld*D1]);
+  std::unique_ptr<lapack_complex_double[]> RP(new lapack_complex_double[D2*D2]);
+  Qcontainer=QP.get();
+  Rcontainer=RP.get();
+  //Thats how zgerqf works: the last D2 columns contain the upper trigonal matrix R, to adress them, move D2 from the end
+  subMatrixStart(localMatrix,i);
+  info=LAPACKE_zgerqf(LAPACK_COL_MAJOR,D2,ld*D1,localMatrix,D2,Qcontainer);
+  //lowerdiag does get an upper trigonal matrix in column major ordering, dont get confused
+  auxiliary::lowerdiag(D2,D2,localMatrix+D2*(ld*D1-D2),Rcontainer);
+  info=LAPACKE_zungrq(LAPACK_COL_MAJOR,D2,ld*D1,D2,localMatrix,D2,Qcontainer);
+  if(info){
+    std::cout<<"ERROR IN LAPACKE_zungrq:"<<info<<" At site: "<<i<<" With dimensions: "<<D2<<"x"<<D1<<" and local Hilbert space dimension: "<<ld<<std::endl;
+  }
+  for(int si=0;si<ld;++si){
+    subMatrixStart(localMatrix,i-1,si);
+    cblas_ztrmm(CblasColMajor,CblasRight,CblasUpper,CblasNoTrans,CblasNonUnit,D3,D2,&zone,Rcontainer,D2,localMatrix,D3);
+  }  
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -451,13 +467,13 @@ void mps::getEntanglementEntropy(std::vector<double> &S, std::vector<std::vector
   S.resize(L);
   spectra.resize(L);
   for(int i=L-1;i>0;--i){
-    rightNormalizeState(i);
+    rightNormalizePrimitive(i);
   }
   normalizeFinal(1);
   for(int i=0;i<L;++i){
     getEntanglementSpectrumOC(i,S[i],spectra[i]);
     if(i<L-1)
-      leftNormalizeState(i);
+      leftNormalizePrimitive(i);
   }
 }
 
@@ -472,4 +488,19 @@ void mps::getEntanglementSpectrum(int i, double &S, std::vector<double> &spectra
     leftNormalizeState(j);
   }
   getEntanglementSpectrumOC(i,S,spectra);
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+//For insight into the algorithm
+void printQNLabels(mps const &test){
+  quantumNumber gqn=test.getConservedQNs()[0];
+  dimensionTable dimInfo=test.getDimInfo();
+  for(int i=0;i<dimInfo.L()+1;++i){
+    std::cout<<"Labels at bond "<<i<<": "<<std::endl;
+    for(int aim=0;aim<dimInfo.locDimL(i);++aim){
+      std::cout<<gqn.QNLabel(i-1,aim)<<"\t";
+    }
+    std::cout<<std::endl;
+  }
 }

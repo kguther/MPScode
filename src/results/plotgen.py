@@ -15,8 +15,8 @@ if 'plots' not in filelist:
 taskname=sys.argv[1]
 
 writeK=False
-writepd=False
-newpd=False
+writepd=True
+newpd=True
 defaultLegs=['Ground state', '1st excited State']
 
 labellist=['$\\left|\\langle a^\dagger_i a_0^{} \\rangle \\right|$','$\\left|\\langle a^\dagger_i b^{}_i a_0^{\dagger} b_0 \\rangle \\right|$','$\\left|\\langle n^{a}_i n_0^{a} \\rangle \\right|$','$\\left|\\langle n^{a}_i n_0^{b} \\rangle \\right|$','$\\left|\\langle n^{a}_i \\rangle \\right|$','$\\left|\\langle a^\dagger_i b^\dagger_i a_0^{} b_0^{} \\rangle \\right|$','$\\left|\\langle \\right|\\rangle$','S','$\\left|\\langle n^{a}_i n^{b}_i \\rangle\\right|$','$\\left|\\langle n^{b}_i\\rangle\\right|$','$\\langle a_i^{\dagger} a_{i+1}^{\dagger} a_0 a_1 \\rangle$','other']
@@ -68,7 +68,7 @@ for filename in filelist:
                     with open('decay_pars_L_'+L+'_N_'+np+'_p_'+parity+'.txt','w') as kp:
                         kp.write('J\tg\t')
                 if writepd and newpd:
-                    with open('phasediagram_L_'+L+'_N_'+np+'_p_'+parity+'.txt','w') as pd:
+                    with open('phasediagram_L_'+L+'_N_'+np+'.txt','w') as pd:
                         pd.write('J\tg\tdensity fluctuation\n')
             for i in range(0,n-1):
                 data=[]
@@ -111,10 +111,10 @@ for filename in filelist:
                             xeff=range(int(L)/10,len(data))
                             p0=sy.array([1,1,1])
                             fpars, acc=so.curve_fit(f,xeff,data[int(L)/10:len(data)],p0)
-                if (tasknum(datanames[i])==4 and writepd):
-                    phase=min(data)/max(data)
+                if (datanames[i]=="Intrachain_correlation" and writepd):
+                    phase=data[0]/data[len(data)-1]
                     point=pars[3]+'\t'+pars[4]+'\t'+str(phase)+'\n'
-                    with open('phasediagram_L_'+L+'_N_'+np+'_p_'+parity+'.txt','a') as pd:
+                    with open('phasediagram_L_'+L+'_N_'+np+'.txt','a') as pd:
                         pd.write(point)
                 plt.figure()
                 if bCheck[0]=='Bulk':

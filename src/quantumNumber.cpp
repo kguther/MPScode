@@ -111,14 +111,15 @@ int quantumNumber::refine(int i, std::vector<std::complex<int> > const &source){
   int const lDL=dimInfo.locDimL(i);
   int const D=dimInfo.D();
   if(source.size()<lDL){
+    std::cout<<"Invalid input in refinement\n";
     return -1;
   }
 
   
   for(int aim=0;aim<lDL;++aim){
-    //std::cout<<"Old label: "<<QNLabel(i-1,aim)<<"\t";
+    std::cout<<"Old label: "<<QNLabel(i-1,aim)<<"\t";
     indexLabel[aim+i*D]=source[aim];
-    //std::cout<<"New label: "<<QNLabel(i-1,aim)<<"\t";
+    std::cout<<"New label: "<<QNLabel(i-1,aim)<<"\t"<<"Index: "<<aim<<"\n";
   }
   
   std::cout<<std::endl;
@@ -193,7 +194,6 @@ int quantumNumber::initializeLabelListRP(){
 
 int quantumNumber::initializeLabelList(int i, int direction){
   //direction==1 is RP, direction==0 is LP and -1 is final index
-  int minimalLabel, maximalLabel;
   int validBlock, cBlock, allowedBlockSize;
   std::vector<std::complex<int> > *cLabel;
   std::complex<int> label;
@@ -207,10 +207,6 @@ int quantumNumber::initializeLabelList(int i, int direction){
   std::vector<std::complex<int> > validQNLabels;
   std::vector<int> blockOccupations;
   std::vector<int> maxBlockSizes;
-  int const leftVacuum=0;
-  int const maxCharge=2*i;
-  minimalLabel=(leftVacuum>real(N)-2*(dimInfo.L()-i))?leftVacuum:real(N)-2*(dimInfo.L()-i);
-  maximalLabel=(maxCharge>real(N))?real(N):maxCharge;
   if(direction==1){
     cLabel=&rightLabel;
   }
@@ -245,33 +241,10 @@ int quantumNumber::initializeLabelList(int i, int direction){
       }
     }
     for(int iBlock=0;iBlock<qnLabels.size();++iBlock){
-      validBlock=1;
+      validBlock=validQN(i,qnLabels[iBlock]);
       //Check if the Block can be meaningful (i.e. can be reached from both sides). This should always be true in the final run, but better check it.
       
       //I did not believe this, but this checks in the warmup are actually required. The scheme does not work without
-      if(real(qnLabels[iBlock])>maximalLabel || real(qnLabels[iBlock])<minimalLabel){
-	validBlock=0;
-      }
-      if(real(qnLabels[iBlock])==leftVacuum && real(qnLabels[iBlock])==real(N)-2*(dimInfo.L()-i) && integerParity(dimInfo.L()-i)!=imag(N)){
-	if(imag(N)){
-	  validBlock=0;
-	}
-      }
-      if(real(qnLabels[iBlock])==real(N) && real(qnLabels[iBlock])==maxCharge && integerParity(i)!=imag(N)){
-	if(imag(N)){
-	  validBlock=0;
-	}
-      }
-      if((real(qnLabels[iBlock])==leftVacuum && imag(qnLabels[iBlock])!=1) || (real(qnLabels[iBlock])==real(N)-2*(dimInfo.L()-i) && imag(qnLabels[iBlock])!=integerParity(dimInfo.L()-i)*imag(N))){
-	if(imag(N)){
-	  validBlock=0;
-	}
-      }
-      if((real(qnLabels[iBlock])==maxCharge && imag(qnLabels[iBlock])!=integerParity(i)) || (real(qnLabels[iBlock])==real(N) && imag(qnLabels[iBlock])!=imag(N))){
-	if(imag(N)){
-	  validBlock=0;
-	}
-      }
 
       if(!validBlock && direction==-1){
 	std::cout<<"Invalid label at site "<<i<<std::endl;
@@ -396,7 +369,7 @@ int quantumNumber::primaryIndex(int i, int ai){
 
 //---------------------------------------------------------------------------------------------------//
 
-int quantumNumber::integerParity(int n){
+int quantumNumber::integerParity(int n) const{
   if(n%2){
     return -1;
   }
@@ -426,5 +399,39 @@ std::complex<int> quantumNumber::exactLabel(int i, int ai){
     aiReduced-=sigma*pow(dimInfo.d(),j);
   }
   return QNSum;
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+int quantumNumber::validQN(int i, std::complex<int> const &label) const{
+  int validBlock=1;
+  int const leftVacuum=0;
+  int const maxCharge=2*i;
+  int const minimalLabel=(leftVacuum>real(N)-2*(dimInfo.L()-i))?leftVacuum:real(N)-2*(dimInfo.L()-i);
+  int const maximalLabel=(maxCharge>real(N))?real(N):maxCharge;
+  if(real(label)>maximalLabel || real(label)<minimalLabel){
+    validBlock=0;
+  }
+  if(real(label)==leftVacuum && real(label)==real(N)-2*(dimInfo.L()-i) && integerParity(dimInfo.L()-i)!=imag(N)){
+    if(imag(N)){
+      validBlock=0;
+    }
+  }
+  if(real(label)==real(N) && real(label)==maxCharge && integerParity(i)!=imag(N)){
+    if(imag(N)){
+      validBlock=0;
+    }
+  }
+  if((real(label)==leftVacuum && imag(label)!=1) || (real(label)==real(N)-2*(dimInfo.L()-i) && imag(label)!=integerParity(dimInfo.L()-i)*imag(N))){
+    if(imag(N)){
+      validBlock=0;
+    }
+  }
+  if((real(label)==maxCharge && imag(label)!=integerParity(i)) || (real(label)==real(N) && imag(label)!=imag(N))){
+    if(imag(N)){
+      validBlock=0;
+    }
+  }
+  return validBlock;
 }
 

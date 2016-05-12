@@ -1,4 +1,5 @@
 #include "siteQNOrderMatrix.h"
+#include <iostream>
 
 siteQNOrderMatrix::siteQNOrderMatrix(int site, int lDLin, int lDRin, int ldIn, std::vector<pseudoQuantumNumber*> const &conservedQNsin):
   lDL(lDLin),
@@ -24,6 +25,17 @@ siteQNOrderMatrix::siteQNOrderMatrix(int site, int lDLin, int lDRin, int ldIn, s
 
 //---------------------------------------------------------------------------------------------------//
 
+void siteQNOrderMatrix::generateFull(siteQNOrderMatrix const &source){
+  i=source.i;
+  lDL=source.lDL;
+  lDR=source.lDR;
+  ld=source.ld;
+  conservedQNs=source.conservedQNs;
+  setUpTableFull();
+}
+
+//---------------------------------------------------------------------------------------------------//
+
 void siteQNOrderMatrix::loadConservedQNs(std::vector<quantumNumber> *conservedQNsin){
   conservedQNs.resize(conservedQNsin->size());
   for(int m=0;m<conservedQNs.size();++m){
@@ -36,6 +48,13 @@ void siteQNOrderMatrix::loadConservedQNs(std::vector<quantumNumber> *conservedQN
 void siteQNOrderMatrix::setUpTable(){
   blockStructure(0,aiBlockIndicesLP,siaimBlockIndicesLP);
   blockStructure(1,aimBlockIndicesRP,siaiBlockIndicesRP);
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void siteQNOrderMatrix::setUpTableFull(){
+  blockStructureFull(0,aiBlockIndicesLP,siaimBlockIndicesLP);
+  blockStructureFull(1,aimBlockIndicesRP,siaiBlockIndicesRP);
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -126,7 +145,6 @@ void siteQNOrderMatrix::blockStructure(int direction, std::vector<std::vector<in
   else{
     qnLabelsRP=qnLabels[0];
   }
-
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -162,4 +180,114 @@ int siteQNOrderMatrix::validate()const {
     }
   }
   return 0;
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void siteQNOrderMatrix::blockStructureFull(int direction, std::vector<std::vector<int> > &aiIndices, std::vector<std::vector<multInt> > &siaimIndices){
+  int const nQNs=conservedQNs.size();
+  if(nQNs==0){
+    //ADD EXCEPTION
+  }
+  int isNew=1;
+  int lDsingle;
+  int lDpaired;
+  int pre;
+  int qnConstraint;
+  int matchBlock;
+  int numBlocks;
+  int valid;
+  multInt cMultInd;
+  //There are two modes for constructing the Blocks: left pairing (LP) and right pairing (RP). The mode indicates whether si is paired with aim (LP) or with ai (RP) to form a new block index. The other index remains unpaired and determines the QN of the block
+  if(direction==0){
+    lDsingle=lDR;
+    lDpaired=lDL;
+    pre=1;
+  }
+  if(direction==1){
+    lDsingle=lDL;
+    lDpaired=lDR;
+    pre=-1;
+  }
+  //First, determine the number of blocks and their QNs by counting over the different QNs of the unpaired index.
+  std::vector<std::vector<std::complex<int> > > qnLabels;
+  qnLabels.resize(nQNs);
+  for(int si=0;si<ld;++si){
+    for(int aim=0;aim<lDpaired;++aim){
+      isNew=1;
+      valid=1;
+      for(int iBlock=0;iBlock<qnLabels[0].size();++iBlock){
+	for(int iQN=0;iQN<nQNs;++iQN){
+	  if(qnCriterium(iQN,aim,si,direction,pre)!=qnLabels[iQN][iBlock]){
+	    break;
+	  }
+	  if(iQN==nQNs-1){
+	    isNew=0;
+	  }
+	}
+      }
+      if(isNew){
+	for(int iQN=0;iQN<nQNs;++iQN){
+	  if(!(conservedQNs[iQN])->validQN(i+1-direction,qnCriterium(iQN,aim,si,direction,pre))){
+	    valid=0;
+	  }
+	  for(int iQN=0;iQN<nQNs;++iQN){
+	    if(valid){
+	      qnLabels[iQN].push_back(qnCriterium(iQN,aim,si,direction,pre));
+	    }
+	  }
+	}
+      }
+    }
+  }
+  //Now, for each block, collect those pairs of indices from the paired indices that yield the QN of the block
+  numBlocks=qnLabels[0].size();
+  siaimIndices.resize(numBlocks);
+  for(int si=0;si<ld;++si){
+    for(int aim=0;aim<lDpaired;++aim){
+      for(int iBlock=0;iBlock<numBlocks;++iBlock){
+	matchBlock=1;
+	for(int iQN=0;iQN<nQNs;++iQN){
+	  if(qnCriterium(iQN,aim,si,direction,pre)!=qnLabels[iQN][iBlock] || conservedQNs[iQN]->isInvalid(qnLabels[iQN][iBlock])){
+	    matchBlock=0;
+	  }
+	}
+	if(matchBlock){
+	  cMultInd.si=si;
+	  cMultInd.aim=aim;
+	  siaimIndices[iBlock].push_back(cMultInd);
+	}
+      }
+    }
+  }
+  //And, for each block, collect all unpaired indices with the QN of that block. For a minimal labeling, this is not necessary, but we want to keep it general.
+  aiIndices.resize(numBlocks);
+  for(int ai=0;ai<lDsingle;++ai){
+    for(int iBlock=0;iBlock<numBlocks;++iBlock){
+      matchBlock=1;
+      for(int iQN=0;iQN<nQNs;++iQN){
+	if((conservedQNs[iQN])->QNLabel(i-direction,ai)!=qnLabels[iQN][iBlock]){
+	  matchBlock=0;
+	}
+      }
+      if(matchBlock){
+	aiIndices[iBlock].push_back(ai);
+      }
+    }
+  }
+  if(direction==0){
+    qnLabelsLP=qnLabels[0];
+  }
+  else{
+    qnLabelsRP=qnLabels[0];
+  }
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void printIndexTable(siteQNOrderMatrix const &a){
+  int const numBlocks=a.numBlocksRP();
+  for(int iBlock=0;iBlock<numBlocks;++iBlock){
+    std::cout<<"Block with QN "<<a.qnLabelRP(iBlock)<<" of size "<<a.lBlockSizeRP(iBlock)<<"x"<<a.rBlockSizeRP(iBlock)<<std::endl;
+  }
 }

@@ -111,13 +111,13 @@ void network::resetConvergence(){
 // the iDMRG algorithm makes use of the network class, too.
 // Does not yield a valid QN labeling scheme. Usefulness is highly questionable
 //---------------------------------------------------------------------------------------------------//
-
+/*
 void network::getInitState(){
   initStateGrow setup(pars,simPars,networkH);
   setup.prepareInitialState(networkState);
   exit(1);
 }
-
+*/
 //---------------------------------------------------------------------------------------------------//
 // These functions can be employed to alter the algorithm parameters nSweeps and D during lifetime of a 
 // network object. This allows for iteratively increasing D. They completely take care of all required
@@ -255,6 +255,7 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
       std::cout<<"Current subchain parity (final): "<<parCheck<<std::endl;
       */
     }
+    printQNLabels(networkState);
     stepRet=gotoNextEigen();
     if(!stepRet){
       std::cout<<"LOADED STATES. PREPARED COMPUTATION OF NEXT EIGENSTATE"<<std::endl;
@@ -280,30 +281,37 @@ void network::sweep(double maxIter, double tol, double &lambda){
   int const expFlag=pars.nQNs;
   double lambdaCont;
 
+
+  //THERE IS A BUG CONNECTED TO THIS - MOST LIKELY SOME WRONG ARRAY ACCESS
+  overlap test(&networkState,&networkState);
+
   std::cout<<"STARTING RIGHTSWEEP\n\n";
   for(int i=0;i<(L-1);++i){
     //Step of leftsweep
+
+    std::cout<<"Norm: "<<test.getFullOverlap()<<std::endl;
+
     std::cout<<"Optimizing site matrix"<<std::endl;
     lambdaCont=lambda;
     curtime=clock();
     optimize(i,maxIter,tol,lambda);
     curtime=clock()-curtime;
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
+
     //Execute left-sided enrichment step and update the coefficient of the expansion term
-    
     normalize(i,1,expFlag);
     if(expFlag){
       getNewAlpha(i,lambda,lambdaCont);
     }
     //Here, the scalar products with lower lying states are updated
     excitedStateP.updateScalarProducts(i,1);
-    pCtr.calcCtrIterLeft(i+1);
-    
+    pCtr.calcCtrIterLeft(i+1);    
   }
+
   networkState.normalizeFinal(0);
   std::cout<<"STARTING LEFTSWEEP\n\n";
   for(int i=L-1;i>0;--i){
-    //Step of rightsweep
+    //Step of rightsweep  
     std::cout<<"Optimizing site matrix"<<std::endl;    
     lambdaCont=lambda;
     curtime=clock();
@@ -313,13 +321,13 @@ void network::sweep(double maxIter, double tol, double &lambda){
     
     //Execute right-sided enrichment step and update the coefficient of the expansion term
     normalize(i,0,expFlag);
+    std::cout<<"Norm: "<<test.getFullOverlap()<<std::endl;
     if(expFlag){
       getNewAlpha(i,lambda,lambdaCont);
     }
     //same as above for the scalar products with lower lying states
     excitedStateP.updateScalarProducts(i,-1);
     pCtr.calcCtrIterRight(i-1);
-    
   }
   networkState.normalizeFinal(1);
 }
@@ -352,17 +360,18 @@ int network::optimize(int i, int maxIter, double tol, double &iolambda){
 
   //Check step useful whenever something in the normalization or optimization is adjusted
   //Add some flags to manage this automatically
-  /*
   double spinCheck=0;
   double parCheck=0;
   measure(check,spinCheck);
   measure(checkParity,parCheck);
   std::cout<<"Current particle number (opt): "<<spinCheck<<std::endl;
   std::cout<<"Current subchain parity (opt): "<<parCheck<<std::endl;
-  */
+    
   double lambdaCont;
-  if(pars.nQNs && i!=0 && i!=(L-1)){
-    //For some obscure reason, ARPACK++ can not handle the boundary problems with reduced dimension. They have to be solved without using the block structure. Since they have a really tiny dimension, this does not matter at all.
+  if(pars.nQNs){// && i!=0 && i!=(L-1)){
+    //For some obscure reason, ARPACK++ could previusly not handle the boundary problems with reduced dimension. 
+    //They have to be solved without using the block structure. Since they have a really tiny dimension, this does not matter at all. 
+    //If there is some problem with arpack at first/last site, disable QN optimized solution on those sites
     blockHMatrix BMat(RTerm, LTerm,&networkH,networkDimInfo,Dw,i,&(networkState.indexTable().getLocalIndexTable(i)),&excitedStateP,shift,&conservedQNs);
     BMat.prepareInput(currentM);
     arcomplex<double> *compressedVector=BMat.getCompressedVector();

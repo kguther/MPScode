@@ -23,6 +23,7 @@ class pseudoQuantumNumber{
   std::vector<std::complex<int> > localQNValue() const {return QNloc;}
   std::vector<std::complex<int> > const& indexLabelAccess() const{return indexLabel;}
   int isInvalid(std::complex<int> const &label);
+  virtual int validQN(int i, std::complex<int> const &label) const{return 1;}
  protected:
   dimensionTable dimInfo;
   std::vector<std::complex<int> > indexLabel;

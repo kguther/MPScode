@@ -57,8 +57,6 @@ class network{
   int pctrIndex(int ai, int bi, int aip){return aip+bi*D+ai*D*Dw;}
   int stateIndex(int si, int ai, int aim){return aim+lDL*ai+lDL*lDR*si;}
   int optimize(int i, int maxIter, double tol, double &iolambda);
-  int solveSiteEigenProb(int i, int maxIter, double tol, double &iolambda);
-  int solveSiteEigenProbQNC(int i, int maxIter, double tol, double &iolambda);
   int locDMax(int i);
   int gotoNextEigen();
   int setParameterD(int Dnew);
@@ -66,6 +64,7 @@ class network{
   double getCurrentEnergy(int i);
   void getNewAlpha(int i, double lambda, double prevLambda);
   void normalize(int i, int direction, int enrichment=0);
+  void refineQNLabels(int i, std::vector<std::complex<int> > const &source);
   void sweep(double maxIter, double tol, double &lambda);
   void leftEnrichment(int i);
   void rightEnrichment(int i);

@@ -1,5 +1,6 @@
 #include "infiniteNetwork.h"
 #include "mkl_complex_defined.h"
+#include "truncation.h"
 #include <memory>
 #include <vector>
 #include <algorithm>
@@ -7,28 +8,7 @@
 #include "verifyQN.h"
 #include <iostream>
 
-//---------------------------------------------------------------------------------------------------//
-// Order sortDatas with respect to lambdas, as it is used to truncate to the largest SVs
-//---------------------------------------------------------------------------------------------------//
 
-
-bool compareSortData(sortData const &a, sortData const &b){
-  double const tol=1e-10;
-  double buf=(a.lambda>b.lambda)?(a.lambda-b.lambda):(b.lambda-a.lambda);
-  if(buf>tol)
-    return a.lambda>b.lambda;
-  if(a.QN.real()!=b.QN.real())
-    return a.QN.real()>b.QN.real();
-  return a.QN.imag()>b.QN.imag();
-}
-
-bool compareSortDataQNBased(sortData const &a, sortData const &b){
-  if(a.QN.real()!=b.QN.real()){
-    return a.QN.real()>b.QN.real();
-  }
-  return a.QN.imag()>b.QN.imag();  
-  //The ordering has to be strictly deterministic, such that two arrays of sortData with the same entries of lambdas and QNs are ordered in the same way, even if some lambdas are degenerate
-}
 
 void verifyCompression(arcomplex<double> *cVector, int dim){
   double const norm=cblas_dznrm2(dim,cVector,1);
@@ -257,7 +237,7 @@ void infiniteNetwork::updateMPS(arcomplex<double> *source){
   }
 
   //BLOCKWISE TRUNCATION REQUIRED FOR INITIAL STATE SEARCH
-  std::vector<sortData> comparerL, comparerR;
+  std::vector<auxiliary::sortData> comparerL, comparerR;
   comparerL.resize(ld*lDL);
   comparerR.resize(ld*lDL);
   for(int ai=0;ai<ld*lDL;++ai){
@@ -271,8 +251,8 @@ void infiniteNetwork::updateMPS(arcomplex<double> *source){
     //std::cout<<"Available QN: "<<optLocalQNs[ai]<<std::endl;
   }
 
-  std::sort(comparerL.begin(),comparerL.end(),compareSortData);
-  std::sort(comparerR.begin(),comparerR.end(),compareSortData);
+  std::sort(comparerL.begin(),comparerL.end(),auxiliary::compareSortData);
+  std::sort(comparerR.begin(),comparerR.end(),auxiliary::compareSortData);
 
   /*
   for(int m=0;m<lDR;++m){

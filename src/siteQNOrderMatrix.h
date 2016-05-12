@@ -15,6 +15,7 @@ class siteQNOrderMatrix{
   siteQNOrderMatrix(){}
   siteQNOrderMatrix(int site, int lDL, int lDR, int ld, std::vector<quantumNumber> *conservedQNsin);
   siteQNOrderMatrix(int site, int lDL, int lDR, int ld, std::vector<pseudoQuantumNumber*> const &conservedQNsin);
+  void generateFull(siteQNOrderMatrix const &source);
   void blockStructure(int direction, std::vector<std::vector<int> > &aiIndices, std::vector<std::vector<multInt> > &siaimIndices);
   int aiBlockIndexLP(int iBlock, int j) const{return aiBlockIndicesLP[iBlock][j];}
   int siBlockIndexLP(int iBlock, int k) const{return siaimBlockIndicesLP[iBlock][k].si;}
@@ -28,6 +29,8 @@ class siteQNOrderMatrix{
   int rBlockSizeRP(int iBlock) const{return siaiBlockIndicesRP[iBlock].size();}
   int numBlocksLP() const{return aiBlockIndicesLP.size();}
   int numBlocksRP() const{return aimBlockIndicesRP.size();}
+  std::complex<int> qnLabelLP(int iBlock) const{return qnLabelsLP[iBlock];}
+  std::complex<int> qnLabelRP(int iBlock) const{return qnLabelsRP[iBlock];}
   int nQNs() const{return conservedQNs.size();}
   int validate()const;
  private:
@@ -37,9 +40,16 @@ class siteQNOrderMatrix{
   std::vector<std::vector<int> > aimBlockIndicesRP;
   std::vector<std::vector<multInt> > siaiBlockIndicesRP;
   std::vector<pseudoQuantumNumber*> conservedQNs;
+  std::vector<std::complex<int> > qnLabelsLP, qnLabelsRP;
   std::complex<int> qnCriterium(int iQN, int aim, int si, int direction, int pre);
   void loadConservedQNs(std::vector<quantumNumber> *conservedQNsin);
   void setUpTable();
+  //In contrast to setUpTable(), setUpTableFull() gets the labels by combining the pair indices, leading to an overhead and empty blocks. 
+  //This is not useable in the optimization (will even fail) but needed in the enrichment
+  void blockStructureFull(int direction, std::vector<std::vector<int> > &aiIndices, std::vector<std::vector<multInt> > &siaimIndices);
+  void setUpTableFull();
 };
+
+void printIndexTable(siteQNOrderMatrix const &a);
 
 #endif

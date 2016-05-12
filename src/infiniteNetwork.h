@@ -6,17 +6,9 @@
 #include "dimensionTable.h"
 #include "uncachedMeasurement.h"
 #include "baseTensor.h"
+#include "truncation.h"
 #include <arcomp.h>
 #include <vector>
-
-struct sortData{
-  double lambda;
-  std::complex<int> QN;
-  int index;
-};
-
-bool compareSortData(sortData const &a, sortData const &b);
-bool compareSortDataQNBased(sortData const &a, sortData const &b);
 
 void verifyCompression(arcomplex<double> *cVector, int dim);
 

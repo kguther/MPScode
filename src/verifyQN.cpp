@@ -5,6 +5,29 @@
 
 //Verifying the QN constraint for testing purposes
 
+int checkQNConstraint(mps &test, int i){
+  int const ld=test.getDimInfo().locd(i);
+  int const lDL=test.getDimInfo().locDimL(i);
+  int const lDR=test.getDimInfo().locDimR(i);
+  int failed=0;
+  pseudoQuantumNumber *gqn=&test.getConservedQNs()[0];
+  arcomplex<double> *subMatrix;
+  arcomplex<double> mEl;
+  for(int si=0;si<ld;++si){
+    test.subMatrixStart(subMatrix,i,si);
+    for(int ai=0;ai<lDR;++ai){
+      for(int aim=0;aim<lDL;++aim){
+	mEl=subMatrix[aim+lDL*ai];	
+	if(gqn->groupOperation(gqn->QNLabel(i-1,aim),gqn->QNLabel(si))!=gqn->QNLabel(i,ai) && abs(mEl)>1e-10){
+	  std::cout<<"Matrix element at left labels: "<<gqn->QNLabel(i-1,aim)<<" "<<gqn->QNLabel(si)<<" right label: "<<gqn->QNLabel(i,ai)<<" : "<<mEl<<" with indices "<<"("<<aim<<","<<si<<")"<<" "<<ai<<std::endl;	
+	  failed=1;
+	}
+      }
+    }
+  }
+  return failed;
+}
+
 int checkQNConstraint(impBase &test, int i){
   int const ld=test.getDimInfo().locd(i);
   int const lDL=test.getDimInfo().locDimL(i);

@@ -61,8 +61,9 @@ void arraycpy(int const dim, lapack_complex_double *arraysource, lapack_complex_
 
 void matrixprint(int const n, int const m, lapack_complex_double *array){
   //The second argument is always the contigous index
-for(int i=0;i<n;i++){
-    for(int j=0;j<m;j++){
+  //Prints col major
+  for(int j=0;j<m;j++){
+    for(int i=0;i<n;i++){
       cout<<array[j+m*i]<<"\t";
     }
     cout<<"\n";

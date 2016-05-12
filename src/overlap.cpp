@@ -16,7 +16,10 @@ overlap::overlap(){
 //---------------------------------------------------------------------------------------------------//
 
 //Comes useful for testing normalization
-overlap::overlap(mps const*const psi, mps const*const phi){
+overlap::overlap(mps const*const psi, mps const*const phi):
+  Lctr(0),
+  Rctr(0)
+{
   loadMPS(psi,phi);
 }
 
