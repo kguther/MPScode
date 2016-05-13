@@ -185,7 +185,11 @@ int siteQNOrderMatrix::validate()const {
 }
 
 //---------------------------------------------------------------------------------------------------//
-// The index tables generated via blockStructureFull
+// The index tables generated via blockStructureFull() contain all qnLabels reachable from the paired
+// side. Thus, all possible labels are contained, but there will most likely be some empty blocks
+// for those labels which are reachable, but do not appear on the other side. 
+// Therefore, the full block structure is slower and not used for reading access. 
+// It is only required when labels are adapted in the enrichment step.
 //---------------------------------------------------------------------------------------------------//
 
 void siteQNOrderMatrix::blockStructureFull(int direction, std::vector<std::vector<int> > &aiIndices, std::vector<std::vector<multInt> > &siaimIndices){

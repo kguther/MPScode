@@ -210,14 +210,13 @@ void network::rightEnrichment(int i){
 // This is the most complicated part of the program
 //---------------------------------------------------------------------------------------------------//
 
+//CURRENTlLY, THIS IS QUITE SLOW. OPTIMIZATION REQUIRED - URGENT
+
 void network::leftEnrichmentBlockwise(int i){
-  lapack_complex_double *Mnew;
   lapack_complex_double *Bnew, *R, *BStart, *localMatrix;
   lapack_complex_double *pExpression;
-  lapack_complex_double *U, *VT, *globalU, *globalVT;
-  double *diags;
-  int info;
-  int blockDimR, blockDimL, maxDim;
+  lapack_complex_double *globalU, *globalVT;
+  int blockDimR, blockDimL;
   int containerDim;
   int lDRR, ldp;
   int siCurrent, aiCurrent, aimCurrent, aipCurrent, sipCurrent;
@@ -229,23 +228,15 @@ void network::leftEnrichmentBlockwise(int i){
   localIndexTableFull.generateFull(networkState.indexTable().getLocalIndexTable(i));
 
   getLocalDimensions(i);
+  //pSize is the right dimension of the expansion term
+  int const pSize=lDwR*lDR;
   int const numBlocks=localIndexTableFull.numBlocksLP();
-  int const MNumCols=lDR*(1+numBlocks*lDwR);
+  int const MNumCols=lDR+numBlocks*pSize;
   int const MNumRows=lDL*ld;
   lDRR=networkState.locDimR(i+1);
   ldp=locd(i+1);
   std::unique_ptr<lapack_complex_double[]> Rp(new lapack_complex_double[lDR*lDR]);
   std::unique_ptr<lapack_complex_double[]> pEP(new lapack_complex_double[ld*lDL*lDR*lDwR]);
-  std::unique_ptr<lapack_complex_double[]> MP, UP, VTP;
-  std::unique_ptr<double[]> diagsP;
-#ifndef USE_MKL
-  std::unique_ptr<int[]> iworkP;
-  std::unique_ptr<double[]> rworkP;
-  std::unique_ptr<lapack_complex_double[]> workP;
-  int *iwork;
-  double *rwork;
-  lapack_complex_double *work;
-#endif
   pExpression=pEP.get();
   R=Rp.get();
   
@@ -270,21 +261,31 @@ void network::leftEnrichmentBlockwise(int i){
   }
 
   //Buffer for indices
-  std::unique_ptr<int[]> globalVTIndices;
-  int rowOffsetVT=0;
+  //For parallelization, all rowOffsets must be known in advance
+  std::unique_ptr<int[]> rowOffsetVT(new int[numBlocks]);
+  rowOffsetVT[0]=0;
+  for(int iBlock=0;iBlock<numBlocks-1;++iBlock){
+    lBlockSize=localIndexTableFull.lBlockSizeLP(iBlock);
+    rBlockSize=localIndexTableFull.rBlockSizeLP(iBlock);
+    containerDim=(lBlockSize>(rBlockSize+pSize))?(rBlockSize+pSize):lBlockSize;
+    rowOffsetVT[iBlock+1]=rowOffsetVT[iBlock]+containerDim;
+  }
+
 
   getPExpressionLeft(i,pExpression);
   networkState.subMatrixStart(localMatrix,i);
 
+#pragma omp parallel for private(lBlockSize, rBlockSize, blockDimL, blockDimR, containerDim, siCurrent, aiCurrent, aimCurrent, aipCurrent, sipCurrent) schedule(dynamic,1) 
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
     lBlockSize=localIndexTableFull.lBlockSizeLP(iBlock);
     rBlockSize=localIndexTableFull.rBlockSizeLP(iBlock);
     blockDimL=lBlockSize;
-    blockDimR=rBlockSize+lDR*lDwR;
-    maxDim=(blockDimL>blockDimR)?blockDimL:blockDimR;
+    blockDimR=rBlockSize+pSize;
     //rBlockSize may be zero, then, only the expansion term is taken into account
     if(lBlockSize!=0){
-      MP.reset(new lapack_complex_double[blockDimL*blockDimR]);
+      //Mnew has to be private for each thread
+      lapack_complex_double *Mnew;
+      std::unique_ptr<lapack_complex_double[]> MP(new lapack_complex_double[blockDimL*blockDimR]);
       Mnew=MP.get();
       for(int k=0;k<lBlockSize;++k){
 	aimCurrent=localIndexTableFull.aimBlockIndexLP(iBlock,k);
@@ -302,36 +303,40 @@ void network::leftEnrichmentBlockwise(int i){
 	}
       }
       containerDim=(blockDimL>blockDimR)?blockDimR:blockDimL;
-      //Allocate containers for lapack
-      diagsP.reset(new double[containerDim]);
-      UP.reset(new lapack_complex_double[blockDimL*blockDimL]);
-      VTP.reset(new lapack_complex_double[blockDimR*blockDimR]);
-      diags=diagsP.get();
-      U=UP.get();
-      VT=VTP.get();
+      //Allocate containers for lapack 
+      std::unique_ptr<double[]> diagsP(new double[containerDim]);
+      std::unique_ptr<lapack_complex_double[]> UP(new lapack_complex_double[blockDimL*blockDimL]);
+      std::unique_ptr<lapack_complex_double[] >VTP(new lapack_complex_double[blockDimR*blockDimR]);
+      double *diags=diagsP.get();
+      lapack_complex_double *U=UP.get();
+      lapack_complex_double *VT=VTP.get();
+
+      //We only need the first containerDim rows of VT, but all cols of U 
+      //-> U and VT have to be computed full in the rare case that there are more left singular vectors than right singular vectors (this CAN occur!) 
+      //else, the first blockDimL right singular vectors are enough
+      char jobz=(blockDimL>blockDimR)?'A':'S';
       //There seems to be a bug in liblapacke providing a wrong size for the work array, which can lead to a segfault. This bug is not present in the mkl implementation
 #ifdef USE_MKL
-      LAPACKE_zgesdd(LAPACK_COL_MAJOR,'A',blockDimL,blockDimR,Mnew,blockDimL,diags,U,blockDimL,VT,blockDimR);
+      LAPACKE_zgesdd(LAPACK_COL_MAJOR,jobz,blockDimL,blockDimR,Mnew,blockDimL,diags,U,blockDimL,VT,blockDimR);
 #endif
 #ifndef USE_MKL
       int const lwork=containerDim*containerDim+maxDim*containerDim*2;
       int const lrwork=(containerDim*5+7>2*containerDim+2*maxDim+1)?containerDim*(containerDim*5+7):containerDim*(2*maxDim+2*containerDim+1);
-      iworkP.reset(new int[8*containerDim]);
-      rworkP.reset(new double[lrwork*4]);
-      workP.reset(new lapack_complex_double[4*lwork]);
-      work=workP.get();
-      rwork=rworkP.get();
-      iwork=iworkP.get();
-      LAPACKE_zgesdd_work(LAPACK_COL_MAJOR,'A',blockDimL,blockDimR,Mnew,blockDimL,diags,U,blockDimL,VT,blockDimR,work,lwork,rwork,iwork);
+      std::unique_ptr<int[]> iworkP(new int[8*containerDim]);
+      std::unique_ptr<double[]> rworkP(new double[lrwork*4]);
+      std::unique_ptr<lapack_complex_double[]> workP(new lapack_complex_double[4*lwork]);
+      lapack_complex_double *work=workP.get();
+      double *rwork=rworkP.get();
+      int *iwork=iworkP.get();
+      LAPACKE_zgesdd_work(LAPACK_COL_MAJOR,jobz,blockDimL,blockDimR,Mnew,blockDimL,diags,U,blockDimL,VT,blockDimR,work,lwork,rwork,iwork);
 #endif
       //Insert the block matrices into the global ones at the respective position
 
       //Insert VT into globalVT (b does not carry a qn label)
-      globalVTIndices.reset(new int[containerDim]);
+      std::unique_ptr<int[]> globalVTIndices(new int[containerDim]);
       for(int j=0;j<containerDim;++j){
-	globalVTIndices[j]=rowOffsetVT+j;
+	globalVTIndices[j]=rowOffsetVT[iBlock]+j;
       }
-      rowOffsetVT+=containerDim;
       //Only the first containerDim rows of VT are used (only that many SVs are nonzero)
       for(int jp=0;jp<rBlockSize;++jp){
 	for(int j=0;j<containerDim;++j){
@@ -423,11 +428,11 @@ void network::leftEnrichmentBlockwise(int i){
     newLabels[ai]=comparer[ai].QN;
   }
   networkState.refineQNLabels(i+1,0,newLabels);
-
-  //Works nicely, A and B keep the QNC
-
-  info=0;
   std::cout<<"Applied enrichment\n";
+  //Works nicely, A and B keep the QNC - testing is not required in general
+  /*
+  info=0;
+
   info=checkQNConstraint(networkState,i);
   if(info)
     std::cout<<"Matrix A violates QNC\n";
@@ -439,31 +444,19 @@ void network::leftEnrichmentBlockwise(int i){
     info+=checkQNConstraint(networkState,i);
   }
   if(info){
-    
-    /*
-    std::cout<<"Error in :\n";
-    BStart=Bnew+3*lDRR*MNumCols;
-    for(int m=0;m<MNumCols;++m){
-      std::cout<<BStart[m+MNumCols]<<"*"<<R[m*lDR]<<"+";
-      if(abs(BStart[m+MNumCols]*R[m*lDR])>1e-12)
-	std::cout<<std::endl<<"VIOLATION AT "<<m<<std::endl;
-    }
-    std::cout<<std::endl;
-    */
     std::cout<<"QNC VIOLATION DETECTED\n";
     exit(1);
   }
+  */
 }
 
 //---------------------------------------------------------------------------------------------------//
 
 void network::rightEnrichmentBlockwise(int i){
-  lapack_complex_double *Mnew;
   lapack_complex_double *Anew, *R, *networkA, *localMatrix;
   lapack_complex_double *pExpression;
-  lapack_complex_double *U, *VT, *globalU, *globalVT;
-  double *diags;
-  int blockDimR, blockDimL, maxDim;
+  lapack_complex_double *globalU, *globalVT;
+  int blockDimR, blockDimL;
   int containerDim;
   int lDLL, ldm;
   int siCurrent, aiCurrent, aimCurrent, aimpCurrent, sipCurrent, aipCurrent;
@@ -474,9 +467,11 @@ void network::rightEnrichmentBlockwise(int i){
   siteQNOrderMatrix localIndexTableFull;
   localIndexTableFull.generateFull(networkState.indexTable().getLocalIndexTable(i));
 
+  //pSize is the left dimension of the expansion term
+  int const pSize=lDL*lDwL;
   int const numBlocks=localIndexTableFull.numBlocksRP();
   int const MNumCols=lDR*ld;
-  int const MNumRows=lDL*(1+numBlocks*lDwL);
+  int const MNumRows=lDL+numBlocks*pSize;
   lDLL=networkState.locDimL(i-1);
   ldm=locd(i-1);
 
@@ -502,37 +497,33 @@ void network::rightEnrichmentBlockwise(int i){
     comparer[m].lambda=0.0;
   }
   //Buffer for indices
-  std::unique_ptr<int[]> globalUIndices;
-  int colOffsetU=0;
-
+  std::unique_ptr<int[]> colOffsetU(new int[numBlocks]);
+  colOffsetU[0]=0;
+  //For parallelization, all colOffsets have to be known in advance
+  for(int iBlock=0;iBlock<numBlocks-1;++iBlock){
+    lBlockSize=localIndexTableFull.lBlockSizeRP(iBlock);
+    rBlockSize=localIndexTableFull.rBlockSizeRP(iBlock);
+    containerDim=(rBlockSize>(lBlockSize+pSize))?(lBlockSize+pSize):rBlockSize;
+    colOffsetU[iBlock+1]=colOffsetU[iBlock]+containerDim;
+  }
+    
   //Prepare local containers
   std::unique_ptr<lapack_complex_double[]> pEP(new lapack_complex_double[ld*lDL*lDR*lDwL]);
-  std::unique_ptr<lapack_complex_double[]> MP, UP, VTP;
-  std::unique_ptr<double[]> diagsP;
-#ifndef USE_MKL
-  std::unique_ptr<int[]> iworkP;
-  std::unique_ptr<double[]> rworkP;
-  std::unique_ptr<lapack_complex_double[]> workP;
-  int *iwork;
-  double *rwork;
-  lapack_complex_double *work;
-#endif
   R=Rp.get();
   pExpression=pEP.get();
   getPExpressionRight(i,pExpression);
   networkState.subMatrixStart(localMatrix,i);
 
-  //Parallelize?
+#pragma omp parallel for private(lBlockSize, rBlockSize, blockDimL, blockDimR, containerDim, siCurrent, aiCurrent, aimCurrent, aimpCurrent, sipCurrent, aipCurrent) schedule(dynamic,1)
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
     lBlockSize=localIndexTableFull.lBlockSizeRP(iBlock);
     rBlockSize=localIndexTableFull.rBlockSizeRP(iBlock);
-    blockDimL=lBlockSize+lDwL*lDL;
+    blockDimL=lBlockSize+pSize;
     blockDimR=rBlockSize;
-    maxDim=(blockDimL>blockDimR)?blockDimL:blockDimR;
     //By construction of localIndexTableFull, rBlockSize can not be 0 (that is, such blocks are not listed in localIndexTableFull)
     if(rBlockSize!=0){
-      MP.reset(new lapack_complex_double[blockDimL*blockDimR]);
-      Mnew=MP.get();
+      std::unique_ptr<lapack_complex_double[]> MP(new lapack_complex_double[blockDimL*blockDimR]);
+      lapack_complex_double *Mnew=MP.get();
       for(int j=0;j<rBlockSize;++j){
 	aiCurrent=localIndexTableFull.aiBlockIndexRP(iBlock,j);
 	siCurrent=localIndexTableFull.siBlockIndexRP(iBlock,j);
@@ -546,26 +537,30 @@ void network::rightEnrichmentBlockwise(int i){
 	  }
 	}
       }
+      //containerDim is the number of SVs
       containerDim=(blockDimL>blockDimR)?blockDimR:blockDimL;
-      diagsP.reset(new double[containerDim]);
-      UP.reset(new lapack_complex_double[blockDimL*blockDimL]);
-      VTP.reset(new lapack_complex_double[blockDimR*blockDimR]);
-      diags=diagsP.get();
-      U=UP.get();
-      VT=VTP.get();
+      std::unique_ptr<double[]> diagsP(new double[containerDim]);
+      std::unique_ptr<lapack_complex_double[]> UP(new lapack_complex_double[blockDimL*blockDimL]);
+      std::unique_ptr<lapack_complex_double[]> VTP(new lapack_complex_double[blockDimR*blockDimR]);
+      double *diags=diagsP.get();
+      lapack_complex_double *U=UP.get();
+      lapack_complex_double *VT=VTP.get();
+
+      //Same simplification as in leftEnrichment
+      char jobz=(blockDimR>blockDimL)?'A':'S';
 #ifdef USE_MKL
-      LAPACKE_zgesdd(LAPACK_COL_MAJOR,'A',blockDimL,blockDimR,Mnew,blockDimL,diags,U,blockDimL,VT,blockDimR);
+      LAPACKE_zgesdd(LAPACK_COL_MAJOR,jobz,blockDimL,blockDimR,Mnew,blockDimL,diags,U,blockDimL,VT,blockDimR);
 #endif
 #ifndef USE_MKL
       int const lwork=containerDim*containerDim+maxDim*containerDim*2;
       int const lrwork=(containerDim*5+7>2*containerDim+2*maxDim+1)?containerDim*(containerDim*5+7):containerDim*(2*maxDim+2*containerDim+1);
-      iworkP.reset(new int[8*containerDim]);
-      rworkP.reset(new double[lrwork*4]);
-      workP.reset(new lapack_complex_double[4*lwork]);
-      work=workP.get();
-      rwork=rworkP.get();
-      iwork=iworkP.get();
-      LAPACKE_zgesdd_work(LAPACK_COL_MAJOR,'A',blockDimL,blockDimR,Mnew,blockDimL,diags,U,blockDimL,VT,blockDimR,work,lwork,rwork,iwork);
+      std::unique_ptr<int[]> iworkP(new int[8*containerDim]);
+      std::unique_ptr<double[]> rworkP(new double[lrwork*4]);
+      std::unique_ptr<lapack_complex_double[]> workP(new lapack_complex_double[4*lwork]);
+      lapack_complex_double *work=workP.get();
+      double *rwork=rworkP.get();
+      int *iwork=iworkP.get();
+      LAPACKE_zgesdd_work(LAPACK_COL_MAJOR,jobz,blockDimL,blockDimR,Mnew,blockDimL,diags,U,blockDimL,VT,blockDimR,work,lwork,rwork,iwork);
 #endif
 
       //Insert VT into globalVT (storage scheme for VT: (sip,aip,si,ai)
@@ -581,11 +576,10 @@ void network::rightEnrichmentBlockwise(int i){
       
       //Insert U into globalU
       //The right indices of U can be given any order
-      globalUIndices.reset(new int[containerDim]);
+      std::unique_ptr<int[]> globalUIndices(new int[containerDim]);
       for(int k=0;k<containerDim;++k){
-	globalUIndices[k]=colOffsetU+k;
+	globalUIndices[k]=colOffsetU[iBlock]+k;
       }
-      colOffsetU+=containerDim;
       //Only the first containerDim cols of U are used
       for(int k=0;k<containerDim;++k){
 	for(int kp=0;kp<lBlockSize;++kp){
@@ -670,11 +664,10 @@ void network::rightEnrichmentBlockwise(int i){
     newLabels[aim]=comparer[aim].QN;
   }
   networkState.refineQNLabels(i,0,newLabels);
-
-  //Check for QNC conservation
-
-  int info=0;
   std::cout<<"Applied enrichment\n";
+  //Check for QNC conservation has been removed for better performance
+  /*
+  int info=0;
   info=checkQNConstraint(networkState,i-1);
   if(info)
     std::cout<<"Matrix A violates QNC\n";
@@ -689,6 +682,7 @@ void network::rightEnrichmentBlockwise(int i){
     std::cout<<"QNC VIOLATION DETECTED\n";
     exit(1);
   }
+  */
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -830,7 +824,7 @@ void network::getNewAlpha(int i, double lambda, double prevLambda){
     }
   }
   */
-  //This is numerically somewhat simpler and works also quite nice.
+  //This is numerically somewhat simpler but a more sophisticated scheme is desirable
   //alpha*=0.9765;
   alpha*=pow(0.1,1/static_cast<double>(2*L));
   std::cout<<"New alpha="<<alpha<<std::endl;

@@ -255,7 +255,7 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
       std::cout<<"Current subchain parity (final): "<<parCheck<<std::endl;
       
     }
-    printQNLabels(networkState);
+    //printQNLabels(networkState);
     stepRet=gotoNextEigen();
     if(!stepRet){
       std::cout<<"LOADED STATES. PREPARED COMPUTATION OF NEXT EIGENSTATE"<<std::endl;
@@ -283,7 +283,7 @@ void network::sweep(double maxIter, double tol, double &lambda){
 
 
   //THERE IS A BUG CONNECTED TO THIS - MOST LIKELY SOME WRONG ARRAY ACCESS
-  overlap test(&networkState,&networkState);
+  //overlap test(&networkState,&networkState);
 
   std::cout<<"STARTING RIGHTSWEEP\n\n";
   for(int i=0;i<(L-1);++i){
