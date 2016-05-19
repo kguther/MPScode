@@ -1,4 +1,5 @@
 #include "siteQNOrderMatrix.h"
+#include "exceptionClasses.h"
 #include <iostream>
 
 siteQNOrderMatrix::siteQNOrderMatrix(int site, int lDLin, int lDRin, int ldIn, std::vector<pseudoQuantumNumber*> const &conservedQNsin):
@@ -48,6 +49,15 @@ void siteQNOrderMatrix::loadConservedQNs(std::vector<quantumNumber> *conservedQN
 void siteQNOrderMatrix::setUpTable(){
   blockStructure(0,aiBlockIndicesLP,siaimBlockIndicesLP);
   blockStructure(1,aimBlockIndicesRP,siaiBlockIndicesRP);
+  //Check if there are any non-empty blocks (required). If this is true for LP, it is also for RP
+  int cumulativeBlockSize=0;
+  for(int iBlock=0;iBlock<numBlocksLP();++iBlock){
+    cumulativeBlockSize+=lBlockSizeLP(iBlock)*rBlockSizeLP(iBlock);
+  }
+  if(cumulativeBlockSize==0){
+    //no-throw guarantee if conservedQNs is unrefined
+    throw empty_table(i);
+  }
 }
 
 //---------------------------------------------------------------------------------------------------//

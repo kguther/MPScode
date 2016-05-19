@@ -62,7 +62,7 @@ class network{
   int setParameterD(int Dnew);
   double convergenceCheck();
   double getCurrentEnergy(int i);
-  void getNewAlpha(int i, double lambda, double prevLambda);
+  void getNewAlpha(int i, double &lambda, double prevLambda);
   void normalize(int i, int direction, int enrichment=0);
   void refineQNLabels(int i, std::vector<std::complex<int> > const &source);
   void sweep(double maxIter, double tol, double &lambda);

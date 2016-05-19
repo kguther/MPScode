@@ -64,16 +64,20 @@ void basisQNOrderMatrix::generateQNIndexTables(){
   int cumulativeBlockSize;
   localIndexTables.resize(L);
   for(int i=0;i<L;++i){
-    localIndexTables[i]=siteQNOrderMatrix(i,dimInfo.locDimL(i),dimInfo.locDimR(i),dimInfo.locd(i),conservedQNs);
-    cumulativeBlockSize=0;
-    for(int iBlock=0;iBlock<numBlocksLP(i);++iBlock){
-      //Should it be lBlockSize*rBlockSize?
-      cumulativeBlockSize+=lBlockSizeLP(i,iBlock);
+    try{
+      localIndexTables[i]=siteQNOrderMatrix(i,dimInfo.locDimL(i),dimInfo.locDimR(i),dimInfo.locd(i),conservedQNs);
     }
-    if(cumulativeBlockSize==0){
-      // If the cumulativeBlockSize is zero, then there are no indices fullfilling the QN constraint on this site. That means the right vacuum QN is invalid, for example N=80 for a chain of length 20.
-      //std::cout<<"At site "<<i<<": CRITICAL ERROR: Invalid quantum number.\n";
-      //ADD EXCEPTION
+    catch(empty_table &err){
+      //If there is no valid block, adapt left/right labels to make valid blocks. This obviously introduces a deviation from the desired labeling scheme, but there is no other way.
+      for(int iQN=0;iQN<conservedQNs.size();++iQN){
+	if(i!=0){
+	  conservedQNs[iQN].adaptLabels(i,-1);
+	}
+	if(i!=(L-1)){
+	  conservedQNs[iQN].adaptLabels(i,1);
+	}
+      }
+      --i;
     }
   }
   

@@ -11,8 +11,6 @@
 #include <vector>
 #include <memory>
 
-#include "heisenbergChain.h"
-
 void sysSolve(info const &parPack, std::string const &fileName, std::vector<double> &energies);
 void getScaling(int L, info const &parPack, double *results, std::string const &fileName);
 void sysSetMeasurements(simulation &sim, int d, int L, int meas);
@@ -79,7 +77,7 @@ int main(int argc, char *argv[]){
   //Each process calculates its own couplings/system size
   
 
-  int const range=8;
+  int const range=15;
   int const redRank=myrank/2;
   int WStage=redRank/range;
   if(necPars.simType==0){

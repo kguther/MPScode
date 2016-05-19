@@ -6,6 +6,7 @@
 #include "blockHMatrix.h"
 #include "truncation.h"
 #include "verifyQN.h"
+#include "exceptionClasses.h"
 #include <cmath>
 #include <algorithm>
 #include <iostream>
@@ -210,8 +211,6 @@ void network::rightEnrichment(int i){
 // This is the most complicated part of the program
 //---------------------------------------------------------------------------------------------------//
 
-//CURRENTlLY, THIS IS QUITE SLOW. OPTIMIZATION REQUIRED - URGENT
-
 void network::leftEnrichmentBlockwise(int i){
   lapack_complex_double *Bnew, *R, *BStart, *localMatrix;
   lapack_complex_double *pExpression;
@@ -320,6 +319,7 @@ void network::leftEnrichmentBlockwise(int i){
       LAPACKE_zgesdd(LAPACK_COL_MAJOR,jobz,blockDimL,blockDimR,Mnew,blockDimL,diags,U,blockDimL,VT,blockDimR);
 #endif
 #ifndef USE_MKL
+      int const maxDim=(blockDimR>blockDimL)?blockDimR:blockDimL;
       int const lwork=containerDim*containerDim+maxDim*containerDim*2;
       int const lrwork=(containerDim*5+7>2*containerDim+2*maxDim+1)?containerDim*(containerDim*5+7):containerDim*(2*maxDim+2*containerDim+1);
       std::unique_ptr<int[]> iworkP(new int[8*containerDim]);
@@ -552,6 +552,7 @@ void network::rightEnrichmentBlockwise(int i){
       LAPACKE_zgesdd(LAPACK_COL_MAJOR,jobz,blockDimL,blockDimR,Mnew,blockDimL,diags,U,blockDimL,VT,blockDimR);
 #endif
 #ifndef USE_MKL
+      int const maxDim=(blockDimR>blockDimL)?blockDimR:blockDimL;
       int const lwork=containerDim*containerDim+maxDim*containerDim*2;
       int const lrwork=(containerDim*5+7>2*containerDim+2*maxDim+1)?containerDim*(containerDim*5+7):containerDim*(2*maxDim+2*containerDim+1);
       std::unique_ptr<int[]> iworkP(new int[8*containerDim]);
@@ -752,7 +753,8 @@ void network::getPExpressionRight(int i, lapack_complex_double *pExpr){
 //---------------------------------------------------------------------------------------------------//
 
 double network::getCurrentEnergy(int i){
-  lapack_complex_double simpleContainer=0;
+  lapack_complex_double simpleContainer=0.0;
+  getLocalDimensions(i);
   std::unique_ptr<lapack_complex_double> siteMatrixContainerP(new lapack_complex_double [ld*lDR*lDL]);
   lapack_complex_double *siteMatrixContainer=siteMatrixContainerP.get();
   lapack_complex_double *currentM, *LTerm, *RTerm;
@@ -772,8 +774,7 @@ double network::getCurrentEnergy(int i){
     BMat.readOutput(siteMatrixContainer);
   }
   //Here, we contract the result with the current state. There is a version with and one without the use of QNs
-  if(pars.nQNs){
-    siteQNOrderMatrix const localIndexTable=networkState.indexTable().getLocalIndexTable(i);
+  if(pars.nQNs && 0){
     int const numBlocks=localIndexTable.numBlocksLP();
     int lBlockSize, rBlockSize;
     int siCurrent, aiCurrent, aimCurrent;
@@ -805,27 +806,37 @@ double network::getCurrentEnergy(int i){
 
 //---------------------------------------------------------------------------------------------------//
 
-void network::getNewAlpha(int i, double lambda, double prevLambda){
-  /*
-  double dET=getCurrentEnergy(i);
-  double dE0=abs(prevLambda-lambda);
-  double const pre=1.2;
-  dET-=lambda;
-  std::cout<<dET<<" "<<dE0<<std::endl;
+void network::getNewAlpha(int i, double &lambda, double prevLambda){
+  double lambdaBuf=getCurrentEnergy(i);
+  double dE0=prevLambda-lambda;
+
+  if(dE0<0){
+    //At this point, we have to make sure dE0 is positive. If it is negative, this is a problem which has to be handled elsewhere
+    dE0*=-1.0;
+  }
+  double const pre=pow(0.1,1/static_cast<double>(L));
+  double const tol=1e-12;
+  double dET=lambdaBuf-(lambda-shift);
   if(dET<0){
     alpha*=pre;
   }
   else{
-    if(abs(dET/dE0)<0.3){
-      alpha*=pre;
-    }
-    else{
+    if(dE0<tol){
       alpha/=pre;
     }
+    else{
+      //Both dET and dE0 are now positive
+      if(dET/dE0<0.3){
+	alpha*=pre;
+      }
+      else{
+	alpha/=pre;
+      }
+    }
   }
-  */
+  lambda=lambdaBuf;
   //This is numerically somewhat simpler but a more sophisticated scheme is desirable
   //alpha*=0.9765;
-  alpha*=pow(0.1,1/static_cast<double>(2*L));
+  //alpha*=pow(0.1,1/static_cast<double>(2*L));
   std::cout<<"New alpha="<<alpha<<std::endl;
 }

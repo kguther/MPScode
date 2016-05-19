@@ -14,13 +14,10 @@
 #include "globalMeasurement.h"
 #include "localMeasurementSeries.h"
 #include "exactGroundState.h"
-#include "initStateGrow.h"
 
 //BEWARE: ALL MPS AND MPO NETWORK MATRICES ARE STORED WITH A CONTIGOUS COLUMN INDEX (i.e. transposed with respect to C standard, for better compatibility with LAPACK)
 
 //NAMING CONVENTION: i is always the site index. ALWAYS.
-
-//TODO: MAKE USE OF RETURN VALUES WHERE INTENDED.
 
 //---------------------------------------------------------------------------------------------------//
 // 'Main' file containing the MPS ansatz solver itself (this is not the actual main.cpp, just the
@@ -106,18 +103,6 @@ void network::resetConvergence(){
   }
 }
 
-//---------------------------------------------------------------------------------------------------//
-// Function to invoke the iDMRG algorithm to get an initial state. Has to be called externally because
-// the iDMRG algorithm makes use of the network class, too.
-// Does not yield a valid QN labeling scheme. Usefulness is highly questionable
-//---------------------------------------------------------------------------------------------------//
-/*
-void network::getInitState(){
-  initStateGrow setup(pars,simPars,networkH);
-  setup.prepareInitialState(networkState);
-  exit(1);
-}
-*/
 //---------------------------------------------------------------------------------------------------//
 // These functions can be employed to alter the algorithm parameters nSweeps and D during lifetime of a 
 // network object. This allows for iteratively increasing D. They completely take care of all required
@@ -222,7 +207,7 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
 
     pCtr.calcCtrIterRightBase(-1,&expectationValue);
     std::cout<<"Initial energy: "<<expectationValue<<std::endl;
-    lambda[iEigen]=real(expectationValue);
+    lambda[iEigen]=real(expectationValue)+shift;
     for(int iSweep=0;iSweep<simPars.nSweeps;++iSweep){
       if(!nConverged[iEigen]){
 	break;
@@ -280,11 +265,7 @@ void network::sweep(double maxIter, double tol, double &lambda){
   // By default enrichment is used whenever conserved QNs are used
   int const expFlag=pars.nQNs;
   double lambdaCont;
-
-
-  //THERE IS A BUG CONNECTED TO THIS - MOST LIKELY SOME WRONG ARRAY ACCESS
   //overlap test(&networkState,&networkState);
-
   std::cout<<"STARTING RIGHTSWEEP\n\n";
   for(int i=0;i<(L-1);++i){
     //Step of leftsweep
@@ -297,12 +278,12 @@ void network::sweep(double maxIter, double tol, double &lambda){
 
     //Execute left-sided enrichment step and update the coefficient of the expansion term
     normalize(i,1,expFlag);
-    if(expFlag){
-      getNewAlpha(i,lambda,lambdaCont);
-    }
     //Here, the scalar products with lower lying states are updated
     excitedStateP.updateScalarProducts(i,1);
-    pCtr.calcCtrIterLeft(i+1);    
+    pCtr.calcCtrIterLeft(i+1);  
+    if(expFlag){
+      getNewAlpha(i+1,lambda,lambdaCont);
+    }  
   }
 
   networkState.normalizeFinal(0);
@@ -318,12 +299,12 @@ void network::sweep(double maxIter, double tol, double &lambda){
     
     //Execute right-sided enrichment step and update the coefficient of the expansion term
     normalize(i,0,expFlag);
-    if(expFlag){
-      getNewAlpha(i,lambda,lambdaCont);
-    }
     //same as above for the scalar products with lower lying states
     excitedStateP.updateScalarProducts(i,-1);
     pCtr.calcCtrIterRight(i-1);
+    if(expFlag){
+      getNewAlpha(i-1,lambda,lambdaCont);
+    }
   }
   networkState.normalizeFinal(1);
 }

@@ -20,6 +20,7 @@ class mps: public stateArray{
   void restoreQN(int i);
   void getEntanglementSpectrum(int i, double &S, std::vector<double> &spectrum);
   void getEntanglementEntropy(std::vector<double> &S, std::vector<std::vector<double> > &spectra);
+  void adaptLabels(int i, int direction);
   void refineQNLabels(int i, int iQN, std::vector<std::complex<int> > const &source);
   int setUpQNs(std::vector<quantumNumber> const &conservedQNs);
   std::vector<quantumNumber>& getConservedQNs(){return conservedQNs;}

@@ -15,9 +15,12 @@ if 'plots' not in filelist:
 taskname=sys.argv[1]
 
 writeK=False
+writeDeg=True
 writepd=True
 newpd=True
 defaultLegs=['Ground state', '1st excited State']
+
+firstfile=True
 
 labellist=['$\\left|\\langle a^\dagger_i a_0^{} \\rangle \\right|$','$\\left|\\langle a^\dagger_i b^{}_i a_0^{\dagger} b_0 \\rangle \\right|$','$\\left|\\langle n^{a}_i n_0^{a} \\rangle \\right|$','$\\left|\\langle n^{a}_i n_0^{b} \\rangle \\right|$','$\\left|\\langle n^{a}_i \\rangle \\right|$','$\\left|\\langle a^\dagger_i b^\dagger_i a_0^{} b_0^{} \\rangle \\right|$','$\\left|\\langle \\right|\\rangle$','S','$\\left|\\langle n^{a}_i n^{b}_i \\rangle\\right|$','$\\left|\\langle n^{b}_i\\rangle\\right|$','$\\langle a_i^{\dagger} a_{i+1}^{\dagger} a_0 a_1 \\rangle$','other']
 
@@ -63,12 +66,15 @@ for filename in filelist:
             L=pars[0]
             np=pars[1]
             parity=pars[2]
-            if filename==filelist[0]:
+            if firstfile:
+                if writeDeg:
+                    with open('SB_degs_L_'+L+'_N_'+np+'.txt','w') as dp:
+                        dp.write('L\tE_0\tE_1\tdE_0\tdE_1\n')
                 if writeK:
                     with open('decay_pars_L_'+L+'_N_'+np+'_p_'+parity+'.txt','w') as kp:
                         kp.write('J\tg\t')
                 if writepd and newpd:
-                    with open('phasediagram_L_'+L+'_N_'+np+'.txt','w') as pd:
+                    with open('density_phasediagram_L_'+L+'_N_'+np+'_p_'+parity+'.txt','w') as pd:
                         pd.write('J\tg\tdensity fluctuation\n')
             for i in range(0,n-1):
                 data=[]
@@ -100,6 +106,13 @@ for filename in filelist:
                     excitedState=True
                 else:
                     excitedState=False
+                if i==0 and writeDeg:
+                    refName=filename.partition('_run_')
+                    refNameLast=refName[2].partition('_L_')
+                    run=refNameLast[0]
+                    degdata=run+'\t'+pars[6]+'\t'+enList[6]+'\t'+pars[7].strip()+'\t'+enList[7].strip()+'\n'
+                    with open('SB_degs_L_'+L+'_N_'+np+'.txt','a') as dp:
+                        dp.write(degdata)
                 x=range(0,len(data))
                 tasklabel=labellist[tasknum(datanames[i])]
                 bCheck=datanames[i].split(' ')
@@ -111,10 +124,10 @@ for filename in filelist:
                             xeff=range(int(L)/10,len(data))
                             p0=sy.array([1,1,1])
                             fpars, acc=so.curve_fit(f,xeff,data[int(L)/10:len(data)],p0)
-                if (datanames[i]=="Intrachain_correlation" and writepd):
-                    phase=data[0]/data[len(data)-1]
+                if (datanames[i]=="Local density" and writepd):
+                    phase=min(data)/max(data)
                     point=pars[3]+'\t'+pars[4]+'\t'+str(phase)+'\n'
-                    with open('phasediagram_L_'+L+'_N_'+np+'.txt','a') as pd:
+                    with open('density_phasediagram_L_'+L+'_N_'+np+'_p_'+parity+'.txt','a') as pd:
                         pd.write(point)
                 plt.figure()
                 if bCheck[0]=='Bulk':
@@ -147,5 +160,6 @@ for filename in filelist:
                 plt.title('J='+pars[3]+' g='+pars[4]+' W= '+pars[5]+' E='+pars[6]+' $(\\Delta E)^2$='+pars[7].strip())
                 plt.savefig('plots/'+filename[0:len(filename)-4]+'_'+tname.replace(' ','_')+'.pdf')
                 plt.close()
+                firstfile=False
 
             

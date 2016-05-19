@@ -59,6 +59,15 @@ void mps::refineQNLabels(int i, int iQN, std::vector<std::complex<int> > const &
 
 //---------------------------------------------------------------------------------------------------//
 
+void mps::adaptLabels(int i, int direction){
+  for(int iQN=0;iQN<nQNs;++iQN){
+    conservedQNs[iQN].adaptLabels(i,direction);
+  }
+  loadIndexTables();
+}
+
+//---------------------------------------------------------------------------------------------------//
+
 void mps::createInitialState(){
   int lDL, lDR, ld;
   if(!nQNs){

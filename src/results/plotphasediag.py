@@ -6,7 +6,7 @@ import os
 
 filelist=os.listdir(os.getcwd())
 
-filename='phasediagram'
+filename='edge_state_phasediagram'
 
 def colormap(x):
     rgbcol=(0,abs(x),abs(x/2))
@@ -31,13 +31,13 @@ for file in filelist:
 plt.figure()
 plt.tick_params(labelsize=fs)
 for i in range(0,len(x)):
-    plt.plot(x[i],y[i],'o',color=colormap(c[i]))
+    plt.plot(x[i],y[i],'o',color=colormap(10*c[i]))
 plt.xlabel('J',color=(170/255.0,0,45/255.0),fontsize=fs)
 plt.ylabel('g',color=(25/255.0,170/255.0,70/255.0),fontsize=fs)
-plt.ylim(ymin=0,ymax=1.5)
-plt.xlim(xmin=0,xmax=1.5)
+#plt.ylim(ymin=0,ymax=1.5)
+#plt.xlim(xmin=0,xmax=1.5)
 #plt.title('$\\frac{\\min(n_i^a)}{\\max(n_i^a)}$')
-plt.savefig(filename+'_large_raw.eps',bbox_inches='tight')
+plt.savefig(filename+'_large.pdf',bbox_inches='tight')
 
 if writeOneD:
     alpha=[]

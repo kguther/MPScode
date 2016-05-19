@@ -203,7 +203,6 @@ int quantumNumber::initializeLabelList(int i, int direction){
   std::vector<std::complex<int> > qnLabelsRP;
   std::vector<std::complex<int> > qnLabelsLP;
   std::vector<std::complex<int> > validQNLabels;
-  std::vector<int> blockOccupations;
   std::vector<int> maxBlockSizes;
   if(direction==1){
     cLabel=&rightLabel;
@@ -259,11 +258,7 @@ int quantumNumber::initializeLabelList(int i, int direction){
 	maxBlockSizes.push_back(allowedBlockSize);
       }
     }
-
-    blockOccupations.resize(validQNLabels.size());
-    for(int j=0;j<validQNLabels.size();++j){
-      blockOccupations[j]=0;
-    }
+    std::vector<int> blockOccupations(validQNLabels.size(),0);
     //Evenly distribute the bond indices to the available labels - this might not be optimal, but it always results in a valid scheme
     int blockCounter=0;
     for(int aim=0;aim<dimInfo.locDimL(i);++aim){
@@ -353,6 +348,56 @@ void quantumNumber::gatherBlocks(int i, std::vector<int> &aimIndices, std::vecto
   }
 }
 
+
+//---------------------------------------------------------------------------------------------------//
+
+void quantumNumber::adaptLabels(int i, int direction){
+  //direction==1 adapt from bond i to bond i+1, direction==-1 from bond i to bond i-1
+  int const lD=dimInfo.locDimL(i);
+  int const targetlD=dimInfo.locDimL(i+direction);
+  int const ld=dimInfo.locd(i);
+  int const pre=(direction==1)?1:-1;
+  std::vector<std::complex<int> > reachableQNs;
+  std::vector<int> degeneracies;
+  std::complex<int> newLabel;
+  int isNew;
+  for(int ai=0;ai<lD;++ai){
+    for(int si=0;si<ld;++si){
+      newLabel=groupOperation(QNLabel(i,ai),QNLabel(si),pre);
+      isNew=1;
+      for(int iQN=0;iQN<reachableQNs.size();++iQN){
+	if(newLabel==reachableQNs[iQN]){
+	  ++(degeneracies[iQN]);
+	  isNew=0;
+	}
+      }
+      if(isNew){
+	reachableQNs.push_back(newLabel);
+	degeneracies.push_back(1);
+      }
+    }
+  }
+  int const D=dimInfo.D();
+  std::vector<int> blockOccupations(degeneracies.size(),0);
+  //Evenly distribute the bond indices to the available labels - this might not be optimal, but it always results in a valid scheme
+  int cBlock;
+  int blockCounter=0;
+  for(int ai=0;ai<lD;++ai){
+    for(int iBlock=0;iBlock<reachableQNs.size();++iBlock){
+      cBlock=(blockCounter+iBlock)%(reachableQNs.size());
+      if(blockOccupations[cBlock]<degeneracies[cBlock]){
+        indexLabel[ai+(i+direction)*D]=reachableQNs[cBlock];
+	++(blockOccupations[cBlock]);
+	break;
+      }
+      //other implementations might lead to infinite loops
+      if(iBlock==reachableQNs.size()-1){
+        indexLabel[ai+(i+direction)*D]=invalidQN;
+      }
+    }
+    blockCounter=(blockCounter+1)%(reachableQNs.size());
+  }
+}
 
 //---------------------------------------------------------------------------------------------------//
 
