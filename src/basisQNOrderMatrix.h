@@ -29,6 +29,7 @@ class basisQNOrderMatrix{
   int nQNs() const{return localIndexTables[0].nQNs();}
   int validate()const;
   siteQNOrderMatrix const& getLocalIndexTable(int i)const;
+  siteQNOrderMatrix& getLocalIndexTable(int i);
  private:
   std::vector<siteQNOrderMatrix> localIndexTables;
   std::vector<pseudoQuantumNumber*> conservedQNs;

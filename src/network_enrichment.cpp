@@ -427,7 +427,12 @@ void network::leftEnrichmentBlockwise(int i){
   for(int ai=0;ai<lDR;++ai){
     newLabels[ai]=comparer[ai].QN;
   }
-  networkState.refineQNLabels(i+1,0,newLabels);
+  try{
+    networkState.refineQNLabels(i+1,0,newLabels);
+  }
+  catch(empty_table &err){
+    networkState.adaptLabels(err.site(),1);
+  }
   std::cout<<"Applied enrichment\n";
   //Works nicely, A and B keep the QNC - testing is not required in general
   /*
@@ -664,7 +669,12 @@ void network::rightEnrichmentBlockwise(int i){
   for(int aim=0;aim<lDL;++aim){
     newLabels[aim]=comparer[aim].QN;
   }
-  networkState.refineQNLabels(i,0,newLabels);
+  try{
+    networkState.refineQNLabels(i,0,newLabels);
+  }
+  catch(empty_table &err){
+    networkState.adaptLabels(err.site(),-1);
+  }
   std::cout<<"Applied enrichment\n";
   //Check for QNC conservation has been removed for better performance
   /*

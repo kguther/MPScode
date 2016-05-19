@@ -1,5 +1,6 @@
 #include "mps.h"
 #include "arrayprocessing.h"
+#include "exceptionClasses.h"
 #include <cmath>
 #include <memory>
 #include <iostream>
@@ -52,6 +53,35 @@ int mps::loadIndexTables(){
 
 //---------------------------------------------------------------------------------------------------//
 
+void mps::loadIndexTablesNoexcept(){
+  if(conservedQNs.size()){
+    nQNs=conservedQNs.size();
+  }
+  else{
+    nQNs=0;
+  }
+  if(nQNs){
+    for(int i=0;i<dimInfo.L();++i){
+      try{
+	indexTableVar.getLocalIndexTable(i)=siteQNOrderMatrix(i,dimInfo.locDimL(i),dimInfo.locDimR(i),dimInfo.locd(i),&conservedQNs);
+      }
+      catch(empty_table &err){
+	for(int iQN=0;iQN<nQNs;++iQN){
+	  if(i!=0){
+	    conservedQNs[iQN].adaptLabels(i,-1);
+	  }
+	  if(i!=(dimInfo.L()-1)){
+	    conservedQNs[iQN].adaptLabels(i,1);
+	  }
+	}
+	--i;
+      }
+    }
+  }
+}
+
+//---------------------------------------------------------------------------------------------------//
+
 void mps::refineQNLabels(int i, int iQN, std::vector<std::complex<int> > const &source){
   conservedQNs[iQN].refine(i,source);
   loadIndexTables();
@@ -63,7 +93,7 @@ void mps::adaptLabels(int i, int direction){
   for(int iQN=0;iQN<nQNs;++iQN){
     conservedQNs[iQN].adaptLabels(i,direction);
   }
-  loadIndexTables();
+  loadIndexTablesNoexcept();
 }
 
 //---------------------------------------------------------------------------------------------------//

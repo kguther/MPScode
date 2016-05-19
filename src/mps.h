@@ -35,6 +35,7 @@ class mps: public stateArray{
   void convertIndicesLP(siteQNOrderMatrix const& localIndexTable, int j, int k, int iBlock, int &si, int &ai, int &aim);
   void convertIndicesRP(siteQNOrderMatrix const& localIndexTable, int j, int k, int iBlock, int &si, int &ai, int &aim);
   int loadIndexTables();
+  void loadIndexTablesNoexcept();
   basisQNOrderMatrix indexTableVar;
  private:
   void getEntanglementSpectrumOC(int i, double &S, std::vector<double> &spectrum);

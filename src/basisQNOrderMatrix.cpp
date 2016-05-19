@@ -56,6 +56,14 @@ siteQNOrderMatrix const& basisQNOrderMatrix::getLocalIndexTable(int i)const {
 }
 
 //---------------------------------------------------------------------------------------------------//
+
+siteQNOrderMatrix& basisQNOrderMatrix::getLocalIndexTable(int i) {
+  //ADD EXCEPTION
+  return localIndexTables[i];
+}
+
+
+//---------------------------------------------------------------------------------------------------//
 // Generates the tables containing the virtual bond indices for the block indices. Returns 0 at success, 1 if the quantum number targeted is invalid and 2 if the labeling scheme itself is invalid (i.e. contains non-normalizable blocks).
 //---------------------------------------------------------------------------------------------------//
 
@@ -64,21 +72,7 @@ void basisQNOrderMatrix::generateQNIndexTables(){
   int cumulativeBlockSize;
   localIndexTables.resize(L);
   for(int i=0;i<L;++i){
-    try{
-      localIndexTables[i]=siteQNOrderMatrix(i,dimInfo.locDimL(i),dimInfo.locDimR(i),dimInfo.locd(i),conservedQNs);
-    }
-    catch(empty_table &err){
-      //If there is no valid block, adapt left/right labels to make valid blocks. This obviously introduces a deviation from the desired labeling scheme, but there is no other way.
-      for(int iQN=0;iQN<conservedQNs.size();++iQN){
-	if(i!=0){
-	  conservedQNs[iQN].adaptLabels(i,-1);
-	}
-	if(i!=(L-1)){
-	  conservedQNs[iQN].adaptLabels(i,1);
-	}
-      }
-      --i;
-    }
+    localIndexTables[i]=siteQNOrderMatrix(i,dimInfo.locDimL(i),dimInfo.locDimR(i),dimInfo.locd(i),conservedQNs);
   }
   
   //Check if labeling scheme is valid

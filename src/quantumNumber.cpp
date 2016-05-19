@@ -382,7 +382,7 @@ void quantumNumber::adaptLabels(int i, int direction){
   //Evenly distribute the bond indices to the available labels - this might not be optimal, but it always results in a valid scheme
   int cBlock;
   int blockCounter=0;
-  for(int ai=0;ai<lD;++ai){
+  for(int ai=0;ai<targetlD;++ai){
     for(int iBlock=0;iBlock<reachableQNs.size();++iBlock){
       cBlock=(blockCounter+iBlock)%(reachableQNs.size());
       if(blockOccupations[cBlock]<degeneracies[cBlock]){
