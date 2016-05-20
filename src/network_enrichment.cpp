@@ -817,6 +817,7 @@ double network::getCurrentEnergy(int i){
 //---------------------------------------------------------------------------------------------------//
 
 void network::getNewAlpha(int i, double &lambda, double prevLambda){
+  //Is this worht the effort? (one additional application of H + one contraction of two tensors of rank 3
   double lambdaBuf=getCurrentEnergy(i);
   double dE0=prevLambda-lambda;
 

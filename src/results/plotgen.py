@@ -15,9 +15,10 @@ if 'plots' not in filelist:
 taskname=sys.argv[1]
 
 writeK=False
-writeDeg=True
-writepd=True
-newpd=True
+readDensities=True
+writeDeg=False
+writepd=False
+newpd=False
 defaultLegs=['Ground state', '1st excited State']
 
 firstfile=True
@@ -76,6 +77,11 @@ for filename in filelist:
                 if writepd and newpd:
                     with open('density_phasediagram_L_'+L+'_N_'+np+'_p_'+parity+'.txt','w') as pd:
                         pd.write('J\tg\tdensity fluctuation\n')
+            densityOutput=[]
+            densityFileName='densities/local_densities_'+filename
+            if readDensities:
+                with open(densityFileName,'w') as dfn:
+                    dfn.write('Local Densites for L='+L+' N='+np+' p='+parity+' J='+pars[3]+' g='+pars[4]+'\n')
             for i in range(0,n-1):
                 data=[]
                 dataB=[]
@@ -87,7 +93,6 @@ for filename in filelist:
                         if len(buf)-1>i and lineIndex>5:
                             data.append(float(buf[i]))
                 filenameB=filename[:(len(filename)-4)]+'_state_2.txt'
-                print filenameB
                 lineIndex=0
                 if filenameB in filelist:
                     with open(filenameB) as readEnergy:
@@ -106,6 +111,20 @@ for filename in filelist:
                     excitedState=True
                 else:
                     excitedState=False
+                
+                if readDensities:
+                    if datanames[i]=="Local density":
+                        densityOutput.append(range(0,len(data)))
+                        densityOutput.append(data)
+                    if datanames[i]=="Local density B":
+                        densityOutput.append(data)
+                    if i==n-2:
+                        with open(densityFileName,'a') as dfn:
+                            for k in range(0,len(densityOutput)):
+                                for point in densityOutput[k]:
+                                    dfn.write(str(point)+'\t')
+                                dfn.write('\n')
+
                 if i==0 and writeDeg:
                     refName=filename.partition('_run_')
                     refNameLast=refName[2].partition('_L_')
@@ -162,4 +181,4 @@ for filename in filelist:
                 plt.close()
                 firstfile=False
 
-            
+                                

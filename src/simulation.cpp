@@ -66,6 +66,8 @@ simulation::simulation(problemParameters &parsIn, simulationParameters &simParsI
   csystem.TensorNetwork.checkParity=&subChainParity;
   localMeasureTask.clear();
   measureTask.clear();
+
+  std::cout<<"Number of points per thread: "<<pathLength<<std::endl;
 }
 
 //---------------------------------------------------------------------------------------------------//
