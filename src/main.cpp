@@ -353,8 +353,8 @@ void sysSetMeasurements(simulation &sim, int d, int L, int meas){
   sim.setLocalMeasurement(localDensity,lDName);
   sim.setLocalMeasurement(greensFunction,gFName);
   sim.setLocalMeasurement(bulkGreensFunction,bgFName);
+  sim.setLocalMeasurement(localDensityB,lDOName);
   if(meas){
-    sim.setLocalMeasurement(localDensityB,lDOName);
     sim.setLocalMeasurement(localDensityProd,lDPName);
     sim.setLocalMeasurement(interChainCorrelation,iCCName);
     sim.setLocalMeasurement(densityCorrelation,dCName);
@@ -366,8 +366,8 @@ void sysSetMeasurements(simulation &sim, int d, int L, int meas){
     sim.setLocalMeasurement(bulkSuperconductingOrder,bscName);
     sim.setLocalMeasurement(bulkSuperConductingCorrelation,pscName);
     sim.setLocalMeasurement(bulkICSuperConductingCorrelation,picscName);
+    sim.setEntanglementSpectrumMeasurement();
   }
-  sim.setEntanglementSpectrumMeasurement();
   
   sim.run();
 }

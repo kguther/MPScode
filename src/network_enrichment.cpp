@@ -432,6 +432,7 @@ void network::leftEnrichmentBlockwise(int i){
   }
   catch(empty_table &err){
     networkState.adaptLabels(err.site(),1);
+    std::cout<<"Labels needed adaption\n";
   }
   std::cout<<"Applied enrichment\n";
   //Works nicely, A and B keep the QNC - testing is not required in general
@@ -674,6 +675,7 @@ void network::rightEnrichmentBlockwise(int i){
   }
   catch(empty_table &err){
     networkState.adaptLabels(err.site(),-1);
+    std::cout<<"Labels needed adaption\n";
   }
   std::cout<<"Applied enrichment\n";
   //Check for QNC conservation has been removed for better performance

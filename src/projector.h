@@ -4,7 +4,6 @@
 #include "mkl_complex_defined.h"
 #include "mps.h"
 #include "overlap.h"
-#include "siteArray.h"
 
 //---------------------------------------------------------------------------------------------------//
 // The projector class contains much more than just the projector onto some excited state space.

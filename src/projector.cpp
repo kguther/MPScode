@@ -1,7 +1,6 @@
 #include <float.h>
 #include <memory>
 #include "projector.h"
-#include "siteArray.h"
 #include "mps.h"
 #include "overlap.h"
 #include "arrayprocessing.h"

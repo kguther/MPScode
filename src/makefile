@@ -4,7 +4,7 @@ MKL_PATH=/opt/intel/compilers_and_libraries_2016.0.109/linux/mkl/lib/intel64/
 MKL_INCLUDE_PATH=/opt/intel/compilers_and_libraries_2016.0.109/linux/mkl/include
 LPKFLAGS=-llapacke -llapack -lblas
 MKLFLAGS=-lmkl_gf_lp64 -lmkl_core -lmkl_intel_thread -liomp5 -lpthread -lm
-USE_MKL=1
+USE_MKL=
 ifdef USE_MKL
 LBFLAGS=$(MKLFLAGS)
 DMKL=-DUSE_MKL

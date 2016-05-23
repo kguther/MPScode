@@ -352,9 +352,9 @@ void quantumNumber::gatherBlocks(int i, std::vector<int> &aimIndices, std::vecto
 //---------------------------------------------------------------------------------------------------//
 
 void quantumNumber::adaptLabels(int i, int direction){
-  //direction==1 adapt from bond i to bond i+1, direction==-1 from bond i to bond i-1
-  int const lD=dimInfo.locDimL(i);
-  int const targetlD=dimInfo.locDimL(i+direction);
+  //direction==1 adapt from bond i to bond i+1, direction==-1 from bond i+1 to bond i
+  int const lD=(direction==1)?dimInfo.locDimL(i):dimInfo.locDimR(i);
+  int const targetlD=(direction==1)?dimInfo.locDimR(i):dimInfo.locDimL(i);
   int const ld=dimInfo.locd(i);
   int const pre=(direction==1)?1:-1;
   std::vector<std::complex<int> > reachableQNs;
