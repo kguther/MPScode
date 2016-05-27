@@ -6,18 +6,36 @@ import os
 
 filelist=os.listdir(os.getcwd())
 
-filename='edge_state_phasediagram'
+filename='density_phasediagram'
 
-def colormap(x):
-    rgbcol=(0,abs(x),abs(x/2))
+def theta(x):
+    if x>0:
+        return 1
+    else:
+        return 0
+
+upperTreshold=0.75
+grey=0.4
+
+def colormap(x,y):
+    if abs(x)<1e-4:
+        rgbcol=(grey,grey,grey)
+        if abs(x)<1e-12:
+            rgbcol=(0,0,0)
+    else:
+        if abs(y)<0.1:
+            rgbcol=(1,0,x)
+        else:
+            rgbcol=(1-x,0,1)
     return rgbcol
 
 readOneD=False
-writeOneD=True
+writeOneD=False
 
 x=[]
 y=[]
 c=[]
+r=[]
 fs=24
 
 for file in filelist:
@@ -28,10 +46,11 @@ for file in filelist:
         x.extend(diag[0])
         y.extend(diag[1])
         c.extend(diag[2])
+        r.extend(diag[3])
 plt.figure()
 plt.tick_params(labelsize=fs)
 for i in range(0,len(x)):
-    plt.plot(x[i],y[i],'o',color=colormap(10*c[i]))
+    plt.plot(x[i],y[i],'o',color=colormap(c[i],r[i]))
 plt.xlabel('J',color=(170/255.0,0,45/255.0),fontsize=fs)
 plt.ylabel('g',color=(25/255.0,170/255.0,70/255.0),fontsize=fs)
 #plt.ylim(ymin=0,ymax=1.5)

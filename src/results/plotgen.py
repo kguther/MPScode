@@ -21,6 +21,7 @@ writepd=False
 newpd=False
 defaultLegs=['Ground state', '1st excited State']
 
+savePlot=True
 firstfile=True
 
 labellist=['$\\left|\\langle a^\dagger_i a_0^{} \\rangle \\right|$','$\\left|\\langle a^\dagger_i b^{}_i a_0^{\dagger} b_0 \\rangle \\right|$','$\\left|\\langle n^{a}_i n_0^{a} \\rangle \\right|$','$\\left|\\langle n^{a}_i n_0^{b} \\rangle \\right|$','$\\left|\\langle n^{a}_i \\rangle \\right|$','$\\left|\\langle a^\dagger_i b^\dagger_i a_0^{} b_0^{} \\rangle \\right|$','$\\left|\\langle \\right|\\rangle$','S','$\\left|\\langle n^{a}_i n^{b}_i \\rangle\\right|$','$\\left|\\langle n^{b}_i\\rangle\\right|$','$\\langle a_i^{\dagger} a_{i+1}^{\dagger} a_0 a_1 \\rangle$','other']
@@ -76,7 +77,7 @@ for filename in filelist:
                         kp.write('J\tg\t')
                 if writepd and newpd:
                     with open('density_phasediagram_L_'+L+'_N_'+np+'_p_'+parity+'.txt','w') as pd:
-                        pd.write('J\tg\tdensity fluctuation\n')
+                        pd.write('J\tg\tdensity fluctuation\tgreens function revival\n')
             densityOutput=[]
             densityFileName='densities/local_densities_'+filename
             if readDensities:
@@ -143,11 +144,15 @@ for filename in filelist:
                             xeff=range(int(L)/10,len(data))
                             p0=sy.array([1,1,1])
                             fpars, acc=so.curve_fit(f,xeff,data[int(L)/10:len(data)],p0)
-                if (datanames[i]=="Local density" and writepd):
-                    phase=min(data)/max(data)
-                    point=pars[3]+'\t'+pars[4]+'\t'+str(phase)+'\n'
-                    with open('density_phasediagram_L_'+L+'_N_'+np+'_p_'+parity+'.txt','a') as pd:
-                        pd.write(point)
+                if writepd:
+                    if (datanames[i]=="Local density"):
+                        phase=min(data)/max(data)
+                    if (datanames[i]=="Intrachain correlation"):
+                        revival=data[len(data)-2]/data[0]
+                    if i==n-2:
+                        point=pars[3]+'\t'+pars[4]+'\t'+str(phase)+'\t'+str(revival)+'\n'
+                        with open('density_phasediagram_L_'+L+'_N_'+np+'_p_'+parity+'.txt','a') as pd:
+                            pd.write(point)
                 plt.figure()
                 if bCheck[0]=='Bulk':
                     if tasknum(datanames[i])==10:
@@ -177,7 +182,8 @@ for filename in filelist:
                 plt.ylabel(tasklabel)
                 tname=datanames[i].replace('.','_')
                 plt.title('J='+pars[3]+' g='+pars[4]+' W= '+pars[5]+' E='+pars[6]+' $(\\Delta E)^2$='+pars[7].strip())
-                plt.savefig('plots/'+filename[0:len(filename)-4]+'_'+tname.replace(' ','_')+'.pdf')
+                if savePlot:
+                    plt.savefig('plots/'+filename[0:len(filename)-4]+'_'+tname.replace(' ','_')+'.pdf')
                 plt.close()
                 firstfile=False
 

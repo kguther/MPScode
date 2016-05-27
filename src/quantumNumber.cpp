@@ -125,7 +125,7 @@ int quantumNumber::refine(int i, std::vector<std::complex<int> > const &source){
 }
 
 //---------------------------------------------------------------------------------------------------//
-// This is the new, static labeling scheme, where first, starting with the vacuum labels for the 
+// This is the new static labeling scheme, where first, starting with the vacuum labels for the 
 // leftmost index, the allowed blocks of the next site are constructed - these are those blocks
 // that allow for fullfilling the QN constraints - for all sites from the left. 
 // This yields an index list, called leftLabel. The same is now done from the right, starting with
@@ -350,6 +350,10 @@ void quantumNumber::gatherBlocks(int i, std::vector<int> &aimIndices, std::vecto
 
 
 //---------------------------------------------------------------------------------------------------//
+// Adaption is used in exception handling to make sure there are non-empty blocks on a given site 
+// (on the rare occasion this has not been the case after enrichment)
+//---------------------------------------------------------------------------------------------------//
+
 
 void quantumNumber::adaptLabels(int i, int direction){
   //direction==1 adapt from bond i to bond i+1, direction==-1 from bond i+1 to bond i

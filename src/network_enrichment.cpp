@@ -12,6 +12,16 @@
 #include <iostream>
 #include <memory>
 
+int emptycheck(int dim, lapack_complex_double *array){
+  double const tol=1e-15;
+  for(int m=0;m<dim;++m){
+    if(abs(array[m])<tol){
+      return 0;
+    }
+  }
+  return 1;
+}
+
 //---------------------------------------------------------------------------------------------------//
 // The implementation of the enrichment is very ugly and might still contain severe bugs which
 // are irrelevant to the testing system (Heisenberg chain). It does however, improve convergence
@@ -552,10 +562,18 @@ void network::rightEnrichmentBlockwise(int i){
       lapack_complex_double *U=UP.get();
       lapack_complex_double *VT=VTP.get();
 
+      int voidInfo=emptycheck(blockDimL*blockDimR,Mnew);
+      if(voidInfo)
+	std::cout<<"Error: empty Mnew in right enrichment\n";
       //Same simplification as in leftEnrichment
       char jobz=(blockDimR>blockDimL)?'A':'S';
 #ifdef USE_MKL
-      LAPACKE_zgesdd(LAPACK_COL_MAJOR,jobz,blockDimL,blockDimR,Mnew,blockDimL,diags,U,blockDimL,VT,blockDimR);
+      int info=LAPACKE_zgesdd(LAPACK_COL_MAJOR,jobz,blockDimL,blockDimR,Mnew,blockDimL,diags,U,blockDimL,VT,blockDimR);
+      if(info>0){
+	std::unique_ptr<double[]> workBufP(new double[containerDim]);
+	double *workBuf=workBufP.get();
+	info=LAPACKE_zgesvd(LAPACK_COL_MAJOR,jobz,'A',blockDimL,blockDimR,Mnew,blockDimL,diags,U,blockDimL,VT,blockDimR,workBuf);
+      }
 #endif
 #ifndef USE_MKL
       int const maxDim=(blockDimR>blockDimL)?blockDimR:blockDimL;
@@ -567,8 +585,13 @@ void network::rightEnrichmentBlockwise(int i){
       lapack_complex_double *work=workP.get();
       double *rwork=rworkP.get();
       int *iwork=iworkP.get();
-      LAPACKE_zgesdd_work(LAPACK_COL_MAJOR,jobz,blockDimL,blockDimR,Mnew,blockDimL,diags,U,blockDimL,VT,blockDimR,work,lwork,rwork,iwork);
+      int info=LAPACKE_zgesdd_work(LAPACK_COL_MAJOR,jobz,blockDimL,blockDimR,Mnew,blockDimL,diags,U,blockDimL,VT,blockDimR,work,lwork,rwork,iwork);
+      if(info>0){
+	info=LAPACKE_zgesvd_work(LAPACK_COL_MAJOR,jobz,'A',blockDimL,blockDimR,Mnew,blockDimL,diags,U,blockDimL,VT,blockDimR,work,lwork,rwork);
+      }
 #endif
+      if(info)
+	std::cout<<"Error in LAPACKE_zgesvd: "<<info<<std::endl;
 
       //Insert VT into globalVT (storage scheme for VT: (sip,aip,si,ai)
       for(int j=0;j<blockDimR;++j){
@@ -638,8 +661,8 @@ void network::rightEnrichmentBlockwise(int i){
       //if(abs(R[m+MNumRows*aimp])>1e-15)
 	//std::cout<<"Entry at "<<gqn.QNLabel(i-1,m)<<"->"<<comparer[aimp].QN<<" with indices "<<m<<"->"<<aimp<<"("<<comparer[aimp].indexExp<<")"<<std::endl;
     }
-  }    
-  
+  }   
+   
   //Add zeros to the A-Matrix (using an external container)
   std::unique_ptr<lapack_complex_double[]> AP(new lapack_complex_double[ldm*lDLL*lDL]);
   Anew=AP.get();
@@ -820,6 +843,8 @@ double network::getCurrentEnergy(int i){
 
 void network::getNewAlpha(int i, double &lambda, double prevLambda){
   //Is this worht the effort? (one additional application of H + one contraction of two tensors of rank 3
+  //Probably not
+  /*
   double lambdaBuf=getCurrentEnergy(i);
   double dE0=prevLambda-lambda;
 
@@ -827,7 +852,7 @@ void network::getNewAlpha(int i, double &lambda, double prevLambda){
     //At this point, we have to make sure dE0 is positive. If it is negative, this is a problem which has to be handled elsewhere
     dE0*=-1.0;
   }
-  double const pre=pow(0.1,1/static_cast<double>(L));
+  double const pre=pow(10,1/static_cast<double>(L));
   double const tol=1e-12;
   double dET=lambdaBuf-(lambda-shift);
   if(dET<0){
@@ -839,7 +864,7 @@ void network::getNewAlpha(int i, double &lambda, double prevLambda){
     }
     else{
       //Both dET and dE0 are now positive
-      if(dET/dE0<0.3){
+      if(dET/dE0<0.001){
 	alpha*=pre;
       }
       else{
@@ -847,9 +872,10 @@ void network::getNewAlpha(int i, double &lambda, double prevLambda){
       }
     }
   }
-  lambda=lambdaBuf;
+  lambda=lambdaBuf+shift;
+  */
   //This is numerically somewhat simpler but a more sophisticated scheme is desirable
   //alpha*=0.9765;
-  //alpha*=pow(0.1,1/static_cast<double>(2*L));
+  alpha*=pow(0.2,1/static_cast<double>(L));
   std::cout<<"New alpha="<<alpha<<std::endl;
 }
