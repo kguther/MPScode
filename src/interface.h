@@ -21,6 +21,7 @@ struct info{
   int nGs;
   int Dw;
   int tPos;
+  int jgScale;
   double rho;
   double alphaInit;
   double arpackTol;

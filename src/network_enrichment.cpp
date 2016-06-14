@@ -587,6 +587,7 @@ void network::rightEnrichmentBlockwise(int i){
       int *iwork=iworkP.get();
       int info=LAPACKE_zgesdd_work(LAPACK_COL_MAJOR,jobz,blockDimL,blockDimR,Mnew,blockDimL,diags,U,blockDimL,VT,blockDimR,work,lwork,rwork,iwork);
       if(info>0){
+	//In case of failure of the divide and conquer algorithm, use the zgesvd routine
 	info=LAPACKE_zgesvd_work(LAPACK_COL_MAJOR,jobz,'A',blockDimL,blockDimR,Mnew,blockDimL,diags,U,blockDimL,VT,blockDimR,work,lwork,rwork);
       }
 #endif

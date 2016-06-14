@@ -161,10 +161,13 @@ for filename in filelist:
                             plt.plot(x,dataB,'o')
                             plt.legend(defaultLegs)
                     else:
-                        plt.loglog(x,map(abs,data),'o')
-                        if excitedState:
-                            plt.loglog(x,map(abs,dataB),'o')
-                            plt.legend(defaultLegs)
+                        if tasknum(datanames[i]) in [0,1,5]:
+                            plt.semilogy(x,map(abs,data),'o')
+                        else:
+                            plt.loglog(x,map(abs,data),'o')
+                            if excitedState:
+                                plt.loglog(x,map(abs,dataB),'o')
+                                plt.legend(defaultLegs)
                     if writeK and tasknum(datanames[i])==5:
                         plt.loglog(xeff,f(xeff,fpars[0],fpars[1],fpars[2]),'o')
                 else:

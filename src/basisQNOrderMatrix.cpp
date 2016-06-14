@@ -13,7 +13,7 @@ basisQNOrderMatrix::basisQNOrderMatrix()
 // The basisQNOrderMatrix only relies on the functionality of pseudoQuantumNumbers, therefore, we store pointers to those internally. There still has to be a constructor and an initialize() function for quantumNumbers though, since these are called by the mps (could be adjusted, but has no priority). 
 //---------------------------------------------------------------------------------------------------//
 
-basisQNOrderMatrix::basisQNOrderMatrix(dimensionTable &dimin, std::vector<quantumNumber> *conservedQNsin):
+basisQNOrderMatrix::basisQNOrderMatrix(dimensionTable const &dimin, std::vector<quantumNumber> *conservedQNsin):
   dimInfo(dimin)
 {
   conservedQNs.resize(conservedQNsin->size());
@@ -25,7 +25,7 @@ basisQNOrderMatrix::basisQNOrderMatrix(dimensionTable &dimin, std::vector<quantu
 
 //---------------------------------------------------------------------------------------------------//
 
-basisQNOrderMatrix::basisQNOrderMatrix(dimensionTable &dimin, std::vector<pseudoQuantumNumber*> const &conservedQNsin):
+basisQNOrderMatrix::basisQNOrderMatrix(dimensionTable const &dimin, std::vector<pseudoQuantumNumber*> const &conservedQNsin):
   dimInfo(dimin),
   conservedQNs(conservedQNsin)
 {
@@ -34,7 +34,7 @@ basisQNOrderMatrix::basisQNOrderMatrix(dimensionTable &dimin, std::vector<pseudo
 
 //---------------------------------------------------------------------------------------------------//
 
-basisQNOrderMatrix::basisQNOrderMatrix(int iStart, int iStop, dimensionTable &dimin, std::vector<pseudoQuantumNumber*> const &conservedQNsin):
+basisQNOrderMatrix::basisQNOrderMatrix(int iStart, int iStop, dimensionTable const &dimin, std::vector<pseudoQuantumNumber*> const &conservedQNsin):
   dimInfo(dimin),
   conservedQNs(conservedQNsin)
 {

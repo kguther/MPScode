@@ -32,7 +32,7 @@ interface::interface(){
   parPack.Jsc=-1;
   parPack.odd=0;
   parPack.rho=0.5;
-  parPack.delta=0;
+  parPack.delta=0.0;
   parPack.simType=2;
   parPack.nEigens=1;
   parPack.numPts=1;
@@ -43,6 +43,7 @@ interface::interface(){
   parPack.tReal=0;
   parPack.tImag=0;
   parPack.tPos=-1;
+  parPack.jgScale=1;
 }
 
 //-------------------------------------------------------------------------------------------//
@@ -68,7 +69,7 @@ void interface::readParFile(std::string const &fN){
   fileName=target;
   while(ifs.get(inArg)){
     if(inArg!=' '){
-      if(inArg=='L' || inArg=='D' || inArg=='S' || inArg=='p' || inArg=='N' || inArg=='n' || inArg=='o' || inArg=='T' || inArg=='s' || inArg=='E' || inArg=='R' || inArg=='b'){
+      if(inArg=='L' || inArg=='D' || inArg=='S' || inArg=='p' || inArg=='N' || inArg=='n' || inArg=='o' || inArg=='T' || inArg=='s' || inArg=='E' || inArg=='R' || inArg=='b' || inArg=='F'){
 	ifs>>intPar;
 	if(inArg=='L'){
 	  parPack.L=intPar;
@@ -105,6 +106,9 @@ void interface::readParFile(std::string const &fN){
 	}
 	if(inArg=='b'){
 	  parPack.tPos=intPar;
+	}
+	if(inArg=='F'){
+	  parPack.jgScale=intPar;
 	}
       }
       else{

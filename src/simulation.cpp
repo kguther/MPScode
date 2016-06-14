@@ -6,7 +6,7 @@
 #include "globalMeasurement.h"
 #include "localMeasurementSeries.h"
 
-simulation::simulation(problemParameters &parsIn, simulationParameters &simParsIn, double J, double g, double WIn, int pathPoints, double stepSize, double deltaPIn, std::string const &targetFile, int tSiteIn):
+simulation::simulation(problemParameters &parsIn, simulationParameters &simParsIn, double J, double g, double WIn, int pathPoints, double stepSize, double deltaPIn, std::string const &targetFile, int tSiteIn, int jgScaleIn):
   simPars(simParsIn),
   pars(parsIn),
   W(WIn),
@@ -18,6 +18,7 @@ simulation::simulation(problemParameters &parsIn, simulationParameters &simParsI
   targetDelta(deltaPIn),
   scaling(stepSize),
   tSite(tSiteIn),
+  jgScale(jgScaleIn),
   parDirection(std::complex<double>(J,g)),
   csystem(Qsystem(pars,simPars)),
   particleNumber(mpo<lapack_complex_double>(pars.d.maxd(),2,pars.L)),
@@ -29,7 +30,7 @@ simulation::simulation(problemParameters &parsIn, simulationParameters &simParsI
   convergedEigens.resize(pars.nEigs);
   double matEls;
   int L=pars.L;
-  if(abs(parDirection)>1e-20){
+  if(abs(parDirection)>1e-20 && jgScale){
     parDirection*=1.0/(scaling*abs(parDirection));
   }
   for(int i=0;i<pars.L;++i){
@@ -104,11 +105,16 @@ void simulation::setEntanglementSpectrumMeasurement(){
 int simulation::run(){
   //Solve the system for different parameters (J,g) along a straight line in radial direction 
   int info;
+  double backupW;
   for(int nRun=1;nRun<pathLength+1;++nRun){
 
     
-    if(abs(parDirection)>1e-20){
+    if(abs(parDirection)>1e-20 && jgScale){
       parDirection*=1.0/(scaling*abs(parDirection))*nRun;
+    }
+    if(!jgScale){
+      backupW=W;
+      W=W/static_cast<double>(pathLength-1)*(nRun-1);
     }
     
     //Now: disorder scaling
@@ -119,8 +125,13 @@ int simulation::run(){
     else{
       deltaP=targetDelta;
     }
-    
+    std::cout<<"Starting run "<<nRun<<" out of "<<pathLength<<" runs. Using parameters\n";
     info=singleRun();
+
+    if(!jgScale){
+      W=backupW;
+    }
+
     if(info)
       return info;
   }
@@ -138,11 +149,9 @@ int simulation::singleRun(){
   std::vector<std::vector<std::complex<double> > > localExpectationValues;
 
   
-  J=1+parDirection.real();
-  g=1+parDirection.imag();
-  
-
-  std::cout<<J<<" "<<g<<std::endl;
+  J=jgScale+parDirection.real();
+  g=jgScale+parDirection.imag();
+  std::cout<<"J="<<J<<" g="<<g<<" W="<<W<<std::endl;
   if(pars.Dw==12){
     hInfo=writeHamiltonian(csystem.TensorNetwork,J,g,W,pars.t,deltaP,tSite);
   }

@@ -37,7 +37,7 @@ int main(int argc, char *argv[]){
   MPI_Aint displacements[dn], firstAdress, secondAdress;
   MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
   MPI_Comm_size(MPI_COMM_WORLD,&commsize);
-  blockLengths[0]=13;
+  blockLengths[0]=14;
   blockLengths[1]=14;
   MPI_Get_address(&necPars.L,&firstAdress);
   MPI_Get_address(&necPars.rho,&secondAdress);
@@ -80,14 +80,27 @@ int main(int argc, char *argv[]){
   int const range=15;
   int const redRank=myrank/2;
   int WStage=redRank/range;
-  if(necPars.simType==0){
+  if(necPars.simType==0 && necPars.jgScale){
     necPars.Wsc+=(1+WStage)/2*0.4*pow(-1,WStage);
     necPars.par=2*(myrank%2)-1;
   }
   alpha=(necPars.alphaMax-necPars.alphaMin)*((redRank%range)/static_cast<double>(range))+necPars.alphaMin;
   if(necPars.simType==0){
-    necPars.Jsc=cos(alpha);
-    necPars.gsc=sin(alpha);
+    if(necPars.jgScale){
+      necPars.Jsc=cos(alpha);
+      necPars.gsc=sin(alpha);
+    }
+    else{
+      necPars.Jsc*=cos(alpha);
+      necPars.gsc*=sin(alpha);
+    }
+  }
+
+  if(necPars.simType==4){
+    necPars.par=2*(myrank%2)-1;
+    double fillings[3]={1.0,42.0/50.0,35.0/50.0};
+    necPars.N=static_cast<int>(necPars.L*fillings[myrank/4]);
+    necPars.N+=(myrank%4)/2;
   }
 
   std::vector<double> energies;
@@ -161,7 +174,7 @@ int main(int argc, char *argv[]){
   if(necPars.simType!=1){
     getFileName(necPars,fNBuf,commsize,myrank,finalName);
   }
-  if(necPars.simType==2 || necPars.simType==0){
+  if(necPars.simType==2 || necPars.simType==0 || necPars.simType==4){
     sysSolve(necPars,finalName,energies);
   }
   if(necPars.simType==3){
@@ -229,7 +242,7 @@ void sysSolve(info const &parPack, std::string const &fileName, std::vector<doub
   problemParameters pars(localHilbertSpaceDims,parPack.L,parPack.Dw,parPack.nEigens,nQuantumNumbers,QNValue,QNList,parPack.tReal,parPack.tImag);
   //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack
   simulationParameters simPars(usedD,parPack.nSweeps,parPack.nStages,parPack.alphaInit,parPack.acc,parPack.arpackTolMin,parPack.arpackTol);
-  simulation sim(pars,simPars,parPack.Jsc,parPack.gsc,parPack.Wsc,parPack.numPts,parPack.scaling,parPack.delta,fileName,parPack.tPos);
+  simulation sim(pars,simPars,parPack.Jsc,parPack.gsc,parPack.Wsc,parPack.numPts,parPack.scaling,parPack.delta,fileName,parPack.tPos,parPack.jgScale);
   if(parPack.simType==2){
     int const d=pars.d.maxd();
     int const L=parPack.L;
@@ -334,7 +347,7 @@ void sysSetMeasurements(simulation &sim, int d, int L, int meas){
       bulkInterChainDensityCorrelation.global_access(bulkStart,si,sip,0,0)=delta(si,sip)*(delta(si,1)+delta(si,3));
       bulkInterChainDensityCorrelation.global_access(bulkStart-1,si,sip,0,0)=delta(si,sip)*(delta(si,2)+delta(si,3));
       bulkInterChainCorrelation.global_access(bulkStart,si,sip,0,0)=delta(si,1)*delta(sip,2);
-      bulkInterChainCorrelation.global_access(bulkStart-1,si,sip,0,0)=delta(si,1)*delta(sip,2);
+      bulkInterChainCorrelation.global_access(bulkStart-1,si,sip,0,0)=delta(si,2)*delta(sip,1);
       bulkSuperconductingOrder.global_access(bulkStart,si,sip,0,0)=delta(si,3)*delta(sip,0);
       bulkSuperconductingOrder.global_access(bulkStart-1,si,sip,0,0)=delta(si,0)*delta(sip,3);
       localDensityProd.global_access(1,si,sip,0,0)=delta(si,sip)*delta(si,3);
@@ -402,6 +415,9 @@ void getFileName(info const &necPars, char *fNBuf, int commsize, int myrank, std
       type="_global";
     }
       */
+  }
+  if(necPars.simType==4){
+    type="_gather";
   }
   std::ostringstream compositeName;
   compositeName<<dir<<fNBuf<<type;

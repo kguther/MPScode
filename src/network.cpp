@@ -173,7 +173,7 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
   excitedStateP.loadNextState(networkState,0);
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
     pCtr.initialize(&networkH,&networkState);
-    std::cout<<"Startung normalization\n";
+    std::cout<<"Starting normalization\n";
     for(int i=L-1;i>0;--i){
       normalize(i,0,0);
     }
