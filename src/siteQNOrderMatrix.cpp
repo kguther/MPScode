@@ -152,10 +152,22 @@ void siteQNOrderMatrix::blockStructure(int direction, std::vector<std::vector<in
     }
   }
   if(direction==0){
-    qnLabelsLP=qnLabels[0];
+    qnLabelsLP.resize(numBlocksLP());
+    for(int iBlock=0;iBlock<numBlocksLP();++iBlock){
+      qnLabelsLP[iBlock].resize(nQNs);
+      for(int iQN=0;iQN<nQNs;++iQN){
+	qnLabelsLP[iBlock][iQN]=qnLabels[iQN][iBlock];
+      }
+    }
   }
   else{
-    qnLabelsRP=qnLabels[0];
+    qnLabelsRP.resize(numBlocksRP());
+    for(int iBlock=0;iBlock<numBlocksRP();++iBlock){
+      qnLabelsRP[iBlock].resize(nQNs);
+      for(int iQN=0;iQN<nQNs;++iQN){
+	qnLabelsRP[iBlock][iQN]=qnLabels[iQN][iBlock];
+      }
+    }
   }
 }
 
@@ -294,10 +306,22 @@ void siteQNOrderMatrix::blockStructureFull(int direction, std::vector<std::vecto
     }
   }
   if(direction==0){
-    qnLabelsLP=qnLabels[0];
+    qnLabelsLP.resize(numBlocksLP());
+    for(int iBlock=0;iBlock<numBlocksLP();++iBlock){
+      qnLabelsLP[iBlock].resize(nQNs);
+      for(int iQN=0;iQN<nQNs;++iQN){
+	qnLabelsLP[iBlock][iQN]=qnLabels[iQN][iBlock];
+      }
+    }
   }
   else{
-    qnLabelsRP=qnLabels[0];
+    qnLabelsRP.resize(numBlocksRP());
+    for(int iBlock=0;iBlock<numBlocksRP();++iBlock){
+      qnLabelsRP[iBlock].resize(nQNs);
+      for(int iQN=0;iQN<nQNs;++iQN){
+	qnLabelsRP[iBlock][iQN]=qnLabels[iQN][iBlock];
+      }
+    }
   }
 }
 
@@ -306,6 +330,6 @@ void siteQNOrderMatrix::blockStructureFull(int direction, std::vector<std::vecto
 void printIndexTable(siteQNOrderMatrix const &a){
   int const numBlocks=a.numBlocksRP();
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
-    std::cout<<"Block with QN "<<a.qnLabelRP(iBlock)<<" of size "<<a.lBlockSizeRP(iBlock)<<"x"<<a.rBlockSizeRP(iBlock)<<std::endl;
+    std::cout<<"Block with QN "<<a.qnLabelRP(iBlock)[0]<<" of size "<<a.lBlockSizeRP(iBlock)<<"x"<<a.rBlockSizeRP(iBlock)<<std::endl;
   }
 }

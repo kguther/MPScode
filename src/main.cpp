@@ -2,6 +2,7 @@
 #include "simulation.h"
 #include "localMpo.h"
 #include "localHSpaces.h"
+#include "heisenbergChain.h"
 #include <math.h>
 #include <iostream>
 #include <fstream>
@@ -80,19 +81,24 @@ int main(int argc, char *argv[]){
   int const range=15;
   int const redRank=myrank/2;
   int WStage=redRank/range;
-  if(necPars.simType==0 && necPars.jgScale){
-    necPars.Wsc+=(1+WStage)/2*0.4*pow(-1,WStage);
+  if(necPars.simType==0 && necPars.jgScale==0){
+    necPars.Wsc+=(1.0+WStage)/2.0*0.4*pow(-1.0,WStage);
     necPars.par=2*(myrank%2)-1;
   }
   alpha=(necPars.alphaMax-necPars.alphaMin)*((redRank%range)/static_cast<double>(range))+necPars.alphaMin;
   if(necPars.simType==0){
-    if(necPars.jgScale){
+    if(necPars.jgScale==1){
       necPars.Jsc=cos(alpha);
       necPars.gsc=sin(alpha);
     }
     else{
-      necPars.Jsc*=cos(alpha);
-      necPars.gsc*=sin(alpha);
+      if(necPars.jgScale==0){
+	necPars.Jsc*=cos(alpha);
+	necPars.gsc*=sin(alpha);
+      }
+      if(necPars.jgScale==2){
+	necPars.Jsc=2.0-myrank/3.0;
+      }
     }
   }
 
@@ -278,7 +284,7 @@ void sysSetMeasurements(simulation &sim, int d, int L, int meas){
   localMpo<lapack_complex_double> densityCorrelation(d,1,L,1,0);
   localMpo<lapack_complex_double> localDensity(d,1,L,0,0);
   localMpo<lapack_complex_double> localDensityB(d,1,L,0,0);
-  localMpo<lapack_complex_double> localDensityProd(d,1,L,1,0);
+  localMpo<lapack_complex_double> totalDensityCorrelation(d,1,L,1,0);
   localMpo<lapack_complex_double> interChainCorrelation(d,1,L,1,parityQNs);
   localMpo<lapack_complex_double> superconductingOrder(d,1,L,1,0);
   localMpo<lapack_complex_double> interChainDensityCorrelation(d,1,L,1,0);
@@ -293,8 +299,8 @@ void sysSetMeasurements(simulation &sim, int d, int L, int meas){
   std::string dCName="Intrachain density correlation";
   std::string lDName="Local density";
   std::string lDOName="Local density B";
-  std::string lDPName="Local density product";
   std::string iCDCName="Interchain density correlation";
+  std::string tCDCName="Total density correlation";
   std::string iCCName="Interchain hopping correlation";
   std::string scName="Interchain pairwise correlation";
   std::string bgFName="Bulk correlation function";
@@ -320,7 +326,7 @@ void sysSetMeasurements(simulation &sim, int d, int L, int meas){
 	bulkInterChainCorrelation.global_access(i,si,sip,0,0)=delta(si,sip);
 	bulkSuperconductingOrder.global_access(i,si,sip,0,0)=delta(si,sip);
 	bulkInterChainDensityCorrelation.global_access(i,si,sip,0,0)=delta(si,sip);
-	localDensityProd.global_access(i,si,sip,0,0)=delta(si,sip);
+	totalDensityCorrelation.global_access(i,si,sip,0,0)=delta(si,sip);
 	bulkSuperConductingCorrelation.global_access(i,si,sip,0,0)=delta(si,sip);
 	bulkICSuperConductingCorrelation.global_access(i,si,sip,0,0)=delta(si,sip);
       }
@@ -350,7 +356,8 @@ void sysSetMeasurements(simulation &sim, int d, int L, int meas){
       bulkInterChainCorrelation.global_access(bulkStart-1,si,sip,0,0)=delta(si,2)*delta(sip,1);
       bulkSuperconductingOrder.global_access(bulkStart,si,sip,0,0)=delta(si,3)*delta(sip,0);
       bulkSuperconductingOrder.global_access(bulkStart-1,si,sip,0,0)=delta(si,0)*delta(sip,3);
-      localDensityProd.global_access(1,si,sip,0,0)=delta(si,sip)*delta(si,3);
+      totalDensityCorrelation.global_access(1,si,sip,0,0)=delta(si,sip)*(2*delta(si,3)+delta(si,1)+delta(si,2));
+      totalDensityCorrelation.global_access(0,si,sip,0,0)=delta(si,sip)*(2*delta(si,3)+delta(si,1)+delta(si,2));
       bulkSuperConductingCorrelation.global_access(bulkStart-3,si,sip,0,0)=bMatrix(sip,si)*(delta(sip,0)-delta(sip,1));
       bulkSuperConductingCorrelation.global_access(bulkStart-2,si,sip,0,0)=bMatrix(sip,si);
       bulkSuperConductingCorrelation.global_access(bulkStart-1,si,sip,0,0)=aMatrix(si,sip)*(delta(sip,1)-delta(sip,3));
@@ -367,8 +374,9 @@ void sysSetMeasurements(simulation &sim, int d, int L, int meas){
   sim.setLocalMeasurement(greensFunction,gFName);
   sim.setLocalMeasurement(bulkGreensFunction,bgFName);
   sim.setLocalMeasurement(localDensityB,lDOName);
+  sim.setLocalMeasurement(totalDensityCorrelation,tCDCName);
+  sim.setEntanglementMeasurement();
   if(meas){
-    sim.setLocalMeasurement(localDensityProd,lDPName);
     sim.setLocalMeasurement(interChainCorrelation,iCCName);
     sim.setLocalMeasurement(densityCorrelation,dCName);
     sim.setLocalMeasurement(interChainDensityCorrelation,iCDCName);

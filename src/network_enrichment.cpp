@@ -326,7 +326,12 @@ void network::leftEnrichmentBlockwise(int i){
       char jobz=(blockDimL>blockDimR)?'A':'S';
       //There seems to be a bug in liblapacke providing a wrong size for the work array, which can lead to a segfault. This bug is not present in the mkl implementation
 #ifdef USE_MKL
-      LAPACKE_zgesdd(LAPACK_COL_MAJOR,jobz,blockDimL,blockDimR,Mnew,blockDimL,diags,U,blockDimL,VT,blockDimR);
+      int info=LAPACKE_zgesdd(LAPACK_COL_MAJOR,jobz,blockDimL,blockDimR,Mnew,blockDimL,diags,U,blockDimL,VT,blockDimR);
+      if(info>0){
+	std::unique_ptr<double[]> workBufP(new double[containerDim]);
+	double *workBuf=workBufP.get();
+	info=LAPACKE_zgesvd(LAPACK_COL_MAJOR,jobz,'A',blockDimL,blockDimR,Mnew,blockDimL,diags,U,blockDimL,VT,blockDimR,workBuf);
+      }
 #endif
 #ifndef USE_MKL
       int const maxDim=(blockDimR>blockDimL)?blockDimR:blockDimL;
@@ -338,8 +343,15 @@ void network::leftEnrichmentBlockwise(int i){
       lapack_complex_double *work=workP.get();
       double *rwork=rworkP.get();
       int *iwork=iworkP.get();
-      LAPACKE_zgesdd_work(LAPACK_COL_MAJOR,jobz,blockDimL,blockDimR,Mnew,blockDimL,diags,U,blockDimL,VT,blockDimR,work,lwork,rwork,iwork);
+      int info=LAPACKE_zgesdd_work(LAPACK_COL_MAJOR,jobz,blockDimL,blockDimR,Mnew,blockDimL,diags,U,blockDimL,VT,blockDimR,work,lwork,rwork,iwork);
+      if(info>0){
+	//In case of failure of the divide and conquer algorithm, use the zgesvd routine
+	info=LAPACKE_zgesvd_work(LAPACK_COL_MAJOR,jobz,'A',blockDimL,blockDimR,Mnew,blockDimL,diags,U,blockDimL,VT,blockDimR,work,lwork,rwork);
+      }
 #endif
+      if(info){
+	throw svd_failure(i,0);
+      }
       //Insert the block matrices into the global ones at the respective position
 
       //Insert VT into globalVT (b does not carry a qn label)
@@ -434,15 +446,17 @@ void network::leftEnrichmentBlockwise(int i){
  
   //Refine QN
   std::vector<std::complex<int> > newLabels(lDR);
-  for(int ai=0;ai<lDR;++ai){
-    newLabels[ai]=comparer[ai].QN;
-  }
-  try{
-    networkState.refineQNLabels(i+1,0,newLabels);
-  }
-  catch(empty_table &err){
-    networkState.adaptLabels(err.site(),1);
-    std::cout<<"Labels needed adaption\n";
+  for(int iQN=0;iQN<pars.nQNs;++iQN){
+    for(int ai=0;ai<lDR;++ai){
+      newLabels[ai]=(comparer[ai].QN)[iQN];
+    }
+    try{
+      networkState.refineQNLabels(i+1,iQN,newLabels);
+    }
+    catch(empty_table &err){
+      networkState.adaptLabels(err.site(),1);
+      std::cout<<"Labels needed adaption\n";
+    }
   }
   std::cout<<"Applied enrichment\n";
   //Works nicely, A and B keep the QNC - testing is not required in general
@@ -591,8 +605,9 @@ void network::rightEnrichmentBlockwise(int i){
 	info=LAPACKE_zgesvd_work(LAPACK_COL_MAJOR,jobz,'A',blockDimL,blockDimR,Mnew,blockDimL,diags,U,blockDimL,VT,blockDimR,work,lwork,rwork);
       }
 #endif
-      if(info)
-	std::cout<<"Error in LAPACKE_zgesvd: "<<info<<std::endl;
+      if(info){
+	throw svd_failure(i,1);
+      }
 
       //Insert VT into globalVT (storage scheme for VT: (sip,aip,si,ai)
       for(int j=0;j<blockDimR;++j){
@@ -691,15 +706,17 @@ void network::rightEnrichmentBlockwise(int i){
 
   //Refine QN labels
   std::vector<std::complex<int> > newLabels(lDL);
-  for(int aim=0;aim<lDL;++aim){
-    newLabels[aim]=comparer[aim].QN;
-  }
-  try{
-    networkState.refineQNLabels(i,0,newLabels);
-  }
-  catch(empty_table &err){
-    networkState.adaptLabels(err.site(),-1);
-    std::cout<<"Labels needed adaption\n";
+  for(int iQN=0;iQN<pars.nQNs;++iQN){
+    for(int aim=0;aim<lDL;++aim){
+      newLabels[aim]=(comparer[aim].QN)[iQN];
+    }
+    try{
+      networkState.refineQNLabels(i,iQN,newLabels);
+    }
+    catch(empty_table &err){
+      networkState.adaptLabels(err.site(),-1);
+      std::cout<<"Labels needed adaption\n";
+    }
   }
   std::cout<<"Applied enrichment\n";
   //Check for QNC conservation has been removed for better performance

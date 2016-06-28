@@ -28,7 +28,7 @@ class mpoSiteTensor{
   int locDimR()const {return lDwR;}
  private:
   std::vector<int> siIndices, sipIndices, biIndices, bimIndices;
-  int nNzero, Dw, d, lDwL, lDwR;
+  int nNzero, d,  Dw, lDwL, lDwR;
   std::vector<T> sparseOperator, siteMatrix;
 };
 

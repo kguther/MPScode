@@ -21,6 +21,7 @@
 class network{
  public:
   network();
+  //can throw a critical_error in case normalization fails completely
   network(problemParameters const &inputpars, simulationParameters const &inputsimPars);
   int solve(std::vector<double> &lambda, std::vector<double> &deltaLambda);
   int measure(mpo<arcomplex<double> > *const MPOperator, double &expValue, int iEigen=0);
@@ -74,6 +75,9 @@ class network{
   void getPExpressionLeft(int i, arcomplex<double> *pExpr);
   void getPExpressionRight(int i, arcomplex<double> *pExpr);
   void getLocalDimensions(int i);
+  //For exception handling
+  void resetSweep();
+  int reSweep;
   //This one is only for consistency checks
   void leftNormalizationMatrixIter(int i, arcomplex<double> *psi);
   int checkQN();

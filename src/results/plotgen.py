@@ -8,6 +8,13 @@ import scipy as sy
 def f(x,a,c,d):
     return c+d/(x**a)
 
+def fluctuation(array):
+    rho=np.mean(array)
+    buf=array
+    for i in range(0,len(buf)-1):
+        buf[i]=(array[i]-rho)/(array[i+1]-rho)
+    return mean(buf)
+
 filelist=os.listdir(os.getcwd())
 if 'plots' not in filelist:
     os.mkdir('plots')
@@ -15,10 +22,8 @@ if 'plots' not in filelist:
 taskname=sys.argv[1]
 
 writeK=False
-readDensities=True
+readDensities=False
 writeDeg=False
-writepd=False
-newpd=False
 defaultLegs=['Ground state', '1st excited State']
 
 savePlot=True
@@ -75,9 +80,6 @@ for filename in filelist:
                 if writeK:
                     with open('decay_pars_L_'+L+'_N_'+np+'_p_'+parity+'.txt','w') as kp:
                         kp.write('J\tg\t')
-                if writepd and newpd:
-                    with open('density_phasediagram_L_'+L+'_N_'+np+'_p_'+parity+'.txt','w') as pd:
-                        pd.write('J\tg\tdensity fluctuation\tgreens function revival\n')
             densityOutput=[]
             densityFileName='densities/local_densities_'+filename
             if readDensities:
@@ -144,15 +146,6 @@ for filename in filelist:
                             xeff=range(int(L)/10,len(data))
                             p0=sy.array([1,1,1])
                             fpars, acc=so.curve_fit(f,xeff,data[int(L)/10:len(data)],p0)
-                if writepd:
-                    if (datanames[i]=="Local density"):
-                        phase=min(data)/max(data)
-                    if (datanames[i]=="Intrachain correlation"):
-                        revival=data[len(data)-2]/data[0]
-                    if i==n-2:
-                        point=pars[3]+'\t'+pars[4]+'\t'+str(phase)+'\t'+str(revival)+'\n'
-                        with open('density_phasediagram_L_'+L+'_N_'+np+'_p_'+parity+'.txt','a') as pd:
-                            pd.write(point)
                 plt.figure()
                 if bCheck[0]=='Bulk':
                     if tasknum(datanames[i])==10:

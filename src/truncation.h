@@ -2,12 +2,13 @@
 #define AUXILIARY_FUNCTIONS_FOR_SV_BASED_TRUNCATION
 
 #include <complex>
+#include <vector>
 
 namespace auxiliary{
 
 struct sortData{
   double lambda;
-  std::complex<int> QN;
+  std::vector<std::complex<int> > QN;
   int index;
   int indexExp;
 };

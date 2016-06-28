@@ -8,7 +8,7 @@
 class problemParameters{
  public:
   problemParameters(){}
-  problemParameters(localHSpaces const &din, int Lin, int Dwin, int nEigsin=1, int NumberQNs=0, std::complex<int> *QNconservedin=0, std::complex<int> * QNListin=0, double tReal=0, double tImag=0);
+  problemParameters(localHSpaces const &din, int Lin, int Dwin, int nEigsin=1, int NumberQNs=0, std::complex<int> *QNconservedin=0, std::complex<int> * QNListin=0, double tReal=0.0, double tImag=0.0);
   localHSpaces d;
   int L, Dw, nEigs,nQNs;
   std::vector<double> filling;

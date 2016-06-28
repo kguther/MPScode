@@ -5,6 +5,7 @@
 #include "projector.h"
 #include "globalMeasurement.h"
 #include "localMeasurementSeries.h"
+#include "exceptionClasses.h"
 
 simulation::simulation(problemParameters &parsIn, simulationParameters &simParsIn, double J, double g, double WIn, int pathPoints, double stepSize, double deltaPIn, std::string const &targetFile, int tSiteIn, int jgScaleIn):
   simPars(simParsIn),
@@ -30,7 +31,7 @@ simulation::simulation(problemParameters &parsIn, simulationParameters &simParsI
   convergedEigens.resize(pars.nEigs);
   double matEls;
   int L=pars.L;
-  if(abs(parDirection)>1e-20 && jgScale){
+  if(abs(parDirection)>1e-20 && jgScale==1){
     parDirection*=1.0/(scaling*abs(parDirection));
   }
   for(int i=0;i<pars.L;++i){
@@ -102,14 +103,15 @@ void simulation::setEntanglementSpectrumMeasurement(){
 
 //---------------------------------------------------------------------------------------------------//
 
-int simulation::run(){
+void simulation::run(){
   //Solve the system for different parameters (J,g) along a straight line in radial direction 
-  int info;
   double backupW;
   for(int nRun=1;nRun<pathLength+1;++nRun){
 
-    
-    if(abs(parDirection)>1e-20 && jgScale){
+    if(jgScale==2){
+      parDirection.imag(3.0-(nRun-1)/3.0);
+    }
+    if(abs(parDirection)>1e-20 && jgScale==1){
       parDirection*=1.0/(scaling*abs(parDirection))*nRun;
     }
     if(!jgScale){
@@ -126,21 +128,24 @@ int simulation::run(){
       deltaP=targetDelta;
     }
     std::cout<<"Starting run "<<nRun<<" out of "<<pathLength<<" runs. Using parameters\n";
-    info=singleRun();
+    try{
+      singleRun();
+    }
+    catch(critical_error &err){
+      if(!jgScale){
+	W=backupW;
+      }
+    }
 
     if(!jgScale){
       W=backupW;
     }
-
-    if(info)
-      return info;
   }
-  return 0;
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-int simulation::singleRun(){
+void simulation::singleRun(){
   //Get nEigs eigenstates for a fixed set of parameters J,g of the hamiltonian
   int hInfo;
   double J,g;
@@ -148,20 +153,25 @@ int simulation::singleRun(){
   std::vector<double> expectationValues;
   std::vector<std::vector<std::complex<double> > > localExpectationValues;
 
-  
-  J=jgScale+parDirection.real();
-  g=jgScale+parDirection.imag();
+  if(jgScale<=1){
+    J=jgScale+parDirection.real();
+    g=jgScale+parDirection.imag();
+  }
+  else{
+    J=parDirection.real();
+    g=parDirection.imag();
+  }
   std::cout<<"J="<<J<<" g="<<g<<" W="<<W<<std::endl;
   if(pars.Dw==12){
     hInfo=writeHamiltonian(csystem.TensorNetwork,J,g,W,pars.t,deltaP,tSite);
   }
   if(pathLength!=1 && simPars.nStages!=1){
     std::cout<<"Invalid simulation parameters: Staging is disabled for type-0 runs. Aborting run.\n";
-    return -1;
+    throw critical_error();
   }
-  if(pars.Dw!=12 && pars.Dw!=14){
+  if(pars.Dw!=12){
     std::cout<<"Invalid bond dimension for the construction of H. Aborting run.\n";
-    return -2;
+    throw critical_error();
   }
   //Actual DMRG
   csystem.getGroundState();
@@ -275,5 +285,4 @@ int simulation::singleRun(){
       }
   }
   csystem.TensorNetwork.resetConvergence();
-  return 0;
 }

@@ -18,6 +18,8 @@ def effAbs(x):
         redX.append(abs(ref-y))
     return redX
 
+labelfontsize=8
+
 taskname=sys.argv[1]
 L=sys.argv[2]
 J=sys.argv[3]
@@ -25,7 +27,7 @@ g=sys.argv[4]
 
 def makeName(prefix):
     newName=prefix
-    newName+=taskname+'_J_'+J+'_g_'+g
+    newName+='_'+taskname+'J_'+J.replace('.','')+'_g_'+g.replace('.','')
     newName+='.pdf'
     return newName
 
@@ -64,26 +66,31 @@ for filename in filelist:
             datalegendCollection[k].append("N="+getN+' $\\alpha$='+getPar)
             N.append(float(getN))
             compname=filename
+            print compname
 
-scope=plt.figure
-markers=['o','<']
-print len(fulldatCollection[k])
+
+markers=['o','s']
 subplotcoords=[221,222,223,224]
-for j in [0,1,2,3]:
-    detail=[]
-    plt.subplot(subplotcoords[j])
-    i=0
-    for dataset in fulldatCollection[j]:
-        plt.plot(dataset[0],dataset[1],markers[0],ms=9)
-        #plt.plot(dataset[0],dataset[2],markers[1],ms=9)
-        detail.append(datalegendCollection[j][i]+" $, \\langle n^a_i \\rangle$")
-        #detail.append(datalegends[j][i]+" $, \\langle n^b_i \\rangle$")
-        i+=1
-        plt.legend(detail,loc=8, fontsize=10)
-        plt.xlabel('$i$')
-        plt.ylabel('$\\langle n_i \\rangle$')
+wire=['A','B']
+wireLabel=['$\\langle n_i^a \\rangle$','$\\langle n_i^b \\rangle$']
+for k in [0,1]:
+    scope=plt.figure()
+    for j in range(0,4):
+        detail=[]
+        plt.subplot(subplotcoords[j])
+        if j==0:
+            plt.title('J='+J+' g='+g)
+        plt.tick_params(labelsize=labelfontsize)
+        plt.ticklabel_format(style='sci',axis='y',scilimits=(0,0))
+        i=0
+        for dataset in fulldatCollection[j]:
+            plt.plot(dataset[0],dataset[k+1],markers[0],ms=9)
+            i+=1
+            plt.legend(datalegendCollection[j],loc=8, fontsize=labelfontsize/2)
+            plt.xlabel('$i$',fontsize=labelfontsize)
+            plt.ylabel(wireLabel[k],fontsize=labelfontsize)
         #uses the last input name as new filename
-plt.savefig('../plots/'+compname[16:(len(compname)-4)]+'_comp_densities.pdf')
+    plt.savefig('../plots/'+compname[16:(len(compname)-4)]+'_comp_densities_'+wire[k]+'.pdf')
 
 
 sym=plt.figure()
@@ -91,12 +98,16 @@ markers=['o','<','>','*','d','s']
 for j in range(0,4):
     i=0
     plt.subplot(subplotcoords[j])
+    if j==0:
+        plt.title('J='+J+' g='+g)
+    plt.tick_params(labelsize=labelfontsize)
+    plt.ticklabel_format(style='sci',axis='y',scilimits=(0,0))
     for dataset in fulldatCollection[j]:
         plt.plot(dataset[0],dataset[1]+dataset[2],markers[i],ms=9)
         i+=1
-        plt.legend(datalegendCollection[j],loc=8, fontsize=10)
-        plt.xlabel('$i$')
-        plt.ylabel('$\\langle n_i^a \\rangle + \\langle n_i^b \\rangle $')
+        plt.legend(datalegendCollection[j],loc=8, fontsize=labelfontsize)
+        plt.xlabel('$i$',fontsize=labelfontsize)
+        plt.ylabel('$\\langle n_i^a \\rangle + \\langle n_i^b \\rangle $',fontsize=labelfontsize)
         prefix='symmetric_combination'
         symname=makeName(prefix)
 plt.savefig(symname)
@@ -109,7 +120,7 @@ for j in range(0,4):
         fpars,acc=so.curve_fit(symfunc,dataset[0],dataset[1]+dataset[2],p0)
         plt.plot(dataset[0],dataset[1]+dataset[2],'o')
         plt.plot(dataset[0],symfunc(dataset[0],fpars[0],fpars[1]))
-    plt.xlabel('$i$')
+    plt.xlabel('$i$',fontsize=labelfontsize)
     plt.ylabel('$\\langle n_i^a \\rangle + \\langle n_i^b \\rangle $')
     datalegendFit=[]
     for entry in datalegendCollection[j]:
@@ -123,12 +134,18 @@ symfitname=makeName(prefix)
 
 asym=plt.figure()
 for j in range(0,4):
+    i=0
     plt.subplot(subplotcoords[j])
-    for dataset in fulldatCollection[0]:
-        plt.plot(dataset[0],dataset[1]-dataset[2],'o',ms=9)
-    plt.legend(datalegendCollection[j],loc=8, fontsize=10)
-    plt.xlabel('$i$')
-    plt.ylabel('$\\langle n_i^a \\rangle - \\langle n_i^b \\rangle $')
+    if j==0:
+        plt.title('J='+J+' g='+g)
+    plt.tick_params(labelsize=labelfontsize)
+    plt.ticklabel_format(style='sci',axis='y',scilimits=(0,0))
+    for dataset in fulldatCollection[j]:
+        plt.plot(dataset[0],dataset[1]-dataset[2],markers[i],ms=9)
+        i+=1
+    plt.legend(datalegendCollection[j],loc=8, fontsize=labelfontsize)
+    plt.xlabel('$i$',fontsize=labelfontsize)
+    plt.ylabel('$\\langle n_i^a \\rangle - \\langle n_i^b \\rangle $',fontsize=labelfontsize)
 prefix='asymmetric_combination'
 asymname=makeName(prefix)
 plt.savefig(asymname)

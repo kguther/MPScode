@@ -30,7 +30,7 @@ Qsystem::Qsystem(problemParameters &inputpars, simulationParameters &inputsimPar
 
 //---------------------------------------------------------------------------------------------------//
 
-int Qsystem::getGroundState(){
+void Qsystem::getGroundState(){
   clock_t simTime;
   int converged;
   simTime=clock();
@@ -55,7 +55,6 @@ int Qsystem::getGroundState(){
   }
   simTime=clock()-simTime;
   std::cout<<"Total simulation took "<<(float)simTime/CLOCKS_PER_SEC<<" seconds\n";
-  return 0;
 }
 
 //---------------------------------------------------------------------------------------------------//

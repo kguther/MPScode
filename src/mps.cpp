@@ -492,7 +492,7 @@ void mps::getEntanglementSpectrumOC(int i, double &S, std::vector<double> &spect
   }
   S=0;
   for(int m=0;m<spectrum.size();++m){
-    if(abs(spectrum[m])>1e-12){
+    if(std::abs(spectrum[m])>1e-12){
       S+=spectrum[m]*spectrum[m]*log(spectrum[m]*spectrum[m]);
     }
   }

@@ -22,15 +22,14 @@ def makeName(prefix):
     newName=prefix
     for filename in sys.argv[1:]:
         addname=filename.split('/')
-        newname+=addname[1]
-        newname+='_'
+        newName+='_'+addname[1][:len(addname[1])-4]
     newName+='.pdf'
     return newName
 
 N=[]
 datalegend=[]
 fulldat=[]
-for filename in sys.argv[1:]
+for filename in sys.argv[1:]:
         with open(filename) as rd:
             parRead=rd.readline()
             getJPre=(parRead.split('J='))[1]
@@ -73,6 +72,7 @@ plt.xlabel('$i$')
 plt.ylabel('$\\langle n_i^a \\rangle + \\langle n_i^b \\rangle $')
 prefix='densities/symmetric_combination'
 symname=makeName(prefix)
+print symname
 plt.savefig(symname)
 
 symfit=plt.figure()

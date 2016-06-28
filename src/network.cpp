@@ -14,6 +14,7 @@
 #include "globalMeasurement.h"
 #include "localMeasurementSeries.h"
 #include "exactGroundState.h"
+#include "exceptionClasses.h"
 
 //BEWARE: ALL MPS AND MPO NETWORK MATRICES ARE STORED WITH A CONTIGOUS COLUMN INDEX (i.e. transposed with respect to C standard, for better compatibility with LAPACK)
 
@@ -41,7 +42,8 @@ network::network(problemParameters const &inputpars, simulationParameters const 
   Dw(inputpars.Dw),
   simPars(inputsimPars),
   excitedStateP(projector(pars.nEigs)),
-  networkDimInfo(dimensionTable(D,L,pars.d))
+  networkDimInfo(dimensionTable(D,L,pars.d)),
+  reSweep(0)
 {
   networkH=mpo<lapack_complex_double>(pars.d.maxd(),Dw,L);
   nConverged.resize(pars.nEigs);
@@ -213,32 +215,40 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
 	break;
       }
       //actual sweep is executed here
-      sweep(maxIter,tol,lambda[iEigen]);
-      //In calcCtrIterRightBase, the second argument has to be a pointer, because it usually is an array. No call-by-reference here.
-      pCtr.calcCtrIterRightBase(-1,&expectationValue);
-      deltaLambda[iEigen]=1;
-      if(iSweep==simPars.nSweeps-1){
-	std::cout<<"Calculating quality of convergence\n";
-	deltaLambda[iEigen]=convergenceCheck();
+      try{
+	sweep(maxIter,tol,lambda[iEigen]);
+	//In calcCtrIterRightBase, the second argument has to be a pointer, because it usually is an array. No call-by-reference here.
+	pCtr.calcCtrIterRightBase(-1,&expectationValue);
+	deltaLambda[iEigen]=1;
+	if(iSweep==simPars.nSweeps-1){
+	  std::cout<<"Calculating quality of convergence\n";
+	  deltaLambda[iEigen]=convergenceCheck();
+	}
+	if(deltaLambda[iEigen]<simPars.devAccuracy){
+	  nConverged[iEigen]=0;
+	}
+	if(tol>simPars.tolMin){
+	  tol*=pow(simPars.tolMin/simPars.tolInitial,1.0/simPars.nSweeps);
+	}
+	std::cout<<"Quality of convergence: "<<deltaLambda[iEigen]<<"\tRequired accuracy: "<<simPars.devAccuracy<<std::endl<<std::endl;
+	std::cout<<"Used bond dimension: "<<D<<std::endl;
+	excitedStateP.updateScalarProducts(0,-1);
+	for(int prev=0;prev<iEigen;++prev){
+	  std::cout<<"Overlap with state "<<prev<<" is: "<<excitedStateP.fullOverlap(prev)<<std::endl;
+	}
       }
-      if(deltaLambda[iEigen]<simPars.devAccuracy){
-	nConverged[iEigen]=0;
+      catch(svd_failure &err){
+	if(reSweep){
+	  throw critical_error();
+	}
+	resetSweep();
       }
-      if(tol>simPars.tolMin){
-	tol*=pow(simPars.tolMin/simPars.tolInitial,1.0/simPars.nSweeps);
-      }
-      std::cout<<"Quality of convergence: "<<deltaLambda[iEigen]<<"\tRequired accuracy: "<<simPars.devAccuracy<<std::endl<<std::endl;
-      std::cout<<"Used bond dimension: "<<D<<std::endl;
-      excitedStateP.updateScalarProducts(0,-1);
-      for(int prev=0;prev<iEigen;++prev){
-	std::cout<<"Overlap with state "<<prev<<" is: "<<excitedStateP.fullOverlap(prev)<<std::endl;
-      }
-      
+      /*
       measure(check,spinCheck);
       measure(checkParity,parCheck);
       std::cout<<"Current particle number (final): "<<spinCheck<<std::endl;
       std::cout<<"Current subchain parity (final): "<<parCheck<<std::endl;
-      
+      */
     }
     //printQNLabels(networkState);
     stepRet=gotoNextEigen();
@@ -275,7 +285,6 @@ void network::sweep(double maxIter, double tol, double &lambda){
     optimize(i,maxIter,tol,lambda);
     curtime=clock()-curtime;
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
-
     //Execute left-sided enrichment step and update the coefficient of the expansion term
     normalize(i,1,expFlag);
     //Here, the scalar products with lower lying states are updated
@@ -420,6 +429,26 @@ void network::normalize(int i, int direction, int enrichment){
       networkState.rightNormalizeState(i);
     }
   }
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void network::resetSweep(){
+  double const alphaBuf=alpha;
+  alpha=0.0;
+  for(int j=L;j>0;--j){
+    try{
+      normalize(j,0,pars.nQNs);
+    }
+    catch(svd_failure &err){
+      throw critical_error();
+    }
+  }
+  alpha=alphaBuf;
+  networkState.normalizeFinal(1);
+  pCtr.Lctr.global_access(0,0,0,0)=1;
+  pCtr.calcCtrFull(1);
+  reSweep=1;
 }
 
 //---------------------------------------------------------------------------------------------------//

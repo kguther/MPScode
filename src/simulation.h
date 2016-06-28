@@ -19,7 +19,7 @@ class simulation{
   std::vector<mpo<std::complex<double> > > measureTask;
   std::vector<localMpo<std::complex<double> > > localMeasureTask;
   std::vector<double> E0, dE;
-  int run();
+  void run();
  private:
   //Order dependent, do not change
   problemParameters pars;
@@ -37,7 +37,7 @@ class simulation{
   std::string filePrefix;
   mpo<lapack_complex_double> particleNumber;
   mpo<lapack_complex_double> subChainParity;
-  int singleRun();
+  void singleRun();
 };
 
 #endif

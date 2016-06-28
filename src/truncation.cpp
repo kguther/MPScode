@@ -15,16 +15,16 @@ namespace auxiliary{
     double buf=(a.lambda>b.lambda)?(a.lambda-b.lambda):(b.lambda-a.lambda);
     if(buf>tol)
       return a.lambda>b.lambda;
-    if(a.QN.real()!=b.QN.real())
-      return a.QN.real()>b.QN.real();
-    return a.QN.imag()>b.QN.imag();
+    if(a.QN[0].real()!=b.QN[0].real())
+      return a.QN[0].real()>b.QN[0].real();
+    return a.QN[0].imag()>b.QN[0].imag();
   }
 
   bool compareSortDataQNBased(sortData const &a, sortData const &b){
-    if(a.QN.real()!=b.QN.real()){
-      return a.QN.real()>b.QN.real();
+    if(a.QN[0].real()!=b.QN[0].real()){
+      return a.QN[0].real()>b.QN[0].real();
     }
-    return a.QN.imag()>b.QN.imag();  
+    return a.QN[0].imag()>b.QN[0].imag();  
     //The ordering has to be strictly deterministic, such that two arrays of sortData with the same entries of lambdas and QNs are ordered in the same way, even if some lambdas are degenerate
   }
 

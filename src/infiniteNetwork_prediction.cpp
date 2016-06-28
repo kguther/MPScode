@@ -242,11 +242,11 @@ void infiniteNetwork::updateMPS(arcomplex<double> *source){
   comparerR.resize(ld*lDL);
   for(int ai=0;ai<ld*lDL;++ai){
     comparerL[ai].index=ai;
-    comparerL[ai].QN=optLocalQNsL[ai];
+    comparerL[ai].QN.push_back(optLocalQNsL[ai]);
     comparerL[ai].lambda=diagsFullL[ai];
 
     comparerR[ai].index=ai;
-    comparerR[ai].QN=optLocalQNsR[ai];
+    comparerR[ai].QN.push_back(optLocalQNsR[ai]);
     comparerR[ai].lambda=diagsFullR[ai];
     //std::cout<<"Available QN: "<<optLocalQNs[ai]<<std::endl;
   }
@@ -272,8 +272,8 @@ void infiniteNetwork::updateMPS(arcomplex<double> *source){
 
   for(int ai=0;ai<lDR;++ai){
     //Copy the remaining diagonal matrix into diags
-    optLocalQNsL[ai]=comparerL[ai].QN;
-    optLocalQNsR[ai]=comparerR[ai].QN;
+    optLocalQNsL[ai]=comparerL[ai].QN[0];
+    optLocalQNsR[ai]=comparerR[ai].QN[0];
     //Both comparers contain the same lambda-values, only bound to different QN labels
     diags[ai]=comparerL[ai].lambda;
   }

@@ -29,8 +29,8 @@ class siteQNOrderMatrix{
   int rBlockSizeRP(int iBlock) const{return siaiBlockIndicesRP[iBlock].size();}
   int numBlocksLP() const{return aiBlockIndicesLP.size();}
   int numBlocksRP() const{return aimBlockIndicesRP.size();}
-  std::complex<int> qnLabelLP(int iBlock) const{return qnLabelsLP[iBlock];}
-  std::complex<int> qnLabelRP(int iBlock) const{return qnLabelsRP[iBlock];}
+  std::vector<std::complex<int> > qnLabelLP(int iBlock) const{return qnLabelsLP[iBlock];}
+  std::vector<std::complex<int> > qnLabelRP(int iBlock) const{return qnLabelsRP[iBlock];}
   int nQNs() const{return conservedQNs.size();}
   int validate()const;
  private:
@@ -40,7 +40,7 @@ class siteQNOrderMatrix{
   std::vector<std::vector<int> > aimBlockIndicesRP;
   std::vector<std::vector<multInt> > siaiBlockIndicesRP;
   std::vector<pseudoQuantumNumber*> conservedQNs;
-  std::vector<std::complex<int> > qnLabelsLP, qnLabelsRP;
+  std::vector<std::vector<std::complex<int> >  > qnLabelsLP, qnLabelsRP;
   std::complex<int> qnCriterium(int iQN, int aim, int si, int direction, int pre);
   void loadConservedQNs(std::vector<quantumNumber> *conservedQNsin);
   void setUpTable();
