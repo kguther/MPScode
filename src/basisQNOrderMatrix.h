@@ -26,7 +26,7 @@ class basisQNOrderMatrix{
   int lBlockSizeRP(int i, int iBlock)const {return localIndexTables[i].lBlockSizeRP(iBlock);}
   int rBlockSizeRP(int i, int iBlock)const {return localIndexTables[i].rBlockSizeRP(iBlock);}
 
-  int nQNs() const{return localIndexTables[0].nQNs();}
+  int nQNs() const{return nQN;}
   int validate()const;
   siteQNOrderMatrix const& getLocalIndexTable(int i)const;
   siteQNOrderMatrix& getLocalIndexTable(int i);
@@ -34,6 +34,7 @@ class basisQNOrderMatrix{
   std::vector<siteQNOrderMatrix> localIndexTables;
   std::vector<pseudoQuantumNumber*> conservedQNs;
   dimensionTable dimInfo;
+  int nQN;
 };
 
 #endif

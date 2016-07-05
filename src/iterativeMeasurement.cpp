@@ -45,6 +45,7 @@ void iterativeMeasurement::calcCtrIterRight(int const i){
 //---------------------------------------------------------------------------------------------------//
 
 void iterativeMeasurement::calcCtrIterRightBase(int i, arcomplex<double>  *const targetPctr){
+  //only required to get expectation values - this uses the right-sided contraction
   arcomplex<double> *sourcePctr;
   Rctr.subContractionStart(sourcePctr,i+1);
   baseMeasurement::calcCtrIterRightBase(i,sourcePctr,targetPctr);
@@ -61,14 +62,9 @@ void iterativeMeasurement::calcOuterContainerLeft(int const i, tmpContainer<arco
 //---------------------------------------------------------------------------------------------------//
 
 void iterativeMeasurement::calcOuterContainerRight(int const i, tmpContainer<arcomplex<double> > &outercontainer){
-  if(MPState->indexTable().nQNs()){
-    arcomplex<double> *sourcePctr;
-    Rctr.subContractionStart(sourcePctr,i+1);
-    baseMeasurement::calcOuterContainerRightQNOpt(i,sourcePctr,outercontainer);
-  }
-  else{
-    //If one wanted to use the code without exploiting QNs, this had to be added
-  }
+  arcomplex<double> *sourcePctr;
+  Rctr.subContractionStart(sourcePctr,i+1);
+  baseMeasurement::calcOuterContainerRight(i,sourcePctr,outercontainer);
 }
 
 //---------------------------------------------------------------------------------------------------//

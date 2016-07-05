@@ -5,16 +5,16 @@
 #include "optHMatrix.h"
 #include "tmpContainer.h"
 
-optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, mpo<arcomplex<double> > *Hin, dimensionTable const &dimInfo, int Dwin, int iIn, projector *excitedStateP, double shiftin, std::vector<quantumNumber> *conservedQNsin):
+optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, mpo<arcomplex<double> > const *Hin, dimensionTable const &dimInfo, int Dwin, int iIn, projector *excitedStateP, double shiftin, std::vector<quantumNumber> *conservedQNsin):
   Rctr(Rin),
   Lctr(Lin),
   Dw(Dwin),
   i(iIn),
   shift(shiftin),
   P(excitedStateP),
+  HMPO(Hin),
   conservedQNs(conservedQNsin)
 {
-  Hin->subMatrixStart(H,i);
   D=dimInfo.D();
   lDwR=Hin->locDimR(i);
   lDwL=Hin->locDimL(i);
@@ -24,11 +24,6 @@ optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, mpo<arcom
   //Dimension of H is obviously a necessary information for ARPACK++
   dimension=d*lDL*lDR;
   //std::cout<<"Current eigenvalue problem dimension: "<<dimension<<std::endl;
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-optHMatrix::~optHMatrix(){
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -58,18 +53,30 @@ void optHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
       }
     }
   }
+  int const *biIndices, *siIndices, *bimIndices, *sipIndices;
+  int const sparseSize=HMPO->numEls(i);
+  arcomplex<double> const *H;
+  HMPO->biSubIndexArrayStart(biIndices,i);
+  HMPO->siSubIndexArrayStart(siIndices,i);
+  HMPO->bimSubIndexArrayStart(bimIndices,i);
+  HMPO->sipSubIndexArrayStart(sipIndices,i);
+  HMPO->sparseSubMatrixStart(H,i);
+
+  #pragma omp parallel for schedule(static,1)
   for(int si=0;si<d;++si){
-    for(int ai=0;ai<lDR;++ai){
-      for(int bim=0;bim<lDwL;++bim){
-	for(int aimp=0;aimp<lDL;++aimp){
-	  simpleContainer=0;
-	  for(int sip=0;sip<d;++sip){
-	    for(int bi=0;bi<lDwR;++bi){
-	      simpleContainer+=innercontainer.global_access(sip,aimp,ai,bi)*H[hIndex(si,sip,bi,bim)];
-	    }
-	  }
-	  outercontainer.global_access(si,bim,ai,aimp)=simpleContainer;
+    for(int bim=0;bim<lDwL;++bim){
+      for(int ai=0;ai<lDR;++ai){
+	for(int aim=0;aim<lDL;++aim){
+	  outercontainer.global_access(si,bim,ai,aim)=0.0;
 	}
+      }
+    }
+  }
+
+  for(int ai=0;ai<lDR;++ai){
+    for(int aimp=0;aimp<lDL;++aimp){
+      for(int nSparse=0;nSparse<sparseSize;++nSparse){
+	outercontainer.global_access(siIndices[nSparse],bimIndices[nSparse],ai,aimp)+=innercontainer.global_access(sipIndices[nSparse],aimp,ai,biIndices[nSparse])*H[nSparse];
       }
     }
   }

@@ -60,8 +60,54 @@ void contractor::calcLeftContraction(int i, T *const siteMatrixState, mpoSiteTen
   lDwR=H.locDimR();
   lDwL=H.locDimL();
   getLocalDimensions(i-1);
-  tmpContainer<T> innerContainer(ld,lDwL,lDL,lDR);
   tmpContainer<T> outerContainer(ld,lDwR,lDR,lDL);
+  calcLeftOuterContainer(i,siteMatrixState,H,source,outerContainer);
+  for(int bi=0;bi<lDwR;++bi){
+    for(int aip=0;aip<lDR;++aip){
+      for(int ai=0;ai<lDR;++ai){
+	simpleContainer=0.0;
+	for(int si=0;si<ld;++si){
+	  for(int aimp=0;aimp<lDL;++aimp){
+	    simpleContainer+=outerContainer.global_access(si,bi,ai,aimp)*conj(siteMatrixState[stateIndex(si,aip,aimp)]);
+	  }
+	}
+	target[pctrIndex(aip,bi,ai)]=simpleContainer;
+      }
+    }
+  }
+}
+
+template<typename T>
+void contractor::calcRightContraction(int i, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, T *const target){
+  T simpleContainer;
+  getLocalDimensions(i+1);
+  lDwR=H.locDimR();
+  lDwL=H.locDimL();
+  tmpContainer<arcomplex<double> > outerContainer(lDL,lDwL,ld,lDR);
+  calcRightOuterContainer(i,siteMatrixState,H,source,outerContainer);
+  for(int aim=0;aim<lDL;++aim){
+    for(int bim=0;bim<lDwL;++bim){
+      for(int aimp=0;aimp<lDL;++aimp){
+	simpleContainer=0;
+	for(int si=0;si<ld;++si){
+	  for(int ai=0;ai<lDR;++ai){
+	    simpleContainer+=conj(siteMatrixState[stateIndex(si,ai,aim)])*outerContainer.global_access(aimp,bim,si,ai);
+	  }
+	}
+	target[pctrIndex(aim,bim,aimp)]=simpleContainer;
+      }
+    }
+  }
+}
+
+
+template<typename T>
+void contractor::calcLeftOuterContainer(int i, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, tmpContainer<T> &outerContainer){
+  T simpleContainer;
+  lDwR=H.locDimR();
+  lDwL=H.locDimL();
+  getLocalDimensions(i-1);
+  tmpContainer<T> innerContainer(ld,lDwL,lDL,lDR);
   for(int si=0;si<ld;++si){
     for(int bim=0;bim<lDwL;++bim){
       for(int aimp=0;aimp<lDL;++aimp){
@@ -92,29 +138,15 @@ void contractor::calcLeftContraction(int i, T *const siteMatrixState, mpoSiteTen
       }
     }
   }
-  for(int bi=0;bi<lDwR;++bi){
-    for(int aip=0;aip<lDR;++aip){
-      for(int ai=0;ai<lDR;++ai){
-	simpleContainer=0.0;
-	for(int si=0;si<ld;++si){
-	  for(int aimp=0;aimp<lDL;++aimp){
-	    simpleContainer+=outerContainer.global_access(si,bi,ai,aimp)*conj(siteMatrixState[stateIndex(si,aip,aimp)]);
-	  }
-	}
-	target[pctrIndex(aip,bi,ai)]=simpleContainer;
-      }
-    }
-  }
 }
 
 template<typename T>
-void contractor::calcRightContraction(int i, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, T *const target){
+void contractor::calcRightOuterContainer(int i, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, tmpContainer<T> &outerContainer){
   T simpleContainer;
   getLocalDimensions(i+1);
   lDwR=H.locDimR();
   lDwL=H.locDimL();
   tmpContainer<arcomplex<double> > innerContainer(ld,lDwR,lDR,lDL);
-  tmpContainer<arcomplex<double> > outerContainer(lDL,lDwL,ld,lDR);
   for(int sip=0;sip<ld;++sip){                                                       
     for(int bi=0;bi<lDwR;++bi){
       for(int ai=0;ai<lDR;++ai){
@@ -145,36 +177,8 @@ void contractor::calcRightContraction(int i, T *const siteMatrixState, mpoSiteTe
       }
     }
   }
-  for(int aim=0;aim<lDL;++aim){
-    for(int bim=0;bim<lDwL;++bim){
-      for(int aimp=0;aimp<lDL;++aimp){
-	simpleContainer=0;
-	for(int si=0;si<ld;++si){
-	  for(int ai=0;ai<lDR;++ai){
-	    simpleContainer+=conj(siteMatrixState[stateIndex(si,ai,aim)])*outerContainer.global_access(aimp,bim,si,ai);
-	  }
-	}
-	target[pctrIndex(aim,bim,aimp)]=simpleContainer;
-      }
-    }
-  }
 }
 
-/*
-template<typename T>
-void contractor::calcLeftOuterContainer(int i, siteQNOrderMatrix const &localIndexTable, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, tmpContainer<T> &outerContainer){
-  if(nQNs){
-    calcLeftOuterContainerQNOpt(i,localIndexTable,siteMatrixState,H,source,outerContainer);
-  }
-}
-
-template<typename T>
-void contractor::calcRightOuterContainer(int i, siteQNOrderMatrix const &localIndexTable, T *const siteMatrixState, mpoSiteTensor<T> const &H, T *const source, tmpContainer<T> &outerContainer){
-  if(nQNs){
-    calcRightOuterContainerQNOpt(i,localIndexTable,siteMatrixState,H,source,outerContainer);
-  }
-}
-*/
 
 //---------------------------------------------------------------------------------------------------//
 

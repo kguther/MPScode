@@ -150,7 +150,9 @@ void overlap::calcCtrIterRight(int i){
     source=&zone;
   }
   subContractionStartRight(target,i);
+  //Using QN-fixed MPS and QN-nonfixed MPS in the same run is not supported
   if(phi->indexTable().nQNs() && psi->indexTable().nQNs()){
+    //Version optimized for conserved QNs. 
     calcCtrIterRightQNOpt(i,source,target);
   }
   else{
@@ -242,6 +244,7 @@ void overlap::calcCtrIterLeftQNOpt(int i, lapack_complex_double const*const sour
 //---------------------------------------------------------------------------------------------------//
 
 void overlap::calcCtrIterRightQNOpt(int i, lapack_complex_double const*const source, lapack_complex_double *const target){
+  //works also if phi and psi have different L/R-basis at site i
   int lDL=phi->locDimL(i);
   int ld=phi->locd(i);
   int lDR=phi->locDimR(i);

@@ -3,11 +3,16 @@
 //---------------------------------------------------------------------------------------------------//
 
 #include "truncation.h"
+#include <cmath>
 
 namespace auxiliary{
 
   bool compareSortData(sortData const &a, sortData const &b){
-    return a.lambda>b.lambda;
+    double const tol=1e-12;
+    if(std::abs(a.lambda-b.lambda)>tol)
+      return a.lambda>b.lambda;
+    //if exactly one of a and b is unassigned, the assigned one shall have precedence -> the first lDR entries in left/rightEnrichmentBlockwise are always assigned
+    return a.QN.size()>b.QN.size();
   }
 
   bool compareSortDataFull(sortData const &a, sortData const &b){

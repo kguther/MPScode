@@ -231,8 +231,6 @@ void network::leftEnrichmentBlockwise(int i){
   int siCurrent, aiCurrent, aimCurrent, aipCurrent, sipCurrent;
   int lBlockSize, rBlockSize;
 
-
-  //siteQNOrderMatrix const localIndexTable=networkState.indexTable().getLocalIndexTable(i);
   siteQNOrderMatrix localIndexTableFull;
   localIndexTableFull.generateFull(networkState.indexTable().getLocalIndexTable(i));
 

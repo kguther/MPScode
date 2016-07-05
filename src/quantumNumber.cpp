@@ -8,15 +8,14 @@ quantumNumber::quantumNumber(){
 
 //---------------------------------------------------------------------------------------------------//
 
-quantumNumber::quantumNumber(dimensionTable const &dimInfoin, std::complex<int> const &Nin, std::vector<std::complex<int> > const &QNlocin):
+quantumNumber::quantumNumber(dimensionTable const &dimInfoin, std::complex<int> const &Nin, std::vector<std::complex<int> > const &QNlocin, int referenceParity):
   pseudoQuantumNumber(dimInfoin,Nin,QNlocin),
   failed(0)
 {
+  int noParity=0;
   if(imag(N)==0){
-    N.imag(0);
-    for(int m=0;m<QNloc.size();++m){
-      (QNloc[m]).imag(0);
-    }
+    noParity=1;
+    N.imag(referenceParity);
   }
   int info;
   info=initializeLabelList();
@@ -24,6 +23,18 @@ quantumNumber::quantumNumber(dimensionTable const &dimInfoin, std::complex<int> 
     std::cout<<"Critical error: Target quantum number cannot be reached.\n";
     std::cout<<"Target quantum number: "<<N<<" with system size "<<dimInfo.L()<<std::endl;
     failed=1;
+  }
+  if(noParity){
+    N.imag(0);
+    for(int m=0;m<QNloc.size();++m){
+      (QNloc[m]).imag(0);
+    }
+    for(int i=0;i<dimInfo.L();++i){
+      for(int ai=0;ai<dimInfo.locDimL(i);++ai){
+	indexLabel[i*dimInfo.D()+ai].imag(0);
+      }
+    }
+    indexLabel[dimInfo.L()*dimInfo.D()].imag(0);
   }
 }
 
@@ -283,7 +294,12 @@ int quantumNumber::initializeLabelList(int i, int direction){
     }
   }
   if(i==0){
-    label.imag(1);
+    if(N.imag()){
+      label.imag(1);
+    }
+    else{
+      label.imag(0);
+    }
     label.real(0);
     (*cLabel)[i*dimInfo.D()]=label;
     if(direction==-1){
@@ -453,13 +469,18 @@ std::complex<int> quantumNumber::exactLabel(int i, int ai){
 int quantumNumber::validQN(int i, std::complex<int> const &label) const{
   int validBlock=1;
   int const leftVacuum=0;
-  int const maxCharge=2*i;
-  int const minimalLabel=(leftVacuum>real(N)-2*(dimInfo.L()-i))?leftVacuum:real(N)-2*(dimInfo.L()-i);
+  int maxSiteCharge=QNloc[0].real();
+  for(int si=1;si<QNloc.size();++si){
+    if(QNloc[si].real()>maxSiteCharge)
+      maxSiteCharge=QNloc[si].real();
+  }
+  int const maxCharge=maxSiteCharge*i;
+  int const minimalLabel=(leftVacuum>real(N)-maxSiteCharge*(dimInfo.L()-i))?leftVacuum:real(N)-maxSiteCharge*(dimInfo.L()-i);
   int const maximalLabel=(maxCharge>real(N))?real(N):maxCharge;
   if(real(label)>maximalLabel || real(label)<minimalLabel){
     validBlock=0;
   }
-  if(real(label)==leftVacuum && real(label)==real(N)-2*(dimInfo.L()-i) && integerParity(dimInfo.L()-i)!=imag(N)){
+  if(real(label)==leftVacuum && real(label)==real(N)-maxSiteCharge*(dimInfo.L()-i) && integerParity(dimInfo.L()-i)!=imag(N)){
     if(imag(N)){
       validBlock=0;
     }
@@ -469,7 +490,7 @@ int quantumNumber::validQN(int i, std::complex<int> const &label) const{
       validBlock=0;
     }
   }
-  if((real(label)==leftVacuum && imag(label)!=1) || (real(label)==real(N)-2*(dimInfo.L()-i) && imag(label)!=integerParity(dimInfo.L()-i)*imag(N))){
+  if((real(label)==leftVacuum && imag(label)!=1) || (real(label)==real(N)-maxSiteCharge*(dimInfo.L()-i) && imag(label)!=integerParity(dimInfo.L()-i)*imag(N))){
     if(imag(N)){
       validBlock=0;
     }

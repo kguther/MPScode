@@ -55,337 +55,53 @@ void baseMeasurement::getLocalDimensions(int i){
 // which will usually be the next subcontraction of Rctr.
 //---------------------------------------------------------------------------------------------------//
 
-void baseMeasurement::calcCtrIterLeftBase(int const i, arcomplex<double>  *const source, arcomplex<double>  *const targetPctr){
-  calcCtrIterLeftBaseQNOpt(i,source,targetPctr);
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-void baseMeasurement::calcOuterContainerLeft(int const i, arcomplex<double>  *const source, tmpContainer<arcomplex<double> > &outercontainer){
+void baseMeasurement::calcCtrIterLeftBase(int const i, arcomplex<double>  *const sourcePctr, arcomplex<double>  *const targetPctr){
+  arcomplex<double> *siteMatrixState;
+  MPState->subMatrixStart(siteMatrixState,i-1);
   if(MPState->indexTable().nQNs()){
-    calcOuterContainerLeftQNOpt(i,source,outercontainer);
+      calcer.calcLeftContraction(i,MPState->indexTable().getLocalIndexTable(i-1),siteMatrixState,MPOperator->getSiteTensor(i-1),sourcePctr,targetPctr);
   }
   else{
-    //If one wanted to use the code without exploiting QNs, this had to be added
+    calcer.calcLeftContraction(i,siteMatrixState,MPOperator->getSiteTensor(i-1),sourcePctr,targetPctr);
   }
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-void baseMeasurement::calcCtrIterLeftBaseQNOpt(int const i, arcomplex<double>  *const source, arcomplex<double>  *const targetPctr){
-  
-  arcomplex<double>  *siteMatrixState;
-  MPState->subMatrixStart(siteMatrixState,i-1);
-  calcer.calcLeftContraction(i,MPState->indexTable().getLocalIndexTable(i-1),siteMatrixState,MPOperator->getSiteTensor(i-1),source,targetPctr);
-  
-  
-  /*
-  arcomplex<double>  simpleContainer;
-  arcomplex<double>  *siteMatrixState;
-  int const numBlocks=MPState->indexTable().numBlocksLP(i-1);
-  int aiB, aimB, siB;
-  int lBlockSize, rBlockSize;
-  clock_t curtime;
-  MPState->subMatrixStart(siteMatrixState,i-1);
-  getLocalDimensions(i-1);
-  //container arrays to significantly reduce computational effort by storing intermediate results
-  tmpContainer<arcomplex<double> > outercontainer(ld,lDwR,lDR,lDL);
-  calcOuterContainerLeftQNOpt(i,source,outercontainer);
-#pragma omp parallel for private(simpleContainer,lBlockSize,rBlockSize,aiB,siB,aimB)
-  for(int aip=0;aip<lDR;++aip){
-    for(int iBlock=0;iBlock<numBlocks;++iBlock){
-      lBlockSize=MPState->indexTable().lBlockSizeLP(i-1,iBlock);
-      rBlockSize=MPState->indexTable().rBlockSizeLP(i-1,iBlock);
-      for(int j=0;j<rBlockSize;++j){
-	aiB=MPState->indexTable().aiBlockIndexLP(i-1,iBlock,j);
-	for(int bi=0;bi<lDwR;++bi){
-	  simpleContainer=0;
-	  for(int k=0;k<lBlockSize;++k){
-	    siB=MPState->indexTable().siBlockIndexLP(i-1,iBlock,k);
-	    aimB=MPState->indexTable().aimBlockIndexLP(i-1,iBlock,k);
-	    simpleContainer+=conj(siteMatrixState[stateIndex(siB,aiB,aimB)])*outercontainer.global_access(siB,bi,aip,aimB);
-	  }
-	  targetPctr[pctrIndex(aiB,bi,aip)]=simpleContainer;
-	}
-      }
-    }
-  }
-  curtime=clock()-curtime;
-  //std::cout<<"Total left contraction took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
-  */
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-void baseMeasurement::calcOuterContainerLeftQNOpt(int const i, arcomplex<double>  *const source, tmpContainer<arcomplex<double> > &outercontainer){
-
-  arcomplex<double>  *siteMatrixState;
-  MPState->subMatrixStart(siteMatrixState,i-1);
-  calcer.calcLeftOuterContainer(i,MPState->indexTable().getLocalIndexTable(i-1),siteMatrixState,MPOperator->getSiteTensor(i-1),source,outercontainer);
-  
-  /*
-  int const *biIndices, *bimIndices, *siIndices, *sipIndices;
-  arcomplex<double>  *siteMatrixState;
-  arcomplex<double>  const *siteMatrixH;
-  int biS, bimS, siS, sipS, aiB, aimB, siB;
-  int lBlockSize, rBlockSize;
-  int const sparseSize=MPOperator->numEls(i-1);
-  int const numBlocks=MPState->indexTable().numBlocksLP(i-1);
-  clock_t curtime;
-  MPState->subMatrixStart(siteMatrixState,i-1);
-  getLocalDimensions(i-1);
-  MPOperator->sparseSubMatrixStart(siteMatrixH,i-1);
-  MPOperator->biSubIndexArrayStart(biIndices,i-1);
-  MPOperator->bimSubIndexArrayStart(bimIndices,i-1);
-  MPOperator->siSubIndexArrayStart(siIndices,i-1);
-  MPOperator->sipSubIndexArrayStart(sipIndices,i-1);
-  tmpContainer<arcomplex<double> > innercontainer(ld,lDR,lDwL,lDL);
-  curtime=clock();
-  //horrible construct to efficiently compute the partial contraction
-#pragma omp parallel for
-  for(int sip=0;sip<ld;++sip){
-    for(int bim=0;bim<lDwL;++bim){
-      for(int aim=0;aim<lDL;++aim){
-	for(int aip=0;aip<lDR;++aip){
-	  innercontainer.global_access(sip,aip,bim,aim)=0;
-	}
-      }
-    }
-  }
-#pragma omp parallel for private(lBlockSize,rBlockSize,aiB,aimB,siB)
-  for(int bim=0;bim<lDwL;++bim){
-    for(int iBlock=0;iBlock<numBlocks;++iBlock){
-      lBlockSize=MPState->indexTable().lBlockSizeLP(i-1,iBlock);
-      rBlockSize=MPState->indexTable().rBlockSizeLP(i-1,iBlock);
-      for(int k=0;k<lBlockSize;++k){
-	aimB=MPState->indexTable().aimBlockIndexLP(i-1,iBlock,k);
-	siB=MPState->indexTable().siBlockIndexLP(i-1,iBlock,k);
-	for(int j=0;j<rBlockSize;++j){
-	  aiB=MPState->indexTable().aiBlockIndexLP(i-1,iBlock,j);
-	  for(int aim=0;aim<lDL;++aim){
-	    innercontainer.global_access(siB,aiB,bim,aim)+=source[pctrIndex(aim,bim,aimB)]*siteMatrixState[stateIndex(siB,aiB,aimB)];
-	  }
-	}
-      }
-    }
-  }
-  curtime=clock()-curtime;
-  //std::cout<<"Inner contraction took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
-  curtime=clock();
-#pragma omp parallel for private(lBlockSize,rBlockSize,siB,aimB,siS,biS,bimS,sipS)
-  for(int aip=0;aip<lDR;++aip){
-    for(int iBlock=0;iBlock<numBlocks;++iBlock){
-      lBlockSize=MPState->indexTable().lBlockSizeLP(i-1,iBlock);
-      for(int k=0;k<lBlockSize;++k){
-	siB=MPState->indexTable().siBlockIndexLP(i-1,iBlock,k);
-	aimB=MPState->indexTable().aimBlockIndexLP(i-1,iBlock,k);
-	for(int bi=0;bi<lDwR;++bi){
-	  outercontainer.global_access(siB,bi,aip,aimB)=0;
-	}
-	for(int nSparse=0;nSparse<sparseSize;++nSparse){
-	  siS=siIndices[nSparse];
-	  if(siS==siB){
-	    biS=biIndices[nSparse];
-	    bimS=bimIndices[nSparse];
-	    sipS=sipIndices[nSparse];
-	    outercontainer.global_access(siB,biS,aip,aimB)+=siteMatrixH[nSparse]*innercontainer.global_access(sipS,aip,bimS,aimB);
-	  }
-	}
-      }
-    }
-  }
-  curtime=clock()-curtime;
-  //std::cout<<"Inner contraction took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n";
-  curtime=clock();
-  */
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-void baseMeasurement::calcCtrIterRightBaseQNOpt(int const i, arcomplex<double>  *const sourcePctr, arcomplex<double>  *const targetPctr){
-  
-  arcomplex<double>  *siteMatrixState;
-  MPState->subMatrixStart(siteMatrixState,i+1);
-  calcer.calcRightContraction(i,MPState->indexTable().getLocalIndexTable(i+1),siteMatrixState,MPOperator->getSiteTensor(i+1),sourcePctr,targetPctr);
-  
-  /*
-  arcomplex<double>  simpleContainer;
-  arcomplex<double>  *siteMatrixState;
-  int const numBlocks=MPState->indexTable().numBlocksRP(i+1);
-  int aiB, siB, aimB;
-  int lBlockSize, rBlockSize;
-  MPState->subMatrixStart(siteMatrixState,i+1);
-  getLocalDimensions(i+1);
-  tmpContainer<arcomplex<double> > outercontainer(lDL,lDwL,ld,lDR);
-  //The calculation of the first two contractions has to be done in other functions, too. It therefore has an extra function. 
-  calcOuterContainerRightQNOpt(i,sourcePctr,outercontainer);
-#pragma omp parallel for private(simpleContainer,lBlockSize,rBlockSize,aimB,aiB,siB)  
-  for(int aimp=0;aimp<lDL;++aimp){
-    for(int iBlock=0;iBlock<numBlocks;++iBlock){
-      lBlockSize=MPState->indexTable().lBlockSizeRP(i+1,iBlock);
-      rBlockSize=MPState->indexTable().rBlockSizeRP(i+1,iBlock);
-      for(int k=0;k<lBlockSize;++k){
-	aimB=MPState->indexTable().aimBlockIndexRP(i+1,iBlock,k);
-	for(int bim=0;bim<lDwL;++bim){
-	  simpleContainer=0;
-	  for(int j=0;j<rBlockSize;++j){
-	    siB=MPState->indexTable().siBlockIndexRP(i+1,iBlock,j);
-	    aiB=MPState->indexTable().aiBlockIndexRP(i+1,iBlock,j);
-	    simpleContainer+=conj(siteMatrixState[stateIndex(siB,aiB,aimB)])*outercontainer.global_access(aimp,bim,siB,aiB);
-	  }
-	  targetPctr[pctrIndex(aimB,bim,aimp)]=simpleContainer;
-	}
-      }
-    }
-  }
-  */
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-void baseMeasurement::calcOuterContainerRightQNOpt(int const i, arcomplex<double>  *const sourcePctr, tmpContainer<arcomplex<double> > &outercontainer){
-
-  
-  arcomplex<double>  *siteMatrixState;
-  MPState->subMatrixStart(siteMatrixState,i+1);
-  calcer.calcRightOuterContainer(i,MPState->indexTable().getLocalIndexTable(i+1),siteMatrixState,MPOperator->getSiteTensor(i+1),sourcePctr,outercontainer);
-  
-  /*
-  arcomplex<double>  *siteMatrixState;
-  int const numBlocks=MPState->indexTable().numBlocksRP(i+1);
-  int aiB, siB, aimB;
-  int lBlockSize, rBlockSize;
-  MPState->subMatrixStart(siteMatrixState,i+1);
-  getLocalDimensions(i+1);
-  arcomplex<double>  const *siteMatrixH;
-  int const *biIndices, *bimIndices, *siIndices, *sipIndices;
-  int const sparseSize=MPOperator->numEls(i+1);
-  int biS, bimS, siS, sipS;
-  MPOperator->sparseSubMatrixStart(siteMatrixH,i+1);
-  MPOperator->biSubIndexArrayStart(biIndices,i+1);
-  MPOperator->bimSubIndexArrayStart(bimIndices,i+1);
-  MPOperator->siSubIndexArrayStart(siIndices,i+1);
-  MPOperator->sipSubIndexArrayStart(sipIndices,i+1);
-  tmpContainer<arcomplex<double> > innercontainer(ld,lDwR,lDR,lDL);
-#pragma omp parallel for
-  for(int sip=0;sip<ld;++sip){                                  
-    for(int bi=0;bi<lDwR;++bi){
-      for(int ai=0;ai<lDR;++ai){
-	for(int aimp=0;aimp<lDL;++aimp){
-	  innercontainer.global_access(sip,bi,ai,aimp)=0;
-	}
-      }
-    }
-  }
-  //Contraction works similar to the general case. Here, only entries fulfilling the QN constraint are used
-#pragma omp parallel for private(lBlockSize,rBlockSize,aiB,siB,aimB)
-  for(int ai=0;ai<lDR;++ai){
-    for(int iBlock=0;iBlock<numBlocks;++iBlock){
-      lBlockSize=MPState->indexTable().lBlockSizeRP(i+1,iBlock);
-      rBlockSize=MPState->indexTable().rBlockSizeRP(i+1,iBlock);
-      for(int j=0;j<rBlockSize;++j){
-	aiB=MPState->indexTable().aiBlockIndexRP(i+1,iBlock,j);
-	siB=MPState->indexTable().siBlockIndexRP(i+1,iBlock,j);
-	for(int k=0;k<lBlockSize;++k){
-	  aimB=MPState->indexTable().aimBlockIndexRP(i+1,iBlock,k);
-	  for(int bi=0;bi<lDwR;++bi){
-	    innercontainer.global_access(siB,bi,ai,aimB)+=sourcePctr[pctrIndex(ai,bi,aiB)]*siteMatrixState[stateIndex(siB,aiB,aimB)];
-	  }
-	}
-      }
-    }
-  }
-#pragma omp parallel for private(lBlockSize,rBlockSize,aiB,siB,siS,sipS,biS,bimS)
-  for(int aim=0;aim<lDL;++aim){
-    for(int iBlock=0;iBlock<numBlocks;++iBlock){
-      rBlockSize=MPState->indexTable().rBlockSizeRP(i+1,iBlock);
-      for(int j=0;j<rBlockSize;++j){
-	siB=MPState->indexTable().siBlockIndexRP(i+1,iBlock,j);
-	aiB=MPState->indexTable().aiBlockIndexRP(i+1,iBlock,j);
-	for(int bim=0;bim<lDwL;++bim){
-	  outercontainer.global_access(aim,bim,siB,aiB)=0;
-	}
-	for(int nSparse=0;nSparse<sparseSize;++nSparse){
-	  siS=siIndices[nSparse];
-	  if(siS==siB){
-	    biS=biIndices[nSparse];
-	    bimS=bimIndices[nSparse];
-	    sipS=sipIndices[nSparse];
-	    outercontainer.global_access(aim,bimS,siB,aiB)+=siteMatrixH[nSparse]*innercontainer.global_access(sipS,biS,aiB,aim);
-	  }
-	}
-      }
-    }
-  }
-  */
 }
 
 //---------------------------------------------------------------------------------------------------//
 
 void baseMeasurement::calcCtrIterRightBase(int const i, arcomplex<double>  *const sourcePctr, arcomplex<double>  *const targetPctr){
+  arcomplex<double> *siteMatrixState;
+  MPState->subMatrixStart(siteMatrixState,i+1);
   if(MPState->indexTable().nQNs()){
     //Only this is usually relevant
-    calcCtrIterRightBaseQNOpt(i,sourcePctr,targetPctr);
+      calcer.calcRightContraction(i,MPState->indexTable().getLocalIndexTable(i+1),siteMatrixState,MPOperator->getSiteTensor(i+1),sourcePctr,targetPctr);
   }
   else{
-    arcomplex<double>  simpleContainer;
-    arcomplex<double>  *siteMatrixState;
-    arcomplex<double>  const *siteMatrixH;
-    int const *biIndices, *bimIndices, *siIndices, *sipIndices;
-    int const sparseSize=MPOperator->numEls(i+1);
-    int biS, bimS, siS, sipS;
-    clock_t curtime;
-    MPState->subMatrixStart(siteMatrixState,i+1);
-    MPOperator->sparseSubMatrixStart(siteMatrixH,i+1);
-    MPOperator->biSubIndexArrayStart(biIndices,i+1);
-    MPOperator->bimSubIndexArrayStart(bimIndices,i+1);
-    MPOperator->siSubIndexArrayStart(siIndices,i+1);
-    MPOperator->sipSubIndexArrayStart(sipIndices,i+1);
-    getLocalDimensions(i+1);
-    tmpContainer<arcomplex<double> > innercontainer(ld,lDwR,lDR,lDL);
-    tmpContainer<arcomplex<double> > outercontainer(lDL,lDwL,ld,lDR);
-    curtime=clock();
-    for(int sip=0;sip<ld;++sip){                                                       
-      for(int bi=0;bi<lDwR;++bi){
-	for(int ai=0;ai<lDR;++ai){
-	  for(int aimp=0;aimp<lDL;++aimp){
-	    simpleContainer=0.0;
-	    for(int aip=0;aip<lDR;++aip){
-	      simpleContainer+=sourcePctr[pctrIndex(ai,bi,aip)]*siteMatrixState[stateIndex(sip,aip,aimp)];
-	    }
-	    innercontainer.global_access(sip,bi,ai,aimp)=simpleContainer;
-	  }
-	}
-      }
-    }
-    for(int aimp=0;aimp<lDL;++aimp){
-      for(int ai=0;ai<lDR;++ai){
-	for(int si=0;si<ld;++si){
-	  for(int bim=0;bim<lDwL;++bim){
-	    outercontainer.global_access(aimp,bim,si,ai)=0;
-	  }
-	}
-	for(int nSparse=0;nSparse<sparseSize;++nSparse){
-	  biS=biIndices[nSparse];
-	  bimS=bimIndices[nSparse];
-	  siS=siIndices[nSparse];
-	  sipS=sipIndices[nSparse];
-	  outercontainer.global_access(aimp,bimS,siS,ai)+=siteMatrixH[nSparse]*innercontainer.global_access(sipS,biS,ai,aimp);
-	}
-      }
-    }
-    for(int aim=0;aim<lDL;++aim){
-      for(int bim=0;bim<lDwL;++bim){
-	for(int aimp=0;aimp<lDL;++aimp){
-	  simpleContainer=0;
-	  for(int si=0;si<ld;++si){
-	    for(int ai=0;ai<lDR;++ai){
-	      simpleContainer+=conj(siteMatrixState[stateIndex(si,ai,aim)])*outercontainer.global_access(aimp,bim,si,ai);
-	    }
-	  }
-	  targetPctr[pctrIndex(aim,bim,aimp)]=simpleContainer;
-	}
-      }
-    }
+    calcer.calcRightContraction(i,siteMatrixState,MPOperator->getSiteTensor(i+1),sourcePctr,targetPctr);
+  }
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void baseMeasurement::calcOuterContainerLeft(int const i, arcomplex<double>  *const source, tmpContainer<arcomplex<double> > &outercontainer){
+  arcomplex<double> *siteMatrixState;
+  MPState->subMatrixStart(siteMatrixState,i-1);
+  if(MPState->indexTable().nQNs()){
+    calcer.calcLeftOuterContainer(i,MPState->indexTable().getLocalIndexTable(i-1),siteMatrixState,MPOperator->getSiteTensor(i-1),source,outercontainer);
+  }
+  else{
+    calcer.calcLeftOuterContainer(i,siteMatrixState,MPOperator->getSiteTensor(i-1),source,outercontainer);
+  }
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void baseMeasurement::calcOuterContainerRight(int const i, arcomplex<double>  *const source, tmpContainer<arcomplex<double> > &outercontainer){
+  arcomplex<double> *siteMatrixState;
+  MPState->subMatrixStart(siteMatrixState,i+1);
+  if(MPState->indexTable().nQNs()){
+    calcer.calcRightOuterContainer(i,MPState->indexTable().getLocalIndexTable(i+1),siteMatrixState,MPOperator->getSiteTensor(i+1),source,outercontainer);
+  }
+  else{
+    calcer.calcRightOuterContainer(i,siteMatrixState,MPOperator->getSiteTensor(i+1),source,outercontainer);
   }
 }

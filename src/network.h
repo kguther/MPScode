@@ -30,7 +30,7 @@ class network{
   void loadNetworkState(mps const &source);
   void exportNetworkState(mps &target);
   void resetConvergence();
-  void getInitState();
+  void resetState();
   void quantumNumberVec(std::vector<quantumNumber> *target){target=&conservedQNs;}
   dimensionTable& dimTable() {return networkDimInfo;}
   int setSimParameters(simulationParameters const &newPars);

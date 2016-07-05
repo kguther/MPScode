@@ -5,10 +5,9 @@
 #include <memory>
 
 
-blockHMatrix::blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcomplex<double> > *Hin, dimensionTable &dimInfo, int Dwin, int iIn, siteQNOrderMatrix const *indexTablein, projector *excitedStateP, double shift, std::vector<quantumNumber> *conservedQNsin, int const cached):
+blockHMatrix::blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcomplex<double> > const *Hin, dimensionTable &dimInfo, int Dwin, int iIn, siteQNOrderMatrix const *indexTablein, projector *excitedStateP, double shift, std::vector<quantumNumber> *conservedQNsin, int const cached):
   optHMatrix(R,L,Hin,dimInfo,Dwin,iIn,excitedStateP,shift,conservedQNsin),
-  indexTable(indexTablein),
-  HMPO(Hin)
+  indexTable(indexTablein)
 {
   int cBlockSize;
   int numBlocks;
@@ -83,6 +82,7 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
   HMPO->siSubIndexArrayStart(siIndices,i);
   HMPO->bimSubIndexArrayStart(bimIndices,i);
   HMPO->sipSubIndexArrayStart(sipIndices,i);
+  arcomplex<double> const *H;
   HMPO->sparseSubMatrixStart(H,i);
   int siB, aiB, aimB, sipS;
   excitedStateProject(v);
@@ -204,6 +204,8 @@ void blockHMatrix::buildSparseHBlocked(){
 
 arcomplex<double> blockHMatrix::HEffEntry(int const si, int const aim, int const ai, int const sip, int const aimp, int const aip){
   arcomplex<double> simpleContainer=0.0;
+  arcomplex<double> const *H;
+  HMPO->subMatrixStart(H,i);
   for(int bi=0;bi<lDwR;++bi){
     //Use the canonical form of a local MPO. This only works for nearest-neighbour terms, for longer ranged interactions, a general sparse storage has to be used.
     if(bi==0){

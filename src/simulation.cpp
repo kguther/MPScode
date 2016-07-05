@@ -32,6 +32,7 @@ simulation::simulation(problemParameters &parsIn, simulationParameters &simParsI
   double matEls;
   int L=pars.L;
   if(abs(parDirection)>1e-20 && jgScale==1){
+    //jgScale==1 scales (J,g) normalized from (1,1), jgScale==0 does keep (J,g) constant but requires at least pathLength=2, jgScale==2 keeps J constant and scales g in steps of 0.3333 and jgScale==3 does keep (J,g) and W constant
     parDirection*=1.0/(scaling*abs(parDirection));
   }
   for(int i=0;i<pars.L;++i){
@@ -109,7 +110,7 @@ void simulation::run(){
   for(int nRun=1;nRun<pathLength+1;++nRun){
 
     if(jgScale==2){
-      parDirection.imag(3.0-(nRun-1)/3.0);
+      parDirection.imag(2.0-(nRun-1)/3.0);
     }
     if(abs(parDirection)>1e-20 && jgScale==1){
       parDirection*=1.0/(scaling*abs(parDirection))*nRun;
@@ -153,6 +154,7 @@ void simulation::singleRun(){
   std::vector<double> expectationValues;
   std::vector<std::vector<std::complex<double> > > localExpectationValues;
 
+  csystem.TensorNetwork.resetState();
   if(jgScale<=1){
     J=jgScale+parDirection.real();
     g=jgScale+parDirection.imag();

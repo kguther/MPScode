@@ -3,3 +3,4 @@ results/
 parfiles/
 *.o
 *.dbg
+*.hll

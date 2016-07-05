@@ -1,5 +1,6 @@
 #include "mps.h"
 #include "arrayprocessing.h"
+#include "mkl_complex_defined.h"
 #include "exceptionClasses.h"
 #include <cmath>
 #include <memory>
@@ -18,6 +19,24 @@ mps::mps(dimensionTable const &dimInfoIn, std::vector<quantumNumber> const &cons
 
 //---------------------------------------------------------------------------------------------------//
 
+mps::mps(mps const &source):
+  stateArray(source),
+  conservedQNs(source.conservedQNs)
+{
+  loadIndexTables();
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+mps& mps::operator=(mps const &source){
+  stateArray::operator=(source);
+  conservedQNs=source.conservedQNs;
+  loadIndexTables();
+  return *this;
+}
+
+//---------------------------------------------------------------------------------------------------//
+
 void mps::generate(dimensionTable const &dimInfoIn, std::vector<quantumNumber> const &conservedQNsin){
   stateArray::initialize(dimInfoIn);
   setUpQNs(conservedQNsin);
@@ -26,17 +45,15 @@ void mps::generate(dimensionTable const &dimInfoIn, std::vector<quantumNumber> c
 
 //---------------------------------------------------------------------------------------------------//
 
-int mps::setUpQNs(std::vector<quantumNumber> const &conservedQNsin){
+void mps::setUpQNs(std::vector<quantumNumber> const &conservedQNsin){
   //Often-used function for setting the internal quantum numbers of an mps
   conservedQNs=conservedQNsin;
-  return loadIndexTables();
+  loadIndexTables();
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-
-//Is there some bug in here?
-int mps::loadIndexTables(){
+void mps::loadIndexTables(){
   int info=0;
   if(conservedQNs.size()){
     nQNs=conservedQNs.size();
@@ -48,7 +65,6 @@ int mps::loadIndexTables(){
   if(nQNs){
     indexTableVar=basisQNOrderMatrix(dimInfo,&conservedQNs);
   }
-  return info;
 }
 
 //---------------------------------------------------------------------------------------------------//

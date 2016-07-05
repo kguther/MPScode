@@ -4,7 +4,7 @@ The first line always (!) contains the name of the run, under which results are 
 For example:
 g	1
 sets the coupling constant g to 1 (not referred in type 0 runs with F=1). Any nonappearing parameters are given default values.
-There are currently 17 settable parameters, with shortcuts:
+There are currently 24 settable parameters, with shortcuts:
 T	type of simulation. 0 scans the parameters J,g, 1 scans the parameter L and 2 uses only the specified parameters for a single run. 3 adds a symmetry breaking term and 4 gets the result for a single point for different fillings in all parity sectors. Default: 0
 L	number of sites. Only referred for T==0 or T==2. Default: 100
 N	total particle number. Only referred for T==0 or T==2. Default: 100
@@ -15,7 +15,7 @@ o	total particle number modulo 2. Only referred for T==1 to determine the partic
 n	number of subsequent runs for different parameters J,g. Only referred for T==0 Default: 5
 R	number of different D used in a run (where D is ramped up from low to high values). If R!=1, the given bond dimension D is used as an initial value (not as final!). Only referred for T==2. Default: 1
 E	number of eigenvalues computed. Default: 1
-F	Flag setting whether J,g (1) or W (0) is scaled. Only referred for T==0. Default: 1
+F	Flag setting whether J,g (1) or W (0) or only g (2) or nothing (3) is scaled. F==0 requires n>1. Only referred for T==0. Default: 1
 z	inverse of the scaling prefactor for the perturbation parameters J,g. Default: 100
 s	total number of angles for measurement of composite second order correlator. Only referred for T==2. Default: 0
 a	initial value of the enrichment parameter alpha. Default: 1e-3

@@ -16,15 +16,15 @@
 
 class optHMatrix{
  public:
-  optHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcomplex<double> > *Hin, dimensionTable const &dimInfo, int Dwin, int iIn, projector *excitedStateP, double shift, std::vector<quantumNumber> *conservedQNsin);
-  virtual ~optHMatrix();
+  optHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcomplex<double> > const *Hin, dimensionTable const &dimInfo, int Dwin, int iIn, projector *excitedStateP, double shift, std::vector<quantumNumber> *conservedQNsin);
+  virtual ~optHMatrix(){}
   virtual void MultMv(arcomplex<double> *v, arcomplex<double> *w);
   void MultMvQNConserving(arcomplex<double> *v, arcomplex<double> *w);
   virtual int dim() const {return dimension;}
  protected:
   arcomplex<double> *Rctr;
   arcomplex<double> *Lctr;
-  arcomplex<double> const *H;
+  mpo<arcomplex<double> > const *HMPO;
   double shift;
   projector *P;
   std::vector<quantumNumber> *conservedQNs;

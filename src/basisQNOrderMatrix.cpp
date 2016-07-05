@@ -6,7 +6,8 @@
 // the blocks of the MPS matrices.
 //---------------------------------------------------------------------------------------------------//
 
-basisQNOrderMatrix::basisQNOrderMatrix()
+basisQNOrderMatrix::basisQNOrderMatrix():
+  nQN(0)
 {}
 
 //---------------------------------------------------------------------------------------------------//
@@ -14,10 +15,11 @@ basisQNOrderMatrix::basisQNOrderMatrix()
 //---------------------------------------------------------------------------------------------------//
 
 basisQNOrderMatrix::basisQNOrderMatrix(dimensionTable const &dimin, std::vector<quantumNumber> *conservedQNsin):
-  dimInfo(dimin)
+  dimInfo(dimin),
+  nQN(conservedQNsin->size())
 {
-  conservedQNs.resize(conservedQNsin->size());
-  for(int m=0;m<conservedQNs.size();++m){
+  conservedQNs.resize(nQN);
+  for(int m=0;m<nQN;++m){
     conservedQNs[m]=&((*conservedQNsin)[m]);
   }
   generateQNIndexTables();
@@ -27,7 +29,8 @@ basisQNOrderMatrix::basisQNOrderMatrix(dimensionTable const &dimin, std::vector<
 
 basisQNOrderMatrix::basisQNOrderMatrix(dimensionTable const &dimin, std::vector<pseudoQuantumNumber*> const &conservedQNsin):
   dimInfo(dimin),
-  conservedQNs(conservedQNsin)
+  conservedQNs(conservedQNsin),
+  nQN(conservedQNsin.size())
 {
   generateQNIndexTables();
 }
@@ -36,7 +39,8 @@ basisQNOrderMatrix::basisQNOrderMatrix(dimensionTable const &dimin, std::vector<
 
 basisQNOrderMatrix::basisQNOrderMatrix(int iStart, int iStop, dimensionTable const &dimin, std::vector<pseudoQuantumNumber*> const &conservedQNsin):
   dimInfo(dimin),
-  conservedQNs(conservedQNsin)
+  conservedQNs(conservedQNsin),
+  nQN(conservedQNsin.size())
 {
   int cI;
   localIndexTables.resize(iStop-iStart+1);

@@ -7,13 +7,13 @@
 #include "infiniteQsystem.h"
 
 //---------------------------------------------------------------------------------------------------//
-
+/*
 void testIDMRG(problemParameters pars, simulationParameters simPars, mpo<std::complex<double> > const &H){
   infiniteQsystem test(pars,simPars,H);
   test.solve();
   exit(1);
 }
-
+*/
 //---------------------------------------------------------------------------------------------------//
 
 Qsystem::Qsystem(problemParameters &inputpars, simulationParameters &inputsimPars):

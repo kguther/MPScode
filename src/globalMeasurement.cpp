@@ -1,4 +1,7 @@
 #include "globalMeasurement.h"
+#include <memory>
+#include <iostream>
+#include "mkl_complex_defined.h"
 
 globalMeasurement::globalMeasurement():
   baseMeasurement()
@@ -23,13 +26,20 @@ void globalMeasurement::setupMeasurement(mpo<arcomplex<double> > *MPOperatorIn, 
 //---------------------------------------------------------------------------------------------------//
 
 void globalMeasurement::measureFull(double &lambda){
-  arcomplex<double> *targetPctr=new arcomplex<double>[MPState->maxDim()*MPState->maxDim()*MPOperator->maxDim()];
+  std::unique_ptr<arcomplex<double> >targetPctrP(new arcomplex<double>[MPState->maxDim()*MPState->maxDim()*MPOperator->maxDim()]);
+  arcomplex<double> *targetPctr=targetPctrP.get();
   targetPctr[0]=1.0;
+  /*
+  for(int i=MPOperator->length()-2;i>=-1;--i){
+    calcCtrIterRightBase(i,targetPctr,targetPctr);
+  }
+  */
+  
   for(int i=1;i<=MPOperator->length();++i){
     calcCtrIterLeftBase(i,targetPctr,targetPctr);
   }
+  
   lambda=real(targetPctr[0]);
-  delete[] targetPctr;
 }
 
 

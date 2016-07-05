@@ -53,34 +53,7 @@ network::network(problemParameters const &inputpars, simulationParameters const 
   for(int iQN=0;iQN<pars.nQNs;++iQN){
     conservedQNs.push_back(quantumNumber(networkDimInfo,pars.QNconserved[iQN],pars.QNLocalList[iQN]));
   }
-  //Generation of MPS, that is basically the index tables for the QNs are written
-  networkState.generate(networkDimInfo,conservedQNs);
-  //All states have to be stored, for reusability in later solve() with other simulation parameters
-  //Somewhat unelegant way to handle loading of the stored states in the first solve()
-  for(int iEigen=1;iEigen<pars.nEigs;++iEigen){
-    excitedStateP.storeOrthoState(networkState,iEigen);
-  }
-  if(pars.nQNs && pars.d.maxd()==4 && networkH.maxDim()==12){
-    if(conservedQNs[0].QNValue().imag()){  
-      exactGroundState gsLoader(conservedQNs[0].QNValue());
-      gsLoader.writeExactGroundState(networkState);
-    }
-    //In the absence of Z2-symmetry, the ground state guess is the even exact ground state, the first excited state guess is the odd exact ground state
-    else{
-      std::complex<int> even=conservedQNs[0].QNValue();
-      std::complex<int> odd=std::complex<int>(conservedQNs[0].QNValue().real(),-1);
-      exactGroundState gsLoaderA(even);
-      exactGroundState gsLoaderB(odd);
-      gsLoaderA.writeExactGroundState(networkState);
-      if(pars.nEigs>1){
-	mps firstInitialState(networkDimInfo,conservedQNs);
-	gsLoaderB.writeExactGroundState(firstInitialState);
-	excitedStateP.storeOrthoState(firstInitialState,1);
-      }
-    }  
-  }
-  excitedStateP.storeOrthoState(networkState,0);
-
+  resetState();
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -103,6 +76,43 @@ void network::resetConvergence(){
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
     nConverged[iEigen]=1;
   }
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void network::resetState(){
+  //Generation of MPS, that is basically the index tables for the QNs are written
+  networkState.generate(networkDimInfo,conservedQNs);
+  //All states have to be stored, for reusability in later solve() with other simulation parameters
+  //Somewhat unelegant way to handle loading of the stored states in the first solve()
+  for(int iEigen=1;iEigen<pars.nEigs;++iEigen){
+    excitedStateP.storeOrthoState(networkState,iEigen);
+  }
+  if(pars.nQNs && pars.d.maxd()==4 && networkH.maxDim()==12){
+    if(conservedQNs[0].QNValue().imag()){  
+      exactGroundState gsLoader(conservedQNs[0].QNValue());
+      gsLoader.writeExactGroundState(networkState);
+    }
+    //In the absence of Z2-symmetry, the ground state guess is the even exact ground state, the first excited state guess is the odd exact ground state
+    else{
+      //the Z2-number is set to 1 internally in exactGroundState if the input i 0
+      std::complex<int> even=conservedQNs[0].QNValue();
+      std::complex<int> odd=std::complex<int>(conservedQNs[0].QNValue().real(),-1);
+      exactGroundState gsLoaderA(even);
+      exactGroundState gsLoaderB(odd);
+      gsLoaderA.writeExactGroundState(networkState);
+      if(pars.nEigs>1){
+	std::vector<quantumNumber> conjugateQNs;
+	for(int iQN=0;iQN<pars.nQNs;++iQN){
+	  conjugateQNs.push_back(quantumNumber(networkDimInfo,pars.QNconserved[iQN],pars.QNLocalList[iQN],-1));
+	}
+	mps firstInitialState(networkDimInfo,conjugateQNs);
+	gsLoaderB.writeExactGroundState(firstInitialState);
+	excitedStateP.storeOrthoState(firstInitialState,1);
+      }
+    }  
+  }
+  excitedStateP.storeOrthoState(networkState,0);
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -176,27 +186,30 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
     pCtr.initialize(&networkH,&networkState);
     std::cout<<"Starting normalization\n";
+    //For more than one QN, the static scheme does not necessarily yield a valid labeling scheme
+    int const sec=(pars.nQNs>1)?1:0;
+    double alphaBuf=alpha;
+    alpha=0.0;
     for(int i=L-1;i>0;--i){
-      normalize(i,0,0);
+      normalize(i,0,sec);
     }
+    alpha=alphaBuf;
     networkState.normalizeFinal(1);
-
-    /*
+#ifdef QNCHECK
     overlap test;
     test.loadMPS(&networkState,&networkState);
     std::cout<<"Norm: "<<test.getFullOverlap()<<std::endl;
-    */
-    /*
     measure(check,spinCheck);
     measure(checkParity,parCheck);
     std::cout<<"Current particle number (initial): "<<spinCheck<<std::endl;
     std::cout<<"Current subchain parity (initial): "<<parCheck<<std::endl;
-    */
+#endif
 
     std::cout<<"Computing partial contractions\n";
     pCtr.Lctr.global_access(0,0,0,0)=1;
     //In preparation of the first sweep, generate full contraction to the right (first sweeps starts at site 0)
     pCtr.calcCtrFull(1);
+
     shift=cshift;
     std::cout<<"Computing state "<<iEigen<<std::endl;
     alpha=simPars.alpha;
@@ -209,6 +222,7 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
 
     pCtr.calcCtrIterRightBase(-1,&expectationValue);
     std::cout<<"Initial energy: "<<expectationValue<<std::endl;
+
     lambda[iEigen]=real(expectationValue)+shift;
     for(int iSweep=0;iSweep<simPars.nSweeps;++iSweep){
       if(!nConverged[iEigen]){
@@ -219,19 +233,20 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
 	sweep(maxIter,tol,lambda[iEigen]);
 	//In calcCtrIterRightBase, the second argument has to be a pointer, because it usually is an array. No call-by-reference here.
 	pCtr.calcCtrIterRightBase(-1,&expectationValue);
+	if(tol>simPars.tolMin){
+	  tol*=pow(simPars.tolMin/simPars.tolInitial,1.0/simPars.nSweeps);
+	}
 	deltaLambda[iEigen]=1;
 	if(iSweep==simPars.nSweeps-1){
 	  std::cout<<"Calculating quality of convergence\n";
 	  deltaLambda[iEigen]=convergenceCheck();
+	  if(deltaLambda[iEigen]<simPars.devAccuracy){
+	    nConverged[iEigen]=0;
+	  }
+	  std::cout<<"Quality of convergence: "<<deltaLambda[iEigen]<<"\tRequired accuracy: "<<simPars.devAccuracy<<std::endl<<std::endl;
+	  std::cout<<"Used bond dimension: "<<D<<std::endl;
 	}
-	if(deltaLambda[iEigen]<simPars.devAccuracy){
-	  nConverged[iEigen]=0;
-	}
-	if(tol>simPars.tolMin){
-	  tol*=pow(simPars.tolMin/simPars.tolInitial,1.0/simPars.nSweeps);
-	}
-	std::cout<<"Quality of convergence: "<<deltaLambda[iEigen]<<"\tRequired accuracy: "<<simPars.devAccuracy<<std::endl<<std::endl;
-	std::cout<<"Used bond dimension: "<<D<<std::endl;
+	//the last optimization has not been included in the projector's F-Matrix yet
 	excitedStateP.updateScalarProducts(0,-1);
 	for(int prev=0;prev<iEigen;++prev){
 	  std::cout<<"Overlap with state "<<prev<<" is: "<<excitedStateP.fullOverlap(prev)<<std::endl;
@@ -243,14 +258,13 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
 	}
 	resetSweep();
       }
-      /*
+#ifdef QNCHECK
       measure(check,spinCheck);
       measure(checkParity,parCheck);
       std::cout<<"Current particle number (final): "<<spinCheck<<std::endl;
       std::cout<<"Current subchain parity (final): "<<parCheck<<std::endl;
-      */
+#endif
     }
-    //printQNLabels(networkState);
     stepRet=gotoNextEigen();
     if(!stepRet){
       std::cout<<"LOADED STATES. PREPARED COMPUTATION OF NEXT EIGENSTATE"<<std::endl;
@@ -275,6 +289,9 @@ void network::sweep(double maxIter, double tol, double &lambda){
   // By default enrichment is used whenever conserved QNs are used
   int const expFlag=pars.nQNs;
   double lambdaCont;
+  
+  //Initializing the overlap takes some time, thus, it is disabled
+  //double testE;
   //overlap test(&networkState,&networkState);
   std::cout<<"STARTING RIGHTSWEEP\n\n";
   for(int i=0;i<(L-1);++i){
@@ -305,7 +322,6 @@ void network::sweep(double maxIter, double tol, double &lambda){
     optimize(i,maxIter,tol,lambda);
     curtime=clock()-curtime;
     std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
-    
     //Execute right-sided enrichment step and update the coefficient of the expansion term
     normalize(i,0,expFlag);
     //same as above for the scalar products with lower lying states
@@ -345,15 +361,14 @@ int network::optimize(int i, int maxIter, double tol, double &iolambda){
   networkState.subMatrixStart(currentM,i);
 
   //Check step useful whenever something in the normalization or optimization is adjusted
-  //Add some flags to manage this automatically
-  /*
+#ifdef QNCHECK
   double spinCheck=0;
   double parCheck=0;
   measure(check,spinCheck);
   measure(checkParity,parCheck);
   std::cout<<"Current particle number (opt): "<<spinCheck<<std::endl;
   std::cout<<"Current subchain parity (opt): "<<parCheck<<std::endl;
-  */
+#endif
     
   double lambdaCont;
   if(pars.nQNs){// && i!=0 && i!=(L-1)){
@@ -368,7 +383,10 @@ int network::optimize(int i, int maxIter, double tol, double &iolambda){
       nconv=eigProblemBlocked.EigenValVectors(compressedVector,plambda);
     std::cout<<"Number of iterations taken: "<<eigProblemBlocked.GetIter()<<std::endl;
     }
-    BMat.readOutput(currentM);
+    if(nconv){
+      //if arpack does not converge, the result is likely even worse than the input (empirical statement)
+      BMat.readOutput(currentM);
+    }
   }
   else{
     if(pars.nQNs){
@@ -382,7 +400,6 @@ int network::optimize(int i, int maxIter, double tol, double &iolambda){
     //Note that the types given do and have to match the ones in the projector class if more than one eigenvalue is computed
     ARCompStdEig<double, optHMatrix> eigProblem(HMat.dim(),1,&HMat,multMv,"SR",0,tol,maxIter,currentM);
     //One should avoid to hit the maximum number of iterations since this can lead into a suboptimal site matrix, increasing the current energy (although usually not by a lot)
-    //So far it seems that the eigensolver either converges quite fast or not at all (i.e. very slow, such that the maximum number of iterations is hit) depending strongly on the tolerance
     nconv=eigProblem.EigenValVectors(currentM,plambda);
   }
 

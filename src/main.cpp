@@ -11,13 +11,15 @@
 #include <mpi.h>
 #include <vector>
 #include <memory>
+#include "arrayprocessing.h"
 
 void sysSolve(info const &parPack, std::string const &fileName, std::vector<double> &energies);
 void getScaling(int L, info const &parPack, double *results, std::string const &fileName);
 void sysSetMeasurements(simulation &sim, int d, int L, int meas);
+void importParameters(std::string const &fN, std::vector<int> &alpha, std::vector<double> &J, std::vector<double> &g);
 void getFileName(info const &necPars, char *fNBuf, int commsize, int myrank, std::string &finalName);
-//results has to be at least of size 4 (in the sense of a C array)
 
+//results has to be at least of size 4 (in the sense of a C array)
 int main(int argc, char *argv[]){
   //Here, the parameters are distributed via MPI to the processes. Each process then individually solves the system for a specific set of parameters - great paralellization.
   //There are currently two settings: scaling and correlation. The former computes the behaivour of the gap with increasing system size and the latter computes correlations etc across the parameter space for fixed system size
@@ -52,7 +54,7 @@ int main(int argc, char *argv[]){
   //The interface class mainly reads parameter files
   if(myrank==0){
     interface settings;
-    if(argc==2){
+    if(argc>=2){
       settings.provideInterface(argv[1]);
     }
     else{
@@ -97,7 +99,18 @@ int main(int argc, char *argv[]){
 	necPars.gsc*=sin(alpha);
       }
       if(necPars.jgScale==2){
-	necPars.Jsc=2.0-myrank/3.0;
+	necPars.Jsc=2.0-(myrank)/3.0;
+      }
+      if(necPars.jgScale==3){
+	//really sloppy solution for running for some given parameters - np has to be number of parameter sets
+	std::vector<int> alpha;
+	std::vector<double> J,g;
+	importParameters(argv[2],alpha,J,g);
+	necPars.par=alpha[myrank];
+	necPars.Jsc=J[myrank];
+	necPars.gsc=g[myrank];
+	//in this setting, it does not make sense to have numPts>1 since this would just repeat the same calculation
+	necPars.numPts=1;
       }
     }
   }
@@ -146,7 +159,7 @@ int main(int argc, char *argv[]){
  
   if(necPars.simType==3){
     necPars.nEigens=2;
-    /*
+    
     switch(myrank){
     case 0:
       necPars.tImag=0;
@@ -172,9 +185,11 @@ int main(int argc, char *argv[]){
       necPars.tImag=0;
       necPars.tPos=-1;
       }
-    */
+    
+    /*
     necPars.tReal=0;
     necPars.tPos=myrank;
+    */
   }
   //The output filename is generated
   if(necPars.simType!=1){
@@ -285,6 +300,7 @@ void sysSetMeasurements(simulation &sim, int d, int L, int meas){
   localMpo<lapack_complex_double> localDensity(d,1,L,0,0);
   localMpo<lapack_complex_double> localDensityB(d,1,L,0,0);
   localMpo<lapack_complex_double> totalDensityCorrelation(d,1,L,1,0);
+  localMpo<lapack_complex_double> totalMagnetizationCorrelation(d,1,L,1,0);
   localMpo<lapack_complex_double> interChainCorrelation(d,1,L,1,parityQNs);
   localMpo<lapack_complex_double> superconductingOrder(d,1,L,1,0);
   localMpo<lapack_complex_double> interChainDensityCorrelation(d,1,L,1,0);
@@ -300,6 +316,7 @@ void sysSetMeasurements(simulation &sim, int d, int L, int meas){
   std::string lDName="Local density";
   std::string lDOName="Local density B";
   std::string iCDCName="Interchain density correlation";
+  std::string tMCName="Total magnetization correlation";
   std::string tCDCName="Total density correlation";
   std::string iCCName="Interchain hopping correlation";
   std::string scName="Interchain pairwise correlation";
@@ -327,6 +344,7 @@ void sysSetMeasurements(simulation &sim, int d, int L, int meas){
 	bulkSuperconductingOrder.global_access(i,si,sip,0,0)=delta(si,sip);
 	bulkInterChainDensityCorrelation.global_access(i,si,sip,0,0)=delta(si,sip);
 	totalDensityCorrelation.global_access(i,si,sip,0,0)=delta(si,sip);
+	totalMagnetizationCorrelation.global_access(i,si,sip,0,0)=delta(si,sip);
 	bulkSuperConductingCorrelation.global_access(i,si,sip,0,0)=delta(si,sip);
 	bulkICSuperConductingCorrelation.global_access(i,si,sip,0,0)=delta(si,sip);
       }
@@ -358,6 +376,8 @@ void sysSetMeasurements(simulation &sim, int d, int L, int meas){
       bulkSuperconductingOrder.global_access(bulkStart-1,si,sip,0,0)=delta(si,0)*delta(sip,3);
       totalDensityCorrelation.global_access(1,si,sip,0,0)=delta(si,sip)*(2*delta(si,3)+delta(si,1)+delta(si,2));
       totalDensityCorrelation.global_access(0,si,sip,0,0)=delta(si,sip)*(2*delta(si,3)+delta(si,1)+delta(si,2));
+      totalMagnetizationCorrelation.global_access(1,si,sip,0,0)=delta(si,sip)*(delta(si,1)-delta(si,2));
+      totalMagnetizationCorrelation.global_access(0,si,sip,0,0)=delta(si,sip)*(delta(si,1)-delta(si,2));
       bulkSuperConductingCorrelation.global_access(bulkStart-3,si,sip,0,0)=bMatrix(sip,si)*(delta(sip,0)-delta(sip,1));
       bulkSuperConductingCorrelation.global_access(bulkStart-2,si,sip,0,0)=bMatrix(sip,si);
       bulkSuperConductingCorrelation.global_access(bulkStart-1,si,sip,0,0)=aMatrix(si,sip)*(delta(sip,1)-delta(sip,3));
@@ -452,4 +472,20 @@ void getFileName(info const &necPars, char *fNBuf, int commsize, int myrank, std
     }
   }
   std::cout<<finalName<<std::endl;
+}
+
+void importParameters(std::string const &fN, std::vector<int> &alpha, std::vector<double> &J, std::vector<double> &g){
+  std::ifstream ifs;
+  int intPar;
+  double fPar;
+  ifs.open(fN.c_str());
+  while(!ifs.eof()){
+    ifs>>intPar;
+    alpha.push_back(intPar);
+    ifs>>fPar;
+    J.push_back(fPar);
+    ifs>>fPar;
+    g.push_back(fPar);
+  }
+  ifs.close();
 }

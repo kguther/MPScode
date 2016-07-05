@@ -261,8 +261,8 @@ void siteQNOrderMatrix::blockStructureFull(int direction, std::vector<std::vecto
 	  if(!(conservedQNs[iQN])->validQN(i+1-direction,qnCriterium(iQN,aim,si,direction,pre))){
 	    valid=0;
 	  }
-	  for(int iQN=0;iQN<nQNs;++iQN){
-	    if(valid){
+	  if(valid){
+	    for(int iQN=0;iQN<nQNs;++iQN){
 	      qnLabels[iQN].push_back(qnCriterium(iQN,aim,si,direction,pre));
 	    }
 	  }
@@ -329,7 +329,12 @@ void siteQNOrderMatrix::blockStructureFull(int direction, std::vector<std::vecto
 
 void printIndexTable(siteQNOrderMatrix const &a){
   int const numBlocks=a.numBlocksRP();
+  int const nQNs=a.nQNs();
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
-    std::cout<<"Block with QN "<<a.qnLabelRP(iBlock)[0]<<" of size "<<a.lBlockSizeRP(iBlock)<<"x"<<a.rBlockSizeRP(iBlock)<<std::endl;
+    std::cout<<"Block with QNs ";
+    for(int iQN=0;iQN<nQNs;++iQN){
+      std::cout<<a.qnLabelRP(iBlock)[iQN]<<" - ";
+    }
+    std::cout<<" of size "<<a.lBlockSizeRP(iBlock)<<"x"<<a.rBlockSizeRP(iBlock)<<std::endl;
   }
 }

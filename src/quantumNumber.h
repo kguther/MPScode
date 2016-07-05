@@ -20,7 +20,7 @@
 class quantumNumber: public pseudoQuantumNumber{
  public:
   quantumNumber();
-  quantumNumber(dimensionTable const &dimInfoin, std::complex<int> const &Nin, std::vector<std::complex<int> > const &QNlocin);
+  quantumNumber(dimensionTable const &dimInfoin, std::complex<int> const &Nin, std::vector<std::complex<int> > const &QNlocin, int referenceParity=1);
   int qnConstraint(int i, int si, int ai, int aim);
   int primaryIndex(int i, int ai);
   int setParameterD(int Dnew);
