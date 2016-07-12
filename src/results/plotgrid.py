@@ -10,8 +10,9 @@ fs=24
 k=9
 
 def colormap(data):
-    return (0,(data[k]-minE)/(maxE-minE),0)
+    #return (0,(data[k]-minE)/(maxE-minE),0)
     #return (0,data[6],0)
+    return (np.exp(-data[4]),0,0)
 
 if filename in filelist:
     gridData=np.loadtxt(filename,skiprows=1)

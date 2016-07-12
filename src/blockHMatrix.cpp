@@ -4,7 +4,6 @@
 #include <iostream>
 #include <memory>
 
-
 blockHMatrix::blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcomplex<double> > const *Hin, dimensionTable &dimInfo, int Dwin, int iIn, siteQNOrderMatrix const *indexTablein, projector *excitedStateP, double shift, std::vector<quantumNumber> *conservedQNsin, int const cached):
   optHMatrix(R,L,Hin,dimInfo,Dwin,iIn,excitedStateP,shift,conservedQNsin),
   indexTable(indexTablein)
@@ -36,10 +35,10 @@ blockHMatrix::blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcom
 }
 
 //---------------------------------------------------------------------------------------------------//
-// In contrast to the case without QN conservation, when using blocked MPS matrices, it is much faster
-// to use a sparse matrix-vector multiplication instead of the cached approach. We use our own matrix-
-// vector multiplication to implement the projection on the excited state, which is carried out in 
-// the unblocked matrix (currently).
+// In contrast to the case without QN conservation, when using blocked MPS matrices, it can be much 
+// faster to use a sparse matrix-vector multiplication instead of the cached approach. We use our own 
+// matrix-vector multiplication to implement the projection on the excited state, which is carried
+// out in the unblocked matrix (currently).
 //---------------------------------------------------------------------------------------------------//
 
 void blockHMatrix::MultMvBlocked(arcomplex<double> *v, arcomplex<double> *w){
@@ -64,7 +63,7 @@ void blockHMatrix::MultMvBlocked(arcomplex<double> *v, arcomplex<double> *w){
 }
 
 //---------------------------------------------------------------------------------------------------//
-// The previous function is very efficient for low bodn dimension, but scales really poorly. Therefore,
+// The previous function is very efficient for low bond dimension, but scales really poorly. Therefore,
 // for higher bond dimensions (as they are required for excited state search), we return to the cached
 // version of matrix vector multiplication which scales with D^3.
 //---------------------------------------------------------------------------------------------------//

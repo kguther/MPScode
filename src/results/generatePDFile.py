@@ -56,7 +56,7 @@ taskname=sys.argv[1]
 pdName='pd_'+taskname.rstrip('_')+'.txt'
 
 with open(pdName,'w') as pd:
-    pd.write('rho\talpha\tJ\tg\tgs degeneracy\tdensity fluctuation\tgreens function revival\tsdw-par\tcdw-par\tentanglement entropy parameter\taccuracy\n')
+    pd.write('rho\talpha\tJ\tg\tgs degeneracy\tdensity fluctuation\tgreens function revival\tsdw-par\tcdw-par\tentanglement entropy parameter\tenergy variance\taccuracy\n')
 points=[]
 
 counter=0
@@ -83,7 +83,7 @@ for filename in filelist:
             conjugateFilename=prefix+'_p_'+conjugateParity+'_W_'+postfix
             print conjugateFilename
             if conjugateFilename in filelist:
-                readParameters(filename,pars)
+                readParameters(conjugateFilename,pars)
             for i in range(0,n-1):
                 data=[]
                 readData(filename,data)
@@ -98,15 +98,23 @@ for filename in filelist:
                     cor=data
                 if (datanames[i]=="Entanglement Entropy"):
                     S=data
-            if (len(densA[0])!=0 and len(densA[len(densA)-1])!=0) and len(pars)==len(densA):
+            if len(pars)==len(densA):
                 sdw=[]
                 entanglement=[]
                 for j in range(0,len(pars)):
                     #get the characteristics for each phase from the containers
-                    phase.append(min(densA[j])/max(densA[j]))
-                    cdwParA.append(fluctuation(densA[j]))
-                    cdwParB.append(fluctuation(densB[j]))
-                    sdw.append(relativeFluctuation(densA[j],densB[j]))
+                    if len(densA[j])!=0:
+                        phase.append(min(densA[j])/max(densA[j]))
+                        cdwParA.append(fluctuation(densA[j]))
+                    else:
+                        phase.append(0.0)
+                        cdwParA.append(0.0)
+                    if len(densB[j])!=0:
+                        cdwParB.append(fluctuation(densB[j]))
+                    else:
+                        cdwParB.append(0.0)
+                    if len(densA[j])!=0 and len(densB[j])!=0:
+                        sdw.append(relativeFluctuation(densA[j],densB[j]))
                     if abs(cor[j][0])>1e-12:
                         revival.append(cor[j][len(cor[j])-2]/cor[j][0])
                     else:
@@ -115,12 +123,14 @@ for filename in filelist:
                 if conjugateFilename in filelist:
                     degeneracy=abs(float(pars[0][6])-float(pars[1][6]))     
                 else:
-                    degeneracy=0.0
+                    degeneracy=10.0
                                 
                 cPoint=[]
                 for j in range(0,len(phase)):
+                    print pars[j][2]
                     cdw=(cdwParA[j]+cdwParB[j])/2
-                    cPoint.append(str(float(pars[j][1])/float(pars[j][0]))+'\t'+pars[j][2]+'\t'+pars[j][3]+'\t'+pars[j][4]+'\t'+str(degeneracy)+'\t'+str(phase[j])+'\t'+str(revival[j])+'\t'+str(sdw[j])+'\t'+str(cdw)+'\t'+str(entanglement[j])+'\t'+pars[j][7]+'\n')
+                    acc=np.sqrt(float(pars[j][7]))/max([abs(float(pars[j][6])),1e-7])
+                    cPoint.append(str(float(pars[j][1])/float(pars[j][0]))+'\t'+pars[j][2]+'\t'+pars[j][3]+'\t'+pars[j][4]+'\t'+str(degeneracy)+'\t'+str(phase[j])+'\t'+str(revival[j])+'\t'+str(sdw[j])+'\t'+str(cdw)+'\t'+str(entanglement[j])+'\t'+pars[j][7]+'\t'+str(acc)+'\n')
                 with open(pdName,'a') as pd:
                     for wPoint in cPoint:
                         pd.write(wPoint)

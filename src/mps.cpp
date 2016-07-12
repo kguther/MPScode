@@ -82,11 +82,10 @@ void mps::loadIndexTablesNoexcept(){
 	indexTableVar.getLocalIndexTable(i)=siteQNOrderMatrix(i,dimInfo.locDimL(i),dimInfo.locDimR(i),dimInfo.locd(i),&conservedQNs);
       }
       catch(empty_table &err){
+	//if a local table is empty, the labels on the next site have to be adapted to create non-empty blocks
 	for(int iQN=0;iQN<nQNs;++iQN){
-	  if(i!=0){
-	    conservedQNs[iQN].adaptLabels(i,-1);
-	  }
 	  if(i!=(dimInfo.L()-1)){
+	    //this actually can not happen on the last site except for very small L or D since there is no freedom in picking the labels for the last site for reasonably large systems
 	    conservedQNs[iQN].adaptLabels(i,1);
 	  }
 	}

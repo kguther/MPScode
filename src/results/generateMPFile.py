@@ -24,16 +24,16 @@ for filename in filelist:
             pars=parsR.split('\t')
             if len(namesR)!=0:
                 av.append([pars[3],pars[4],pars[2]])
-            else:
-                miss.append(pars[3]+'\t'+pars[4]+'\t'+pars[2]+'\n')
 
 for x in req:
     missing=1
     for y in av:
         if abs(x[0]-float(y[0]))<1e-2 and abs(x[1]-float(y[1]))<1e-2 and x[2]==int(y[2]):
             missing=0
-    if missing==1:
+    if missing==1 and x[2]==-1:
         miss.append(str(x[0])+'\t'+str(x[1])+'\t'+str(x[2])+'\n')
+
+print len(miss)
 
 with open(target,'w') as mp:
     for point in miss:

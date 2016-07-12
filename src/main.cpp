@@ -3,6 +3,7 @@
 #include "localMpo.h"
 #include "localHSpaces.h"
 #include "heisenbergChain.h"
+#include <arcomp.h>
 #include <math.h>
 #include <iostream>
 #include <fstream>
@@ -15,11 +16,65 @@
 
 void sysSolve(info const &parPack, std::string const &fileName, std::vector<double> &energies);
 void getScaling(int L, info const &parPack, double *results, std::string const &fileName);
+//results has to be at least of size 4 (in the sense of a C array)
 void sysSetMeasurements(simulation &sim, int d, int L, int meas);
 void importParameters(std::string const &fN, std::vector<int> &alpha, std::vector<double> &J, std::vector<double> &g);
 void getFileName(info const &necPars, char *fNBuf, int commsize, int myrank, std::string &finalName);
 
-//results has to be at least of size 4 (in the sense of a C array)
+/*
+int main(int argc, char *argv[]){
+  int const nQuantumNumbers=1;
+  int D=40;
+  int const L=10;
+  int const N=L;
+  int const up=5;
+  int const nSweeps=10;
+  int const d=4;
+  int const Dw=5;
+  double const U=0.3;
+  double const t=1;
+  std::complex<int> QNValue[2]={std::complex<int>(N,0),std::complex<int>(up,0)};
+  std::complex<int> QNList[8]={std::complex<int>(0,1),std::complex<int>(1,1),std::complex<int>(2,1),std::complex<int>(3,1),std::complex<int>(0,1),std::complex<int>(0,1),std::complex<int>(1,1),std::complex<int>(1,1)};
+  localHSpaces localHilbertSpaceDims(d);
+  mpo<arcomplex<double> > Hubbard(d,Dw,L);
+  generateHubbardHamiltonian(t,U,Hubbard);
+  problemParameters pars(localHilbertSpaceDims,L,Dw,1,nQuantumNumbers,QNValue,QNList);
+  simulationParameters simPars(D,nSweeps,1,1e-3,1e-7,1e-8,1e-3);
+  network sys(pars,simPars);
+  sys.networkH=Hubbard;
+  mpo<std::complex<double> > particleNumber(d,2,L);
+  mpo<std::complex<double> > spin(d,2,L);
+  double matEls, spinEls;
+  for(int i=0;i<pars.L;++i){
+    for(int bi=0;bi<2;++bi){
+      for(int bim=0;bim<2;++bim){
+	for(int si=0;si<pars.d.maxd();++si){
+	  for(int sip=0;sip<pars.d.maxd();++sip){
+	    matEls=delta(si,sip);
+	    spinEls=delta(si,sip);
+	    if(i!=0 && i!=L-1 && bi==1 && bim==0){
+	      matEls=0.0;
+	      spinEls=0.0;
+	    }
+	    if(bi==0 && bim==particleNumber.locDimL(i)-1){
+	      matEls*=(delta(si,1)+delta(si,2)+2*delta(si,3));
+	      spinEls*=(delta(si,2)+delta(si,3));
+	    }
+	    particleNumber.global_access(i,si,sip,bi,bim)=matEls;
+	    spin.global_access(i,si,sip,bi,bim)=spinEls;
+	  }
+	}
+      }
+    }
+  }
+  sys.check=&particleNumber;
+  sys.checkParity=&spin;
+  std::vector<double> E0,dE;
+  sys.solve(E0,dE);
+  return 0;
+}
+*/
+
 int main(int argc, char *argv[]){
   //Here, the parameters are distributed via MPI to the processes. Each process then individually solves the system for a specific set of parameters - great paralellization.
   //There are currently two settings: scaling and correlation. The former computes the behaivour of the gap with increasing system size and the latter computes correlations etc across the parameter space for fixed system size
@@ -126,7 +181,7 @@ int main(int argc, char *argv[]){
   L=L0+dL*myrank;
   //And evaluates its computation
   if(necPars.simType==1){
-    for(int pty=-1;pty<2;pty+=2){
+    for(int pty=-1;pty<0;pty+=2){
       for(int varL=35;varL<110;varL+=3){
 	necPars.L=varL;
 	necPars.N=necPars.rho*necPars.L*2;
@@ -159,7 +214,7 @@ int main(int argc, char *argv[]){
  
   if(necPars.simType==3){
     necPars.nEigens=2;
-    
+    /*
     switch(myrank){
     case 0:
       necPars.tImag=0;
@@ -185,11 +240,11 @@ int main(int argc, char *argv[]){
       necPars.tImag=0;
       necPars.tPos=-1;
       }
+    */
     
-    /*
     necPars.tReal=0;
     necPars.tPos=myrank;
-    */
+    
   }
   //The output filename is generated
   if(necPars.simType!=1){
@@ -267,7 +322,7 @@ void sysSolve(info const &parPack, std::string const &fileName, std::vector<doub
   if(parPack.simType==2){
     int const d=pars.d.maxd();
     int const L=parPack.L;
-    localMpo<lapack_complex_double> gamma(d,1,L,L/4,0);
+    localMpo<arcomplex<double> > gamma(d,1,L,1,0);
     std::string gammaName="Second Order ";
     std::string fName;
     std::ostringstream cGName;
@@ -295,22 +350,22 @@ void sysSolve(info const &parPack, std::string const &fileName, std::vector<doub
 void sysSetMeasurements(simulation &sim, int d, int L, int meas){
   int const bulkStart=(L/4>2)?L/4:3;
   int parityQNs[4]={1,-1,-1,1};
-  localMpo<lapack_complex_double> greensFunction(d,1,L,1,parityQNs);
-  localMpo<lapack_complex_double> densityCorrelation(d,1,L,1,0);
-  localMpo<lapack_complex_double> localDensity(d,1,L,0,0);
-  localMpo<lapack_complex_double> localDensityB(d,1,L,0,0);
-  localMpo<lapack_complex_double> totalDensityCorrelation(d,1,L,1,0);
-  localMpo<lapack_complex_double> totalMagnetizationCorrelation(d,1,L,1,0);
-  localMpo<lapack_complex_double> interChainCorrelation(d,1,L,1,parityQNs);
-  localMpo<lapack_complex_double> superconductingOrder(d,1,L,1,0);
-  localMpo<lapack_complex_double> interChainDensityCorrelation(d,1,L,1,0);
-  localMpo<lapack_complex_double> bulkGreensFunction(d,1,L,bulkStart,parityQNs);
-  localMpo<lapack_complex_double> bulkDensityCorrelation(d,1,L,bulkStart,0);
-  localMpo<lapack_complex_double> bulkInterChainCorrelation(d,1,L,bulkStart,parityQNs);
-  localMpo<lapack_complex_double> bulkSuperconductingOrder(d,1,L,bulkStart,0);
-  localMpo<lapack_complex_double> bulkInterChainDensityCorrelation(d,1,L,bulkStart,0);
-  localMpo<lapack_complex_double> bulkSuperConductingCorrelation(d,1,L,bulkStart,0,2);
-  localMpo<lapack_complex_double> bulkICSuperConductingCorrelation(d,1,L,bulkStart,0,2);
+  localMpo<arcomplex<double> > greensFunction(d,1,L,1,parityQNs);
+  localMpo<arcomplex<double> > densityCorrelation(d,1,L,1,0);
+  localMpo<arcomplex<double> > localDensity(d,1,L,0,0);
+  localMpo<arcomplex<double> > localDensityB(d,1,L,0,0);
+  localMpo<arcomplex<double> > totalDensityCorrelation(d,1,L,1,0);
+  localMpo<arcomplex<double> > totalMagnetizationCorrelation(d,1,L,1,0);
+  localMpo<arcomplex<double> > interChainCorrelation(d,1,L,1,parityQNs);
+  localMpo<arcomplex<double> > superconductingOrder(d,1,L,1,0);
+  localMpo<arcomplex<double> > interChainDensityCorrelation(d,1,L,1,0);
+  localMpo<arcomplex<double> > bulkGreensFunction(d,1,L,bulkStart,parityQNs);
+  localMpo<arcomplex<double> > bulkDensityCorrelation(d,1,L,bulkStart,0);
+  localMpo<arcomplex<double> > bulkInterChainCorrelation(d,1,L,bulkStart,parityQNs);
+  localMpo<arcomplex<double> > bulkSuperconductingOrder(d,1,L,bulkStart,0);
+  localMpo<arcomplex<double> > bulkInterChainDensityCorrelation(d,1,L,bulkStart,0);
+  localMpo<arcomplex<double> > bulkSuperConductingCorrelation(d,1,L,bulkStart,0,2);
+  localMpo<arcomplex<double> > bulkICSuperConductingCorrelation(d,1,L,bulkStart,0,2);
   std::string gFName="Intrachain correlation";
   std::string dCName="Intrachain density correlation";
   std::string lDName="Local density";
@@ -361,7 +416,7 @@ void sysSetMeasurements(simulation &sim, int d, int L, int meas){
       localDensity.global_access(0,si,sip,0,0)=delta(si,sip)*(delta(si,1)+delta(si,3));
       localDensityB.global_access(0,si,sip,0,0)=delta(si,sip)*(delta(si,2)+delta(si,3));
       interChainCorrelation.global_access(1,si,sip,0,0)=delta(si,1)*delta(sip,2);
-      interChainCorrelation.global_access(0,si,sip,0,0)=delta(si,1)*delta(sip,2);
+      interChainCorrelation.global_access(0,si,sip,0,0)=delta(sip,1)*delta(si,2);
       superconductingOrder.global_access(1,si,sip,0,0)=delta(si,3)*delta(sip,0);
       superconductingOrder.global_access(0,si,sip,0,0)=delta(si,0)*delta(sip,3);
       bulkGreensFunction.global_access(bulkStart,si,sip,0,0)=bMatrix(sip,si);
@@ -388,19 +443,18 @@ void sysSetMeasurements(simulation &sim, int d, int L, int meas){
       bulkICSuperConductingCorrelation.global_access(bulkStart,si,sip,0,0)=aMatrix(si,sip);
     }
   }
-
-  
   sim.setLocalMeasurement(localDensity,lDName);
   sim.setLocalMeasurement(greensFunction,gFName);
-  sim.setLocalMeasurement(bulkGreensFunction,bgFName);
   sim.setLocalMeasurement(localDensityB,lDOName);
   sim.setLocalMeasurement(totalDensityCorrelation,tCDCName);
+  sim.setLocalMeasurement(totalMagnetizationCorrelation,tMCName);
   sim.setEntanglementMeasurement();
+  sim.setLocalMeasurement(interChainCorrelation,iCCName);
+  sim.setLocalMeasurement(superconductingOrder,scName);
   if(meas){
-    sim.setLocalMeasurement(interChainCorrelation,iCCName);
+    sim.setLocalMeasurement(bulkGreensFunction,bgFName);
     sim.setLocalMeasurement(densityCorrelation,dCName);
     sim.setLocalMeasurement(interChainDensityCorrelation,iCDCName);
-    sim.setLocalMeasurement(superconductingOrder,scName);
     sim.setLocalMeasurement(bulkInterChainCorrelation,biCCName);
     sim.setLocalMeasurement(bulkDensityCorrelation,bdCName);
     sim.setLocalMeasurement(bulkInterChainDensityCorrelation,biCDCName);
@@ -480,12 +534,12 @@ void importParameters(std::string const &fN, std::vector<int> &alpha, std::vecto
   double fPar;
   ifs.open(fN.c_str());
   while(!ifs.eof()){
-    ifs>>intPar;
-    alpha.push_back(intPar);
     ifs>>fPar;
     J.push_back(fPar);
     ifs>>fPar;
     g.push_back(fPar);
+    ifs>>intPar;
+    alpha.push_back(intPar);
   }
   ifs.close();
 }
