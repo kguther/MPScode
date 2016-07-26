@@ -6,7 +6,7 @@ import os
 
 filelist=os.listdir(os.getcwd())
 
-filename='density_phasediagram'
+filename=sys.argv[1]
 
 def theta(x):
     if x>0:
@@ -37,6 +37,7 @@ y=[]
 c=[]
 r=[]
 fs=24
+markersize=11.5
 
 for file in filelist:
     if file[0:len(filename)]==filename and file[(len(file)-4):len(file)]=='.txt' and file[(len(file)-8):(len(file)-4)]!='oneD':
@@ -46,17 +47,18 @@ for file in filelist:
         x.extend(diag[0])
         y.extend(diag[1])
         c.extend(diag[2])
-        r.extend(diag[3])
-plt.figure()
+        #r.extend(diag[3])
+plt.figure(figsize=(12,10))
 plt.tick_params(labelsize=fs)
 for i in range(0,len(x)):
-    plt.plot(x[i],y[i],'o',color=colormap(c[i],r[i]))
+    plt.plot(x[i],y[i],'o',color=(0,c[i],0),ms=markersize)
 plt.xlabel('J',color=(170/255.0,0,45/255.0),fontsize=fs)
 plt.ylabel('g',color=(25/255.0,170/255.0,70/255.0),fontsize=fs)
-#plt.ylim(ymin=0,ymax=1.5)
-#plt.xlim(xmin=0,xmax=1.5)
+plt.ylim(ymin=.94,ymax=1.055)
+plt.xlim(xmin=.94,xmax=1.055)
 #plt.title('$\\frac{\\min(n_i^a)}{\\max(n_i^a)}$')
-plt.savefig(filename+'_large.pdf',bbox_inches='tight')
+plt.savefig('thesis_plots/'+filename+'_zoom.pdf',bbox_inches='tight')
+#plt.show()
 
 if writeOneD:
     alpha=[]

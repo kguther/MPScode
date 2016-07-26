@@ -24,8 +24,8 @@ class network{
   //can throw a critical_error in case normalization fails completely
   network(problemParameters const &inputpars, simulationParameters const &inputsimPars);
   int solve(std::vector<double> &lambda, std::vector<double> &deltaLambda);
-  int measure(mpo<arcomplex<double> > *const MPOperator, double &expValue, int iEigen=0);
-  int measureLocalOperators(localMpo<arcomplex<double> > *const MPOperator, std::vector<arcomplex<double> > &expValue, int iEigen=0);
+  void measure(mpo<arcomplex<double> > *const MPOperator, double &expValue, int iEigen=0);
+  void measureLocalOperators(localMpo<arcomplex<double> > *const MPOperator, std::vector<arcomplex<double> > &expValue, int iEigen=0);
   void getEntanglement(std::vector<double> &S, std::vector<std::vector<double> > &spectrum, int iEigen=0);
   void loadNetworkState(mps const &source);
   void exportNetworkState(mps &target);
@@ -35,10 +35,10 @@ class network{
   dimensionTable& dimTable() {return networkDimInfo;}
   int setSimParameters(simulationParameters const &newPars);
   //MPO needs to be initialized externally
-  mpo<arcomplex<double> > networkH;
+  void setNetworkH(mpo<arcomplex<double> > const &newH){networkH=newH;}
+  mpo<arcomplex<double> > const& getNetworkH() const {return networkH;}
   int locd(int const i);
   //This is only for consistency checks
-  void leftNormalizationMatrixFull();
   mpo<arcomplex<double> > *check, *checkParity;
  private:
   //Order dependent, do not change
@@ -49,6 +49,7 @@ class network{
   dimensionTable networkDimInfo;
   int lDL, lDR, ld, lDwR, lDwL;
   mps networkState;
+  mpo<arcomplex<double> > networkH;
   std::vector<int> nConverged;
   double shift, alpha;
   std::vector<quantumNumber> conservedQNs;
@@ -79,7 +80,6 @@ class network{
   void resetSweep();
   int reSweep;
   //This one is only for consistency checks
-  void leftNormalizationMatrixIter(int i, arcomplex<double> *psi);
   int checkQN();
   int checkEqualWeightState();
   void checkContractions(int i);

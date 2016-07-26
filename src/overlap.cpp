@@ -1,5 +1,6 @@
 #include "overlap.h"
 #include "tmpContainer.h"
+#include <arcomp.h>
 
 //---------------------------------------------------------------------------------------------------//
 // Tested computation of partial contractions, they work as intended. Checked computation of F (and its
@@ -55,11 +56,11 @@ void overlap::loadMPS(mps const*const psiIn, mps const*const phiIn){
   delete[] Lctr;
   delete[] Rctr;
   //Adjust buffers for caching
-  Lctr=new lapack_complex_double[L*D*D];
-  Rctr=new lapack_complex_double[L*D*D];
+  Lctr=new arcomplex<double>[L*D*D];
+  Rctr=new arcomplex<double>[L*D*D];
   //Initialize F-Matrix
   F.initialize(psiIn->getDimInfo());
-  getF();
+  calcF();
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -72,13 +73,13 @@ void overlap::ovCpy(overlap const &source){
 
 //---------------------------------------------------------------------------------------------------//
 
-void overlap::subContractionStartLeft(lapack_complex_double *&pStart, int i){
+void overlap::subContractionStartLeft(arcomplex<double> *&pStart, int i){
   pStart=Lctr+i*D*D;
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-void overlap::subContractionStartRight(lapack_complex_double *&pStart, int i){
+void overlap::subContractionStartRight(arcomplex<double> *&pStart, int i){
   pStart=Rctr+i*D*D;
 }
 
@@ -92,14 +93,14 @@ void overlap::calcCtrIterLeft(int i){
   lDL=phi->locDimL(i);
   lDR=phi->locDimR(i);
   ld=phi->locd(i);
-  tmpContainer<lapack_complex_double> innerContainer(1,ld,lDR,lDL);
-  lapack_complex_double simpleContainer;
-  lapack_complex_double *source, *target;
+  tmpContainer<arcomplex<double> > innerContainer(1,ld,lDR,lDL);
+  arcomplex<double> simpleContainer;
+  arcomplex<double> *source, *target;
   if(i>0){
     subContractionStartLeft(source,i-1);
   }
   else{
-    lapack_complex_double zone=1.0;
+    arcomplex<double> zone=1.0;
     source=&zone;
   }
   subContractionStartLeft(target,i);
@@ -139,14 +140,14 @@ void overlap::calcCtrIterRight(int i){
   lDL=phi->locDimL(i);
   lDR=phi->locDimR(i);
   ld=phi->locd(i);
-  tmpContainer<lapack_complex_double> innerContainer(1,ld,lDR,lDL);
-  lapack_complex_double simpleContainer;
-  lapack_complex_double *source, *target;
+  tmpContainer<arcomplex<double> > innerContainer(1,ld,lDR,lDL);
+  arcomplex<double> simpleContainer;
+  arcomplex<double> *source, *target;
   if(i<(L-1)){
     subContractionStartRight(source,i+1);
   }
   else{
-    lapack_complex_double zone=1.0;
+    arcomplex<double> zone=1.0;
     source=&zone;
   }
   subContractionStartRight(target,i);
@@ -185,13 +186,13 @@ void overlap::calcCtrIterRight(int i){
 // Optimized versions of calcCtrIterLeft/Right for the case both, psi and phi are QN-Blocked.
 //---------------------------------------------------------------------------------------------------//
 
-void overlap::calcCtrIterLeftQNOpt(int i, lapack_complex_double const*const source, lapack_complex_double *const target){
+void overlap::calcCtrIterLeftQNOpt(int i, arcomplex<double> const*const source, arcomplex<double> *const target){
   int lDL=phi->locDimL(i);
   int ld=phi->locd(i);
   int lDR=phi->locDimR(i);
   siteQNOrderMatrix localIndexTable=phi->indexTable().getLocalIndexTable(i);
-  lapack_complex_double const *localMatrix;
-  tmpContainer<lapack_complex_double> innerContainer(1,ld,lDR,lDL);
+  arcomplex<double> const *localMatrix;
+  tmpContainer<arcomplex<double> > innerContainer(1,ld,lDR,lDL);
   for(int si=0;si<ld;++si){
     for(int ai=0;ai<lDR;++ai){
       for(int aim=0;aim<lDL;++aim){
@@ -243,14 +244,14 @@ void overlap::calcCtrIterLeftQNOpt(int i, lapack_complex_double const*const sour
 
 //---------------------------------------------------------------------------------------------------//
 
-void overlap::calcCtrIterRightQNOpt(int i, lapack_complex_double const*const source, lapack_complex_double *const target){
+void overlap::calcCtrIterRightQNOpt(int i, arcomplex<double> const*const source, arcomplex<double> *const target){
   //works also if phi and psi have different L/R-basis at site i
   int lDL=phi->locDimL(i);
   int ld=phi->locd(i);
   int lDR=phi->locDimR(i);
   siteQNOrderMatrix localIndexTable=phi->indexTable().getLocalIndexTable(i);
-  tmpContainer<lapack_complex_double> innerContainer(1,ld,lDR,lDL);
-  lapack_complex_double const *localMatrix;
+  tmpContainer<arcomplex<double> > innerContainer(1,ld,lDR,lDL);
+  arcomplex<double> const *localMatrix;
   for(int si=0;si<ld;++si){
     for(int ai=0;ai<lDR;++ai){
       for(int aim=0;aim<lDL;++aim){
@@ -306,7 +307,7 @@ void overlap::calcCtrIterRightQNOpt(int i, lapack_complex_double const*const sou
 // Structurally, F is just an mps but without normalization methods.
 // updateF(..) is used to update the F matrix of some site after 
 // one of the partial contractions Lctr or Rctr has changed.
-// getF() computes the F matrix for all sites.
+// calcF() computes the F matrix for all sites.
 //---------------------------------------------------------------------------------------------------//
 
 void overlap::updateF(int i){
@@ -314,11 +315,11 @@ void overlap::updateF(int i){
   lDL=phi->locDimL(i);
   lDR=phi->locDimR(i);
   ld=phi->locd(i);
-  tmpContainer<lapack_complex_double> innerContainer(1,ld,lDR,lDL);
-  lapack_complex_double simpleContainer;
-  lapack_complex_double zone=1.0;
-  lapack_complex_double *leftPart, *rightPart;
-  lapack_complex_double const *localMatrix;
+  tmpContainer<arcomplex<double> > innerContainer(1,ld,lDR,lDL);
+  arcomplex<double> simpleContainer;
+  arcomplex<double> zone=1.0;
+  arcomplex<double> *leftPart, *rightPart;
+  arcomplex<double> const *localMatrix;
   if(i>0){
     subContractionStartLeft(leftPart,i-1);
   }
@@ -358,7 +359,7 @@ void overlap::updateF(int i){
 
 //---------------------------------------------------------------------------------------------------//
 
-void overlap::getF(){
+void overlap::calcF(){
   for(int i=0;i<L-1;++i){
     calcCtrIterLeft(i);
   }
@@ -395,13 +396,13 @@ void overlap::stepRight(int i){
 // contraction.
 //---------------------------------------------------------------------------------------------------//
 
-lapack_complex_double overlap::fullOverlap(){
+arcomplex<double> overlap::fullOverlap(){
   return Rctr[0];
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-lapack_complex_double overlap::getFullOverlap(){
+arcomplex<double> overlap::getFullOverlap(){
   for(int i=L-1;i>=0;--i){
     calcCtrIterRight(i);
   }
@@ -412,8 +413,8 @@ lapack_complex_double overlap::getFullOverlap(){
 // Not in use currently. 
 //---------------------------------------------------------------------------------------------------//
 
-lapack_complex_double overlap::applyF(lapack_complex_double *vec, int i){
-  lapack_complex_double simpleContainer=0.0;
+arcomplex<double> overlap::applyF(arcomplex<double> *vec, int i){
+  arcomplex<double> simpleContainer=0.0;
   int lDR, lDL, ld;
   lDL=(*phi).locDimL(i);
   lDR=(*phi).locDimR(i);

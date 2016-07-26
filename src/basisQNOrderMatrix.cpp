@@ -132,6 +132,9 @@ int basisQNOrderMatrix::validate()const {
   int info=0;
   for(int i=0;i<dimInfo.L();++i){
     info+=localIndexTables[i].validate();
+    if(info){
+      break;
+    }
   }
   return info;
 }

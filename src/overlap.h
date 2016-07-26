@@ -1,7 +1,6 @@
 #ifndef MPS_OVERLAP
 #define MPS_OVERLAP
 
-#include "mkl_complex_defined.h"
 #include "mps.h"
 
 //---------------------------------------------------------------------------------------------------//
@@ -20,29 +19,30 @@ class overlap{
   overlap(mps const*const psi, mps const*const phi);
   ~overlap();
   overlap& operator=(overlap const &source);
-  stateArray F;
+  stateArray const& getF() const{return F;}
   //Updates are done with respect to phi, i.e. psi is expected to be constant during updating
   void loadMPS(mps const*const psi, mps const*const phi);
-  lapack_complex_double fullOverlap();
-  lapack_complex_double getFullOverlap();
+  arcomplex<double> fullOverlap();
+  arcomplex<double> getFullOverlap();
   void stepLeft(int const i);
   void stepRight(int const i);
-  lapack_complex_double applyF(lapack_complex_double *vec, int i);
+  arcomplex<double> applyF(arcomplex<double> *vec, int i);
  private:
   int L, D, d;
   mps const *psi;
   mps const *phi;
-  lapack_complex_double *Lctr;
-  lapack_complex_double *Rctr;
-  lapack_complex_double& Lctr_access(int i, int aim, int aimp){return Lctr[aimp+aim*D+i*D*D];}
-  lapack_complex_double& Rctr_access(int i, int ai, int aip){return Rctr[aip+ai*D+i*D*D];}
-  void subContractionStartLeft(lapack_complex_double *&pStart, int i);
-  void subContractionStartRight(lapack_complex_double *&pStart, int i);
+  arcomplex<double> *Lctr;
+  arcomplex<double> *Rctr;
+  arcomplex<double>& Lctr_access(int i, int aim, int aimp){return Lctr[aimp+aim*D+i*D*D];}
+  arcomplex<double>& Rctr_access(int i, int ai, int aip){return Rctr[aip+ai*D+i*D*D];}
+  stateArray F;
+  void subContractionStartLeft(arcomplex<double> *&pStart, int i);
+  void subContractionStartRight(arcomplex<double> *&pStart, int i);
   void calcCtrIterLeft(int i);
   void calcCtrIterRight(int i);
-  void calcCtrIterLeftQNOpt(int i, lapack_complex_double const*const source, lapack_complex_double *const target);
-  void calcCtrIterRightQNOpt(int i, lapack_complex_double const*const source, lapack_complex_double *const target);
-  void getF();
+  void calcCtrIterLeftQNOpt(int i, arcomplex<double> const*const source, arcomplex<double> *const target);
+  void calcCtrIterRightQNOpt(int i, arcomplex<double> const*const source, arcomplex<double> *const target);
+  void calcF();
   //Important: During sweeping, only the F matrix of the last updated site can be used, and only the mps site matrices of the last updated site should be manipulated. This ensures that the overlap is always up to date. Of course, use the corresponding step for updating (i.e. update the correct direction)
   void updateF(int const i);
   void ovCpy(overlap const &source);

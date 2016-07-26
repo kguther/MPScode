@@ -11,15 +11,20 @@
 // the block structure of the MPS matrices. Usually, this is the index table of the corresponding MPS
 //---------------------------------------------------------------------------------------------------//
 
+//In case of boredom: remove inheritance from blockHMatrix class - this only makes things complicated
+
 class blockHMatrix: private optHMatrix{
  public: 
   blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcomplex<double> > const *Hin, dimensionTable &dimInfo, int Dwin, int iIn, siteQNOrderMatrix const *indexTable, projector *excitedStateP, double shift, std::vector<quantumNumber> *conservedQNsin, int const cached=1);
+  //this is the essential function of the blockMatrix
   void MultMvBlocked(arcomplex<double> *v, arcomplex<double> *w);
+  //LP means left pairing, because the sigma-index is grouped with the left index of the matrix
   void MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w);
   void storageCompress(arcomplex<double> *v, arcomplex<double> *vCompressed);
   void storageExpand(arcomplex<double> *v, arcomplex<double> *vExpanded);
   void prepareInput(arcomplex<double> *startingVector);
   void readOutput(arcomplex<double> *outputVector);
+  //the sparse version ONLY works for nearest-neighbour hamiltonians as it is optimized for their MPO representation
   void buildSparseHBlocked();
   virtual int dim()const {return dimension;}
   arcomplex<double>* getCompressedVector() {return &(compressedVector[0]);}

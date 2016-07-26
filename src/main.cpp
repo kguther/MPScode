@@ -21,27 +21,26 @@ void sysSetMeasurements(simulation &sim, int d, int L, int meas);
 void importParameters(std::string const &fN, std::vector<int> &alpha, std::vector<double> &J, std::vector<double> &g);
 void getFileName(info const &necPars, char *fNBuf, int commsize, int myrank, std::string &finalName);
 
-/*
-int main(int argc, char *argv[]){
+
+int other(int argc, char *argv[]){
   int const nQuantumNumbers=1;
-  int D=40;
-  int const L=10;
-  int const N=L;
-  int const up=5;
-  int const nSweeps=10;
-  int const d=4;
+  int D=200;
+  int const L=100;
+  int const nUp=50;
+  int const nSweeps=6;
+  int const d=2;
   int const Dw=5;
-  double const U=0.3;
+  double const U=1;
   double const t=1;
-  std::complex<int> QNValue[2]={std::complex<int>(N,0),std::complex<int>(up,0)};
-  std::complex<int> QNList[8]={std::complex<int>(0,1),std::complex<int>(1,1),std::complex<int>(2,1),std::complex<int>(3,1),std::complex<int>(0,1),std::complex<int>(0,1),std::complex<int>(1,1),std::complex<int>(1,1)};
+  std::complex<int> QNValue[1]={std::complex<int>(nUp,0)};
+  std::complex<int> QNList[2]={std::complex<int>(0,1),std::complex<int>(1,1)};
   localHSpaces localHilbertSpaceDims(d);
-  mpo<arcomplex<double> > Hubbard(d,Dw,L);
-  generateHubbardHamiltonian(t,U,Hubbard);
+  mpo<arcomplex<double> > Heisenberg(d,Dw,L);
+  generateHeisenbergHamiltonian(Heisenberg);
   problemParameters pars(localHilbertSpaceDims,L,Dw,1,nQuantumNumbers,QNValue,QNList);
   simulationParameters simPars(D,nSweeps,1,1e-3,1e-7,1e-8,1e-3);
   network sys(pars,simPars);
-  sys.networkH=Hubbard;
+  sys.setNetworkH(Heisenberg);
   mpo<std::complex<double> > particleNumber(d,2,L);
   mpo<std::complex<double> > spin(d,2,L);
   double matEls, spinEls;
@@ -57,8 +56,7 @@ int main(int argc, char *argv[]){
 	      spinEls=0.0;
 	    }
 	    if(bi==0 && bim==particleNumber.locDimL(i)-1){
-	      matEls*=(delta(si,1)+delta(si,2)+2*delta(si,3));
-	      spinEls*=(delta(si,2)+delta(si,3));
+	      matEls*=(delta(si,1)-delta(si,0));
 	    }
 	    particleNumber.global_access(i,si,sip,bi,bim)=matEls;
 	    spin.global_access(i,si,sip,bi,bim)=spinEls;
@@ -73,7 +71,6 @@ int main(int argc, char *argv[]){
   sys.solve(E0,dE);
   return 0;
 }
-*/
 
 int main(int argc, char *argv[]){
   //Here, the parameters are distributed via MPI to the processes. Each process then individually solves the system for a specific set of parameters - great paralellization.
@@ -240,10 +237,11 @@ int main(int argc, char *argv[]){
       necPars.tImag=0;
       necPars.tPos=-1;
       }
-    */
+      */
     
     necPars.tReal=0;
     necPars.tPos=myrank;
+    
     
   }
   //The output filename is generated

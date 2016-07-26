@@ -31,7 +31,6 @@ class quantumNumber: public pseudoQuantumNumber{
   void adaptLabels(int i, int direction);
   virtual int validQN(int i, std::complex<int> const &label)const;
   //The failed flag is set when the given quantum number cannot be reached in the given system or the initialization failed for some other reason. It is set to zero else.
-  int failed;
  private:
   std::vector<std::complex<int> > leftLabel;
   std::vector<std::complex<int> > rightLabel;
@@ -47,6 +46,7 @@ class quantumNumber: public pseudoQuantumNumber{
   std::complex<int> QNLabelRP(int i, int ai);
   std::complex<int> pre(std::complex<int> a, int direction);
   int integerParity(int n) const;
+  int noParity;
 };
 
 template<typename T>

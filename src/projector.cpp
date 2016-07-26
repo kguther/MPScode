@@ -1,10 +1,11 @@
 #include <float.h>
+#include <iostream>
 #include <memory>
 #include "projector.h"
 #include "mps.h"
 #include "overlap.h"
 #include "arrayprocessing.h"
-#include <iostream>
+#include "mkl_complex_defined.h"
 
 //---------------------------------------------------------------------------------------------------//
 // The projector class is still experimental, it seems to yield correct results, but I am not sure
@@ -174,8 +175,10 @@ void projector::project(lapack_complex_double *vec, int i){
     lapack_complex_double zone=1.0;
     lapack_complex_double zzero=0.0;
     getLocalDimensions(i);
-    vecContainer=new lapack_complex_double[ld*lDR*lDL];
-    trContainer=new lapack_complex_double[ld*lDR*ld*lDR];
+    std::unique_ptr<lapack_complex_double[]> vecContainerP(new lapack_complex_double[ld*lDR*lDL]);
+    vecContainer=vecContainerP.get();
+    std::unique_ptr<lapack_complex_double[]> trContainerP(new lapack_complex_double[ld*lDR*ld*lDR]);
+    trContainer=trContainerP.get();
     //Initialization is required (i.e. it is as fast as any other way)
     for(int mi=0;mi<ld*lDR*lDL;++mi){
       vecContainer[mi]=0;
@@ -194,8 +197,6 @@ void projector::project(lapack_complex_double *vec, int i){
     for(int mi=0;mi<ld*lDR*lDL;++mi){
       vec[mi]-=vecContainer[mi];
     }
-    delete[] vecContainer;
-    delete[] trContainer;
   }
 }
 
@@ -212,7 +213,8 @@ int projector::getProjector(int i){
     lapack_int nGramEigens;
     lapack_complex_double *gramEigenvecs;
     double *gramEigens;
-    lapack_complex_double *workingMatrix, *Fki;
+    lapack_complex_double *workingMatrix;
+    lapack_complex_double const *Fki;
     lapack_complex_double zFactor;
     lapack_complex_double zone=1.0;
     lapack_complex_double zzero=0.0;
@@ -261,7 +263,7 @@ int projector::getProjector(int i){
       auxiliaryMatrix.getPtr(workingMatrix,mu);
       //Eigenvectors are returned in ascending order
       for(int k=0;k<nCurrentEigen;++k){
-	scalarProducts[k].F.subMatrixStart(Fki,i);
+	scalarProducts[k].getF().subMatrixStart(Fki,i);
 	//F^dagger * F is proportional to identity (?), but a normation is required to ensure that the projector squares to itself
 	zFactor=gramEigenvecs[k+(nGramEigens-1-mu)*nCurrentEigen]*1.0/sqrt(gramEigens[nGramEigens-1-mu]);
 	cblas_zaxpy(ld*lDR*lDL,&zFactor,Fki,1,workingMatrix,1);
@@ -281,7 +283,9 @@ void projector::getGramMatrix(lapack_complex_double *gram, int i){
   if(nCurrentEigen>0){
     getLocalDimensions(i);
     lapack_complex_double simpleContainer;
-    lapack_complex_double *matrixContainer, *Fki, *Fkpi, *FkiT;
+    lapack_complex_double *matrixContainer, *FkiT;
+    lapack_complex_double const *Fki;
+    lapack_complex_double const *Fkpi;
     lapack_complex_double zone=1.0;
     lapack_complex_double zzero=0.0;
     std::unique_ptr<lapack_complex_double[]> FkiTP(new lapack_complex_double[ld*lDR*lDL]);
@@ -289,9 +293,9 @@ void projector::getGramMatrix(lapack_complex_double *gram, int i){
     std::unique_ptr<lapack_complex_double[]> matrixContainerP(new lapack_complex_double[ld*lDR*ld*lDR]);
     matrixContainer=matrixContainerP.get();
     for(int kp=0;kp<nCurrentEigen;++kp){
-      scalarProducts[kp].F.subMatrixStart(Fkpi,i);
+      scalarProducts[kp].getF().subMatrixStart(Fkpi,i);
       for(int k=0;k<nCurrentEigen;++k){
-	scalarProducts[k].F.subMatrixStart(Fki,i);
+	scalarProducts[k].getF().subMatrixStart(Fki,i);
 	auxiliary::arraycpy(ld*lDR*lDL,Fki,FkiT);
 	auxiliary::transp(ld*lDR,lDL,FkiT);
 	for(int m=0;m<ld*lDR*lDL;++m){

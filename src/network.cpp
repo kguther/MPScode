@@ -8,7 +8,6 @@
 #include <time.h>
 #include "network.h"
 #include "arrayprocessing.h"
-#include "arraycreation.h"
 #include "optHMatrix.h"
 #include "blockHMatrix.h"
 #include "globalMeasurement.h"
@@ -141,6 +140,7 @@ int network::setParameterD(int Dnew){
   for(int iQN=0;iQN<pars.nQNs;++iQN){
     conservedQNs[iQN].setParameterD(Dnew);
   }
+  //this is problematic as scaling D requires a new QN labeling scheme -> translation between labels is required
   networkState.setParameterD(Dnew);
   networkDimInfo.setParameterD(Dnew);
   //All stored states have to be brought into the correct form for compatibility with current D
@@ -233,6 +233,7 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
 	sweep(maxIter,tol,lambda[iEigen]);
 	//In calcCtrIterRightBase, the second argument has to be a pointer, because it usually is an array. No call-by-reference here.
 	pCtr.calcCtrIterRightBase(-1,&expectationValue);
+
 	if(tol>simPars.tolMin){
 	  tol*=pow(simPars.tolMin/simPars.tolInitial,1.0/simPars.nSweeps);
 	}
@@ -258,12 +259,12 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
 	}
 	resetSweep();
       }
-#ifdef QNCHECK
+
       measure(check,spinCheck);
       measure(checkParity,parCheck);
       std::cout<<"Current particle number (final): "<<spinCheck<<std::endl;
       std::cout<<"Current subchain parity (final): "<<parCheck<<std::endl;
-#endif
+
     }
     stepRet=gotoNextEigen();
     if(!stepRet){
@@ -357,7 +358,7 @@ int network::optimize(int i, int maxIter, double tol, double &iolambda){
     return -1;
   }
   plambda=&lambda;
-  //Using the current site matrix as a starting point allows for much faster convergence as it has already been optimized in previous sweeps (except for the first sweep, this is where a good starting point has to be guessed
+  //Using the current site matrix as a starting point allows for much faster convergence as it has already been optimized in previous sweeps (except for the first sweep, this is where a good starting point has to be guessed)
   networkState.subMatrixStart(currentM,i);
 
   //Check step useful whenever something in the normalization or optimization is adjusted
@@ -409,7 +410,7 @@ int network::optimize(int i, int maxIter, double tol, double &iolambda){
   }
   else{
     iolambda=real(lambda);
-    std::cout<<setprecision(21)<<"Current energy: "<<real(lambda)-shift<<std::endl;
+    std::cout<<std::setprecision(21)<<"Current energy: "<<real(lambda)-shift<<std::endl;
     return 0;
   }
 }
@@ -483,7 +484,8 @@ double network::convergenceCheck(){
   calcHSqrExpectationValue(meanSqrEnergy);
   stdDeviation=meanSqrEnergy-meanEnergy;
   std::cout<<"Current quality of convergence: "<<stdDeviation<<std::endl;
-  return abs(stdDeviation);
+  //stdDeviation is always positive in theory.
+  return std::abs(stdDeviation);
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -512,7 +514,7 @@ void network::calcHSqrExpectationValue(double &ioHsqr){
     }
   }
   Hsqr.setUpSparse();
-  measure(&Hsqr,ioHsqr);
+  measure(&Hsqr,ioHsqr,excitedStateP.nEigen());
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -531,7 +533,7 @@ int network::gotoNextEigen(){
 // Interface function to compute the expectation value of some operator in MPO representation. 
 //---------------------------------------------------------------------------------------------------//
 
-int network::measure(mpo<lapack_complex_double> *const MPOperator, double &lambda, int iEigen){
+void network::measure(mpo<lapack_complex_double> *const MPOperator, double &lambda, int iEigen){
   mps *measureState;
   if(excitedStateP.nEigen()==iEigen){
     measureState=&networkState;
@@ -541,12 +543,11 @@ int network::measure(mpo<lapack_complex_double> *const MPOperator, double &lambd
   }
   globalMeasurement currentMeasurement(MPOperator,measureState);
   currentMeasurement.measureFull(lambda);
-  return 0;
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-int network::measureLocalOperators(localMpo<lapack_complex_double> *const MPOperator, std::vector<lapack_complex_double> &lambda, int iEigen){
+void network::measureLocalOperators(localMpo<lapack_complex_double> *const MPOperator, std::vector<lapack_complex_double> &lambda, int iEigen){
   mps *measureState;
   //This is for measuring the network state during calculation, which is useful for consistency checks
   if(excitedStateP.nEigen()==iEigen){
@@ -557,7 +558,6 @@ int network::measureLocalOperators(localMpo<lapack_complex_double> *const MPOper
   }
   localMeasurementSeries currentMeasurement(MPOperator,measureState);
   currentMeasurement.measureFull(lambda);
-  return 0;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -587,52 +587,6 @@ int network::locd(int i){
 
 int network::locDMax(int i){
   return networkDimInfo.locDMax(i);
-}
-
-//---------------------------------------------------------------------------------------------------//
-// These functions compute the normalization of the network to the left of some site i. This is for
-// testing purpose only since the correct algorithm ensures the results to be trivial.
-//---------------------------------------------------------------------------------------------------//
-
-void network::leftNormalizationMatrixFull(){
-  lapack_complex_double ***psi;
-  auxiliary::create3D(L,D,D,&psi);
-  for(int i=0;i<L;++i){
-    for(int ai=0;ai<D;++ai){
-      for(int aip=0;aip<D;++aip){
-	psi[i][ai][aip]=0.0;
-      }
-    }
-  }
-  psi[0][0][0]=1;
-  std::cout<<"Printing Psi expressions\n";
-  for(int i=1;i<L;++i){
-    leftNormalizationMatrixIter(i,psi[0][0]);
-  }
-  std::cout<<"That's it\n";
-  auxiliary::delete3D(&psi);
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-void network::leftNormalizationMatrixIter(int i, lapack_complex_double *psi){
-  lapack_complex_double psiContainer;
-  for(int aim=0;aim<networkState.locDimL(i);++aim){
-    for(int aimp=0;aimp<networkState.locDimL(i);++aimp){
-      psiContainer=0;
-      for(int si=0;si<locd(i);++si){
-	for(int aimm=0;aimm<networkState.locDimL(i-1);++aimm){
-	  for(int aimmp=0;aimmp<networkState.locDimL(i-1);++aimmp){
-	    psiContainer+=networkState.global_access(i-1,si,aim,aimm)*conj(networkState.global_access(i-1,si,aimp,aimm))*psi[(i-1)*D*D+aimm*D+aimmp];
-	  }
-	}
-      }
-      psi[i*D*D+aim*D+aimp]=psiContainer;
-      if((abs(psiContainer)>1e-7 && aim!=aimp) || (abs(psiContainer-1.0)>1e-7 && aim==aimp)){
-	std::cout<<"Error in normalization procedure\n";
-      }
-    }
-  }	
 }
 
 //---------------------------------------------------------------------------------------------------//

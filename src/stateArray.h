@@ -45,6 +45,7 @@ class stateArray{
   int D,L;
   dimensionTable dimInfo;
   baseTensor<arcomplex<double> > const &getStateArrayEntry(int i){return stateArrayAccessStructure[i];}
+  void setStateArrayEntry(int i, baseTensor<arcomplex<double> > const &source){stateArrayAccessStructure[i]=source;}
 };
 
 #endif

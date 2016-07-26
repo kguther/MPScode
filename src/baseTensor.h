@@ -2,6 +2,7 @@
 #define BASE_TENSOR_CLASS
 
 #include <vector>
+#include <cstdarg>
 
 //---------------------------------------------------------------------------------------------------//
 // Basic class for a tensor of an MPS (or MPO, although MPOs are stored in another scheme for sake of efficiency). It can have an arbitrary dimension, but this comes at the cost of an ugly direct access. Therefore, when performance is required, getPtr should be used instead.
@@ -94,7 +95,7 @@ int baseTensor<T>::setParameterDims(std::vector<int> const &dimsNew){
   }
   std::vector<int> indices;
   int mReduced, position, backupPosition;
-  //This is more sophisticated than I thought. Increasing the size of a Tensor requires to translate the absolute position in the source entries-array to a position in the target entries-array, where both have different factors-arrays.
+  //This is more sophisticated than I thought. Increasing the size of a Tensor requires to translate the absolute position in the source entries-array to a position in the target entries-array, where both have different factors-arrays. And this is without respecting some QN block structure.
   for(int m=0;m<backupCSize;++m){
     indices.clear();
     mReduced=m;

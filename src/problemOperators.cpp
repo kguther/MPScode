@@ -7,22 +7,23 @@
 #include <cstdlib>
 #include <ctime>
 
-int writeHamiltonian(network &sys, double J, double g, double W, std::complex<double> t, double deltaP, int tSite){
+int writeHamiltonian(network &sys, double J, double g, double W, arcomplex<double> t, double deltaP, int tSite){
   std::srand(std::time(0));
-  int const Dw=sys.networkH.maxDim();
+  mpo<arcomplex<double> > bufH=sys.getNetworkH();
+  int const Dw=bufH.maxDim();
   if(Dw!=12){
     //The minimal bond dimension of our Hamiltonian is 12, so the system better has a Hamiltonian of that bond dimension.
     return 2;
   }
-  int const L=sys.networkH.length();
+  int const L=bufH.length();
   int lDwL, lDwR;
   double prefactor, JD, gD, preD;
-  std::complex<double> tD;
+  arcomplex<double> tD;
   //The prefactor pre exists only for consistency checks and is the relative weight of the inter- and intrachain term
   double pre=W;
   for(int i=0;i<L;++i){
-    lDwL=sys.networkH.locDimL(i);
-    lDwR=sys.networkH.locDimR(i);
+    lDwL=bufH.locDimL(i);
+    lDwR=bufH.locDimR(i);
     if(i==0 || (i==L-1)){
       //The chemical potential term counts each side twice, except for the boundaries, which are counted once.
       prefactor=1;
@@ -51,51 +52,51 @@ int writeHamiltonian(network &sys, double J, double g, double W, std::complex<do
 	      if(i!=0){
 		switch(bim){
 		case 0:
-		  sys.networkH(i,si,sip,bi,bim)=delta(si,sip);
+		  bufH(i,si,sip,bi,bim)=delta(si,sip);
 		  break;
 		case 1:
-		  sys.networkH(i,si,sip,bi,bim)=aMatrix(si,sip);
+		  bufH(i,si,sip,bi,bim)=aMatrix(si,sip);
 		  break;
 		case 2:
-		  sys.networkH(i,si,sip,bi,bim)=bMatrix(si,sip);
+		  bufH(i,si,sip,bi,bim)=bMatrix(si,sip);
 		  break;
 		case 3:
-		  sys.networkH(i,si,sip,bi,bim)=aMatrix(sip,si);
+		  bufH(i,si,sip,bi,bim)=aMatrix(sip,si);
 		  break;
 		case 4:
-		  sys.networkH(i,si,sip,bi,bim)=bMatrix(sip,si);
+		  bufH(i,si,sip,bi,bim)=bMatrix(sip,si);
 		  break;
 		case 5:
-		  sys.networkH(i,si,sip,bi,bim)=delta(si,sip)*(delta(si,1)+delta(si,3));
+		  bufH(i,si,sip,bi,bim)=delta(si,sip)*(delta(si,1)+delta(si,3));
 		  break;
 		case 6:
-		  sys.networkH(i,si,sip,bi,bim)=delta(si,sip)*(delta(si,2)+delta(si,3));
+		  bufH(i,si,sip,bi,bim)=delta(si,sip)*(delta(si,2)+delta(si,3));
 		  break;
 		case 7:
-		  sys.networkH(i,si,sip,bi,bim)=delta(si,sip)*delta(si,1);
+		  bufH(i,si,sip,bi,bim)=delta(si,sip)*delta(si,1);
 		  break;
 		case 8:
-		  sys.networkH(i,si,sip,bi,bim)=delta(si,sip)*delta(si,2);
+		  bufH(i,si,sip,bi,bim)=delta(si,sip)*delta(si,2);
 		  break;
 		case 9:
-		  sys.networkH(i,si,sip,bi,bim)=delta(si,1)*delta(sip,2);
+		  bufH(i,si,sip,bi,bim)=delta(si,1)*delta(sip,2);
 		  break;
 		case 10:
-		  sys.networkH(i,si,sip,bi,bim)=delta(si,2)*delta(sip,1);
+		  bufH(i,si,sip,bi,bim)=delta(si,2)*delta(sip,1);
 		  break;
 		case 11:
-		  sys.networkH(i,si,sip,bi,bim)=prefactor*JD*delta(si,sip)*(1-delta(si,0)+delta(si,3))+tD*delta(sip,2)*delta(si,1)+conj(tD)*delta(sip,1)*delta(si,2);
+		  bufH(i,si,sip,bi,bim)=prefactor*JD*delta(si,sip)*(1-delta(si,0)+delta(si,3))+tD*delta(sip,2)*delta(si,1)+conj(tD)*delta(sip,1)*delta(si,2);
 		  break;
 		default:
-		  sys.networkH(i,si,sip,bi,bim)=0;
+		  bufH(i,si,sip,bi,bim)=0;
 		}
 	      }
 	      else{
 		if(bim==lDwL-1){
-		  sys.networkH(i,si,sip,bi,bim)=prefactor*JD*delta(si,sip)*(1-delta(si,0)+delta(si,3))+tD*delta(sip,2)*delta(si,1)+conj(tD)*delta(sip,1)*delta(si,2);
+		  bufH(i,si,sip,bi,bim)=prefactor*JD*delta(si,sip)*(1-delta(si,0)+delta(si,3))+tD*delta(sip,2)*delta(si,1)+conj(tD)*delta(sip,1)*delta(si,2);
 		}
 		else{
-		  sys.networkH(i,si,sip,bi,bim)=0;
+		  bufH(i,si,sip,bi,bim)=0;
 		}
 	      }
 	    }
@@ -103,48 +104,48 @@ int writeHamiltonian(network &sys, double J, double g, double W, std::complex<do
 	      if(bim==lDwL-1){
 		switch(bi){
 		case 0:
-		  sys.networkH(i,si,sip,bi,bim)=prefactor*JD*delta(si,sip)*(1-delta(si,0)+delta(si,3))+tD*delta(sip,2)*delta(si,1)+conj(tD)*delta(sip,1)*delta(si,2);
+		  bufH(i,si,sip,bi,bim)=prefactor*JD*delta(si,sip)*(1-delta(si,0)+delta(si,3))+tD*delta(sip,2)*delta(si,1)+conj(tD)*delta(sip,1)*delta(si,2);
 		  break;		  
 		case 1:
 		  //THIS IS TRICKY: By construction, a and b anticommute, but only for the same site. For the nearest-neigbhour hopping, one has to take into account extra signs from anticommutation of operators on adjacent sites. All other terms are at least quadratic in the local fermionic operators, so this problem only occurs here. 
-		  sys.networkH(i,si,sip,bi,bim)=-scaleA*aMatrix(sip,si)*(delta(sip,0)-delta(sip,2));
+		  bufH(i,si,sip,bi,bim)=-scaleA*aMatrix(sip,si)*(delta(sip,0)-delta(sip,2));
 		  break;
 		case 2:
-		  sys.networkH(i,si,sip,bi,bim)=-scaleA*bMatrix(sip,si)*(delta(sip,0)-delta(sip,1));
+		  bufH(i,si,sip,bi,bim)=-scaleA*bMatrix(sip,si)*(delta(sip,0)-delta(sip,1));
 		  break;
 		case 3:
-		  sys.networkH(i,si,sip,bi,bim)=scaleA*aMatrix(si,sip)*(delta(sip,3)-delta(sip,1));
+		  bufH(i,si,sip,bi,bim)=scaleA*aMatrix(si,sip)*(delta(sip,3)-delta(sip,1));
 		  break;
 		case 4:
-		  sys.networkH(i,si,sip,bi,bim)=scaleA*bMatrix(si,sip)*(delta(sip,3)-delta(sip,2));
+		  bufH(i,si,sip,bi,bim)=scaleA*bMatrix(si,sip)*(delta(sip,3)-delta(sip,2));
 		  break;
 		case 5:
-		  sys.networkH(i,si,sip,bi,bim)=-2*JD*delta(si,sip)*(delta(si,1)+delta(si,3));
+		  bufH(i,si,sip,bi,bim)=-2*JD*delta(si,sip)*(delta(si,1)+delta(si,3));
 		  break;
 		case 6:
-		  sys.networkH(i,si,sip,bi,bim)=-2*JD*delta(si,sip)*(delta(si,2)+delta(si,3));
+		  bufH(i,si,sip,bi,bim)=-2*JD*delta(si,sip)*(delta(si,2)+delta(si,3));
 		  break;
 		case 7:
-		  sys.networkH(i,si,sip,bi,bim)=gD*pre*delta(si,sip)*delta(si,1);
+		  bufH(i,si,sip,bi,bim)=gD*pre*delta(si,sip)*delta(si,1);
 		  break;
 		case 8:
-		  sys.networkH(i,si,sip,bi,bim)=gD*pre*delta(si,sip)*delta(si,2);
+		  bufH(i,si,sip,bi,bim)=gD*pre*delta(si,sip)*delta(si,2);
 		  break;
 		case 9:
-		  sys.networkH(i,si,sip,bi,bim)=-preD*delta(si,1)*delta(sip,2);
+		  bufH(i,si,sip,bi,bim)=-preD*delta(si,1)*delta(sip,2);
 		  break;
 		case 10:
-		  sys.networkH(i,si,sip,bi,bim)=-preD*delta(si,2)*delta(sip,1);
+		  bufH(i,si,sip,bi,bim)=-preD*delta(si,2)*delta(sip,1);
 		  break;
 		case 11:
-		  sys.networkH(i,si,sip,bi,bim)=delta(si,sip);
+		  bufH(i,si,sip,bi,bim)=delta(si,sip);
 		  break;
 		default:
-		  sys.networkH(i,si,sip,bi,bim)=0;
+		  bufH(i,si,sip,bi,bim)=0;
 		}
 	      }
 	      else{
-		sys.networkH(i,si,sip,bi,bim)=0;
+		bufH(i,si,sip,bi,bim)=0;
 	      }
 	    }
 	  }
@@ -152,13 +153,14 @@ int writeHamiltonian(network &sys, double J, double g, double W, std::complex<do
       }
     }
   }
+  sys.setNetworkH(bufH);
   return 0;
 }
 
 //-------------------------------------------------------------------------------------------//
 
-int writePhasedSecondOrder(localMpo<std::complex<double> > &gamma, double theta){
-  std::complex<double> const iUnit=std::complex<double>(0.0,1.0);
+int writePhasedSecondOrder(localMpo<arcomplex<double> > &gamma, double theta){
+  arcomplex<double> const iUnit=arcomplex<double>(0.0,1.0);
   int const Dw=gamma.maxDim();
   if(Dw!=1){
     return 2;
@@ -228,11 +230,11 @@ double disorder(double deltaP){
 
 //-------------------------------------------------------------------------------------------//
 
-std::complex<double> tLocalScale(int i){
+arcomplex<double> tLocalScale(int i){
   return 1+disorder(0.02);
 }
 
-std::complex<double> tSingleSite(int i, int targetSite){
+arcomplex<double> tSingleSite(int i, int targetSite){
   if(i==targetSite){
     return 1;
   }

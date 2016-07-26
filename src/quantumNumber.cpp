@@ -10,9 +10,8 @@ quantumNumber::quantumNumber(){
 
 quantumNumber::quantumNumber(dimensionTable const &dimInfoin, std::complex<int> const &Nin, std::vector<std::complex<int> > const &QNlocin, int referenceParity):
   pseudoQuantumNumber(dimInfoin,Nin,QNlocin),
-  failed(0)
+  noParity(0)
 {
-  int noParity=0;
   if(imag(N)==0){
     noParity=1;
     N.imag(referenceParity);
@@ -22,7 +21,6 @@ quantumNumber::quantumNumber(dimensionTable const &dimInfoin, std::complex<int> 
   if(info){
     std::cout<<"Critical error: Target quantum number cannot be reached.\n";
     std::cout<<"Target quantum number: "<<N<<" with system size "<<dimInfo.L()<<std::endl;
-    failed=1;
   }
   if(noParity){
     N.imag(0);
@@ -255,7 +253,7 @@ int quantumNumber::initializeLabelList(int i, int direction){
       //I did not believe this, but this checks in the warmup are actually required. The scheme does not work without
 
       if(!validBlock && direction==-1){
-	std::cout<<"Invalid label at site "<<i<<std::endl;
+	std::cout<<"Invalid label at site "<<i<<": "<<qnLabels[iBlock]<<std::endl;
       }
       
       if(validBlock){
@@ -481,22 +479,22 @@ int quantumNumber::validQN(int i, std::complex<int> const &label) const{
     validBlock=0;
   }
   if(real(label)==leftVacuum && real(label)==real(N)-maxSiteCharge*(dimInfo.L()-i) && integerParity(dimInfo.L()-i)!=imag(N)){
-    if(imag(N)){
+    if(!noParity){
       validBlock=0;
     }
   }
   if(real(label)==real(N) && real(label)==maxCharge && integerParity(i)!=imag(N)){
-    if(imag(N)){
+    if(!noParity){
       validBlock=0;
     }
   }
   if((real(label)==leftVacuum && imag(label)!=1) || (real(label)==real(N)-maxSiteCharge*(dimInfo.L()-i) && imag(label)!=integerParity(dimInfo.L()-i)*imag(N))){
-    if(imag(N)){
+    if(!noParity){
       validBlock=0;
     }
   }
   if((real(label)==maxCharge && imag(label)!=integerParity(i)) || (real(label)==real(N) && imag(label)!=imag(N))){
-    if(imag(N)){
+    if(!noParity){
       validBlock=0;
     }
   }

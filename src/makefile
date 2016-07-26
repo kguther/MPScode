@@ -16,7 +16,7 @@ CFLAGS=-Wall -std=c++11 -fopenmp -O3 $(MKL_INCLUDE)
 CFLAGS_DEBUG=-Wall -std=c++11 -fopenmp -g $(MKL_INCLUDE)
 APCK_INCLUDE=-I/usr/include/arpack++
 MKL_INCLUDE=-I$(MKL_INCLUDE_PATH)
-DEBUG_NAME=scMPScode
+DEBUG_NAME=dMPScode
 OBJECTS=network.o arrayprocessing.o Qsystem.o optHMatrix.o mps.o globalMeasurement.o baseMeasurement.o iterativeMeasurement.o overlap.o stateArray.o network_enrichment.o projector.o quantumNumber.o dimensionTable.o basisQNOrderMatrix.o blockHMatrix.o localHSpaces.o localMeasurementSeries.o simulation.o problemOperators.o interface.o main.o parameters.o exactGroundState.o verifyQN.o pseudoQuantumNumber.o siteQNOrderMatrix.o truncation.o heisenbergChain.o
 OBJECTS_DEBUG=$(OBJECTS:.o=.dbg)
 SOURCE=$(OBJECTS:.o=.cpp)
@@ -29,7 +29,7 @@ fuchur: $(OBJECTS)
 	$(CC) -o $(NAME) $(OBJECTS) $(APCK_LIB) $(CFLAGS) $(LFLAGS) $(MKLFLAGS) $(DMKL)
 
 debug: $(OBJECTS_DEBUG)
-	$(CC) -o $(DEBUG_NAME) $(OBJECTS_DEBUG) $(APCK_LIB) $(CFLAGS_DEBUG) $(LFLAGS) $(MKLFLAGS) $(DCFLAGS)
+	$(CC) -o $(DEBUG_NAME) $(OBJECTS_DEBUG) $(APCK_LIB) $(CFLAGS_DEBUG) $(LFLAGS) $(LPKFLAGS) $(DLPCK)
 
 holle: $(OBJECTS_HOLLE)
 	$(CC) -o $(HOLLE_NAME) $(OBJECTS_HOLLE) $(APCK_LIB) $(CFLAGS) $(LFLAGS) $(LPKFLAGS) $(DLPCK)
@@ -41,7 +41,7 @@ $(OBJECTS): %.o: %.cpp
 	$(CC) -c $(CFLAGS) $(APCK_INCLUDE) $(MPI_COMPILE_FLAGS) $(DMKL) $< -o $@
 
 $(OBJECTS_DEBUG): %.dbg: %.cpp 
-	$(CC) -c $(CFLAGS_DEBUG) $(APCK_INCLUDE) $(MPI_COMPILE_FLAGS) $(DMKL) $< -o $@
+	$(CC) -c $(CFLAGS_DEBUG) $(APCK_INCLUDE) $(MPI_COMPILE_FLAGS) $(DLPCK) $< -o $@
 
 $(OBJECTS_HOLLE): %.hll: %.cpp
 	$(CC) -c $(CFLAGS) $(APCK_INCLUDE) $(MPI_COMPILE_FLAGS) $(DLPCK) $< -o $@

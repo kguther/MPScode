@@ -110,7 +110,7 @@ void simulation::run(){
   for(int nRun=1;nRun<pathLength+1;++nRun){
 
     if(jgScale==2){
-      parDirection.imag(2.0-(nRun-1)/3.0);
+      parDirection.imag(3.0-(nRun-1)/3.0);
     }
     if(abs(parDirection)>1e-20 && jgScale==1){
       parDirection*=1.0/(scaling*abs(parDirection))*nRun;
@@ -163,7 +163,7 @@ void simulation::singleRun(){
     J=parDirection.real();
     g=parDirection.imag();
   }
-  std::cout<<"J="<<J<<" g="<<g<<" W="<<W<<std::endl;
+  std::cout<<"J="<<J<<" g="<<g<<" W="<<W<<" t="<<pars.t<<std::endl;
   if(pars.Dw==12){
     hInfo=writeHamiltonian(csystem.TensorNetwork,J,g,W,pars.t,deltaP,tSite);
   }

@@ -6,6 +6,8 @@
 #include <memory>
 #include <iostream>
 
+void translateBlocks(baseTensor<arcomplex<double> > const &source, siteQNOrderMatrix const &sourceTable, baseTensor<arcomplex<double> > &target, siteQNOrderMatrix const &targetTable);
+
 mps::mps():stateArray()
 {}
 
@@ -151,14 +153,29 @@ void mps::createInitialState(){
 //---------------------------------------------------------------------------------------------------//
 
 int mps::setParameterD(int Dnew){
+  //this is insufficient as the old labels and the new labels have different index tables
+  //-> entries belonging to some block are now shuffled arbitrarily
   dimInfo.setParameterD(Dnew);
   for(int iQN=0;iQN<nQNs;++iQN){
     conservedQNs[iQN].setParameterD(Dnew);
   }
   if(nQNs){
+    basisQNOrderMatrix const backupIndexTableVar=indexTableVar;
     indexTableVar=basisQNOrderMatrix(dimInfo,&conservedQNs);
+    std::vector<int> siteDims(3);
+    for(int i=0;i<dimInfo.L();++i){
+      siteDims[2]=dimInfo.locDimL(i);
+      siteDims[1]=dimInfo.locDimR(i);
+      siteDims[0]=dimInfo.locd(i);
+      baseTensor<arcomplex<double> > newSiteMatrix(siteDims);
+      translateBlocks(getStateArrayEntry(i),backupIndexTableVar.getLocalIndexTable(i),newSiteMatrix,indexTableVar.getLocalIndexTable(i));
+      setStateArrayEntry(i,newSiteMatrix);
+    }
+    return 0;
   }
+  else{
   return stateArray::setParameterD(Dnew);
+  }
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -556,5 +573,29 @@ void printQNLabels(mps const &test){
       std::cout<<gqn.QNLabel(i-1,aim)<<"\t";
     }
     std::cout<<std::endl;
+  }
+}
+
+//For adaption of D
+void translateBlocks(baseTensor<arcomplex<double> > const &source, siteQNOrderMatrix const &sourceTable, baseTensor<arcomplex<double> > &target, siteQNOrderMatrix const &targetTable){
+  //works only if sourceTable is contained in targetTable
+  int const numBlocks=sourceTable.numBlocksLP();
+  int lBlockSize, rBlockSize;
+  std::vector<int> sourceIndices(3);
+  std::vector<int> targetIndices(3);
+  for(int iBlock=0;iBlock<numBlocks;++iBlock){
+    lBlockSize=sourceTable.lBlockSizeLP(iBlock);
+    rBlockSize=sourceTable.rBlockSizeLP(iBlock);
+    for(int j=0;j<rBlockSize;++j){
+      for(int k=0;k<lBlockSize;++k){
+	sourceIndices[0]=sourceTable.siBlockIndexLP(iBlock,k);
+	sourceIndices[1]=sourceTable.aiBlockIndexLP(iBlock,j);
+	sourceIndices[2]=sourceTable.aimBlockIndexLP(iBlock,k);
+	targetIndices[0]=targetTable.siBlockIndexLP(iBlock,k);
+	targetIndices[1]=targetTable.aiBlockIndexLP(iBlock,j);
+	targetIndices[2]=targetTable.aimBlockIndexLP(iBlock,k);
+	target(targetIndices)=source(sourceIndices);
+      }
+    }
   }
 }

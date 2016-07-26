@@ -2,11 +2,87 @@
 #include "mpo.h"
 #include "heisenbergChain.h"
 #include <complex>
+#include <cmath>
 
 double upMatrix(int a, int b);
 double downMatrix(int a, int b);
+double bosonMatrix(int a, int b);
 
 //bose-Hubbard with NN-Interaction
+
+void generateBoseHubbard(int d, double V, double U, mpo<std::complex<double> > &H){
+  int lDwL, lDwR;
+  int const L=H.length();
+  for(int i=0;i<L;++i){
+    lDwL=H.locDimL(i);
+    lDwR=H.locDimR(i);
+    for(int si=0;si<d;++si){
+      for(int sip=0;sip<d;++sip){
+	for(int bi=0;bi<lDwR;++bi){
+	  for(int bim=0;bim<lDwL;++bim){
+	    if(bi==0){
+	      if(i!=0){
+		switch(bim){
+		case 0:
+		  H(i,si,sip,bi,bim)=delta(si,sip);
+		  break;
+		case 1:
+		  H(i,si,sip,bi,bim)=bosonMatrix(si,sip);
+		  break;
+		case 2:
+		  H(i,si,sip,bi,bim)=bosonMatrix(sip,si);
+		  break;
+		case 3:
+		  H(i,si,sip,bi,bim)=delta(si,sip)*si;
+		  break;
+		case 4:
+		  H(i,si,sip,bi,bim)=U*delta(si,sip)*si*(si-1);
+		  break; 
+		default:
+		  H(i,si,sip,bi,bim)=0.0;
+		}
+	      }
+	      else{
+		if(bim==lDwL-1){
+		  H(i,si,sip,bi,bim)=U*delta(si,sip)*si*(si-1);
+		}
+		else{
+		  H(i,si,sip,bi,bim)=0.0;
+		}
+	      }
+	    }
+	    else{
+	      if(bim==lDwL-1){
+		switch(bi){
+		case 0:
+		  H(i,si,sip,bi,bim)=U*delta(si,sip)*si*(si-1);
+		  break;
+		case 1:
+		  H(i,si,sip,bi,bim)=-bosonMatrix(sip,si);
+		  break;
+		case 2:
+		  H(i,si,sip,bi,bim)=-bosonMatrix(si,sip);
+		  break;
+		case 3:
+		  H(i,si,sip,bi,bim)=V*delta(si,sip)*si;
+		  break;
+		case 4:
+		  H(i,si,sip,bi,bim)=delta(si,sip);
+		  break;
+		default:
+		  H(i,si,sip,bi,bim)=0.0;
+		}
+	      }
+	      else{
+		H(i,si,sip,bi,bim)=0.0;
+	      }
+	    }
+	  }
+	}
+      }
+    }
+  }
+}
 
 void generateHubbardHamiltonian(double t, double U, mpo<std::complex<double> > &H){
   int lDwL, lDwR;
@@ -196,27 +272,36 @@ double downMatrix(int a, int b){
   }
   return 0.0;
 }
+
+//-------------------------------------------------------------------------------------------//
+
+double bosonMatrix(int a, int b){
+  if(a==(b-1)){
+    return sqrt(b);
+  }
+  return 0.0;
+}
 /*
 int main(int argc, char *argv[]){
-  int const nQuantumNumbers=0;
+  int const nQuantumNumbers=1;
   int D=40;
   int const L=10;
-  int const N=10;
+  int const N=L;
   int const up=5;
   int const nSweeps=10;
   int const d=4;
-  int const Dw=6;
-  double const U=0.3;
+  int const Dw=5;
+  double const U=1;
   double const t=1;
   std::complex<int> QNValue[2]={std::complex<int>(N,0),std::complex<int>(up,0)};
-  std::complex<int> QNList[8]={std::complex<int>(0,1),std::complex<int>(1,1),std::complex<int>(1,1),std::complex<int>(2,1),std::complex<int>(0,1),std::complex<int>(0,1),std::complex<int>(1,1),std::complex<int>(1,1)};
+  std::complex<int> QNList[8]={std::complex<int>(0,1),std::complex<int>(1,1),std::complex<int>(2,1),std::complex<int>(3,1),std::complex<int>(0,1),std::complex<int>(0,1),std::complex<int>(1,1),std::complex<int>(1,1)};
   localHSpaces localHilbertSpaceDims(d);
-  mpo<std::complex<double> > Hubbard(d,Dw,L);
-  generateHubbardHamiltonian(t,U,Hubbard);
+  mpo<arcomplex<double> > Hubbard(d,Dw,L);
+  generateBoseHubbard(d,t,U,Hubbard);
   problemParameters pars(localHilbertSpaceDims,L,Dw,1,nQuantumNumbers,QNValue,QNList);
   simulationParameters simPars(D,nSweeps,1,1e-3,1e-7,1e-8,1e-3);
   network sys(pars,simPars);
-  sys.networkH=Hubbard;
+  sys.setNetworkH(Hubbard);
   mpo<std::complex<double> > particleNumber(d,2,L);
   mpo<std::complex<double> > spin(d,2,L);
   double matEls, spinEls;
@@ -234,6 +319,57 @@ int main(int argc, char *argv[]){
 	    if(bi==0 && bim==particleNumber.locDimL(i)-1){
 	      matEls*=(delta(si,1)+delta(si,2)+2*delta(si,3));
 	      spinEls*=(delta(si,2)+delta(si,3));
+	    }
+	    particleNumber.global_access(i,si,sip,bi,bim)=matEls;
+	    spin.global_access(i,si,sip,bi,bim)=spinEls;
+	  }
+	}
+      }
+    }
+  }
+  sys.check=&particleNumber;
+  sys.checkParity=&spin;
+  std::vector<double> E0,dE;
+  sys.solve(E0,dE);
+  return 0;
+}
+*/
+/*
+int main(int argc, char *argv[]){
+  int const nQuantumNumbers=1;
+  int D=200;
+  int const L=100;
+  int const nUp=50;
+  int const nSweeps=10;
+  int const d=2;
+  int const Dw=5;
+  double const U=1;
+  double const t=1;
+  std::complex<int> QNValue[2]={std::complex<int>(nUp,0)};
+  std::complex<int> QNList[8]={std::complex<int>(0,1),std::complex<int>(1,1)};
+  localHSpaces localHilbertSpaceDims(d);
+  mpo<arcomplex<double> > Heisenberg(d,Dw,L);
+  generateHeisenbergHamiltonian(Heisenberg);
+  problemParameters pars(localHilbertSpaceDims,L,Dw,1,nQuantumNumbers,QNValue,QNList);
+  simulationParameters simPars(D,nSweeps,1,1e-3,1e-7,1e-8,1e-3);
+  network sys(pars,simPars);
+  sys.setNetworkH(Heisenberg);
+  mpo<std::complex<double> > particleNumber(d,2,L);
+  mpo<std::complex<double> > spin(d,2,L);
+  double matEls, spinEls;
+  for(int i=0;i<pars.L;++i){
+    for(int bi=0;bi<2;++bi){
+      for(int bim=0;bim<2;++bim){
+	for(int si=0;si<pars.d.maxd();++si){
+	  for(int sip=0;sip<pars.d.maxd();++sip){
+	    matEls=delta(si,sip);
+	    spinEls=delta(si,sip);
+	    if(i!=0 && i!=L-1 && bi==1 && bim==0){
+	      matEls=0.0;
+	      spinEls=0.0;
+	    }
+	    if(bi==0 && bim==particleNumber.locDimL(i)-1){
+	      matEls*=(delta(si,1)-delta(si,0));
 	    }
 	    particleNumber.global_access(i,si,sip,bi,bim)=matEls;
 	    spin.global_access(i,si,sip,bi,bim)=spinEls;

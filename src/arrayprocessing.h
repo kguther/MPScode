@@ -52,7 +52,7 @@ template<typename T>
 //---------------------------------------------------------------------------------------------------//
 
 template<typename T>
- void arraycpy(int dim1, int dim2, T *arraysource, T *arraytarget){
+ void arraycpy(int dim1, int dim2, T const *arraysource, T *arraytarget){
   for(int i=0;i<dim1;++i){
     for(int j=0;j<dim2;++j){
       arraytarget[j+dim2*i]=arraysource[j+dim2*i];
@@ -63,7 +63,7 @@ template<typename T>
 //---------------------------------------------------------------------------------------------------//
 
 template<typename T>
-  void arraycpy(int dim, T *arraysource, T *arraytarget){
+  void arraycpy(int dim, T const *arraysource, T *arraytarget){
   for(int i=0;i<dim;++i){
     arraytarget[i]=arraysource[i];
   }

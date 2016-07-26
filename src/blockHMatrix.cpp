@@ -69,6 +69,7 @@ void blockHMatrix::MultMvBlocked(arcomplex<double> *v, arcomplex<double> *w){
 //---------------------------------------------------------------------------------------------------//
 
 void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
+  //blockwise matrix-vector product using efficient caching
   tmpContainer<arcomplex<double> > innerContainer(d,lDL,lDR,lDwR);
   tmpContainer<arcomplex<double> > outerContainer(d,lDwL,lDR,lDL);
   arcomplex<double> simpleContainer;
@@ -226,14 +227,14 @@ arcomplex<double> blockHMatrix::HEffEntry(int const si, int const aim, int const
 void blockHMatrix::excitedStateProject(arcomplex<double> *v){
   if(P){
     if(P->nEigen()){
-      arcomplex<double> *vExpanded=new arcomplex<double>[d*lDR*lDL];
+      std::unique_ptr<arcomplex<double> > vEP(new arcomplex<double>[d*lDR*lDL]);
+      arcomplex<double> *vExpanded=vEP.get();
       for(int m=0;m<d*lDR*lDL;++m){
 	vExpanded[m]=0;
       }
       storageExpand(v,vExpanded);
       P->project(vExpanded,i);
       storageCompress(vExpanded,v);
-      delete[] vExpanded;
     }
   }
 }

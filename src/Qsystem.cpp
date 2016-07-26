@@ -42,12 +42,8 @@ void Qsystem::getGroundState(){
       simPars.tolInitial=stageTolInitial(iStage);
     }
     TensorNetwork.setSimParameters(simPars);
-
-    //TensorNetwork.getInitState();
-
-    //testIDMRG(pars,simPars,TensorNetwork.networkH);
-    
     converged=TensorNetwork.solve(E0,dE);
+    //returns 0 if dE is smaller than some threshold parameter
     if(converged==0){
       std::cout<<"SIMULATION CONVERGED\n";
       break;
@@ -83,12 +79,12 @@ double Qsystem::stageTolInitial(int const nStage){
 
 //---------------------------------------------------------------------------------------------------//
 
-int Qsystem::measure(mpo<lapack_complex_double> *const MPOperator, double &expectationValue, int iEigen){
-  return TensorNetwork.measure(MPOperator,expectationValue,iEigen);
+void Qsystem::measure(mpo<lapack_complex_double> *const MPOperator, double &expectationValue, int iEigen){
+  TensorNetwork.measure(MPOperator,expectationValue,iEigen);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-int Qsystem::measureLocalOperators(localMpo<lapack_complex_double> *const localMPOperator, std::vector<std::complex<double> > &result, int iEigen){
-  return TensorNetwork.measureLocalOperators(localMPOperator,result,iEigen);
+void Qsystem::measureLocalOperators(localMpo<lapack_complex_double> *const localMPOperator, std::vector<std::complex<double> > &result, int iEigen){
+  TensorNetwork.measureLocalOperators(localMPOperator,result,iEigen);
 }

@@ -25,7 +25,7 @@ readDensities=True
 writeDeg=False
 defaultLegs=['Ground state', '1st excited State']
 
-savePlot=True
+savePlot=False
 firstfile=True
 
 labellist=['$\\left|\\langle a^\dagger_i a_0^{} \\rangle \\right|$','$\\left|\\langle a^\dagger_i b^{}_i b_0^{\dagger} a_0 \\rangle \\right|$','$\\left|\\langle n^{a}_i n_0^{a} \\rangle \\right|$','$\\left|\\langle n^{a}_i n_0^{b} \\rangle \\right|$','$\\left|\\langle n^{a}_i \\rangle \\right|$','$\\left|\\langle a^\dagger_i b^\dagger_i a_0^{} b_0^{} \\rangle \\right|$','$\\left|\\langle \\right|\\rangle$','S','$\\left|\\langle n^{a}_i n^{b}_i \\rangle\\right|$','$\\left|\\langle n^{b}_i\\rangle\\right|$','$\\langle a_i^{\dagger} a_{i+1}^{\dagger} a_0 a_1 \\rangle$','$\\langle (n^a_i - n^b_i) (n^a_0 -n^b_0) \\rangle$','other']
@@ -168,6 +168,8 @@ for filename in filelist:
                 plt.title('J='+pars[3]+' g='+pars[4]+' W= '+pars[5]+' E='+pars[6]+' $(\\Delta E)^2$='+pars[7].strip())
                 if savePlot:
                     plt.savefig('plots/'+filename[0:len(filename)-4]+'_'+tname.replace(' ','_')+'.pdf')
+                if datanames[i]=='Intrachain correlation':
+                    plt.show()
                 plt.close()
                 firstfile=False
 
