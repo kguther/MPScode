@@ -13,7 +13,9 @@ template<typename T>
 class mpo{
  public:
   mpo();
+  //Usually, the MPO is created supplying the (maximum) local hilbert space dimension din, the MPO Bond dimension DWin and the system size Lin
   mpo(int din, int Dwin, int Lin);
+  //It may then be filled with entries manually, the sparse form is then generated internally
   const T& operator()(int i, int si, int sip, int bi, int bip)const{return Qoperator[i](si,sip,bi,bip);}
   T& operator()(int i, int si, int sip, int bi, int bip){return Qoperator[i](si,sip,bi,bip);}
   T* operator()(int i, int si=0, int sip=0){

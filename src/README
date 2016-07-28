@@ -1,0 +1,13 @@
+This code is capable of ground state and low-lying excited state search for one-dimensional systems using variational MPS. 
+
+The main interface is the network class from the network.h header. It takes a pair of parameter objects containing all kind of information about the system (first argument) and numerical parameters (second argument) as input for construction. Therefore, the parameter classes from paramters.h have to be used. 
+
+In a second step, the Hamiltonian has to be given to the network, using the setNetworkH() member function. 
+
+Then, the ground state (and excited states) may be obtained using the solve() member function. 
+
+To measure some global observable, the measure() member function can be used, taking the observable in MPO form as input.
+
+To measure local observables all over the system, like correlation functions, the measureLocalOperators() member function can be taken. It takes the observable at the first site considered as input and then automatically transfers the operator through the system.
+
+For compilation, see the makefile, library version will be coming soon.

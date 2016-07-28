@@ -535,14 +535,16 @@ int network::gotoNextEigen(){
 
 void network::measure(mpo<lapack_complex_double> *const MPOperator, double &lambda, int iEigen){
   mps *measureState;
-  if(excitedStateP.nEigen()==iEigen){
-    measureState=&networkState;
+  if(excitedStateP.nEigen()>=iEigen){
+    if(excitedStateP.nEigen()==iEigen){
+      measureState=&networkState;
+    }
+    else{
+      excitedStateP.getStoredState(measureState,iEigen);
+    }
+    globalMeasurement currentMeasurement(MPOperator,measureState);
+    currentMeasurement.measureFull(lambda);
   }
-  else{
-    excitedStateP.getStoredState(measureState,iEigen);
-  }
-  globalMeasurement currentMeasurement(MPOperator,measureState);
-  currentMeasurement.measureFull(lambda);
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -550,14 +552,16 @@ void network::measure(mpo<lapack_complex_double> *const MPOperator, double &lamb
 void network::measureLocalOperators(localMpo<lapack_complex_double> *const MPOperator, std::vector<lapack_complex_double> &lambda, int iEigen){
   mps *measureState;
   //This is for measuring the network state during calculation, which is useful for consistency checks
-  if(excitedStateP.nEigen()==iEigen){
-    measureState=&networkState;
+  if(excitedStateP.nEigen()>=iEigen){
+    if(excitedStateP.nEigen()==iEigen){
+      measureState=&networkState;
+    }
+    else{
+      excitedStateP.getStoredState(measureState,iEigen);
+    }
+    localMeasurementSeries currentMeasurement(MPOperator,measureState);
+    currentMeasurement.measureFull(lambda);
   }
-  else{
-    excitedStateP.getStoredState(measureState,iEigen);
-  }
-  localMeasurementSeries currentMeasurement(MPOperator,measureState);
-  currentMeasurement.measureFull(lambda);
 }
 
 //---------------------------------------------------------------------------------------------------//

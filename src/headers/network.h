@@ -23,10 +23,24 @@ class network{
   network();
   //can throw a critical_error in case normalization fails completely
   network(problemParameters const &inputpars, simulationParameters const &inputsimPars);
+
+  //These functions are the main interface for getting results
+
+  //solves for the first nEigen eigenstates of networkH. On exit, lambda are the eigenenergies and deltaLambda the variances of energy.
   int solve(std::vector<double> &lambda, std::vector<double> &deltaLambda);
+  //Gets the expectation value of some operator MPOperator (input as MPO) for the iEigen-th state if obtained. On exit, expValue contains the result. 
   void measure(mpo<arcomplex<double> > *const MPOperator, double &expValue, int iEigen=0);
+  //Does the same thing as measure() but takes a local operator and moves it across the system, measuring at each site
   void measureLocalOperators(localMpo<arcomplex<double> > *const MPOperator, std::vector<arcomplex<double> > &expValue, int iEigen=0);
+  //Besides observables, also the entanglement spectrum and entropy can be obtained from the MPS
   void getEntanglement(std::vector<double> &S, std::vector<std::vector<double> > &spectrum, int iEigen=0);
+  //MPO needs to be initialized externally
+  void setNetworkH(mpo<arcomplex<double> > const &newH){networkH=newH;}
+
+//---------------------------------------------------------------------------------------------------//
+
+//Functions below are more advanced and might not be required in all applications
+
   void loadNetworkState(mps const &source);
   void exportNetworkState(mps &target);
   void resetConvergence();
@@ -34,8 +48,6 @@ class network{
   void quantumNumberVec(std::vector<quantumNumber> *target){target=&conservedQNs;}
   dimensionTable& dimTable() {return networkDimInfo;}
   int setSimParameters(simulationParameters const &newPars);
-  //MPO needs to be initialized externally
-  void setNetworkH(mpo<arcomplex<double> > const &newH){networkH=newH;}
   mpo<arcomplex<double> > const& getNetworkH() const {return networkH;}
   int locd(int const i);
   //This is only for consistency checks
