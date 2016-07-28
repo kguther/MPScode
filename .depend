@@ -1,0 +1,251 @@
+parameters.o: src/parameters/parameters.cpp src/headers/parameters.h \
+ src/headers/localHSpaces.h
+network.o: src/network/network.cpp src/headers/network.h \
+ src/headers/parameters.h src/headers/localHSpaces.h \
+ src/headers/templates/mpo.h src/headers/templates/mpoSiteTensor.h \
+ src/headers/templates/localMpo.h src/headers/templates/mpo.h \
+ src/headers/mps.h src/headers/stateArray.h src/headers/dimensionTable.h \
+ src/headers/templates/baseTensor.h src/headers/quantumNumber.h \
+ src/headers/pseudoQuantumNumber.h src/headers/basisQNOrderMatrix.h \
+ src/headers/siteQNOrderMatrix.h src/headers/multInt.h \
+ src/headers/iterativeMeasurement.h src/headers/baseMeasurement.h \
+ src/headers/templates/contractor.h src/headers/dimensionTable.h \
+ src/headers/templates/tmpContainer.h src/headers/siteQNOrderMatrix.h \
+ src/headers/templates/pContraction.h src/headers/projector.h \
+ src/headers/mkl_complex_defined.h src/headers/overlap.h \
+ src/headers/arrayprocessing.h src/headers/optHMatrix.h \
+ src/headers/blockHMatrix.h src/headers/optHMatrix.h \
+ src/headers/globalMeasurement.h src/headers/localMeasurementSeries.h \
+ src/headers/exactGroundState.h src/headers/exceptionClasses.h
+arrayprocessing.o: src/auxiliary/arrayprocessing.cpp \
+ src/headers/arrayprocessing.h src/headers/mkl_complex_defined.h
+Qsystem.o: src/frontend/Qsystem.cpp src/headers/Qsystem.h \
+ src/headers/parameters.h src/headers/localHSpaces.h \
+ src/headers/network.h src/headers/templates/mpo.h \
+ src/headers/templates/mpoSiteTensor.h src/headers/templates/localMpo.h \
+ src/headers/templates/mpo.h src/headers/mps.h src/headers/stateArray.h \
+ src/headers/dimensionTable.h src/headers/templates/baseTensor.h \
+ src/headers/quantumNumber.h src/headers/pseudoQuantumNumber.h \
+ src/headers/basisQNOrderMatrix.h src/headers/siteQNOrderMatrix.h \
+ src/headers/multInt.h src/headers/iterativeMeasurement.h \
+ src/headers/baseMeasurement.h src/headers/templates/contractor.h \
+ src/headers/dimensionTable.h src/headers/templates/tmpContainer.h \
+ src/headers/siteQNOrderMatrix.h src/headers/templates/pContraction.h \
+ src/headers/projector.h src/headers/mkl_complex_defined.h \
+ src/headers/overlap.h src/headers/network.h src/headers/parameters.h
+optHMatrix.o: src/network/optimizer/optHMatrix.cpp \
+ src/headers/parameters.h src/headers/localHSpaces.h \
+ src/headers/optHMatrix.h src/headers/projector.h \
+ src/headers/mkl_complex_defined.h src/headers/mps.h \
+ src/headers/stateArray.h src/headers/dimensionTable.h \
+ src/headers/templates/baseTensor.h src/headers/quantumNumber.h \
+ src/headers/pseudoQuantumNumber.h src/headers/basisQNOrderMatrix.h \
+ src/headers/siteQNOrderMatrix.h src/headers/multInt.h \
+ src/headers/overlap.h src/headers/templates/mpo.h \
+ src/headers/templates/mpoSiteTensor.h \
+ src/headers/templates/tmpContainer.h
+mps.o: src/network/mps.cpp src/headers/mps.h src/headers/stateArray.h \
+ src/headers/dimensionTable.h src/headers/localHSpaces.h \
+ src/headers/templates/baseTensor.h src/headers/quantumNumber.h \
+ src/headers/pseudoQuantumNumber.h src/headers/basisQNOrderMatrix.h \
+ src/headers/siteQNOrderMatrix.h src/headers/multInt.h \
+ src/headers/arrayprocessing.h src/headers/mkl_complex_defined.h \
+ src/headers/exceptionClasses.h
+globalMeasurement.o: src/network/measurement/globalMeasurement.cpp \
+ src/headers/globalMeasurement.h src/headers/baseMeasurement.h \
+ src/headers/templates/mpo.h src/headers/templates/mpoSiteTensor.h \
+ src/headers/mps.h src/headers/stateArray.h src/headers/dimensionTable.h \
+ src/headers/localHSpaces.h src/headers/templates/baseTensor.h \
+ src/headers/quantumNumber.h src/headers/pseudoQuantumNumber.h \
+ src/headers/basisQNOrderMatrix.h src/headers/siteQNOrderMatrix.h \
+ src/headers/multInt.h src/headers/templates/contractor.h \
+ src/headers/dimensionTable.h src/headers/templates/tmpContainer.h \
+ src/headers/siteQNOrderMatrix.h src/headers/mkl_complex_defined.h
+baseMeasurement.o: src/network/measurement/baseMeasurement.cpp \
+ src/headers/baseMeasurement.h src/headers/templates/mpo.h \
+ src/headers/templates/mpoSiteTensor.h src/headers/mps.h \
+ src/headers/stateArray.h src/headers/dimensionTable.h \
+ src/headers/localHSpaces.h src/headers/templates/baseTensor.h \
+ src/headers/quantumNumber.h src/headers/pseudoQuantumNumber.h \
+ src/headers/basisQNOrderMatrix.h src/headers/siteQNOrderMatrix.h \
+ src/headers/multInt.h src/headers/templates/contractor.h \
+ src/headers/dimensionTable.h src/headers/templates/tmpContainer.h \
+ src/headers/siteQNOrderMatrix.h src/headers/mps.h \
+ src/headers/templates/tmpContainer.h
+iterativeMeasurement.o: src/network/measurement/iterativeMeasurement.cpp \
+ src/headers/iterativeMeasurement.h src/headers/baseMeasurement.h \
+ src/headers/templates/mpo.h src/headers/templates/mpoSiteTensor.h \
+ src/headers/mps.h src/headers/stateArray.h src/headers/dimensionTable.h \
+ src/headers/localHSpaces.h src/headers/templates/baseTensor.h \
+ src/headers/quantumNumber.h src/headers/pseudoQuantumNumber.h \
+ src/headers/basisQNOrderMatrix.h src/headers/siteQNOrderMatrix.h \
+ src/headers/multInt.h src/headers/templates/contractor.h \
+ src/headers/dimensionTable.h src/headers/templates/tmpContainer.h \
+ src/headers/siteQNOrderMatrix.h src/headers/templates/pContraction.h
+overlap.o: src/network/overlap.cpp src/headers/overlap.h \
+ src/headers/mps.h src/headers/stateArray.h src/headers/dimensionTable.h \
+ src/headers/localHSpaces.h src/headers/templates/baseTensor.h \
+ src/headers/quantumNumber.h src/headers/pseudoQuantumNumber.h \
+ src/headers/basisQNOrderMatrix.h src/headers/siteQNOrderMatrix.h \
+ src/headers/multInt.h src/headers/templates/tmpContainer.h
+stateArray.o: src/network/stateArray.cpp src/headers/stateArray.h \
+ src/headers/dimensionTable.h src/headers/localHSpaces.h \
+ src/headers/templates/baseTensor.h
+network_enrichment.o: src/QN/network_enrichment.cpp \
+ src/headers/mkl_complex_defined.h src/headers/arrayprocessing.h \
+ src/headers/templates/tmpContainer.h src/headers/network.h \
+ src/headers/parameters.h src/headers/localHSpaces.h \
+ src/headers/templates/mpo.h src/headers/templates/mpoSiteTensor.h \
+ src/headers/templates/localMpo.h src/headers/templates/mpo.h \
+ src/headers/mps.h src/headers/stateArray.h src/headers/dimensionTable.h \
+ src/headers/templates/baseTensor.h src/headers/quantumNumber.h \
+ src/headers/pseudoQuantumNumber.h src/headers/basisQNOrderMatrix.h \
+ src/headers/siteQNOrderMatrix.h src/headers/multInt.h \
+ src/headers/iterativeMeasurement.h src/headers/baseMeasurement.h \
+ src/headers/templates/contractor.h src/headers/dimensionTable.h \
+ src/headers/templates/tmpContainer.h src/headers/siteQNOrderMatrix.h \
+ src/headers/templates/pContraction.h src/headers/projector.h \
+ src/headers/mkl_complex_defined.h src/headers/overlap.h \
+ src/headers/optHMatrix.h src/headers/blockHMatrix.h \
+ src/headers/optHMatrix.h src/headers/truncation.h src/headers/verifyQN.h \
+ src/headers/exceptionClasses.h
+projector.o: src/network/optimizer/projector.cpp src/headers/projector.h \
+ src/headers/mkl_complex_defined.h src/headers/mps.h \
+ src/headers/stateArray.h src/headers/dimensionTable.h \
+ src/headers/localHSpaces.h src/headers/templates/baseTensor.h \
+ src/headers/quantumNumber.h src/headers/pseudoQuantumNumber.h \
+ src/headers/basisQNOrderMatrix.h src/headers/siteQNOrderMatrix.h \
+ src/headers/multInt.h src/headers/overlap.h src/headers/mps.h \
+ src/headers/overlap.h src/headers/arrayprocessing.h \
+ src/headers/mkl_complex_defined.h
+quantumNumber.o: src/QN/quantumNumber.cpp src/headers/quantumNumber.h \
+ src/headers/dimensionTable.h src/headers/localHSpaces.h \
+ src/headers/pseudoQuantumNumber.h
+dimensionTable.o: src/parameters/dimensionTable.cpp \
+ src/headers/dimensionTable.h src/headers/localHSpaces.h
+basisQNOrderMatrix.o: src/QN/basisQNOrderMatrix.cpp \
+ src/headers/basisQNOrderMatrix.h src/headers/siteQNOrderMatrix.h \
+ src/headers/multInt.h src/headers/quantumNumber.h \
+ src/headers/dimensionTable.h src/headers/localHSpaces.h \
+ src/headers/pseudoQuantumNumber.h
+blockHMatrix.o: src/network/optimizer/blockHMatrix.cpp \
+ src/headers/blockHMatrix.h src/headers/optHMatrix.h \
+ src/headers/projector.h src/headers/mkl_complex_defined.h \
+ src/headers/mps.h src/headers/stateArray.h src/headers/dimensionTable.h \
+ src/headers/localHSpaces.h src/headers/templates/baseTensor.h \
+ src/headers/quantumNumber.h src/headers/pseudoQuantumNumber.h \
+ src/headers/basisQNOrderMatrix.h src/headers/siteQNOrderMatrix.h \
+ src/headers/multInt.h src/headers/overlap.h src/headers/templates/mpo.h \
+ src/headers/templates/mpoSiteTensor.h \
+ src/headers/templates/tmpContainer.h src/headers/arrayprocessing.h
+localHSpaces.o: src/parameters/localHSpaces.cpp \
+ src/headers/localHSpaces.h
+localMeasurementSeries.o: \
+ src/network/measurement/localMeasurementSeries.cpp \
+ src/headers/localMeasurementSeries.h src/headers/iterativeMeasurement.h \
+ src/headers/baseMeasurement.h src/headers/templates/mpo.h \
+ src/headers/templates/mpoSiteTensor.h src/headers/mps.h \
+ src/headers/stateArray.h src/headers/dimensionTable.h \
+ src/headers/localHSpaces.h src/headers/templates/baseTensor.h \
+ src/headers/quantumNumber.h src/headers/pseudoQuantumNumber.h \
+ src/headers/basisQNOrderMatrix.h src/headers/siteQNOrderMatrix.h \
+ src/headers/multInt.h src/headers/templates/contractor.h \
+ src/headers/dimensionTable.h src/headers/templates/tmpContainer.h \
+ src/headers/siteQNOrderMatrix.h src/headers/templates/pContraction.h \
+ src/headers/templates/localMpo.h src/headers/templates/mpo.h \
+ src/headers/optHMatrix.h src/headers/projector.h \
+ src/headers/mkl_complex_defined.h src/headers/overlap.h \
+ src/headers/globalMeasurement.h
+simulation.o: src/frontend/simulation.cpp \
+ src/headers/systems/simulation.h src/headers/parameters.h \
+ src/headers/localHSpaces.h src/headers/systems/problemOperators.h \
+ src/headers/templates/localMpo.h src/headers/templates/mpo.h \
+ src/headers/templates/mpoSiteTensor.h src/headers/network.h \
+ src/headers/parameters.h src/headers/templates/mpo.h src/headers/mps.h \
+ src/headers/stateArray.h src/headers/dimensionTable.h \
+ src/headers/templates/baseTensor.h src/headers/quantumNumber.h \
+ src/headers/pseudoQuantumNumber.h src/headers/basisQNOrderMatrix.h \
+ src/headers/siteQNOrderMatrix.h src/headers/multInt.h \
+ src/headers/iterativeMeasurement.h src/headers/baseMeasurement.h \
+ src/headers/templates/contractor.h src/headers/dimensionTable.h \
+ src/headers/templates/tmpContainer.h src/headers/siteQNOrderMatrix.h \
+ src/headers/templates/pContraction.h src/headers/projector.h \
+ src/headers/mkl_complex_defined.h src/headers/overlap.h \
+ src/headers/delta.h src/headers/Qsystem.h src/headers/network.h \
+ src/headers/projector.h src/headers/globalMeasurement.h \
+ src/headers/localMeasurementSeries.h src/headers/exceptionClasses.h
+problemOperators.o: src/frontend/problemOperators.cpp \
+ src/headers/systems/problemOperators.h src/headers/templates/localMpo.h \
+ src/headers/templates/mpo.h src/headers/templates/mpoSiteTensor.h \
+ src/headers/network.h src/headers/parameters.h \
+ src/headers/localHSpaces.h src/headers/templates/mpo.h src/headers/mps.h \
+ src/headers/stateArray.h src/headers/dimensionTable.h \
+ src/headers/templates/baseTensor.h src/headers/quantumNumber.h \
+ src/headers/pseudoQuantumNumber.h src/headers/basisQNOrderMatrix.h \
+ src/headers/siteQNOrderMatrix.h src/headers/multInt.h \
+ src/headers/iterativeMeasurement.h src/headers/baseMeasurement.h \
+ src/headers/templates/contractor.h src/headers/dimensionTable.h \
+ src/headers/templates/tmpContainer.h src/headers/siteQNOrderMatrix.h \
+ src/headers/templates/pContraction.h src/headers/projector.h \
+ src/headers/mkl_complex_defined.h src/headers/overlap.h \
+ src/headers/delta.h
+interface.o: src/frontend/interface.cpp src/headers/systems/interface.h \
+ src/headers/Qsystem.h src/headers/parameters.h \
+ src/headers/localHSpaces.h src/headers/network.h \
+ src/headers/templates/mpo.h src/headers/templates/mpoSiteTensor.h \
+ src/headers/templates/localMpo.h src/headers/templates/mpo.h \
+ src/headers/mps.h src/headers/stateArray.h src/headers/dimensionTable.h \
+ src/headers/templates/baseTensor.h src/headers/quantumNumber.h \
+ src/headers/pseudoQuantumNumber.h src/headers/basisQNOrderMatrix.h \
+ src/headers/siteQNOrderMatrix.h src/headers/multInt.h \
+ src/headers/iterativeMeasurement.h src/headers/baseMeasurement.h \
+ src/headers/templates/contractor.h src/headers/dimensionTable.h \
+ src/headers/templates/tmpContainer.h src/headers/siteQNOrderMatrix.h \
+ src/headers/templates/pContraction.h src/headers/projector.h \
+ src/headers/mkl_complex_defined.h src/headers/overlap.h \
+ src/headers/localHSpaces.h src/headers/delta.h \
+ src/headers/systems/simulation.h src/headers/parameters.h \
+ src/headers/systems/problemOperators.h src/headers/network.h
+main.o: src/frontend/main.cpp src/headers/systems/interface.h \
+ src/headers/systems/simulation.h src/headers/parameters.h \
+ src/headers/localHSpaces.h src/headers/systems/problemOperators.h \
+ src/headers/templates/localMpo.h src/headers/templates/mpo.h \
+ src/headers/templates/mpoSiteTensor.h src/headers/network.h \
+ src/headers/parameters.h src/headers/templates/mpo.h src/headers/mps.h \
+ src/headers/stateArray.h src/headers/dimensionTable.h \
+ src/headers/templates/baseTensor.h src/headers/quantumNumber.h \
+ src/headers/pseudoQuantumNumber.h src/headers/basisQNOrderMatrix.h \
+ src/headers/siteQNOrderMatrix.h src/headers/multInt.h \
+ src/headers/iterativeMeasurement.h src/headers/baseMeasurement.h \
+ src/headers/templates/contractor.h src/headers/dimensionTable.h \
+ src/headers/templates/tmpContainer.h src/headers/siteQNOrderMatrix.h \
+ src/headers/templates/pContraction.h src/headers/projector.h \
+ src/headers/mkl_complex_defined.h src/headers/overlap.h \
+ src/headers/delta.h src/headers/Qsystem.h src/headers/network.h \
+ src/headers/localHSpaces.h src/headers/systems/heisenbergChain.h \
+ src/headers/arrayprocessing.h
+exactGroundState.o: src/QN/exactGroundState.cpp \
+ src/headers/exactGroundState.h src/headers/mps.h \
+ src/headers/stateArray.h src/headers/dimensionTable.h \
+ src/headers/localHSpaces.h src/headers/templates/baseTensor.h \
+ src/headers/quantumNumber.h src/headers/pseudoQuantumNumber.h \
+ src/headers/basisQNOrderMatrix.h src/headers/siteQNOrderMatrix.h \
+ src/headers/multInt.h
+verifyQN.o: src/QN/verifyQN.cpp src/headers/verifyQN.h src/headers/mps.h \
+ src/headers/stateArray.h src/headers/dimensionTable.h \
+ src/headers/localHSpaces.h src/headers/templates/baseTensor.h \
+ src/headers/quantumNumber.h src/headers/pseudoQuantumNumber.h \
+ src/headers/basisQNOrderMatrix.h src/headers/siteQNOrderMatrix.h \
+ src/headers/multInt.h src/headers/quantumNumber.h
+pseudoQuantumNumber.o: src/QN/pseudoQuantumNumber.cpp \
+ src/headers/pseudoQuantumNumber.h src/headers/dimensionTable.h \
+ src/headers/localHSpaces.h
+siteQNOrderMatrix.o: src/QN/siteQNOrderMatrix.cpp \
+ src/headers/siteQNOrderMatrix.h src/headers/multInt.h \
+ src/headers/quantumNumber.h src/headers/dimensionTable.h \
+ src/headers/localHSpaces.h src/headers/pseudoQuantumNumber.h \
+ src/headers/exceptionClasses.h
+truncation.o: src/QN/truncation.cpp src/headers/truncation.h
+heisenbergChain.o: src/frontend/heisenbergChain.cpp src/headers/delta.h \
+ src/headers/templates/mpo.h src/headers/templates/mpoSiteTensor.h \
+ src/headers/systems/heisenbergChain.h

@@ -28,6 +28,7 @@ int checkQNConstraint(mps &test, int i){
   return failed;
 }
 
+/*
 int checkQNConstraint(impBase &test, int i){
   int const ld=test.getDimInfo().locd(i);
   int const lDL=test.getDimInfo().locDimL(i);
@@ -83,3 +84,4 @@ int twositeCheck(impBase &test, arcomplex<double> *M){
   }
   return 0;
 }
+*/

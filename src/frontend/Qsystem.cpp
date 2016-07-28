@@ -4,7 +4,6 @@
 #include "Qsystem.h"
 #include "network.h"
 #include "parameters.h"
-#include "infiniteQsystem.h"
 
 //---------------------------------------------------------------------------------------------------//
 /*
