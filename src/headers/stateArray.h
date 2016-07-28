@@ -5,7 +5,7 @@
 #include <vector>
 #include "dimensionTable.h"
 #include "localHSpaces.h"
-#include "baseTensor.h"
+#include "templates/baseTensor.h"
 
 //---------------------------------------------------------------------------------------------------//
 // Base class for MPS-type objects. The state array only contains an array of tensors with global 

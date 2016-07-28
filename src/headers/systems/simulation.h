@@ -6,7 +6,7 @@
 #include <string>
 #include "parameters.h"
 #include "problemOperators.h"
-#include "localMpo.h"
+#include "templates/localMpo.h"
 #include "Qsystem.h"
 
 class simulation{

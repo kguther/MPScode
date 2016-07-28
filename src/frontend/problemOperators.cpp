@@ -1,6 +1,5 @@
 #include "problemOperators.h"
-#include "mpo.h"
-#include "localMpo.h"
+#include "templates/mpo.h"
 #include "delta.h"
 #include "math.h"
 #include <iostream> 

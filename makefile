@@ -2,7 +2,7 @@ CC=g++
 APCK_LIB=/usr/lib/libarpack.a /usr/lib/libarpack++.a
 MKL_PATH=/opt/intel/compilers_and_libraries_2016.0.109/linux/mkl/lib/intel64/
 MKL_INCLUDE_PATH=/opt/intel/compilers_and_libraries_2016.0.109/linux/mkl/include
-INCL_SRC_PATH=-I src/headers -I src/headers/templates -I src/headers/systems
+INCL_SRC_PATH=-I src/headers -I src/headers/systems
 LPKFLAGS=-llapacke -llapack -lblas
 MKLFLAGS=-lmkl_gf_lp64 -lmkl_core -lmkl_intel_thread -liomp5 -lpthread -lm
 LBFLAGS=$(MKLFLAGS)
@@ -18,7 +18,8 @@ CFLAGS_DEBUG=-Wall -std=c++11 -fopenmp -g
 APCK_INCLUDE=-I/usr/include/arpack++
 MKL_INCLUDE=-I$(MKL_INCLUDE_PATH)
 DEBUG_NAME=dMPScode
-OBJECTS=src/parameters/parameters.o src/network/network.o src/auxiliary/arrayprocessing.o src/frontend/Qsystem.o src/network/optimizer/optHMatrix.o src/network/mps.o src/network/measurement/globalMeasurement.o src/network/measurement/baseMeasurement.o src/network/measurement/iterativeMeasurement.o src/network/overlap.o src/network/stateArray.o src/QN/network_enrichment.o src/network/optimizer/projector.o src/QN/quantumNumber.o src/parameters/dimensionTable.o src/QN/basisQNOrderMatrix.o src/network/optimizer/blockHMatrix.o src/parameters/localHSpaces.o src/network/measurement/localMeasurementSeries.o src/frontend/simulation.o src/frontend/problemOperators.o src/frontend/interface.o src/frontend/main.o src/QN/exactGroundState.o src/QN/verifyQN.o src/QN/pseudoQuantumNumber.o src/QN/siteQNOrderMatrix.o src/QN/truncation.o src/frontend/heisenbergChain.o
+OBJECTS_LIB=src/parameters/parameters.o src/network/network.o src/auxiliary/arrayprocessing.o src/network/optimizer/optHMatrix.o src/network/mps.o src/network/measurement/globalMeasurement.o src/network/measurement/baseMeasurement.o src/network/measurement/iterativeMeasurement.o src/network/overlap.o src/network/stateArray.o src/QN/network_enrichment.o src/network/optimizer/projector.o src/QN/quantumNumber.o src/parameters/dimensionTable.o src/QN/basisQNOrderMatrix.o src/network/optimizer/blockHMatrix.o src/parameters/localHSpaces.o src/network/measurement/localMeasurementSeries.o src/QN/exactGroundState.o src/QN/verifyQN.o src/QN/pseudoQuantumNumber.o src/QN/siteQNOrderMatrix.o src/QN/truncation.o 
+OBJECTS=$(OBJECTS_LIB) src/frontend/Qsystem.o src/frontend/simulation.o src/frontend/problemOperators.o src/frontend/interface.o src/frontend/main.o src/frontend/heisenbergChain.o
 OBJECTS_DEBUG=$(OBJECTS:.o=.dbg)
 SOURCE=$(OBJECTS:.o=.cpp)
 OBJECTS_HOLLE=$(OBJECTS:.o=.hll)
@@ -37,6 +38,9 @@ holle: $(OBJECTS_HOLLE)
 
 dep: $(SOURCE)
 	$(CC) $(APCK_INCLUDE) $(MPI_COMPILE_FLAGS) $(INCL_SRC_PATH) -MM $(SOURCE) > $(DEPENDENCIES)
+
+library: $(OBJECTS_LIB)
+	ar rcs lib/libvmps.a $(OBJECTS_LIB)
 
 $(OBJECTS): %.o: %.cpp 
 	$(CC) -c $(CFLAGS) $(APCK_INCLUDE) $(MPI_COMPILE_FLAGS) $(DMKL) $(INCL_SRC_PATH) $(MKL_INCLUDE) $< -o $@

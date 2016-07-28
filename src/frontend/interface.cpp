@@ -1,10 +1,7 @@
 #include "interface.h"
 #include <stdlib.h>
-#include "Qsystem.h"
-#include "localHSpaces.h"
 #include "delta.h"
-#include "simulation.h"
-#include "localMpo.h"
+#include "templates/localMpo.h"
 #include <iostream>
 #include <fstream>
 #include <time.h>

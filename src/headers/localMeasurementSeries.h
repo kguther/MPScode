@@ -3,7 +3,7 @@
 
 #include <vector>
 #include "iterativeMeasurement.h"
-#include "localMpo.h"
+#include "templates/localMpo.h"
 
 //---------------------------------------------------------------------------------------------------//
 // This important class computes the expectation value of some site-dependant ('local') MPO for all 

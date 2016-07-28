@@ -2,8 +2,8 @@
 #define CALCULATION_OF_TENSOR_CONTRACTIONS
 
 #include "dimensionTable.h"
-#include "tmpContainer.h"
-#include "mpoSiteTensor.h"
+#include "templates/tmpContainer.h"
+#include "templates/mpoSiteTensor.h"
 #include "siteQNOrderMatrix.h"
 
 //---------------------------------------------------------------------------------------------------//

@@ -1,7 +1,7 @@
 #ifndef COLLECTION_OF_RELEVANT_OPERATORS
 #define COLLECTION_OF_RELEVANT_OPERATORS
 
-#include "localMpo.h"
+#include "templates/localMpo.h"
 #include "network.h"
 #include "delta.h"
 

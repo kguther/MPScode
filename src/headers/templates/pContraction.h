@@ -1,7 +1,7 @@
 #ifndef PARTIAL_CONTRACTION
 #define PARTIAL_CONTRACTION
 
-#include "tmpContainer.h"
+#include "templates/tmpContainer.h"
 
 //---------------------------------------------------------------------------------------------------//
 // Class for storage of partial contractions of the network. Basically, this is a 4D container with

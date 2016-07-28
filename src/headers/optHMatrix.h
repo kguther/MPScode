@@ -6,7 +6,7 @@
 #include "projector.h"
 #include "dimensionTable.h"
 #include "quantumNumber.h"
-#include "mpo.h"
+#include "templates/mpo.h"
 
 //---------------------------------------------------------------------------------------------------//
 // This class is used as an interface to provide the matrix-vector product for ARPACK++

@@ -1,8 +1,5 @@
 #include "baseMeasurement.h"
-#include "mpo.h"
-#include "mps.h"
-#include "tmpContainer.h"
-#include "contractor.h"
+#include "templates/tmpContainer.h"
 
 //---------------------------------------------------------------------------------------------------//
 // Constructor and initialize() function for the baseMeasurement class.

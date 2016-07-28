@@ -1,6 +1,6 @@
 #include "interface.h"
 #include "simulation.h"
-#include "localMpo.h"
+#include "templates/localMpo.h"
 #include "localHSpaces.h"
 #include "heisenbergChain.h"
 #include <arcomp.h>

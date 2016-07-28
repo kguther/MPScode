@@ -5,8 +5,8 @@
 #include <vector>
 #include "parameters.h"
 #include "network.h"
-#include "mpo.h"
-#include "localMpo.h"
+#include "templates/mpo.h"
+#include "templates/localMpo.h"
 
 //---------------------------------------------------------------------------------------------------//
 // This class is used to execute the simulation with its main task being the adaption of bond

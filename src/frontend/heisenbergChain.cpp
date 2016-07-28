@@ -1,5 +1,4 @@
 #include "delta.h"
-#include "mpo.h"
 #include "heisenbergChain.h"
 #include <complex>
 #include <cmath>

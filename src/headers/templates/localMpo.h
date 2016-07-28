@@ -1,7 +1,7 @@
 #ifndef MPO_CLASS_FOR_LOCAL_OPERATORS
 #define MPO_CLASS_FOR_LOCAL_OPERATORS
 
-#include "mpo.h"
+#include "templates/mpo.h"
 
 //---------------------------------------------------------------------------------------------------//
 // A 'localMpo' is a mpo wich only contains operators acting on a few sites. Usually, it can be seperated into two parts, each acting on spatially different sites. This class allows to move the part operating on sites with higher indices to be moved to the right, a useful feature when measuring correlation functions.

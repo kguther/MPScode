@@ -5,8 +5,8 @@
 #include <arcomp.h>
 #include <vector>
 #include "parameters.h"
-#include "mpo.h"
-#include "localMpo.h"
+#include "templates/mpo.h"
+#include "templates/localMpo.h"
 #include "mps.h"
 #include "iterativeMeasurement.h"
 #include "projector.h"

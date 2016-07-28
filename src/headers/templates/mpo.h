@@ -2,7 +2,7 @@
 #define MPO_OPERATOR
 
 #include <vector>
-#include "mpoSiteTensor.h"
+#include "templates/mpoSiteTensor.h"
 
 //---------------------------------------------------------------------------------------------------//
 // MPO class for handling of sparse mpos.

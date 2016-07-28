@@ -2,7 +2,7 @@
 #define ITERATIVE_MEASUREMENT
 
 #include "baseMeasurement.h"
-#include "pContraction.h"
+#include "templates/pContraction.h"
 
 //---------------------------------------------------------------------------------------------------//
 // This measurement class is used for computing the expectation value of some operator during the 

@@ -2,9 +2,9 @@
 #define BASE_MEASUREMENT
 
 #include <arcomp.h>
-#include "mpo.h"
+#include "templates/mpo.h"
 #include "mps.h"
-#include "contractor.h"
+#include "templates/contractor.h"
 
 //---------------------------------------------------------------------------------------------------//
 // The baseMeasurement class is the parent class for the measurements used in the network class. 
