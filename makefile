@@ -1,4 +1,4 @@
-CC=g++
+CC=icpc
 APCK_LIB=/usr/lib/libarpack.a /usr/lib/libarpack++.a
 MKL_PATH=/opt/intel/compilers_and_libraries_2016.0.109/linux/mkl/lib/intel64/
 MKL_INCLUDE_PATH=/opt/intel/compilers_and_libraries_2016.0.109/linux/mkl/include
@@ -40,7 +40,7 @@ dep: $(SOURCE)
 	$(CC) $(APCK_INCLUDE) $(MPI_COMPILE_FLAGS) $(INCL_SRC_PATH) -MM $(SOURCE) > $(DEPENDENCIES)
 
 library: $(OBJECTS_LIB)
-	ar rcs lib/libvmps.a $(OBJECTS_LIB)
+	ar rcs src/lib/libvmps.a $(OBJECTS_LIB:.o=.hll)
 
 $(OBJECTS): %.o: %.cpp 
 	$(CC) -c $(CFLAGS) $(APCK_INCLUDE) $(MPI_COMPILE_FLAGS) $(DMKL) $(INCL_SRC_PATH) $(MKL_INCLUDE) $< -o $@
