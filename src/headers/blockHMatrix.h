@@ -4,6 +4,7 @@
 #include <vector>
 #include "optHMatrix.h"
 #include "siteQNOrderMatrix.h"
+#include "templates/tmpContainer.h"
 
 //---------------------------------------------------------------------------------------------------//
 // The blockHMatrix class is an expansion of the optHMatrix class which is designed to exploit good
@@ -34,6 +35,8 @@ class blockHMatrix: private optHMatrix{
   std::vector<arcomplex<double> > sparseMatrix;
   std::vector<arcomplex<double> > compressedVector;
   std::vector<int> rowPtr, colIndices;
+  tmpContainer<arcomplex<double> > innerContainer;
+  tmpContainer<arcomplex<double> > outerContainer;
   siteQNOrderMatrix const *indexTable;
   int vecBlockIndexLP(int const iBlock, int const j, int const k){return k+j*indexTable->lBlockSizeLP(iBlock)+blockOffset[iBlock];}
   void excitedStateProject(arcomplex<double> *v);

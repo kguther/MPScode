@@ -125,10 +125,10 @@ int writeHamiltonian(network &sys, double J, double g, double W, arcomplex<doubl
 		  bufH(i,si,sip,bi,bim)=-2*JD*delta(si,sip)*(delta(si,2)+delta(si,3));
 		  break;
 		case 7:
-		  bufH(i,si,sip,bi,bim)=gD*pre*delta(si,sip)*delta(si,1);
+		  bufH(i,si,sip,bi,bim)=gD*delta(si,sip)*delta(si,1);
 		  break;
 		case 8:
-		  bufH(i,si,sip,bi,bim)=gD*pre*delta(si,sip)*delta(si,2);
+		  bufH(i,si,sip,bi,bim)=gD*delta(si,sip)*delta(si,2);
 		  break;
 		case 9:
 		  bufH(i,si,sip,bi,bim)=-preD*delta(si,1)*delta(sip,2);

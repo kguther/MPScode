@@ -13,7 +13,7 @@ class pContraction: public tmpContainer<T>{
  public:
   pContraction();
   pContraction(int const Lin, int const Din, int const Dwin);
-  T* operator()(int i){return this->container+i*this->D1*this->D3*this->D2;}
+  T* operator()(int i){return &((this->container)[0])+i*this->D1*this->D3*this->D2;}
   void subContractionStart(T *&pStart, int const i);
   void initialize(int const Lin, int const Din, int const Dwin);
 };
@@ -21,9 +21,7 @@ class pContraction: public tmpContainer<T>{
 //---------------------------------------------------------------------------------------------------//
 
 template<typename T>
-pContraction<T>::pContraction(){
-  this->container=0;
-}
+pContraction<T>::pContraction():tmpContainer<T>(){}
 
 //---------------------------------------------------------------------------------------------------//
 
@@ -36,7 +34,7 @@ pContraction<T>::pContraction(int const Lin, int const Din, int const Dwin){
 
 template<typename T>
 void pContraction<T>::subContractionStart(T *&pStart, int const i){
-  pStart=this->container+i*this->D1*this->D3*this->D2;
+  pStart=&((this->container)[0])+i*this->D1*this->D3*this->D2;
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -44,7 +42,6 @@ void pContraction<T>::subContractionStart(T *&pStart, int const i){
 template<typename T>
 void pContraction<T>::initialize(int const Lin, int const Din, int const Dwin){
   //Initialization handy for updating D
-  delete[] this->container;
   this->initializeContainer(Lin,Din,Dwin,Din);
 }
 

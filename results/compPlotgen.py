@@ -49,7 +49,9 @@ if 'plots' not in filelist:
     os.mkdir('plots')
 
 y=[]
+datanames=[]
 pltlabels=[]
+n=[]
 colors=[(170/255.0,0,45/255.0),(125/255.0,0,125.0/255.0)]
 
 def readData(filename,data):
@@ -70,52 +72,85 @@ for filename in filelist:
                 readCaption.readline()
                 parsR=readCaption.readline()
                 names=readCaption.readline()
-            datanames=names.split('\t')
+            datanames.append(names.split('\t'))
             pars=parsR.split('\t')
-            n=len(datanames)
+            n.append(len(datanames[len(datanames)-1]))
             L=pars[0]
             np=pars[1]
             parity=pars[2]
             data=[]
-            for i in range(0,n-1):
+            for i in range(0,n[len(n)-1]-1):
                 readData(filename,data)
             y.append(data)
-            pltlabels.append('J='+pars[3][0:4]+' g='+pars[4][0:4])
-            #pltlabels.append('$\\alpha=$'+parity+'  E='+pars[6])
+            #pltlabels.append('J='+pars[3][0:4]+' g='+pars[4][0:4])
+            #pltlabels.append('$\\alpha=$'+parity+'  E='+pars[6][:7])
+            pltlabels.append('E='+pars[6][:7])
             #pltlabels.append('N='+pars[1])
             #ptitle='J='+pars[3]+'\t g='+pars[4]
 
 markers=['o','<','>','v','s','^','*']
-cols=['b',(200/255.0,0,45/255.0)]
+cols=['b','g']
+markersize=11.5
 
 fs=32
 ls=28
-for j in range(0,n-1):
-    if datanames[j][0:4]!='Bulk':
-        plt.figure(figsize=(12,10))
-        plt.tick_params(labelsize=ls)
-        print datanames[j]
-        for i in range(0,len(y)):
+plt.figure(figsize=(13,10))
+plt.tick_params(labelsize=ls)
+
+targetName='Intrachain correlation'
+
+for i in range(0,len(y)):
+    for j in range(0,n[i]-1): 
+        if datanames[i][j]==targetName:
             x=range(0,len(y[i][j]))
-            if tasknum(datanames[j])!=7 and tasknum(datanames[j])!=4:
-                cplot,=plt.semilogy(x,y[i][j],markers[i],ms=11.5)
+            if tasknum(datanames[i][j])!=7 and tasknum(datanames[i][j])!=4:
+                cplot,=plt.semilogy(x,y[i][j],markers[i],ms=markersize,color=colors[i])
             else:
-                cplot,=plt.plot(x,y[i][j],markers[i],ms=11.5)
+                cplot,=plt.plot(x,y[i][j],markers[i],ms=markersize,color=colors[i])
             cplot.set_label(pltlabels[i])
-            #plt.xlabel('Distance $|i-j|$',fontsize=fs)
-            #plt.xlabel('Subsystem size $S$',fontsize=fs)
-        plt.xlabel('Site $i$',fontsize=fs)
-        plt.ylabel(labellist[tasknum(datanames[j])],fontsize=fs)
-        plt.xlim(xmin=0,xmax=100)
-        plt.ylim(ymin=-.05,ymax=1.05)
-        #plt.xticks([10,20,30])
-        #ax=plt.gca()
-        #ax.set_xticklabels(['10','20','30'])
-        plt.legend(loc=2,numpoints=1,fontsize=ls)
-        #plt.title(ptitle,fontsize=24)
-        tnames=datanames[j].replace('.','_')
-        if datanames[j]=='Local density':# or datanames[j]=='Interchain pairwise correlation':
-            plt.savefig('thesis_plots/'+title+tnames.replace(' ','_')+'.pdf',bbox_inches='tight')
-        plt.close()
-            
+#plt.xlabel('Distance $|i-j|$',fontsize=
+#plt.xlabel('Subsystem size $S$',fontsize=fs)
+plt.xlabel('Site $i$',fontsize=fs)
+plt.ylabel(labellist[tasknum(targetName)],fontsize=fs)
+#plt.ylabel('Entanglement Entropy',fontsize=fs)
+#plt.xlim(xmin=0,xmax=100)
+plt.ylim(ymin=-.05,ymax=0.65)
+#plt.xticks([10,20,30])
+#ax=plt.gca()
+#ax.set_xticklabels(['10','20','30'])
+plt.legend(loc=9,numpoints=1,fontsize=ls)
+#plt.title(ptitle,fontsize=24)
+tnames=targetName.replace('.','_')
+plt.savefig('thesis_plots/'+title+tnames.replace(' ','_')+'.pdf',bbox_inches='tight')
+#plt.show()
+plt.close()
+
+
+fig,ax1=plt.subplots(figsize=(12,10))
+ax1.tick_params(labelsize=ls)
+ax1.set_xlabel('$|i-j|$',fontsize=fs)
+ax2=ax1.twinx()
+ax2.tick_params(labelsize=ls)
+for i in range(0,len(y)):
+    for j in range(0,n[i]-1):
+        if datanames[i][j]=='Interchain pairwise correlation' or datanames[i][j]=='Interchain hopping correlation':
+            x=range(0,len(y[i][j]))
+            if datanames[0][j]=='Interchain pairwise correlation':
+                cplot,=ax1.semilogy(x,y[i][j],markers[i],ms=markersize,color=colors[0])
+                cplot.set_label(pltlabels[i])
+            else:
+                ax2.semilogy(x,y[i][j],markers[i],ms=markersize,color=colors[1])
+
+ax1.set_ylabel('$\\left|\\langle a^\dagger_i b^\dagger_i a_j^{} b_j^{} \\rangle \\right|$',fontsize=fs,color=colors[0])
+ax2.set_ylabel('$\\left|\\langle a^\dagger_i b^{}_i b_j^{\dagger} a_j \\rangle \\right|$',fontsize=fs,color=colors[1])
+#ax1.legend(loc=3,numpoints=1,fontsize=ls)
+#ax1.set_xlim(xmax=100)
+#ax2.set_xlim(xmax=100)
+for yt in ax1.get_yticklabels():
+    yt.set_color(colors[0])
+for yt in ax2.get_yticklabels():
+    yt.set_color(colors[1])
+#plt.savefig('thesis_plots/'+title+'pairCorrelations'+'.pdf',bbox_inches='tight')
+#plt.show()
+plt.close()
             

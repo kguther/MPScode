@@ -1,4 +1,3 @@
-#include <time.h>
 #include <iostream>
 #include <math.h>
 #include "Qsystem.h"
@@ -30,9 +29,7 @@ Qsystem::Qsystem(problemParameters &inputpars, simulationParameters &inputsimPar
 //---------------------------------------------------------------------------------------------------//
 
 void Qsystem::getGroundState(){
-  clock_t simTime;
   int converged;
-  simTime=clock();
   for(int iStage=0;iStage<simPars.nStages;++iStage){
     //Start with low D to find a initial state, then increase D over the course of simulation
     if(iStage!=0){
@@ -48,8 +45,6 @@ void Qsystem::getGroundState(){
       break;
     }
   }
-  simTime=clock()-simTime;
-  std::cout<<"Total simulation took "<<(float)simTime/CLOCKS_PER_SEC<<" seconds\n";
 }
 
 //---------------------------------------------------------------------------------------------------//

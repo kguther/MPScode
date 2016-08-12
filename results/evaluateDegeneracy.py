@@ -14,49 +14,62 @@ g=sys.argv[3]
 def f(x,a,n):
     return a/(x**n)
 
+def getkey(x):
+    return x[0]
 
-deltaE=[]
 errors=[]
-positions=[]
+baseData=[]
 for filename in filelist:
     if filename[0:len(taskname)]==taskname and filename[(len(filename)-6):(len(filename)-4)]!='ES' and filename[(len(filename)-11):len(filename)-4]!='state_2':
-            refName=filename.split('_J_')[1]
-            getPars=refName.split('_g_')
-            JVal=getPars[0]
-            gVal=getPars[1].split('.')[0]
-            if J==JVal and g==gVal:
-                secondName=filename.split('.')[0]+'_state_2.txt'
-                with open(filename) as readEnergy:
-                    readEnergy.readline()
-                    readEnergy.readline()
-                    eList=readEnergy.readline().split('\t')
-                    energyGS=(float(eList[6]))
-                    errGS=(float(eList[7]))
-                with open(secondName) as readSEnergy:
-                    readSEnergy.readline()
-                    readSEnergy.readline()
-                    eList=readSEnergy.readline().split('\t')
-                    energyES=(float(eList[6]))
-                    errES=(float(eList[7]))                    
-                deltaE.append(energyES-energyGS)
-                errors.append((errES+errGS)/2.0)    
-                getPos=filename.split('_N_')[0]
-                pos=float(getPos.split('L_')[1])
-                positions.append(pos)
-
+        refName=filename.split('_J_')[1]
+        getPars=refName.split('_g_')
+        JVal=getPars[0]
+        gVal=getPars[1].split('.')[0]
+        if J==JVal and g==gVal:
+            secondName=filename.split('.')[0]+'_state_2.txt'
+            with open(filename) as readEnergy:
+                readEnergy.readline()
+                readEnergy.readline()
+                eList=readEnergy.readline().split('\t')
+                energyGS=(float(eList[6]))
+                errGS=(float(eList[7]))
+            with open(secondName) as readSEnergy:
+                readSEnergy.readline()
+                readSEnergy.readline()
+                eList=readSEnergy.readline().split('\t')
+                energyES=(float(eList[6]))
+                errES=(float(eList[7]))                    
+            errors.append((errES+errGS)/2.0)    
+            getPos=filename.split('_N_')[0]
+            pos=float(getPos.split('L_')[1])
+            baseData.append([pos,energyES-energyGS])
 fs=32
-ls=28                
+ls=28         
+  
 
+x0=33
+x1=110
 p0=sy.array([0.01,1])
-fpars, acc=so.curve_fit(f,positions,deltaE,p0)
-
-plt.figure(figsize=(14,10))
+#fpars, acc=so.curve_fit(f,positions,deltaE,p0)
+colors=[(170/255.0,0,45/255.0),(125/255.0,0,125.0/255.0)]
+plt.figure(figsize=(18,10))
 plt.tick_params(labelsize=ls)
-plt.semilogy(positions,deltaE,'o',ms=11.5)
-#sort positions
-plt.semilogy(positions,f(positions,fpars[0],fpars[1]),'k')
-print fpars
+for i in [0]:
+    sorter=sorted(baseData,key=getkey)
+    positions=[x[0] for x in sorter]
+    deltaE=[x[1] for x in sorter]
+    cplot,=plt.plot(positions[::2],deltaE[::2],'o',ms=11.5,color=colors[i])
+    #plt.loglog(range(x0,x1),f(range(x0,x1),fpars[0],fpars[1]),color=colors[i])
+    #print fpars
 plt.xlabel('L',fontsize=fs)
 plt.ylabel('Energy gap',fontsize=fs)
-#plt.savefig('thesis_plots/top_gap_scaling.pdf')
-plt.show()
+plt.xlim(xmin=x0,xmax=x1)
+#plt.ylim(ymin=0.015,ymax=0.055)
+#yt=[0.02,0.03,0.04,0.05]
+#plt.yticks(yt,map(str,yt))
+#xt=[40,50,60,70,80,90,100]
+#plt.xticks(xt,map(str,xt))
+#cplot.set_label('~$L^{-'+str(fpars[1])[:6]+'}$')
+plt.legend(loc=1,fontsize=fs,numpoints=1)
+plt.savefig('thesis_plots/cdw_gap_scaling.pdf')
+#plt.show()

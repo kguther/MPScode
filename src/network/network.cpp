@@ -5,7 +5,7 @@
 #include <iomanip>
 #include <arcomp.h>
 #include <arscomp.h>
-#include <time.h>
+#include <chrono>
 #include "network.h"
 #include "arrayprocessing.h"
 #include "optHMatrix.h"
@@ -42,7 +42,9 @@ network::network(problemParameters const &inputpars, simulationParameters const 
   simPars(inputsimPars),
   excitedStateP(projector(pars.nEigs)),
   networkDimInfo(dimensionTable(D,L,pars.d)),
-  reSweep(0)
+  reSweep(0),
+  check(0),
+  checkParity(0)
 {
   networkH=mpo<lapack_complex_double>(pars.d.maxd(),Dw,L);
   nConverged.resize(pars.nEigs);
@@ -167,7 +169,8 @@ void network::getLocalDimensions(int i){
 // corresponding eigenvalue (output).
 //---------------------------------------------------------------------------------------------------//
 
-int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda){  //IMPORTANT TODO: ENHANCE STARTING POINT -> HUGE SPEEDUP
+int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda){
+  std::chrono::steady_clock::time_point t1=std::chrono::steady_clock::now();
   int maxIter=10000;
   int stepRet;
   int cshift=0;
@@ -180,7 +183,6 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
   if(pars.nQNs || pars.nEigs>1){
     cshift=-100;
   }
-
   //Necessary if multiple instances of solve() are called
   excitedStateP.loadNextState(networkState,0);
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
@@ -199,10 +201,14 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
     overlap test;
     test.loadMPS(&networkState,&networkState);
     std::cout<<"Norm: "<<test.getFullOverlap()<<std::endl;
-    measure(check,spinCheck);
-    measure(checkParity,parCheck);
-    std::cout<<"Current particle number (initial): "<<spinCheck<<std::endl;
-    std::cout<<"Current subchain parity (initial): "<<parCheck<<std::endl;
+      if(check){
+	measure(check,spinCheck);
+	std::cout<<"Current particle number (initial): "<<spinCheck<<std::endl;
+      }
+      if(checkParity){
+	measure(checkParity,parCheck);
+	std::cout<<"Current subchain parity (initial): "<<parCheck<<std::endl;
+      }
 #endif
 
     std::cout<<"Computing partial contractions\n";
@@ -231,7 +237,7 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
       //actual sweep is executed here
       try{
 	sweep(maxIter,tol,lambda[iEigen]);
-	//In calcCtrIterRightBase, the second argument has to be a pointer, because it usually is an array. No call-by-reference here.
+	//In calcCtrIterRightBase, the second argument has to be a pointer, because it usually is an array. No call-by-reference here, using a container as argument would also just make things complicated
 	pCtr.calcCtrIterRightBase(-1,&expectationValue);
 
 	if(tol>simPars.tolMin){
@@ -260,10 +266,14 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
 	resetSweep();
       }
 
-      measure(check,spinCheck);
-      measure(checkParity,parCheck);
-      std::cout<<"Current particle number (final): "<<spinCheck<<std::endl;
-      std::cout<<"Current subchain parity (final): "<<parCheck<<std::endl;
+      if(check){
+	measure(check,spinCheck);
+	std::cout<<"Current particle number (final): "<<spinCheck<<std::endl;
+      }
+      if(checkParity){
+	measure(checkParity,parCheck);
+	std::cout<<"Current subchain parity (final): "<<parCheck<<std::endl;
+      }
 
     }
     stepRet=gotoNextEigen();
@@ -271,6 +281,8 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
       std::cout<<"LOADED STATES. PREPARED COMPUTATION OF NEXT EIGENSTATE"<<std::endl;
     }
   }
+  std::chrono::duration<double> deltaT=std::chrono::duration_cast<std::chrono::duration<double> >(std::chrono::steady_clock::now()-t1);
+  std::cout<<"Calculation took "<<deltaT.count()<<" seconds\n\n";
   lambda[0]-=cshift;
   for(int iEigen=1;iEigen<pars.nEigs;++iEigen){
     lambda[iEigen]-=shift;
@@ -286,7 +298,6 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
 //---------------------------------------------------------------------------------------------------//
 
 void network::sweep(double maxIter, double tol, double &lambda){
-  clock_t curtime;
   // By default enrichment is used whenever conserved QNs are used
   int const expFlag=pars.nQNs;
   double lambdaCont;
@@ -299,10 +310,10 @@ void network::sweep(double maxIter, double tol, double &lambda){
     //Step of leftsweep
     std::cout<<"Optimizing site matrix"<<std::endl;
     lambdaCont=lambda;
-    curtime=clock();
+    std::chrono::steady_clock::time_point t1=std::chrono::steady_clock::now();
     optimize(i,maxIter,tol,lambda);
-    curtime=clock()-curtime;
-    std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
+    std::chrono::duration<double> deltaT=std::chrono::duration_cast<std::chrono::duration<double> >(std::chrono::steady_clock::now()-t1);
+    std::cout<<"Optimization took "<<deltaT.count()<<" seconds\n\n";
     //Execute left-sided enrichment step and update the coefficient of the expansion term
     normalize(i,1,expFlag);
     //Here, the scalar products with lower lying states are updated
@@ -319,10 +330,10 @@ void network::sweep(double maxIter, double tol, double &lambda){
     //Step of rightsweep  
     std::cout<<"Optimizing site matrix"<<std::endl;    
     lambdaCont=lambda;
-    curtime=clock();
+    std::chrono::steady_clock::time_point t1=std::chrono::steady_clock::now();
     optimize(i,maxIter,tol,lambda);
-    curtime=clock()-curtime;
-    std::cout<<"Optimization took "<<curtime<<" clicks ("<<(float)curtime/CLOCKS_PER_SEC<<" seconds)\n\n";
+    std::chrono::duration<double> deltaT=std::chrono::duration_cast<std::chrono::duration<double> >(std::chrono::steady_clock::now()-t1);
+    std::cout<<"Optimization took "<<deltaT.count()<<" seconds\n\n";
     //Execute right-sided enrichment step and update the coefficient of the expansion term
     normalize(i,0,expFlag);
     //same as above for the scalar products with lower lying states
@@ -365,10 +376,14 @@ int network::optimize(int i, int maxIter, double tol, double &iolambda){
 #ifdef QNCHECK
   double spinCheck=0;
   double parCheck=0;
-  measure(check,spinCheck);
-  measure(checkParity,parCheck);
-  std::cout<<"Current particle number (opt): "<<spinCheck<<std::endl;
-  std::cout<<"Current subchain parity (opt): "<<parCheck<<std::endl;
+      if(check){
+	measure(check,spinCheck);
+	std::cout<<"Current particle number (opt): "<<spinCheck<<std::endl;
+      }
+      if(checkParity){
+	measure(checkParity,parCheck);
+	std::cout<<"Current subchain parity (opt): "<<parCheck<<std::endl;
+      }
 #endif
     
   double lambdaCont;

@@ -7,4 +7,5 @@
 void generateBoseHubbard(int d, double V, double U, mpo<std::complex<double> > &H);
 void generateHubbardHamiltonian(double t, double U, mpo<std::complex<double> > &H);
 void generateHeisenbergHamiltonian(mpo<std::complex<double> > &H);
+void generateFFHamiltonian(mpo<std::complex<double> > &H);
 #endif

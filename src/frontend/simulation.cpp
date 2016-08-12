@@ -182,39 +182,39 @@ void simulation::singleRun(){
   expectationValues.resize(measureTask.size());
   localExpectationValues.resize(localMeasureTask.size());
   //Measure previously set operators and write results into the result file
-  if(localMeasureTask.size()>0 || measureTask.size()>0 || measureEE){
-    std::cout<<"Measuring correlation functions\n";
-    std::ofstream ofs;
-    std::string finalName, fileName;
-    std::ostringstream compositeName;
-    compositeName<<filePrefix<<"_W_"<<W<<"_J_"<<J<<"_g_"<<g;
-    if(abs(targetDelta)>1e-10){
-      compositeName<<"_delta_"<<deltaP;
-    }
+  std::ofstream ofs;
+  std::string finalName, fileName;
+  std::ostringstream compositeName;
+  compositeName<<filePrefix<<"_W_"<<W<<"_J_"<<J<<"_g_"<<g;
+  if(abs(targetDelta)>1e-10){
+    compositeName<<"_delta_"<<deltaP;
+  }
     
-    finalName=compositeName.str();
-    for(int m=0;m<finalName.length();++m){
-      if(finalName[m]=='.'){
-	finalName.erase(m,1);
-      }
+  finalName=compositeName.str();
+  for(int m=0;m<finalName.length();++m){
+    if(finalName[m]=='.'){
+      finalName.erase(m,1);
     }
-    for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
-      if(iEigen>0){
-	compositeName.str("");
-	compositeName<<(iEigen+1);
-	fileName=finalName+"_state_"+compositeName.str()+".txt";
-      }
-      else{
-	fileName=finalName+".txt";
-      }
-      std::cout<<finalName<<std::endl;
+  }
+  for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
+    if(iEigen>0){
+      compositeName.str("");
+      compositeName<<(iEigen+1);
+      fileName=finalName+"_state_"+compositeName.str()+".txt";
+    }
+    else{
+      fileName=finalName+".txt";
+    }
+    std::cout<<finalName<<std::endl;
       
-      ofs.open(fileName.c_str());
-      ofs<<"Values for state number "<<iEigen<<" with energy "<<E0[iEigen]<<" and energy variance "<<dE[iEigen]<<std::endl;
-      //The problem parameters are written into the first lines
-      ofs<<"L\tN\tsubchain parity\tJ\tg\tW\tE\tvariance of energy\tt\n";
-      ofs<<pars.L<<"\t"<<real(pars.QNconserved[0])<<"\t"<<imag(pars.QNconserved[0])<<"\t"<<J<<"\t"<<g<<"\t"<<W<<"\t"<<E0[iEigen]<<"\t"<<dE[iEigen]<<"\t"<<pars.t<<std::endl;
-      //First, global measurements are performed (this is used rarely)
+    ofs.open(fileName.c_str());
+    ofs<<"Values for state number "<<iEigen<<" with energy "<<E0[iEigen]<<" and energy variance "<<dE[iEigen]<<std::endl;
+    //The problem parameters are written into the first lines
+    ofs<<"L\tN\tsubchain parity\tJ\tg\tW\tE\tvariance of energy\tt\n";
+    ofs<<pars.L<<"\t"<<real(pars.QNconserved[0])<<"\t"<<imag(pars.QNconserved[0])<<"\t"<<J<<"\t"<<g<<"\t"<<W<<"\t"<<E0[iEigen]<<"\t"<<dE[iEigen]<<"\t"<<pars.t<<std::endl;
+    //First, global measurements are performed (this is used rarely)
+    if(localMeasureTask.size()>0 || measureTask.size()>0 || measureEE){
+      std::cout<<"Measuring correlation functions\n";
       for(int iM=0;iM<measureTask.size();++iM){
 	csystem.measure(&measureTask[iM],expectationValues[iM],iEigen);
 	ofs<<operatorNames[iM]<<"\t";
@@ -284,7 +284,7 @@ void simulation::singleRun(){
 	}
       }
       ofs.close();
-      }
+    }
   }
   csystem.TensorNetwork.resetConvergence();
 }

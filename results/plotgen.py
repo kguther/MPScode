@@ -61,7 +61,7 @@ def tasknum(n):
 
 for filename in filelist:
     if filename[0:len(taskname)]==taskname:
-        if filename[(len(filename)-6):(len(filename)-4)]!='ES' and filename[(len(filename)-6):(len(filename)-4)]!='_2':
+        if filename[(len(filename)-6):(len(filename)-4)]!='ES' and filename[(len(filename)-12):(len(filename)-4)]!='_state_2':
             print filename
             with open(filename) as readCaption:
                 readCaption.readline()
@@ -134,6 +134,7 @@ for filename in filelist:
                     with open('SB_degs_L_'+L+'_N_'+np+'.txt','a') as dp:
                         dp.write(degdata)
                 x=range(0,len(data))
+                xB=range(0,len(dataB))
                 tasklabel=labellist[tasknum(datanames[i])]
                 bCheck=datanames[i].split(' ')
                 plt.figure()
@@ -141,7 +142,7 @@ for filename in filelist:
                     if tasknum(datanames[i])==10:
                         plt.plot(x,data,'o')
                         if excitedState:
-                            plt.plot(x,dataB,'o')
+                            plt.plot(xB,dataB,'o')
                             plt.legend(defaultLegs)
                     else:
                         if tasknum(datanames[i]) in [0,1,5]:
@@ -149,18 +150,18 @@ for filename in filelist:
                         else:
                             plt.loglog(x,map(abs,data),'o')
                             if excitedState:
-                                plt.loglog(x,map(abs,dataB),'o')
+                                plt.loglog(xB,map(abs,dataB),'o')
                                 plt.legend(defaultLegs)
                 else:
                     if (tasknum(datanames[i])!=4 and tasknum(datanames[i])!=7 and tasknum(datanames[i])!=9 and tasknum(datanames[i])!=8):
                         plt.semilogy(x,map(abs,data),'o')
                         if excitedState:
-                            plt.semilogy(x,map(abs,dataB),'o')
+                            plt.semilogy(xB,map(abs,dataB),'o')
                             plt.legend(defaultLegs)
                     else:
                         plt.plot(x,data,'o')
                         if excitedState:
-                            plt.plot(x,dataB,'o')
+                            plt.plot(xB,dataB,'o')
                             plt.legend(defaultLegs)
                 plt.xlabel('distance i')
                 plt.ylabel(tasklabel)

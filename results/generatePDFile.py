@@ -22,6 +22,17 @@ def geometricMean(array):
         buf*=array[i]
     return buf**(1/float(len(array)))
 
+def decay(dat,k):
+    if len(dat[k])!=0:
+        if abs(dat[k][0])>1e-12:
+            out=float(dat[k][len(dat[k])-2])/float(dat[k][0])
+        else:
+            out=10.0
+    else:
+        out=10.0
+    return out
+
+
 def readParameters(filename,pars):
     with open(filename) as readCaption:
         readCaption.readline()
@@ -45,7 +56,7 @@ taskname=sys.argv[1]
 pdName='pd_'+taskname.rstrip('_')+'.txt'
 
 with open(pdName,'w') as pd:
-    pd.write('rho\talpha\tJ\tg\tgs degeneracy\tdensity fluctuation\tgreens function revival\tgreens function minimum\tsdw-par\tcdw-par\tentanglement entropy parameter\tenergy variance\taccuracy\n')
+    pd.write('rho\talpha\tJ\tg\tgs degeneracy\tdensity fluctuation\tgreens function revival\tgreens function minimum\tsdw-par\tcdw-par\tentanglement entropy parameter\tenergy variance\taccuracy\tpairwise decay\thopping decay\n')
 points=[]
 
 counter=0
@@ -63,6 +74,7 @@ for filename in filelist:
             revival=[]
             cmin=[]
             datanames=readParameters(filename,pars)
+            print filename
             n=len(datanames)
             if(pars[0][2]=='1'):
                 conjugateParity='-1'
@@ -73,6 +85,7 @@ for filename in filelist:
             conjugateFilename=prefix+'_p_'+conjugateParity+'_W_'+postfix
             #print conjugateFilename
             if conjugateFilename in filelist:
+                print conjugateFilename
                 readParameters(conjugateFilename,pars)
             for i in range(0,n-1):
                 data=[]
@@ -88,6 +101,10 @@ for filename in filelist:
                     cor=data
                 if (datanames[i]=="Entanglement Entropy"):
                     S=data
+                if (datanames[i]=="Interchain pairwise correlation"):
+                    pC=data
+                if (datanames[i]=="Interchain hopping correlation"):
+                    hC=data
             if len(pars)==len(densA):
                 sdw=[]
                 entanglement=[]
@@ -123,6 +140,7 @@ for filename in filelist:
                     else:
                         revival.append(0.0)
                         cmin.append(0.0)
+                        
                     entanglement.append(np.mean(S[j]))      
                 if conjugateFilename in filelist:
                     degeneracy=abs(float(pars[0][6])-float(pars[1][6]))     
@@ -131,16 +149,17 @@ for filename in filelist:
                                 
                 cPoint=[]
                 if len(pars)>1:
-                    #only for the W=0.1 grid since there, the alpha=-1 data has delta E=0 due to a bug
-                    if float(pars[0][7])>float(pars[1][7]):
+                    if float(pars[0][7])<float(pars[1][7]):
                         j=0
                     else:
                         j=1
                 else:
                     j=0
                 cdw=(cdwParA[j]+cdwParB[j])/2
+                phip=decay(pC,j)
+                phim=decay(hC,j)
                 acc=np.sqrt(float(pars[j][7]))/max([abs(float(pars[j][6])),1e-7])
-                cPoint.append(str(float(pars[j][1])/float(pars[j][0]))+'\t'+pars[j][2]+'\t'+pars[j][3]+'\t'+pars[j][4]+'\t'+str(degeneracy)+'\t'+str(phase[j])+'\t'+str(revival[j])+'\t'+str(cmin[j])+'\t'+str(sdw[j])+'\t'+str(cdw)+'\t'+str(entanglement[j])+'\t'+pars[j][7]+'\t'+str(acc)+'\n')
+                cPoint.append(str(float(pars[j][1])/float(pars[j][0]))+'\t'+pars[j][2]+'\t'+pars[j][3]+'\t'+pars[j][4]+'\t'+str(degeneracy)+'\t'+str(phase[j])+'\t'+str(revival[j])+'\t'+str(cmin[j])+'\t'+str(sdw[j])+'\t'+str(cdw)+'\t'+str(entanglement[j])+'\t'+pars[j][7]+'\t'+str(acc)+'\t'+str(phip)+'\t'+str(phim)+'\n')
                 with open(pdName,'a') as pd:
                     for wPoint in cPoint:
                         pd.write(wPoint)

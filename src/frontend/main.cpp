@@ -12,6 +12,7 @@
 #include <mpi.h>
 #include <vector>
 #include <memory>
+#include <chrono>
 #include "arrayprocessing.h"
 
 void sysSolve(info const &parPack, std::string const &fileName, std::vector<double> &energies);
@@ -21,26 +22,23 @@ void sysSetMeasurements(simulation &sim, int d, int L, int meas);
 void importParameters(std::string const &fN, std::vector<int> &alpha, std::vector<double> &J, std::vector<double> &g);
 void getFileName(info const &necPars, char *fNBuf, int commsize, int myrank, std::string &finalName);
 
-
-int other(int argc, char *argv[]){
+int main(int argc, char *argv[]){
   int const nQuantumNumbers=1;
   int D=200;
-  int const L=100;
-  int const nUp=50;
-  int const nSweeps=6;
-  int const d=2;
-  int const Dw=5;
-  double const U=1;
-  double const t=1;
+  int const L=20;
+  int const nUp=20;
+  int const nSweeps=8;
+  int const d=4;
+  int const Dw=8;
   std::complex<int> QNValue[1]={std::complex<int>(nUp,0)};
-  std::complex<int> QNList[2]={std::complex<int>(0,1),std::complex<int>(1,1)};
+  std::complex<int> QNList[4]={std::complex<int>(0,1),std::complex<int>(1,1),std::complex<int>(0,1),std::complex<int>(1,1)};
   localHSpaces localHilbertSpaceDims(d);
-  mpo<arcomplex<double> > Heisenberg(d,Dw,L);
-  generateHeisenbergHamiltonian(Heisenberg);
+  mpo<arcomplex<double> > FF(d,Dw,L);
+  generateFFHamiltonian(FF);
   problemParameters pars(localHilbertSpaceDims,L,Dw,1,nQuantumNumbers,QNValue,QNList);
   simulationParameters simPars(D,nSweeps,1,1e-3,1e-7,1e-8,1e-3);
   network sys(pars,simPars);
-  sys.setNetworkH(Heisenberg);
+  sys.setNetworkH(FF);
   mpo<std::complex<double> > particleNumber(d,2,L);
   mpo<std::complex<double> > spin(d,2,L);
   double matEls, spinEls;
@@ -56,7 +54,7 @@ int other(int argc, char *argv[]){
 	      spinEls=0.0;
 	    }
 	    if(bi==0 && bim==particleNumber.locDimL(i)-1){
-	      matEls*=(delta(si,1)-delta(si,0));
+	      matEls*=(delta(si,1)+delta(si,2)+2*delta(si,3));
 	    }
 	    particleNumber.global_access(i,si,sip,bi,bim)=matEls;
 	    spin.global_access(i,si,sip,bi,bim)=spinEls;
@@ -72,7 +70,7 @@ int other(int argc, char *argv[]){
   return 0;
 }
 
-int main(int argc, char *argv[]){
+int other(int argc, char *argv[]){
   //Here, the parameters are distributed via MPI to the processes. Each process then individually solves the system for a specific set of parameters - great paralellization.
   //There are currently two settings: scaling and correlation. The former computes the behaivour of the gap with increasing system size and the latter computes correlations etc across the parameter space for fixed system size
   MPI_Init(&argc,&argv);
@@ -214,30 +212,30 @@ int main(int argc, char *argv[]){
     /*
     switch(myrank){
     case 0:
-      necPars.tImag=0;
+      //necPars.tImag=0;
       necPars.tPos=0;
       break;
     case 1:
-      necPars.tReal=0;
-      necPars.tPos=0;
+      //necPars.tReal=0;
+      necPars.tPos=necPars.L/2;
       break;
     case 2:
-      necPars.tImag=0;
-      necPars.tPos=necPars.L/2;
+      //necPars.tImag=0;
+      necPars.tPos=-1;
       break;
     case 3:
       necPars.tReal=0;
-      necPars.tPos=necPars.L/2;
+      necPars.tPos=0;
       break;
     case 4:
       necPars.tReal=0;
-      necPars.tPos=-1;
+      necPars.tPos=-necPars.L/2;
       break;
     default:
-      necPars.tImag=0;
+      necPars.tReal=0;
       necPars.tPos=-1;
-      }
-      */
+    }
+    */
     
     necPars.tReal=0;
     necPars.tPos=myrank;
@@ -334,7 +332,7 @@ void sysSolve(info const &parPack, std::string const &fileName, std::vector<doub
       cGName.str("");
     }
   }
-  int const doMeas=(parPack.simType==1 || parPack.simType==3 || parPack.simType==0)?0:1;
+  int const doMeas=(parPack.simType==3 || parPack.simType==0)?((parPack.simType==1)?0:1):2;
   sysSetMeasurements(sim,pars.d.maxd(),parPack.L,doMeas);
   energies.resize(2*sim.E0.size());
   for(int iE=0;iE<sim.E0.size();++iE){
@@ -354,7 +352,7 @@ void sysSetMeasurements(simulation &sim, int d, int L, int meas){
   localMpo<arcomplex<double> > localDensityB(d,1,L,0,0);
   localMpo<arcomplex<double> > totalDensityCorrelation(d,1,L,1,0);
   localMpo<arcomplex<double> > totalMagnetizationCorrelation(d,1,L,1,0);
-  localMpo<arcomplex<double> > interChainCorrelation(d,1,L,1,parityQNs);
+  localMpo<arcomplex<double> > interChainCorrelation(d,1,L,1,0);
   localMpo<arcomplex<double> > superconductingOrder(d,1,L,1,0);
   localMpo<arcomplex<double> > interChainDensityCorrelation(d,1,L,1,0);
   localMpo<arcomplex<double> > bulkGreensFunction(d,1,L,bulkStart,parityQNs);
@@ -441,27 +439,28 @@ void sysSetMeasurements(simulation &sim, int d, int L, int meas){
       bulkICSuperConductingCorrelation.global_access(bulkStart,si,sip,0,0)=aMatrix(si,sip);
     }
   }
-  sim.setLocalMeasurement(localDensity,lDName);
-  sim.setLocalMeasurement(greensFunction,gFName);
-  sim.setLocalMeasurement(localDensityB,lDOName);
-  sim.setLocalMeasurement(totalDensityCorrelation,tCDCName);
-  sim.setLocalMeasurement(totalMagnetizationCorrelation,tMCName);
-  sim.setEntanglementMeasurement();
-  sim.setLocalMeasurement(interChainCorrelation,iCCName);
-  sim.setLocalMeasurement(superconductingOrder,scName);
-  if(meas){
-    sim.setLocalMeasurement(bulkGreensFunction,bgFName);
-    sim.setLocalMeasurement(densityCorrelation,dCName);
-    sim.setLocalMeasurement(interChainDensityCorrelation,iCDCName);
-    sim.setLocalMeasurement(bulkInterChainCorrelation,biCCName);
-    sim.setLocalMeasurement(bulkDensityCorrelation,bdCName);
-    sim.setLocalMeasurement(bulkInterChainDensityCorrelation,biCDCName);
-    sim.setLocalMeasurement(bulkSuperconductingOrder,bscName);
-    sim.setLocalMeasurement(bulkSuperConductingCorrelation,pscName);
-    sim.setLocalMeasurement(bulkICSuperConductingCorrelation,picscName);
-    sim.setEntanglementSpectrumMeasurement();
+  if(meas>0){
+    sim.setLocalMeasurement(localDensity,lDName);
+    sim.setLocalMeasurement(greensFunction,gFName);
+    sim.setLocalMeasurement(localDensityB,lDOName);
+    sim.setLocalMeasurement(totalDensityCorrelation,tCDCName);
+    sim.setLocalMeasurement(totalMagnetizationCorrelation,tMCName);
+    sim.setEntanglementMeasurement();
+    sim.setLocalMeasurement(interChainCorrelation,iCCName);
+    sim.setLocalMeasurement(superconductingOrder,scName);
+    if(meas>1){
+      sim.setLocalMeasurement(bulkGreensFunction,bgFName);
+      sim.setLocalMeasurement(densityCorrelation,dCName);
+      sim.setLocalMeasurement(interChainDensityCorrelation,iCDCName);
+      sim.setLocalMeasurement(bulkInterChainCorrelation,biCCName);
+      sim.setLocalMeasurement(bulkDensityCorrelation,bdCName);
+      sim.setLocalMeasurement(bulkInterChainDensityCorrelation,biCDCName);
+      sim.setLocalMeasurement(bulkSuperconductingOrder,bscName);
+      sim.setLocalMeasurement(bulkSuperConductingCorrelation,pscName);
+      sim.setLocalMeasurement(bulkICSuperConductingCorrelation,picscName);
+      sim.setEntanglementSpectrumMeasurement();
+    }
   }
-  
   sim.run();
 }
 
@@ -480,7 +479,7 @@ void getFileName(info const &necPars, char *fNBuf, int commsize, int myrank, std
     type="_point";
   }
   if(necPars.simType==3){
-    type="_position_scan_SB";
+    type="_position_scan";
     /*
     switch(myrank){
     case 0:
@@ -494,7 +493,7 @@ void getFileName(info const &necPars, char *fNBuf, int commsize, int myrank, std
     default:
       type="_global";
     }
-      */
+    */
   }
   if(necPars.simType==4){
     type="_gather";

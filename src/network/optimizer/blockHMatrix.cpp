@@ -1,5 +1,4 @@
 #include "blockHMatrix.h"
-#include "templates/tmpContainer.h"
 #include "arrayprocessing.h"
 #include <iostream>
 #include <memory>
@@ -32,6 +31,8 @@ blockHMatrix::blockHMatrix(arcomplex<double> *R, arcomplex<double> *L, mpo<arcom
   if(explicitMv){
     buildSparseHBlocked();
   }
+  innerContainer.initializeContainer(d,lDL,lDR,lDwR);
+  outerContainer.initializeContainer(d,lDwL,lDR,lDL);
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -70,12 +71,9 @@ void blockHMatrix::MultMvBlocked(arcomplex<double> *v, arcomplex<double> *w){
 
 void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
   //blockwise matrix-vector product using efficient caching
-  tmpContainer<arcomplex<double> > innerContainer(d,lDL,lDR,lDwR);
-  tmpContainer<arcomplex<double> > outerContainer(d,lDwL,lDR,lDL);
   arcomplex<double> simpleContainer;
   int const numBlocks=indexTable->numBlocksLP();
   int const sparseSize=HMPO->numEls(i);
-  int const nThreads=20;
   int lBlockSize, rBlockSize, siBlockSize, rBlockSizep;
   int const *biIndices, *siIndices, *bimIndices, *sipIndices;
   HMPO->biSubIndexArrayStart(biIndices,i);
@@ -143,8 +141,8 @@ void blockHMatrix::MultMvBlockedLP(arcomplex<double> *v, arcomplex<double> *w){
       for(int j=0;j<rBlockSize;++j){
 	aiB=indexTable->aiBlockIndexLP(iBlock,j);
 	simpleContainer=0.0;
-	for(int aim=0;aim<lDL;++aim){
-	  for(int bim=0;bim<lDwL;++bim){
+	for(int bim=0;bim<lDwL;++bim){
+	  for(int aim=0;aim<lDL;++aim){
 	    simpleContainer+=Lctr[ctrIndex(aimB,bim,aim)]*outerContainer.global_access(siB,bim,aiB,aim);
 	  }
 	}
