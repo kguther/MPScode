@@ -2,20 +2,20 @@
 #include "optHMatrix.h"
 #include "globalMeasurement.h"
 
-localMeasurementSeries::localMeasurementSeries(localMpo<arcomplex<double> > *const MPOperator, mps *const MPState):
+localMeasurementSeries::localMeasurementSeries(localMpo<std::complex<double> > *const MPOperator, mps *const MPState):
   iterativeMeasurement(MPOperator,MPState),
   localMPOperator(MPOperator)
 {}
 
 //---------------------------------------------------------------------------------------------------//
 
-void localMeasurementSeries::measureFull(std::vector<arcomplex<double> > &lambda){
+void localMeasurementSeries::measureFull(std::vector<std::complex<double> > &lambda){
   int const L=MPOperator->length();
-  arcomplex<double>  result;
+  std::complex<double>  result;
   int const operatorSize=localMPOperator->width();
   MPOperator->setUpSparse();
   //The input operator is stored since the measure sweep destroys its form
-  localMpo<arcomplex<double> > backup=*localMPOperator;
+  localMpo<std::complex<double> > backup=*localMPOperator;
   calcCtrFull(1);
   lambda.clear();
   calcCtrIterRightBase(-1,&result);
@@ -45,15 +45,15 @@ void localMeasurementSeries::measureFull(std::vector<arcomplex<double> > &lambda
 
 //---------------------------------------------------------------------------------------------------//
 
-void localMeasurementSeries::getCurrentValue(std::vector<arcomplex<double> > &lambda, int const i){
-  arcomplex<double> simpleContainer=0.0;
-  arcomplex<double> *LTerm, *RTerm, *currentM;
+void localMeasurementSeries::getCurrentValue(std::vector<std::complex<double> > &lambda, int const i){
+  std::complex<double> simpleContainer=0.0;
+  std::complex<double> *LTerm, *RTerm, *currentM;
   getLocalDimensions(i);
   Rctr.subContractionStart(RTerm,i);
   Lctr.subContractionStart(LTerm,i);
   MPState->subMatrixStart(currentM,i);
   //Only the current site has to be contracted explicitly, the rest is stored in the partial contraction. Explicit contraction is carried out using the optHMatrix class multiplication.
-  arcomplex<double> *siteMatrixContainer=new arcomplex<double> [ld*lDR*lDL];
+  std::complex<double> *siteMatrixContainer=new std::complex<double> [ld*lDR*lDL];
   optHMatrix gather(RTerm,LTerm,MPOperator,MPState->getDimInfo(),MPOperator->maxDim(),i,0,0,0);
   gather.MultMv(currentM,siteMatrixContainer);
   for(int si=0;si<ld;++si){

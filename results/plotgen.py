@@ -28,7 +28,7 @@ defaultLegs=['Ground state', '1st excited State']
 savePlot=False
 firstfile=True
 
-labellist=['$\\left|\\langle a^\dagger_i a_0^{} \\rangle \\right|$','$\\left|\\langle a^\dagger_i b^{}_i b_0^{\dagger} a_0 \\rangle \\right|$','$\\left|\\langle n^{a}_i n_0^{a} \\rangle \\right|$','$\\left|\\langle n^{a}_i n_0^{b} \\rangle \\right|$','$\\left|\\langle n^{a}_i \\rangle \\right|$','$\\left|\\langle a^\dagger_i b^\dagger_i a_0^{} b_0^{} \\rangle \\right|$','$\\left|\\langle \\right|\\rangle$','S','$\\left|\\langle n^{a}_i n^{b}_i \\rangle\\right|$','$\\left|\\langle n^{b}_i\\rangle\\right|$','$\\langle a_i^{\dagger} a_{i+1}^{\dagger} a_0 a_1 \\rangle$','$\\langle (n^a_i - n^b_i) (n^a_0 -n^b_0) \\rangle$','other']
+labellist=['$\\left|\\langle a^\dagger_i a_0^{} \\rangle \\right|$','$\\left|\\langle a^\dagger_i b^{}_i b_0^{\dagger} a_0 \\rangle \\right|$','$\\left|\\langle n^{a}_i n_0^{a} \\rangle \\right|$','$\\left|\\langle n^{a}_i n_0^{b} \\rangle \\right|$','$\\left|\\langle n^{a}_i \\rangle \\right|$','$\\left|\\langle a^\dagger_i b^\dagger_i a_0^{} b_0^{} \\rangle \\right|$','$\\left|\\langle \\right|\\rangle$','S','$\\left|\\langle n^{a}_i n^{b}_i \\rangle\\right|$','$\\left|\\langle n^{b}_i\\rangle\\right|$','$\\langle a_i^{\dagger} a_{i+1}^{\dagger} a_j a_{j+1} \\rangle$','$\\langle b_i^{\dagger} b_{i+1}^{\dagger} a_j a_j \\rangle$','$\\langle (n^a_i - n^b_i) (n^a_0 -n^b_0) \\rangle$','other']
 
 def tasknum(n):
     if n=="Intrachain correlation" or n=="Bulk correlation function":
@@ -51,12 +51,14 @@ def tasknum(n):
         taskindex=8
     elif n=="Local density B":
         taskindex=9
-    elif n=="Bulk superconducting corrleation":
+    elif n=="Bulk intrachain superconducting corrleation":
         taskindex=10
     elif n=="Total magnetization correlation":
+        taskindex=12
+    elif n=="Bulk interchain superconducting corrleation":
         taskindex=11
     else:
-        taskindex=12
+        taskindex=13
     return taskindex
 
 for filename in filelist:

@@ -7,7 +7,7 @@ import os
 filename=sys.argv[1]
 filelist=os.listdir(os.getcwd())
 
-fs=24
+fs=18
 
 def revivalScaling(rev,cmin):
     t=0.1
@@ -34,10 +34,10 @@ def colormap(data):
     t=1e-6
     b=0.7
     #check for phase separation: density fluctiations without CDW
-    if data[9]>0.25 and data[5]<1e-10:
+    if data[9]>0.25 and data[5]<0.02:
         colrgb=(0,1,0)
     #check for interwire phase separation: 
-    elif data[8]<0.1 and data[9]<0.3:
+    elif data[8]<0.2 and data[9]<0.3:
         colrgb=(1,0,1)
     else:
         colrgb=(np.exp(-data[4]),revivalScaling(data[6],data[7]),cdwScaling(data[9]))
@@ -50,15 +50,15 @@ def colormap(data):
 markerwidth=15
 if filename in filelist:
     gridData=np.loadtxt(filename,skiprows=1)
-    plt.figure(figsize=(18,18))
+    plt.figure(figsize=(18,13))
     plt.tick_params(labelsize=fs)
     for i in range(0,len(gridData)):
         plt.plot(gridData[i][2],gridData[i][3],'o',ms=markerwidth,color=colormap(gridData[i]))
-    plt.xlim(xmin=-4.9,xmax=2.15)
-    plt.ylim(ymin=-6,ymax=6.3)
+    #plt.xlim(xmin=-4.9,xmax=2.15)
+    #plt.ylim(ymin=-6,ymax=6.3)
     plt.xlabel('J',fontsize=fs)
     plt.ylabel('g',fontsize=fs)
-    #plt.savefig('thesis_plots/perturbativePD.pdf',bbox_inches='tight')
-    plt.show()
+    plt.savefig('thesis_plots/perturbativePD_raw.pdf',bbox_inches='tight')
+    #plt.show()
 
 plt.close()

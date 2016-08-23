@@ -12,7 +12,7 @@
 #include <iostream>
 #include <memory>
 
-int emptycheck(int dim, arcomplex<double> *array){
+int emptycheck(int dim, std::complex<double> *array){
   double const tol=1e-15;
   for(int m=0;m<dim;++m){
     if(abs(array[m])<tol){
@@ -747,7 +747,7 @@ void network::getPExpressionLeft(int const i, lapack_complex_double *pExpr){
   siteQNOrderMatrix const localIndexTable=networkState.indexTable().getLocalIndexTable(i);
   int const numBlocks=localIndexTable.numBlocksLP();
   getLocalDimensions(i);
-  tmpContainer<arcomplex<double> > outerContainer(ld,lDwR,lDR,lDL);
+  tmpContainer<std::complex<double> > outerContainer(ld,lDwR,lDR,lDL);
   //Use the measurement class to calculate the p-expression, which is one of the containers used in calculation of partial contractions. 
   pCtr.calcOuterContainerLeft(i+1,outerContainer);
   for(int m=0;m<lDL*lDR*ld*lDwR;++m){
@@ -779,7 +779,7 @@ void network::getPExpressionRight(int i, lapack_complex_double *pExpr){
   int lBlockSize, rBlockSize;
   int aiCurrent, siCurrent, aimCurrent;
   getLocalDimensions(i);
-  tmpContainer<arcomplex<double> > outerContainer(lDL,lDwL,ld,lDR);
+  tmpContainer<std::complex<double> > outerContainer(lDL,lDwL,ld,lDR);
   pCtr.calcOuterContainerRight(i-1,outerContainer);
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
     lBlockSize=localIndexTable.lBlockSizeRP(iBlock);
@@ -804,11 +804,11 @@ void network::getPExpressionRight(int i, lapack_complex_double *pExpr){
 //---------------------------------------------------------------------------------------------------//
 
 double network::getCurrentEnergy(int i){
-  arcomplex<double> simpleContainer=0.0;
+  std::complex<double> simpleContainer=0.0;
   getLocalDimensions(i);
-  std::unique_ptr<arcomplex<double> > siteMatrixContainerP(new arcomplex<double> [ld*lDR*lDL]);
-  arcomplex<double> *siteMatrixContainer=siteMatrixContainerP.get();
-  arcomplex<double> *currentM, *LTerm, *RTerm;
+  std::unique_ptr<std::complex<double> > siteMatrixContainerP(new std::complex<double> [ld*lDR*lDL]);
+  std::complex<double> *siteMatrixContainer=siteMatrixContainerP.get();
+  std::complex<double> *currentM, *LTerm, *RTerm;
   siteQNOrderMatrix const localIndexTable=networkState.indexTable().getLocalIndexTable(i);
   pCtr.Lctr.subContractionStart(LTerm,i);
   pCtr.Rctr.subContractionStart(RTerm,i);

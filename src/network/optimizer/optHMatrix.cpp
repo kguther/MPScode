@@ -1,11 +1,10 @@
-#include <arcomp.h>
 #include <iostream>
 #include <time.h>
 #include "parameters.h"
 #include "optHMatrix.h"
 #include "templates/tmpContainer.h"
 
-optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, mpo<arcomplex<double> > const *Hin, dimensionTable const &dimInfo, int Dwin, int iIn, projector *excitedStateP, double shiftin, std::vector<quantumNumber> *conservedQNsin):
+optHMatrix::optHMatrix(std::complex<double> *Rin, std::complex<double> *Lin, mpo<std::complex<double> > const *Hin, dimensionTable const &dimInfo, int Dwin, int iIn, projector *excitedStateP, double shiftin, std::vector<quantumNumber> *conservedQNsin):
   Rctr(Rin),
   Lctr(Lin),
   Dw(Dwin),
@@ -31,11 +30,11 @@ optHMatrix::optHMatrix(arcomplex<double> *Rin, arcomplex<double> *Lin, mpo<arcom
 // The functiion arguments are required this way by ARPACK++ 
 //---------------------------------------------------------------------------------------------------//
 
-void optHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
-  tmpContainer<arcomplex<double> > innercontainer(d,lDL,lDR,lDwR);
-  tmpContainer<arcomplex<double> > outercontainer(d,lDwL,lDR,lDL);
+void optHMatrix::MultMv(std::complex<double> *v, std::complex<double> *w){
+  tmpContainer<std::complex<double> > innercontainer(d,lDL,lDR,lDwR);
+  tmpContainer<std::complex<double> > outercontainer(d,lDwL,lDR,lDL);
   int nNzero;
-  arcomplex<double> simpleContainer;
+  std::complex<double> simpleContainer;
   if(P){
     P->project(v,i);
   }
@@ -55,7 +54,7 @@ void optHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
   }
   int const *biIndices, *siIndices, *bimIndices, *sipIndices;
   int const sparseSize=HMPO->numEls(i);
-  arcomplex<double> const *H;
+  std::complex<double> const *H;
   HMPO->biSubIndexArrayStart(biIndices,i);
   HMPO->siSubIndexArrayStart(siIndices,i);
   HMPO->bimSubIndexArrayStart(bimIndices,i);
@@ -100,7 +99,7 @@ void optHMatrix::MultMv(arcomplex<double> *v, arcomplex<double> *w){
 
 //---------------------------------------------------------------------------------------------------//
 
-void optHMatrix::MultMvQNConserving(arcomplex<double> *v, arcomplex<double> *w){
+void optHMatrix::MultMvQNConserving(std::complex<double> *v, std::complex<double> *w){
   //FOR MORE SOPHISTICATED QN CONSERVING MULTIPLICATION USE THE blockHMatrix CLASS
   clock_t curtime;
   curtime=clock();
@@ -116,7 +115,7 @@ void optHMatrix::MultMvQNConserving(arcomplex<double> *v, arcomplex<double> *w){
 
 //---------------------------------------------------------------------------------------------------//
 
-void optHMatrix::projectQN(arcomplex<double> *v){
+void optHMatrix::projectQN(std::complex<double> *v){
   //This just sets all entries forbidden by QN constraint to zero. Important: the QN constraint is sufficient, but not necessary to have a state with some fixed QN.
   for(int si=0;si<d;++si){
     for(int ai=0;ai<lDR;++ai){

@@ -5,7 +5,7 @@ iterativeMeasurement::iterativeMeasurement(){
 
 //---------------------------------------------------------------------------------------------------//
 
-iterativeMeasurement::iterativeMeasurement(mpo<arcomplex<double> > *const MPOperatorIn, mps *const MPStateIn):
+iterativeMeasurement::iterativeMeasurement(mpo<std::complex<double> > *const MPOperatorIn, mps *const MPStateIn):
   baseMeasurement(MPOperatorIn,MPStateIn)
 {
   Rctr.initialize(MPOperator->length(),MPState->maxDim(),MPOperator->maxDim());
@@ -14,7 +14,7 @@ iterativeMeasurement::iterativeMeasurement(mpo<arcomplex<double> > *const MPOper
 
 //---------------------------------------------------------------------------------------------------//
 
-void iterativeMeasurement::initialize(mpo<arcomplex<double> > *const MPOperatorIn, mps *const MPStateIn){
+void iterativeMeasurement::initialize(mpo<std::complex<double> > *const MPOperatorIn, mps *const MPStateIn){
   MPOperator=MPOperatorIn;
   MPState=MPStateIn;
   initializeBase();
@@ -28,7 +28,7 @@ void iterativeMeasurement::initialize(mpo<arcomplex<double> > *const MPOperatorI
 //---------------------------------------------------------------------------------------------------//
 
 void iterativeMeasurement::calcCtrIterLeft(int const i){
-  arcomplex<double> *targetPctr, *sourcePctr;
+  std::complex<double> *targetPctr, *sourcePctr;
   Lctr.subContractionStart(sourcePctr,i-1);
   Lctr.subContractionStart(targetPctr,i);
   calcCtrIterLeftBase(i,sourcePctr,targetPctr);
@@ -37,32 +37,32 @@ void iterativeMeasurement::calcCtrIterLeft(int const i){
 //---------------------------------------------------------------------------------------------------//
 
 void iterativeMeasurement::calcCtrIterRight(int const i){
-  arcomplex<double> *targetPctr;
+  std::complex<double> *targetPctr;
   Rctr.subContractionStart(targetPctr,i);
   calcCtrIterRightBase(i,targetPctr);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-void iterativeMeasurement::calcCtrIterRightBase(int i, arcomplex<double>  *const targetPctr){
+void iterativeMeasurement::calcCtrIterRightBase(int i, std::complex<double>  *const targetPctr){
   //only required to get expectation values - this uses the right-sided contraction
-  arcomplex<double> *sourcePctr;
+  std::complex<double> *sourcePctr;
   Rctr.subContractionStart(sourcePctr,i+1);
   baseMeasurement::calcCtrIterRightBase(i,sourcePctr,targetPctr);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-void iterativeMeasurement::calcOuterContainerLeft(int const i, tmpContainer<arcomplex<double> > &outercontainer){
-  arcomplex<double> *sourcePctr;
+void iterativeMeasurement::calcOuterContainerLeft(int const i, tmpContainer<std::complex<double> > &outercontainer){
+  std::complex<double> *sourcePctr;
   Lctr.subContractionStart(sourcePctr,i-1);
   baseMeasurement::calcOuterContainerLeft(i,sourcePctr,outercontainer);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-void iterativeMeasurement::calcOuterContainerRight(int const i, tmpContainer<arcomplex<double> > &outercontainer){
-  arcomplex<double> *sourcePctr;
+void iterativeMeasurement::calcOuterContainerRight(int const i, tmpContainer<std::complex<double> > &outercontainer){
+  std::complex<double> *sourcePctr;
   Rctr.subContractionStart(sourcePctr,i+1);
   baseMeasurement::calcOuterContainerRight(i,sourcePctr,outercontainer);
 }

@@ -12,11 +12,11 @@
 
 class localMeasurementSeries: private iterativeMeasurement{
  public:
-  localMeasurementSeries(localMpo<arcomplex<double> > *const MPOperator, mps *const MPState);
-  void measureFull(std::vector<arcomplex<double> > &lambda);
+  localMeasurementSeries(localMpo<std::complex<double> > *const MPOperator, mps *const MPState);
+  void measureFull(std::vector<std::complex<double> > &lambda);
  private:
-  localMpo<arcomplex<double> > *localMPOperator;
-  void getCurrentValue(std::vector<arcomplex<double> > &lambda, int const i);
+  localMpo<std::complex<double> > *localMPOperator;
+  void getCurrentValue(std::vector<std::complex<double> > &lambda, int const i);
 };
 
 #endif

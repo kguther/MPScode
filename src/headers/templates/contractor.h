@@ -83,7 +83,7 @@ void contractor::calcRightContraction(int i, T *const siteMatrixState, mpoSiteTe
   getLocalDimensions(i+1);
   lDwR=H.locDimR();
   lDwL=H.locDimL();
-  tmpContainer<arcomplex<double> > outerContainer(lDL,lDwL,ld,lDR);
+  tmpContainer<T> outerContainer(lDL,lDwL,ld,lDR);
   calcRightOuterContainer(i,siteMatrixState,H,source,outerContainer);
   for(int aim=0;aim<lDL;++aim){
     for(int bim=0;bim<lDwL;++bim){
@@ -146,7 +146,7 @@ void contractor::calcRightOuterContainer(int i, T *const siteMatrixState, mpoSit
   getLocalDimensions(i+1);
   lDwR=H.locDimR();
   lDwL=H.locDimL();
-  tmpContainer<arcomplex<double> > innerContainer(ld,lDwR,lDR,lDL);
+  tmpContainer<T > innerContainer(ld,lDwR,lDR,lDL);
   for(int sip=0;sip<ld;++sip){                                                       
     for(int bi=0;bi<lDwR;++bi){
       for(int ai=0;ai<lDR;++ai){

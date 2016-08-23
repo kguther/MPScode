@@ -7,7 +7,7 @@
 //---------------------------------------------------------------------------------------------------//
 // MPO class for handling of sparse mpos.
 //---------------------------------------------------------------------------------------------------//
-//REMARK: The MPO container consists only of same-sized arrays, even if d is site dependent. In this case, the maximal d has to be used as an input parameter. This creates some unused memory between matrices, but speeds up access to single matrices (which is what we want to do). This works because no matrix operations using external libraries have to be applied to H
+//REMARK: The MPO container consists only of same-sized arrays, even if d is site dependent. In this case, the maximal d has to be used as an input parameter. Currently, this is just for convenience, it is not critical in any aspect
 
 template<typename T>
 class mpo{
@@ -15,9 +15,12 @@ class mpo{
   mpo();
   //Usually, the MPO is created supplying the (maximum) local hilbert space dimension din, the MPO Bond dimension DWin and the system size Lin
   mpo(int din, int Dwin, int Lin);
+
   //It may then be filled with entries manually, the sparse form is then generated internally
   const T& operator()(int i, int si, int sip, int bi, int bip)const{return Qoperator[i](si,sip,bi,bip);}
   T& operator()(int i, int si, int sip, int bi, int bip){return Qoperator[i](si,sip,bi,bip);}
+//---------------------------------------------------------------------------------------------------//
+  
   T* operator()(int i, int si=0, int sip=0){
     T* pStart;
     Qoperator[i].subMatrixStart(pStart,si,sip);
@@ -50,6 +53,8 @@ class mpo{
   
  protected:
   void setUpSiteSparse(int const i);
+
+ private:
   int d, Dw, L;
   std::vector<mpoSiteTensor<T> > Qoperator;
 };

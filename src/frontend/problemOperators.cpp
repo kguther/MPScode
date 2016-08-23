@@ -3,12 +3,13 @@
 #include "delta.h"
 #include "math.h"
 #include <iostream> 
+#include <random>
 #include <cstdlib>
 #include <ctime>
 
-int writeHamiltonian(network &sys, double J, double g, double W, arcomplex<double> t, double deltaP, int tSite){
+int writeHamiltonian(network &sys, double J, double g, double W, std::complex<double> t, double deltaP, int tSite){
   std::srand(std::time(0));
-  mpo<arcomplex<double> > bufH=sys.getNetworkH();
+  mpo<std::complex<double> > bufH=sys.getNetworkH();
   int const Dw=bufH.maxDim();
   if(Dw!=12){
     //The minimal bond dimension of our Hamiltonian is 12, so the system better has a Hamiltonian of that bond dimension.
@@ -17,9 +18,7 @@ int writeHamiltonian(network &sys, double J, double g, double W, arcomplex<doubl
   int const L=bufH.length();
   int lDwL, lDwR;
   double prefactor, JD, gD, preD;
-  arcomplex<double> tD;
-  //The prefactor pre exists only for consistency checks and is the relative weight of the inter- and intrachain term
-  double pre=W;
+  std::complex<double> tD;
   for(int i=0;i<L;++i){
     lDwL=bufH.locDimL(i);
     lDwR=bufH.locDimR(i);
@@ -30,18 +29,16 @@ int writeHamiltonian(network &sys, double J, double g, double W, arcomplex<doubl
     else{
       prefactor=2;
     }
-    //disorder() is a stochastic function, therefore, scaleA!=scaleB
-    double const scaleA=(1+disorder(deltaP));
-    double const scaleB=(1+disorder(deltaP));
-    gD=g*scaleB;
+    //disorder() is a stochastic function, therefore, it has to be called each time anew
+    gD=g*(1+disorder(deltaP));
     if(tSite<0){
       tD=t*tLocalScale(i);
     }
     else{
       tD=t*tSingleSite(i,tSite);
     }
-    JD=J*scaleB;
-    preD=pre*scaleB;
+    JD=J*(1+disorder(deltaP));
+    preD=W*(1+disorder(deltaP));
     for(int si=0;si<sys.locd(i);++si){
       for(int sip=0;sip<sys.locd(i);++sip){
 	for(int bi=0;bi<lDwR;++bi){
@@ -107,16 +104,16 @@ int writeHamiltonian(network &sys, double J, double g, double W, arcomplex<doubl
 		  break;		  
 		case 1:
 		  //THIS IS TRICKY: By construction, a and b anticommute, but only for the same site. For the nearest-neigbhour hopping, one has to take into account extra signs from anticommutation of operators on adjacent sites. All other terms are at least quadratic in the local fermionic operators, so this problem only occurs here. 
-		  bufH(i,si,sip,bi,bim)=-scaleA*aMatrix(sip,si)*(delta(sip,0)-delta(sip,2));
+		  bufH(i,si,sip,bi,bim)=-aMatrix(sip,si)*(delta(sip,0)-delta(sip,2));
 		  break;
 		case 2:
-		  bufH(i,si,sip,bi,bim)=-scaleA*bMatrix(sip,si)*(delta(sip,0)-delta(sip,1));
+		  bufH(i,si,sip,bi,bim)=-bMatrix(sip,si)*(delta(sip,0)-delta(sip,1));
 		  break;
 		case 3:
-		  bufH(i,si,sip,bi,bim)=scaleA*aMatrix(si,sip)*(delta(sip,3)-delta(sip,1));
+		  bufH(i,si,sip,bi,bim)=aMatrix(si,sip)*(delta(sip,3)-delta(sip,1));
 		  break;
 		case 4:
-		  bufH(i,si,sip,bi,bim)=scaleA*bMatrix(si,sip)*(delta(sip,3)-delta(sip,2));
+		  bufH(i,si,sip,bi,bim)=bMatrix(si,sip)*(delta(sip,3)-delta(sip,2));
 		  break;
 		case 5:
 		  bufH(i,si,sip,bi,bim)=-2*JD*delta(si,sip)*(delta(si,1)+delta(si,3));
@@ -158,8 +155,8 @@ int writeHamiltonian(network &sys, double J, double g, double W, arcomplex<doubl
 
 //-------------------------------------------------------------------------------------------//
 
-int writePhasedSecondOrder(localMpo<arcomplex<double> > &gamma, double theta){
-  arcomplex<double> const iUnit=arcomplex<double>(0.0,1.0);
+int writePhasedSecondOrder(localMpo<std::complex<double> > &gamma, double theta){
+  std::complex<double> const iUnit=std::complex<double>(0.0,1.0);
   int const Dw=gamma.maxDim();
   if(Dw!=1){
     return 2;
@@ -222,18 +219,18 @@ int delta(int const a, int const b){
 //-------------------------------------------------------------------------------------------//
 
 double disorder(double deltaP){
-  //USE C++11 std::randon
-  double dval=static_cast<double>(rand())/RAND_MAX;
-  return deltaP*dval;
+  std::random_device rng;
+  double const normalizer=static_cast<double>(rng.max());
+  return deltaP*(rng()/normalizer-0.5)*2;
 }
 
 //-------------------------------------------------------------------------------------------//
 
-arcomplex<double> tLocalScale(int i){
+std::complex<double> tLocalScale(int i){
   return 1+disorder(0.02);
 }
 
-arcomplex<double> tSingleSite(int i, int targetSite){
+std::complex<double> tSingleSite(int i, int targetSite){
   if(i==targetSite){
     return 1;
   }

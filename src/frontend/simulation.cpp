@@ -1,5 +1,6 @@
 #include <fstream>
 #include <iostream>
+#include <iomanip>
 #include <sstream>
 #include "simulation.h"
 #include "projector.h"
@@ -211,7 +212,9 @@ void simulation::singleRun(){
     ofs<<"Values for state number "<<iEigen<<" with energy "<<E0[iEigen]<<" and energy variance "<<dE[iEigen]<<std::endl;
     //The problem parameters are written into the first lines
     ofs<<"L\tN\tsubchain parity\tJ\tg\tW\tE\tvariance of energy\tt\n";
+    ofs<<std::setprecision(15);
     ofs<<pars.L<<"\t"<<real(pars.QNconserved[0])<<"\t"<<imag(pars.QNconserved[0])<<"\t"<<J<<"\t"<<g<<"\t"<<W<<"\t"<<E0[iEigen]<<"\t"<<dE[iEigen]<<"\t"<<pars.t<<std::endl;
+    ofs<<std::setprecision(5);
     //First, global measurements are performed (this is used rarely)
     if(localMeasureTask.size()>0 || measureTask.size()>0 || measureEE){
       std::cout<<"Measuring correlation functions\n";

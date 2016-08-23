@@ -22,26 +22,26 @@ class overlap{
   stateArray const& getF() const{return F;}
   //Updates are done with respect to phi, i.e. psi is expected to be constant during updating
   void loadMPS(mps const*const psi, mps const*const phi);
-  arcomplex<double> fullOverlap();
-  arcomplex<double> getFullOverlap();
+  std::complex<double> fullOverlap();
+  std::complex<double> getFullOverlap();
   void stepLeft(int const i);
   void stepRight(int const i);
-  arcomplex<double> applyF(arcomplex<double> *vec, int i);
+  std::complex<double> applyF(std::complex<double> *vec, int i);
  private:
   int L, D, d;
   mps const *psi;
   mps const *phi;
-  arcomplex<double> *Lctr;
-  arcomplex<double> *Rctr;
-  arcomplex<double>& Lctr_access(int i, int aim, int aimp){return Lctr[aimp+aim*D+i*D*D];}
-  arcomplex<double>& Rctr_access(int i, int ai, int aip){return Rctr[aip+ai*D+i*D*D];}
+  std::complex<double> *Lctr;
+  std::complex<double> *Rctr;
+  std::complex<double>& Lctr_access(int i, int aim, int aimp){return Lctr[aimp+aim*D+i*D*D];}
+  std::complex<double>& Rctr_access(int i, int ai, int aip){return Rctr[aip+ai*D+i*D*D];}
   stateArray F;
-  void subContractionStartLeft(arcomplex<double> *&pStart, int i);
-  void subContractionStartRight(arcomplex<double> *&pStart, int i);
+  void subContractionStartLeft(std::complex<double> *&pStart, int i);
+  void subContractionStartRight(std::complex<double> *&pStart, int i);
   void calcCtrIterLeft(int i);
   void calcCtrIterRight(int i);
-  void calcCtrIterLeftQNOpt(int i, arcomplex<double> const*const source, arcomplex<double> *const target);
-  void calcCtrIterRightQNOpt(int i, arcomplex<double> const*const source, arcomplex<double> *const target);
+  void calcCtrIterLeftQNOpt(int i, std::complex<double> const*const source, std::complex<double> *const target);
+  void calcCtrIterRightQNOpt(int i, std::complex<double> const*const source, std::complex<double> *const target);
   void calcF();
   //Important: During sweeping, only the F matrix of the last updated site can be used, and only the mps site matrices of the last updated site should be manipulated. This ensures that the overlap is always up to date. Of course, use the corresponding step for updating (i.e. update the correct direction)
   void updateF(int const i);

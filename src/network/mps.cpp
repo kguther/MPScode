@@ -6,7 +6,7 @@
 #include <memory>
 #include <iostream>
 
-void translateBlocks(baseTensor<arcomplex<double> > const &source, siteQNOrderMatrix const &sourceTable, baseTensor<arcomplex<double> > &target, siteQNOrderMatrix const &targetTable);
+void translateBlocks(baseTensor<std::complex<double> > const &source, siteQNOrderMatrix const &sourceTable, baseTensor<std::complex<double> > &target, siteQNOrderMatrix const &targetTable);
 
 mps::mps():stateArray()
 {}
@@ -167,7 +167,7 @@ int mps::setParameterD(int Dnew){
       siteDims[2]=dimInfo.locDimL(i);
       siteDims[1]=dimInfo.locDimR(i);
       siteDims[0]=dimInfo.locd(i);
-      baseTensor<arcomplex<double> > newSiteMatrix(siteDims);
+      baseTensor<std::complex<double> > newSiteMatrix(siteDims);
       translateBlocks(getStateArrayEntry(i),backupIndexTableVar.getLocalIndexTable(i),newSiteMatrix,indexTableVar.getLocalIndexTable(i));
       setStateArrayEntry(i,newSiteMatrix);
     }
@@ -577,7 +577,7 @@ void printQNLabels(mps const &test){
 }
 
 //For adaption of D
-void translateBlocks(baseTensor<arcomplex<double> > const &source, siteQNOrderMatrix const &sourceTable, baseTensor<arcomplex<double> > &target, siteQNOrderMatrix const &targetTable){
+void translateBlocks(baseTensor<std::complex<double> > const &source, siteQNOrderMatrix const &sourceTable, baseTensor<std::complex<double> > &target, siteQNOrderMatrix const &targetTable){
   //works only if sourceTable is contained in targetTable
   int const numBlocks=sourceTable.numBlocksLP();
   int lBlockSize, rBlockSize;

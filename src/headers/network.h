@@ -2,7 +2,6 @@
 #define NETWORK
 
 #include <complex>
-#include <arcomp.h>
 #include <vector>
 #include "parameters.h"
 #include "templates/mpo.h"
@@ -21,37 +20,52 @@
 class network{
  public:
   network();
-  //can throw a critical_error in case normalization fails completely
   network(problemParameters const &inputpars, simulationParameters const &inputsimPars);
 
   //These functions are the main interface for getting results
 
   //solves for the first nEigen eigenstates of networkH. On exit, lambda are the eigenenergies and deltaLambda the variances of energy.
+  //can throw a critical_error in case normalization fails completely - this should never be the case
   int solve(std::vector<double> &lambda, std::vector<double> &deltaLambda);
+
   //Gets the expectation value of some operator MPOperator (input as MPO) for the iEigen-th state if obtained. On exit, expValue contains the result. 
-  void measure(mpo<arcomplex<double> > *const MPOperator, double &expValue, int iEigen=0);
+  void measure(mpo<std::complex<double> > *const MPOperator, double &expValue, int iEigen=0);
+
   //Does the same thing as measure() but takes a local operator and moves it across the system, measuring at each site
-  void measureLocalOperators(localMpo<arcomplex<double> > *const MPOperator, std::vector<arcomplex<double> > &expValue, int iEigen=0);
+  void measureLocalOperators(localMpo<std::complex<double> > *const MPOperator, std::vector<std::complex<double> > &expValue, int iEigen=0);
+
   //Besides observables, also the entanglement spectrum and entropy can be obtained from the MPS
   void getEntanglement(std::vector<double> &S, std::vector<std::vector<double> > &spectrum, int iEigen=0);
+
   //MPO needs to be initialized externally
-  void setNetworkH(mpo<arcomplex<double> > const &newH){networkH=newH;}
+  void setNetworkH(mpo<std::complex<double> > const &newH){networkH=newH;}
 
 //---------------------------------------------------------------------------------------------------//
 
 //Functions below are more advanced and might not be required in all applications
 
+  //load and export does precisely what is expected
   void loadNetworkState(mps const &source);
   void exportNetworkState(mps &target);
+
+  //There are internal flags for marking convergence - one should reset them if the same network shall do another run
   void resetConvergence();
+
+  //Also, resetting the state can (!) be a good idea if subsequent runs are executed
   void resetState();
+
+  //More obscure stuff for special applications
   void quantumNumberVec(std::vector<quantumNumber> *target){target=&conservedQNs;}
   dimensionTable& dimTable() {return networkDimInfo;}
   int setSimParameters(simulationParameters const &newPars);
-  mpo<arcomplex<double> > const& getNetworkH() const {return networkH;}
+  mpo<std::complex<double> > const& getNetworkH() const {return networkH;}
   int locd(int const i);
+
   //This is only for consistency checks
-  mpo<arcomplex<double> > *check, *checkParity;
+  mpo<std::complex<double> > *check, *checkParity;
+
+//---------------------------------------------------------------------------------------------------//
+
  private:
   //Order dependent, do not change
   problemParameters pars;
@@ -61,12 +75,12 @@ class network{
   dimensionTable networkDimInfo;
   int lDL, lDR, ld, lDwR, lDwL;
   mps networkState;
-  mpo<arcomplex<double> > networkH;
+  mpo<std::complex<double> > networkH;
   std::vector<int> nConverged;
   double shift, alpha;
   std::vector<quantumNumber> conservedQNs;
   iterativeMeasurement pCtr;
-  arcomplex<double> expectationValue;
+  std::complex<double> expectationValue;
   //most of these methods are auxiliary functions
   int pctrIndex(int ai, int bi, int aip){return aip+bi*D+ai*D*Dw;}
   int stateIndex(int si, int ai, int aim){return aim+lDL*ai+lDL*lDR*si;}
@@ -85,8 +99,8 @@ class network{
   void leftEnrichmentBlockwise(int i);
   void rightEnrichmentBlockwise(int i);
   void calcHSqrExpectationValue(double &ioHsqr);
-  void getPExpressionLeft(int i, arcomplex<double> *pExpr);
-  void getPExpressionRight(int i, arcomplex<double> *pExpr);
+  void getPExpressionLeft(int i, std::complex<double> *pExpr);
+  void getPExpressionRight(int i, std::complex<double> *pExpr);
   void getLocalDimensions(int i);
   //For exception handling
   void resetSweep();
@@ -95,7 +109,7 @@ class network{
   int checkQN();
   int checkEqualWeightState();
   void checkContractions(int i);
-  arcomplex<double> *backupCtr;
+  std::complex<double> *backupCtr;
 };
 
 #endif

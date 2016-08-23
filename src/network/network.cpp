@@ -3,7 +3,6 @@
 #include <vector>
 #include <iostream>
 #include <iomanip>
-#include <arcomp.h>
 #include <arscomp.h>
 #include <chrono>
 #include "network.h"
@@ -29,7 +28,7 @@
 //---------------------------------------------------------------------------------------------------//
 
 network::network()
-  //Empty networks dont do much, use the generate function to fill them - this allows for separation of declaration and assignment (but avoid using it unless neccessary=
+  //Empty networks dont do much, use assignment to fill them
 {}
 
 //---------------------------------------------------------------------------------------------------//
@@ -354,11 +353,11 @@ void network::sweep(double maxIter, double tol, double &lambda){
 
 int network::optimize(int i, int maxIter, double tol, double &iolambda){
   //Invokes ARPACK++ to solve the eigenvalue problem
-  arcomplex<double> lambda;
-  arcomplex<double> *plambda;
-  arcomplex<double> *currentM;
-  arcomplex<double> *RTerm, *LTerm;
-  void (optHMatrix::*multMv)(arcomplex<double> *v, arcomplex<double> *w);
+  std::complex<double> lambda;
+  std::complex<double> *plambda;
+  std::complex<double> *currentM;
+  std::complex<double> *RTerm, *LTerm;
+  void (optHMatrix::*multMv)(std::complex<double> *v, std::complex<double> *w);
   int nconv;
   //Get the projector onto the space orthogonal to any lower lying states
   //Get the current partial contractions and site matrix of the Hamiltonian
@@ -393,7 +392,7 @@ int network::optimize(int i, int maxIter, double tol, double &iolambda){
     //If there is some problem with arpack at first/last site, disable QN optimized solution on those sites
     blockHMatrix BMat(RTerm, LTerm,&networkH,networkDimInfo,Dw,i,&(networkState.indexTable().getLocalIndexTable(i)),&excitedStateP,shift,&conservedQNs);
     BMat.prepareInput(currentM);
-    arcomplex<double> *compressedVector=BMat.getCompressedVector();
+    std::complex<double> *compressedVector=BMat.getCompressedVector();
     if(BMat.dim()>1){
       ARCompStdEig<double, blockHMatrix> eigProblemBlocked(BMat.dim(),1,&BMat,&blockHMatrix::MultMvBlocked,"SR",0,tol,maxIter,compressedVector);
       nconv=eigProblemBlocked.EigenValVectors(compressedVector,plambda);
@@ -672,12 +671,12 @@ void network::checkContractions(int i){
   }
   */
   getLocalDimensions(i);
-  arcomplex<double> *direct;
-  arcomplex<double> *plambda=new arcomplex<double>;
-  arcomplex<double> *target=new arcomplex<double>[ld*lDL*lDR];
-  arcomplex<double> *currentM=new arcomplex<double>[ld*lDL*lDR];
-  arcomplex<double> *RTerm, *LTerm, *HTerm;
-  arcomplex<double> lambda;
+  std::complex<double> *direct;
+  std::complex<double> *plambda=new std::complex<double>;
+  std::complex<double> *target=new std::complex<double>[ld*lDL*lDR];
+  std::complex<double> *currentM=new std::complex<double>[ld*lDL*lDR];
+  std::complex<double> *RTerm, *LTerm, *HTerm;
+  std::complex<double> lambda;
   pCtr.Lctr.subContractionStart(LTerm,i);
   pCtr.Rctr.subContractionStart(RTerm,i);
   networkH.subMatrixStart(HTerm,i);

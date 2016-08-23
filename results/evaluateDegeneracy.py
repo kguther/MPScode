@@ -50,26 +50,27 @@ ls=28
 x0=33
 x1=110
 p0=sy.array([0.01,1])
-#fpars, acc=so.curve_fit(f,positions,deltaE,p0)
-colors=[(170/255.0,0,45/255.0),(125/255.0,0,125.0/255.0)]
+colors=[(174/255.0,28.0/255.0,97.0/255.0),(21.0/255.0,84.0/255.0,193.0/255.0)]
 plt.figure(figsize=(18,10))
 plt.tick_params(labelsize=ls)
 for i in [0]:
     sorter=sorted(baseData,key=getkey)
     positions=[x[0] for x in sorter]
     deltaE=[x[1] for x in sorter]
+    fpars, acc=so.curve_fit(f,positions,deltaE,p0)
+    fplot,=plt.loglog(range(x0-1,x1+4),f(range(x0-1,x1+4),fpars[0],fpars[1]),color='k')
     cplot,=plt.plot(positions[::2],deltaE[::2],'o',ms=11.5,color=colors[i])
-    #plt.loglog(range(x0,x1),f(range(x0,x1),fpars[0],fpars[1]),color=colors[i])
     #print fpars
 plt.xlabel('L',fontsize=fs)
-plt.ylabel('Energy gap',fontsize=fs)
+plt.ylabel('Energy gap $\Delta$',fontsize=fs)
 plt.xlim(xmin=x0,xmax=x1)
-#plt.ylim(ymin=0.015,ymax=0.055)
-#yt=[0.02,0.03,0.04,0.05]
-#plt.yticks(yt,map(str,yt))
-#xt=[40,50,60,70,80,90,100]
-#plt.xticks(xt,map(str,xt))
-#cplot.set_label('~$L^{-'+str(fpars[1])[:6]+'}$')
+plt.ylim(ymin=0.015,ymax=0.055)
+yt=[0.02,0.03,0.04,0.05]
+plt.yticks(yt,map(str,yt))
+xt=[40,50,60,70,80,90,100]
+plt.xticks(xt,map(str,xt))
+cplot.set_label('numerical data')
+fplot.set_label('$\Delta=$'+str(fpars[0])[:6]+'$\cdot\,L^{-'+str(fpars[1])[:6]+'}$') 
 plt.legend(loc=1,fontsize=fs,numpoints=1)
-plt.savefig('thesis_plots/cdw_gap_scaling.pdf')
-#plt.show()
+plt.savefig('thesis_plots/revised/top_gap_scaling.pdf')
+plt.show()

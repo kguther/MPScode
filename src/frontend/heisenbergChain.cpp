@@ -6,8 +6,8 @@
 double upMatrix(int a, int b);
 double downMatrix(int a, int b);
 double bosonMatrix(int a, int b);
-double aMatrix(int const a, int const b);
-double bMatrix(int const a, int const b);
+//double aMatrix(int const a, int const b);
+//double bMatrix(int const a, int const b);
 
 //bose-Hubbard with NN-Interaction
 
@@ -166,7 +166,7 @@ void generateHubbardHamiltonian(double t, double U, mpo<std::complex<double> > &
   }
 }
 
-
+/*
 //Free fermions with pbc
 void generateFFHamiltonian(mpo<std::complex<double> > &H){
   int lDwR, lDwL;
@@ -257,6 +257,7 @@ void generateFFHamiltonian(mpo<std::complex<double> > &H){
     }
   }
 }
+*/
 
 void generateHeisenbergHamiltonian(mpo<std::complex<double> > &H){
   int lDwR, lDwL;
@@ -341,7 +342,6 @@ void generateHeisenbergHamiltonian(mpo<std::complex<double> > &H){
 // For simplicity, these functions return the matrix elements of identity and the fermionic
 // site operators a and b, repsectively (a for up, b for down)
 //-------------------------------------------------------------------------------------------//
-
 
 double upMatrix(int a, int b){
   if(a==0 && b==1){

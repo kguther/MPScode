@@ -3,7 +3,7 @@
 #include "templates/localMpo.h"
 #include "localHSpaces.h"
 #include "heisenbergChain.h"
-#include <arcomp.h>
+#include <complex>
 #include <math.h>
 #include <iostream>
 #include <fstream>
@@ -21,8 +21,8 @@ void getScaling(int L, info const &parPack, double *results, std::string const &
 void sysSetMeasurements(simulation &sim, int d, int L, int meas);
 void importParameters(std::string const &fN, std::vector<int> &alpha, std::vector<double> &J, std::vector<double> &g);
 void getFileName(info const &necPars, char *fNBuf, int commsize, int myrank, std::string &finalName);
-
-int main(int argc, char *argv[]){
+/*
+int other(int argc, char *argv[]){
   int const nQuantumNumbers=1;
   int D=200;
   int const L=20;
@@ -33,7 +33,7 @@ int main(int argc, char *argv[]){
   std::complex<int> QNValue[1]={std::complex<int>(nUp,0)};
   std::complex<int> QNList[4]={std::complex<int>(0,1),std::complex<int>(1,1),std::complex<int>(0,1),std::complex<int>(1,1)};
   localHSpaces localHilbertSpaceDims(d);
-  mpo<arcomplex<double> > FF(d,Dw,L);
+  mpo<std::complex<double> > FF(d,Dw,L);
   generateFFHamiltonian(FF);
   problemParameters pars(localHilbertSpaceDims,L,Dw,1,nQuantumNumbers,QNValue,QNList);
   simulationParameters simPars(D,nSweeps,1,1e-3,1e-7,1e-8,1e-3);
@@ -69,8 +69,8 @@ int main(int argc, char *argv[]){
   sys.solve(E0,dE);
   return 0;
 }
-
-int other(int argc, char *argv[]){
+*/
+int main(int argc, char *argv[]){
   //Here, the parameters are distributed via MPI to the processes. Each process then individually solves the system for a specific set of parameters - great paralellization.
   //There are currently two settings: scaling and correlation. The former computes the behaivour of the gap with increasing system size and the latter computes correlations etc across the parameter space for fixed system size
   MPI_Init(&argc,&argv);
@@ -180,7 +180,7 @@ int other(int argc, char *argv[]){
       for(int varL=35;varL<110;varL+=3){
 	necPars.L=varL;
 	necPars.N=necPars.rho*necPars.L*2;
-	necPars.par=pty;
+	//necPars.par=pty;
 	getFileName(necPars,fNBuf,commsize,myrank,finalName);
 	sysSolve(necPars,finalName,energies);
       }
@@ -238,7 +238,7 @@ int other(int argc, char *argv[]){
     */
     
     necPars.tReal=0;
-    necPars.tPos=myrank;
+    necPars.tPos=myrank+15;
     
     
   }
@@ -265,12 +265,13 @@ int other(int argc, char *argv[]){
     //For scaling, all results are written in the same file. This is done by the poor man's solution: only the main process writes.
     if(myrank==0){
       std::ofstream ofs;
-      ofs.open("SB_local_sweep.txt");
+      ofs.open("SB_local_sweep_extended.txt");
       ofs<<"Parameters: J="<<1+necPars.Jsc/necPars.scaling<<" g="<<1+necPars.gsc/necPars.scaling<<std::endl;
       ofs<<"System size: "<<necPars.L<<" filling: "<<necPars.rho<<" subchain parity="<<necPars.par<<std::endl;
       ofs<<"SB Position\tGS energy\t excited state energy\t GS accuracy\t excited state accuracy\n";
+      ofs<<std::setprecision(15);
       for(int rk=0;rk<commsize;++rk){
-	ofs<<rk+12<<"\t"<<energyBuf[4*rk]<<"\t"<<energyBuf[4*rk+1]<<"\t"<<energyBuf[4*rk+2]<<"\t"<<energyBuf[4*rk+3]<<std::endl;
+	ofs<<rk+15<<"\t"<<energyBuf[4*rk]<<"\t"<<energyBuf[4*rk+1]<<"\t"<<energyBuf[4*rk+2]<<"\t"<<energyBuf[4*rk+3]<<std::endl;
       }
       ofs.close();
     }
@@ -318,7 +319,7 @@ void sysSolve(info const &parPack, std::string const &fileName, std::vector<doub
   if(parPack.simType==2){
     int const d=pars.d.maxd();
     int const L=parPack.L;
-    localMpo<arcomplex<double> > gamma(d,1,L,1,0);
+    localMpo<std::complex<double> > gamma(d,1,L,1,0);
     std::string gammaName="Second Order ";
     std::string fName;
     std::ostringstream cGName;
@@ -346,22 +347,22 @@ void sysSolve(info const &parPack, std::string const &fileName, std::vector<doub
 void sysSetMeasurements(simulation &sim, int d, int L, int meas){
   int const bulkStart=(L/4>2)?L/4:3;
   int parityQNs[4]={1,-1,-1,1};
-  localMpo<arcomplex<double> > greensFunction(d,1,L,1,parityQNs);
-  localMpo<arcomplex<double> > densityCorrelation(d,1,L,1,0);
-  localMpo<arcomplex<double> > localDensity(d,1,L,0,0);
-  localMpo<arcomplex<double> > localDensityB(d,1,L,0,0);
-  localMpo<arcomplex<double> > totalDensityCorrelation(d,1,L,1,0);
-  localMpo<arcomplex<double> > totalMagnetizationCorrelation(d,1,L,1,0);
-  localMpo<arcomplex<double> > interChainCorrelation(d,1,L,1,0);
-  localMpo<arcomplex<double> > superconductingOrder(d,1,L,1,0);
-  localMpo<arcomplex<double> > interChainDensityCorrelation(d,1,L,1,0);
-  localMpo<arcomplex<double> > bulkGreensFunction(d,1,L,bulkStart,parityQNs);
-  localMpo<arcomplex<double> > bulkDensityCorrelation(d,1,L,bulkStart,0);
-  localMpo<arcomplex<double> > bulkInterChainCorrelation(d,1,L,bulkStart,parityQNs);
-  localMpo<arcomplex<double> > bulkSuperconductingOrder(d,1,L,bulkStart,0);
-  localMpo<arcomplex<double> > bulkInterChainDensityCorrelation(d,1,L,bulkStart,0);
-  localMpo<arcomplex<double> > bulkSuperConductingCorrelation(d,1,L,bulkStart,0,2);
-  localMpo<arcomplex<double> > bulkICSuperConductingCorrelation(d,1,L,bulkStart,0,2);
+  localMpo<std::complex<double> > greensFunction(d,1,L,1,parityQNs);
+  localMpo<std::complex<double> > densityCorrelation(d,1,L,1,0);
+  localMpo<std::complex<double> > localDensity(d,1,L,0,0);
+  localMpo<std::complex<double> > localDensityB(d,1,L,0,0);
+  localMpo<std::complex<double> > totalDensityCorrelation(d,1,L,1,0);
+  localMpo<std::complex<double> > totalMagnetizationCorrelation(d,1,L,1,0);
+  localMpo<std::complex<double> > interChainCorrelation(d,1,L,1,0);
+  localMpo<std::complex<double> > superconductingOrder(d,1,L,1,0);
+  localMpo<std::complex<double> > interChainDensityCorrelation(d,1,L,1,0);
+  localMpo<std::complex<double> > bulkGreensFunction(d,1,L,bulkStart,parityQNs);
+  localMpo<std::complex<double> > bulkDensityCorrelation(d,1,L,bulkStart,0);
+  localMpo<std::complex<double> > bulkInterChainCorrelation(d,1,L,bulkStart,parityQNs);
+  localMpo<std::complex<double> > bulkSuperconductingOrder(d,1,L,bulkStart,0);
+  localMpo<std::complex<double> > bulkInterChainDensityCorrelation(d,1,L,bulkStart,0);
+  localMpo<std::complex<double> > bulkSuperConductingCorrelation(d,1,L,bulkStart,0,2);
+  localMpo<std::complex<double> > bulkICSuperConductingCorrelation(d,1,L,bulkStart,0,2);
   std::string gFName="Intrachain correlation";
   std::string dCName="Intrachain density correlation";
   std::string lDName="Local density";
