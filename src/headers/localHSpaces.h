@@ -6,8 +6,8 @@
 class localHSpaces{
  public:
   localHSpaces();
-  localHSpaces(int const d);
-  localHSpaces(std::vector<int> d);
+  localHSpaces(int d);
+  localHSpaces(std::vector<int> const &d);
   int locd(int const i) const;
   int maxd() const;
  private:

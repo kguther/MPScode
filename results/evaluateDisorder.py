@@ -8,13 +8,18 @@ filelist=os.listdir(os.getcwd())
 taskname=sys.argv[1]
 J=sys.argv[2]
 g=sys.argv[3]
+W=sys.argv[4]
+
+fsize=32
+lsize=28
+marksize=11.5
 
 files=[]
 dE=[]
 variances=[]
 stdErr=[]
 
-lenghts=[35,38,41,44,47,50,53,56,59,62,65,68,71,74,77,80,83,86]#,89,92,95,98,101,104,107]
+lenghts=[35,38,41,44,47,50,53,56,59,62,65,68,71,74,77,80,83,86,89,92,95,98,101,104,107]
 valid=[]
 
 def getAverage(L):
@@ -33,7 +38,7 @@ def getAverage(L):
                     readEnergy.readline()
                     readEnergy.readline()
                     eList=readEnergy.readline().split('\t')
-                    if eList[3]==J and eList[4]==g:
+                    if eList[3]==J and eList[4]==g and eList[5]==W:
                         valid.append(True)
                     else:
                         valid.append(False)
@@ -46,7 +51,7 @@ def getAverage(L):
             compName=files[j]
             partedCompName=compName.partition('_p_')
             if partedRefName[0]==partedCompName[0] and partedRefName[2][1:]==partedCompName[2][2:] and valid[i]:
-                deltaE.append((energies[i]-energies[j])**2)
+                deltaE.append(np.sqrt((energies[i]-energies[j])**2))
                 err.append((errBuff[i]+errBuff[j])/2)
 
     averaged=sum(deltaE)/max(len(deltaE),1)
@@ -66,11 +71,18 @@ for l in lenghts:
     variances.append(buf[1])
     dE.append(buf[0])
 
-plt.errorbar(lenghts,dE,yerr=variances,fmt='o')
-plt.xlabel('Chain length')
-plt.ylabel('Mean quadratic energy splitting')
-plt.title('Energy gap, J=g=-2')
-plt.xlim([34,109])
+fsize=32
+lsize=28
+marksize=11.5
+colors=[(174/255.0,28.0/255.0,97.0/255.0),(21.0/255.0,84.0/255.0,193.0/255.0)]
+
+plt.figure(figsize=(12,10))
+plt.tick_params(labelsize=lsize)
+plt.errorbar(lenghts,dE,yerr=variances,fmt='o',ms=marksize,elinewidth=1.5,color=colors[0])
+plt.xlabel('$L$',fontsize=fsize)
+plt.ylabel('Mean energy splitting',fontsize=fsize)
+#plt.title('Energy gap, J=g=0.9, W=1.1')
+#plt.xlim([34,109])
 #plt.ylim([0.003,0.018])
-#plt.savefig('thesis_plots/cdw_energy_scaling.pdf')
+plt.savefig('thesis_plots/disorder_gap_scaling_11.pdf')
 plt.show()

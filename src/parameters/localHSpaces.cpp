@@ -3,13 +3,13 @@
 localHSpaces::localHSpaces(){
 }
 
-localHSpaces::localHSpaces(int const d):
+localHSpaces::localHSpaces(int d):
   constantDimension(1)
 {
   localHDims.push_back(d);
 }
 
-localHSpaces::localHSpaces(std::vector<int> d):
+localHSpaces::localHSpaces(std::vector<int> const &d):
   constantDimension(0),
   localHDims(d)
 {}

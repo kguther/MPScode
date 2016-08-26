@@ -77,7 +77,6 @@ void network::leftEnrichment(int i){
   double *diags=new double[containerDim];
   lapack_complex_double *VT=new lapack_complex_double[maxDim*maxDim];
   lapack_complex_double *U=new lapack_complex_double[maxDim*maxDim];
-  //POSSIBLE IMPROVEMENT: USE LAPACK DRIVER ROUTINE INSTEAD OF COMPUTATIONAL ROUTINES
   //lapackSVD(MNumCols,MNumRows,Mnew,Mnewcpy,diags);
   LAPACKE_zgesdd(LAPACK_COL_MAJOR,'A',MNumRows,MNumCols,Mnew,MNumRows,diags,U,MNumRows,VT,MNumCols);
   //U -> A, S*VT->Multiply to B

@@ -82,10 +82,10 @@ for filename in filelist:
             for i in range(0,n[len(n)-1]-1):
                 readData(filename,data)
             y.append(data)
-            #pltlabels.append('J='+pars[3][0:4]+' g='+pars[4][0:4])
+            pltlabels.append('J='+pars[3][0:4]+' g='+pars[4][0:4])
             #pltlabels.append('$\\alpha=$'+parity+'  E='+pars[6][:7])
             #pltlabels.append('E='+pars[6][:7])
-            pltlabels.append('N='+pars[1])
+            #pltlabels.append('N='+pars[1])
             #ptitle='J='+pars[3]+'\t g='+pars[4]
 
 markers=['o','s','>','v','s','^','*']
@@ -98,28 +98,28 @@ ls=28
 plt.figure(figsize=(12,10))
 plt.tick_params(labelsize=ls)
 
-targetName='Bulk intrachain correlation'
+targetName='Interchain hopping correlation'
 
 for i in range(0,len(y)):
     for j in range(0,n[i]-1): 
         if datanames[i][j]==targetName:
             x=range(0,len(y[i][j]))
             if tasknum(datanames[i][j])!=7 and tasknum(datanames[i][j])!=4:
-                cplot,=plt.semilogy(x,y[i][j],markers[i],color=colors[i],ms=marksize)
+                cplot,=plt.semilogy(x[::2],y[i][j][::2],markers[i],color=colors[i],ms=marksize)
             else:
-                cplot,=plt.plot(x,y[i][j],markers[i],ms=marksize,color=colors[i])
+                cplot,=plt.semilogy(x,y[i][j],markers[i],ms=marksize,color=colors[i])
             cplot.set_label(pltlabels[i])
 plt.xlabel('$|i-j|$',fontsize=fs)
 #plt.xlabel('Subsystem size $S$',fontsize=fs)
 #plt.xlabel('Site $i$',fontsize=fs)
 plt.ylabel(labellist[tasknum(targetName)],fontsize=fs)
 #plt.ylabel('Entanglement Entropy',fontsize=fs)
-plt.xlim(xmin=0,xmax=70)
+#plt.xlim(xmin=0,xmax=70)
 #plt.ylim(ymin=-.5)
 #plt.xticks([10,20,30])
 #ax=plt.gca()
 #ax.set_xticklabels(['10','20','30'])
-plt.legend(loc=3,numpoints=1,fontsize=ls)
+plt.legend(loc=9,numpoints=1,fontsize=ls)
 #plt.title(ptitle,fontsize=24)
 tnames=targetName.replace('.','_')
 plt.savefig('thesis_plots/revised/'+title+tnames.replace(' ','_')+'.pdf',bbox_inches='tight')
@@ -155,14 +155,14 @@ ax2.set_ylabel('$\\left|\\langle a^\dagger_i b^{}_i b_j^{\dagger} a_j \\rangle \
 #ax1.set_ylabel('$\\langle a_i^{\dagger} a_{i+1}^{\dagger} a_j a_{j+1} \\rangle$',fontsize=fs,color=colors[0])
 #ax2.set_ylabel('$\\langle b_i^{\dagger} a_{i+1}^{\dagger} b_j a_{j+1} \\rangle$',fontsize=fs,color=colors[1])
 ax1.legend(loc=3,numpoints=1,fontsize=ls)
-ax1.set_xlim(xmax=50)
-ax2.set_xlim(xmax=50)
+ax1.set_xlim(xmax=74)
+ax2.set_xlim(xmax=74)
 ax1.set_ylim(ymax=1.2)
 for yt in ax1.get_yticklabels():
     yt.set_color(colors[0])
 for yt in ax2.get_yticklabels():
     yt.set_color(colors[1])
-#plt.savefig('thesis_plots/revised/'+title+'scCorrelations'+'.pdf',bbox_inches='tight')
+#plt.savefig('thesis_plots/revised/'+title+'pairCorrelations'+'.pdf',bbox_inches='tight')
 #plt.show()
 plt.close()
             
