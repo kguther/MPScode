@@ -2,20 +2,20 @@
 #include "optHMatrix.h"
 #include "globalMeasurement.h"
 
-localMeasurementSeries::localMeasurementSeries(localMpo<std::complex<double> > *const MPOperator, mps *const MPState):
+localMeasurementSeries::localMeasurementSeries(localMpo<mpsEntryType > *const MPOperator, mps *const MPState):
   iterativeMeasurement(MPOperator,MPState),
   localMPOperator(MPOperator)
 {}
 
 //---------------------------------------------------------------------------------------------------//
 
-void localMeasurementSeries::measureFull(std::vector<std::complex<double> > &lambda){
+void localMeasurementSeries::measureFull(std::vector<mpsEntryType > &lambda){
   int const L=MPOperator->length();
-  std::complex<double>  result;
+  mpsEntryType  result;
   int const operatorSize=localMPOperator->width();
   MPOperator->setUpSparse();
   //The input operator is stored since the measure sweep destroys its form
-  localMpo<std::complex<double> > backup=*localMPOperator;
+  localMpo<mpsEntryType > backup=*localMPOperator;
   calcCtrFull(1);
   lambda.clear();
   calcCtrIterRightBase(-1,&result);
@@ -45,15 +45,15 @@ void localMeasurementSeries::measureFull(std::vector<std::complex<double> > &lam
 
 //---------------------------------------------------------------------------------------------------//
 
-void localMeasurementSeries::getCurrentValue(std::vector<std::complex<double> > &lambda, int const i){
-  std::complex<double> simpleContainer=0.0;
-  std::complex<double> *LTerm, *RTerm, *currentM;
+void localMeasurementSeries::getCurrentValue(std::vector<mpsEntryType > &lambda, int const i){
+  mpsEntryType simpleContainer=0.0;
+  mpsEntryType *LTerm, *RTerm, *currentM;
   getLocalDimensions(i);
   Rctr.subContractionStart(RTerm,i);
   Lctr.subContractionStart(LTerm,i);
   MPState->subMatrixStart(currentM,i);
   //Only the current site has to be contracted explicitly, the rest is stored in the partial contraction. Explicit contraction is carried out using the optHMatrix class multiplication.
-  std::complex<double> *siteMatrixContainer=new std::complex<double> [ld*lDR*lDL];
+  mpsEntryType *siteMatrixContainer=new mpsEntryType [ld*lDR*lDL];
   optHMatrix gather(RTerm,LTerm,MPOperator,MPState->getDimInfo(),MPOperator->maxDim(),i,0,0,0);
   gather.MultMv(currentM,siteMatrixContainer);
   for(int si=0;si<ld;++si){

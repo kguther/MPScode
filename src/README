@@ -3,10 +3,10 @@ This code is capable of ground state and low-lying excited state search for one-
 To include this library, include the network.h header from the src/headers subdirectory and link to the src/lib/libvmps.a library. 
 The code also depends on blas, lapack, arpack and arpack++, therefore, these also have to be linked to, beware the ordering (first libvmps, then arpack++, then arpack, then lapacke, then lapack, then blas, then gfortran). Parallelization with openMP is available and can be activated by including -fopnenmp compiler flag. 
 
-The data type used for entries of the MPS is std::complex<double>. Arpack uses the arcomplex<double> complex type, therefore it is required to set arcomplex<> to std::complex<>, which is the default. Lots of components are already implemented as templates, in case of boredom, it should not be too hard to fully eliminate the inherence of a type for the mps/network.
+The data type used for entries of the MPS is either double or std::complex<double>. Arpack uses the arcomplex<double> complex type, therefore it is required to set arcomplex<> to std::complex<>, which is the default. Lots of components are already implemented as templates, in case of boredom, it should not be too hard to fully eliminate the inherence of a type for the mps/network. To use real mps entries, build the library with the -DREAL_MPS_ENTRIES compiler flag and also add it to your own makefile.
 
 Exemplary command for compiling a program libtest.cpp with the intel C++ compiler: 
-icpc libtest.cpp -o test ~/MSC/MPScode/src/lib/libvmps.a /usr/lib/libarpack++.a /usr/lib/libarpack.a -llapacke -llapack -lblas -lgfortran -fopenmp 
+icpc libtest.cpp -o test ~/MSC/MPScode/src/lib/libvmps.a /usr/lib/libarpack++.a /usr/lib/libarpack.a -llapacke -llapack -lblas -lgfortran -fopenmp -DREAL_MPS_ENTRIES
 
 The main interface is the network class from the network.h header. It takes a pair of parameter objects containing all kind of information about the system (first argument) and numerical parameters (second argument) as input for construction. Therefore, the parameter classes from paramters.h have to be used. 
 

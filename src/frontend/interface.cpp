@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <math.h>
 #include <vector>
+#include <cmath>
 
 interface::interface(){
   //default parameters which are used if a parameter is not specified in the file
@@ -173,7 +174,7 @@ void interface::readParFile(std::string const &fN){
 //-------------------------------------------------------------------------------------------//
 
 int symmetryBroken(info parPack){
-  if((abs(parPack.tReal)+abs(parPack.tImag))>1e-12){
+  if((std::abs(parPack.tReal)+std::abs(parPack.tImag))>1e-12){
     return 1;
   }
   return 0;

@@ -58,7 +58,7 @@ void exactGroundState::generateExactState(mps &target){
 
 //---------------------------------------------------------------------------------------------------//
 
-std::complex<double> exactGroundState::exactGroundStateEntry(int i, int si, int ai, int aim){
+mpsEntryType exactGroundState::exactGroundStateEntry(int i, int si, int ai, int aim){
   if(si==0 || si==2){
     return 1.0;
   }

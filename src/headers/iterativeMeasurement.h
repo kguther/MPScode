@@ -14,17 +14,17 @@
 class iterativeMeasurement: protected baseMeasurement{
  public:
   iterativeMeasurement();
-  iterativeMeasurement(mpo<std::complex<double> > *const MPOperator, mps *const MPState);
-  void initialize(mpo<std::complex<double> > *const MPOperator, mps *const MPState);
+  iterativeMeasurement(mpo<mpsEntryType > *const MPOperator, mps *const MPState);
+  void initialize(mpo<mpsEntryType > *const MPOperator, mps *const MPState);
   int calcCtrFull(int const direction);
   virtual void calcCtrIterLeft(int const i);
   void calcCtrIterRight(int const i);
-  virtual void calcCtrIterRightBase(int i, std::complex<double> *const target);
-  void calcOuterContainerLeft(int const i, tmpContainer<std::complex<double> > &outerContainer);
-  void calcOuterContainerRight(int const i, tmpContainer<std::complex<double> > &outerContainer);
+  virtual void calcCtrIterRightBase(int i, mpsEntryType *const target);
+  void calcOuterContainerLeft(int const i, tmpContainer<mpsEntryType > &outerContainer);
+  void calcOuterContainerRight(int const i, tmpContainer<mpsEntryType > &outerContainer);
   //Containers for caching of partial contractions of the expectation value. This is what distinguishes the iterativeMeasurement
-  pContraction<std::complex<double> > Lctr;
-  pContraction<std::complex<double> > Rctr;
+  pContraction<mpsEntryType > Lctr;
+  pContraction<mpsEntryType > Rctr;
 };
 
 #endif

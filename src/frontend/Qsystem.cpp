@@ -6,7 +6,7 @@
 
 //---------------------------------------------------------------------------------------------------//
 /*
-void testIDMRG(problemParameters pars, simulationParameters simPars, mpo<std::complex<double> > const &H){
+void testIDMRG(problemParameters pars, simulationParameters simPars, mpo<mpsEntryType > const &H){
   infiniteQsystem test(pars,simPars,H);
   test.solve();
   exit(1);
@@ -73,12 +73,12 @@ double Qsystem::stageTolInitial(int const nStage){
 
 //---------------------------------------------------------------------------------------------------//
 
-void Qsystem::measure(mpo<lapack_complex_double> *const MPOperator, double &expectationValue, int iEigen){
+void Qsystem::measure(mpo<mpsEntryType> *const MPOperator, double &expectationValue, int iEigen){
   TensorNetwork.measure(MPOperator,expectationValue,iEigen);
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-void Qsystem::measureLocalOperators(localMpo<lapack_complex_double> *const localMPOperator, std::vector<std::complex<double> > &result, int iEigen){
+void Qsystem::measureLocalOperators(localMpo<mpsEntryType> *const localMPOperator, std::vector<mpsEntryType > &result, int iEigen){
   TensorNetwork.measureLocalOperators(localMPOperator,result,iEigen);
 }

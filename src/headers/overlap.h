@@ -22,26 +22,26 @@ class overlap{
   stateArray const& getF() const{return F;}
   //Updates are done with respect to phi, i.e. psi is expected to be constant during updating
   void loadMPS(mps const*const psi, mps const*const phi);
-  std::complex<double> fullOverlap();
-  std::complex<double> getFullOverlap();
+  mpsEntryType fullOverlap();
+  mpsEntryType getFullOverlap();
   void stepLeft(int const i);
   void stepRight(int const i);
-  std::complex<double> applyF(std::complex<double> *vec, int i);
+  mpsEntryType applyF(mpsEntryType *vec, int i);
  private:
   int L, D, d;
   mps const *psi;
   mps const *phi;
-  std::complex<double> *Lctr;
-  std::complex<double> *Rctr;
-  std::complex<double>& Lctr_access(int i, int aim, int aimp){return Lctr[aimp+aim*D+i*D*D];}
-  std::complex<double>& Rctr_access(int i, int ai, int aip){return Rctr[aip+ai*D+i*D*D];}
+  mpsEntryType *Lctr;
+  mpsEntryType *Rctr;
+  mpsEntryType& Lctr_access(int i, int aim, int aimp){return Lctr[aimp+aim*D+i*D*D];}
+  mpsEntryType& Rctr_access(int i, int ai, int aip){return Rctr[aip+ai*D+i*D*D];}
   stateArray F;
-  void subContractionStartLeft(std::complex<double> *&pStart, int i);
-  void subContractionStartRight(std::complex<double> *&pStart, int i);
+  void subContractionStartLeft(mpsEntryType *&pStart, int i);
+  void subContractionStartRight(mpsEntryType *&pStart, int i);
   void calcCtrIterLeft(int i);
   void calcCtrIterRight(int i);
-  void calcCtrIterLeftQNOpt(int i, std::complex<double> const*const source, std::complex<double> *const target);
-  void calcCtrIterRightQNOpt(int i, std::complex<double> const*const source, std::complex<double> *const target);
+  void calcCtrIterLeftQNOpt(int i, mpsEntryType const*const source, mpsEntryType *const target);
+  void calcCtrIterRightQNOpt(int i, mpsEntryType const*const source, mpsEntryType *const target);
   void calcF();
   //Important: During sweeping, only the F matrix of the last updated site can be used, and only the mps site matrices of the last updated site should be manipulated. This ensures that the overlap is always up to date. Of course, use the corresponding step for updating (i.e. update the correct direction)
   void updateF(int const i);

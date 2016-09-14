@@ -4,7 +4,7 @@
 #include "optHMatrix.h"
 #include "templates/tmpContainer.h"
 
-optHMatrix::optHMatrix(std::complex<double> *Rin, std::complex<double> *Lin, mpo<std::complex<double> > const *Hin, dimensionTable const &dimInfo, int Dwin, int iIn, projector *excitedStateP, double shiftin, std::vector<quantumNumber> *conservedQNsin):
+optHMatrix::optHMatrix(mpsEntryType *Rin, mpsEntryType *Lin, mpo<mpsEntryType > const *Hin, dimensionTable const &dimInfo, int Dwin, int iIn, projector *excitedStateP, double shiftin, std::vector<quantumNumber> *conservedQNsin):
   Rctr(Rin),
   Lctr(Lin),
   Dw(Dwin),
@@ -30,11 +30,11 @@ optHMatrix::optHMatrix(std::complex<double> *Rin, std::complex<double> *Lin, mpo
 // The functiion arguments are required this way by ARPACK++ 
 //---------------------------------------------------------------------------------------------------//
 
-void optHMatrix::MultMv(std::complex<double> *v, std::complex<double> *w){
-  tmpContainer<std::complex<double> > innercontainer(d,lDL,lDR,lDwR);
-  tmpContainer<std::complex<double> > outercontainer(d,lDwL,lDR,lDL);
+void optHMatrix::MultMv(mpsEntryType *v, mpsEntryType *w){
+  tmpContainer<mpsEntryType > innercontainer(d,lDL,lDR,lDwR);
+  tmpContainer<mpsEntryType > outercontainer(d,lDwL,lDR,lDL);
   int nNzero;
-  std::complex<double> simpleContainer;
+  mpsEntryType simpleContainer;
   if(P){
     P->project(v,i);
   }
@@ -54,7 +54,7 @@ void optHMatrix::MultMv(std::complex<double> *v, std::complex<double> *w){
   }
   int const *biIndices, *siIndices, *bimIndices, *sipIndices;
   int const sparseSize=HMPO->numEls(i);
-  std::complex<double> const *H;
+  mpsEntryType const *H;
   HMPO->biSubIndexArrayStart(biIndices,i);
   HMPO->siSubIndexArrayStart(siIndices,i);
   HMPO->bimSubIndexArrayStart(bimIndices,i);
@@ -99,7 +99,7 @@ void optHMatrix::MultMv(std::complex<double> *v, std::complex<double> *w){
 
 //---------------------------------------------------------------------------------------------------//
 
-void optHMatrix::MultMvQNConserving(std::complex<double> *v, std::complex<double> *w){
+void optHMatrix::MultMvQNConserving(mpsEntryType *v, mpsEntryType *w){
   //FOR MORE SOPHISTICATED QN CONSERVING MULTIPLICATION USE THE blockHMatrix CLASS
   clock_t curtime;
   curtime=clock();
@@ -115,7 +115,7 @@ void optHMatrix::MultMvQNConserving(std::complex<double> *v, std::complex<double
 
 //---------------------------------------------------------------------------------------------------//
 
-void optHMatrix::projectQN(std::complex<double> *v){
+void optHMatrix::projectQN(mpsEntryType *v){
   //This just sets all entries forbidden by QN constraint to zero. Important: the QN constraint is sufficient, but not necessary to have a state with some fixed QN.
   for(int si=0;si<d;++si){
     for(int ai=0;ai<lDR;++ai){

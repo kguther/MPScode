@@ -9,13 +9,13 @@ globalMeasurement::globalMeasurement():
 
 //---------------------------------------------------------------------------------------------------//
 
-globalMeasurement::globalMeasurement(mpo<std::complex<double> > *MPOperatorIn, mps *MPStateIn):
+globalMeasurement::globalMeasurement(mpo<mpsEntryType > *MPOperatorIn, mps *MPStateIn):
   baseMeasurement(MPOperatorIn,MPStateIn)
 {}
 
 //---------------------------------------------------------------------------------------------------//
 
-void globalMeasurement::setupMeasurement(mpo<std::complex<double> > *MPOperatorIn, mps *MPStateIn){
+void globalMeasurement::setupMeasurement(mpo<mpsEntryType > *MPOperatorIn, mps *MPStateIn){
   baseMeasurement::setupMeasurement(MPOperatorIn,MPStateIn);
 }
 
@@ -26,8 +26,8 @@ void globalMeasurement::setupMeasurement(mpo<std::complex<double> > *MPOperatorI
 //---------------------------------------------------------------------------------------------------//
 
 void globalMeasurement::measureFull(double &lambda){
-  std::unique_ptr<std::complex<double> >targetPctrP(new std::complex<double>[MPState->maxDim()*MPState->maxDim()*MPOperator->maxDim()]);
-  std::complex<double> *targetPctr=targetPctrP.get();
+  std::unique_ptr<mpsEntryType >targetPctrP(new mpsEntryType[MPState->maxDim()*MPState->maxDim()*MPOperator->maxDim()]);
+  mpsEntryType *targetPctr=targetPctrP.get();
   targetPctr[0]=1.0;
   /*
   for(int i=MPOperator->length()-2;i>=-1;--i){

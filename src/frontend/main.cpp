@@ -268,6 +268,8 @@ void sysSolve(info const &parPack, std::string const &fileName, std::vector<doub
   //Arguments of simPars: D, NSweeps, NStages, alpha (initial value), accuracy threshold, minimal tolerance for arpack, initial tolerance for arpack
   simulationParameters simPars(usedD,parPack.nSweeps,parPack.nStages,parPack.alphaInit,parPack.acc,parPack.arpackTolMin,parPack.arpackTol);
   simulation sim(pars,simPars,parPack.Jsc,parPack.gsc,parPack.Wsc,parPack.numPts,parPack.scaling,parPack.delta,fileName,parPack.tPos,parPack.jgScale);
+#ifndef REAL_MPS_ENTRIES
+  // cannot be used with real entries
   if(parPack.simType==2){
     int const d=pars.d.maxd();
     int const L=parPack.L;
@@ -285,6 +287,7 @@ void sysSolve(info const &parPack, std::string const &fileName, std::vector<doub
       cGName.str("");
     }
   }
+#endif
   int const doMeas=(parPack.simType==3 || parPack.simType==0)?((parPack.simType==1)?0:1):2;
   sysSetMeasurements(sim,pars.d.maxd(),parPack.L,doMeas);
   energies.resize(2*sim.E0.size());
@@ -299,22 +302,22 @@ void sysSolve(info const &parPack, std::string const &fileName, std::vector<doub
 void sysSetMeasurements(simulation &sim, int d, int L, int meas){
   int const bulkStart=(L/4>2)?L/4:3;
   int parityQNs[4]={1,-1,-1,1};
-  localMpo<std::complex<double> > greensFunction(d,1,L,1,parityQNs);
-  localMpo<std::complex<double> > densityCorrelation(d,1,L,1,0);
-  localMpo<std::complex<double> > localDensity(d,1,L,0,0);
-  localMpo<std::complex<double> > localDensityB(d,1,L,0,0);
-  localMpo<std::complex<double> > totalDensityCorrelation(d,1,L,1,0);
-  localMpo<std::complex<double> > totalMagnetizationCorrelation(d,1,L,1,0);
-  localMpo<std::complex<double> > interChainCorrelation(d,1,L,1,0);
-  localMpo<std::complex<double> > superconductingOrder(d,1,L,1,0);
-  localMpo<std::complex<double> > interChainDensityCorrelation(d,1,L,1,0);
-  localMpo<std::complex<double> > bulkGreensFunction(d,1,L,bulkStart,parityQNs);
-  localMpo<std::complex<double> > bulkDensityCorrelation(d,1,L,bulkStart,0);
-  localMpo<std::complex<double> > bulkInterChainCorrelation(d,1,L,bulkStart,parityQNs);
-  localMpo<std::complex<double> > bulkSuperconductingOrder(d,1,L,bulkStart,0);
-  localMpo<std::complex<double> > bulkInterChainDensityCorrelation(d,1,L,bulkStart,0);
-  localMpo<std::complex<double> > bulkSuperConductingCorrelation(d,1,L,bulkStart,0,2);
-  localMpo<std::complex<double> > bulkICSuperConductingCorrelation(d,1,L,bulkStart,0,2);
+  localMpo<mpsEntryType > greensFunction(d,1,L,1,parityQNs);
+  localMpo<mpsEntryType > densityCorrelation(d,1,L,1,0);
+  localMpo<mpsEntryType > localDensity(d,1,L,0,0);
+  localMpo<mpsEntryType > localDensityB(d,1,L,0,0);
+  localMpo<mpsEntryType > totalDensityCorrelation(d,1,L,1,0);
+  localMpo<mpsEntryType > totalMagnetizationCorrelation(d,1,L,1,0);
+  localMpo<mpsEntryType > interChainCorrelation(d,1,L,1,0);
+  localMpo<mpsEntryType > superconductingOrder(d,1,L,1,0);
+  localMpo<mpsEntryType > interChainDensityCorrelation(d,1,L,1,0);
+  localMpo<mpsEntryType > bulkGreensFunction(d,1,L,bulkStart,parityQNs);
+  localMpo<mpsEntryType > bulkDensityCorrelation(d,1,L,bulkStart,0);
+  localMpo<mpsEntryType > bulkInterChainCorrelation(d,1,L,bulkStart,parityQNs);
+  localMpo<mpsEntryType > bulkSuperconductingOrder(d,1,L,bulkStart,0);
+  localMpo<mpsEntryType > bulkInterChainDensityCorrelation(d,1,L,bulkStart,0);
+  localMpo<mpsEntryType > bulkSuperConductingCorrelation(d,1,L,bulkStart,0,2);
+  localMpo<mpsEntryType > bulkICSuperConductingCorrelation(d,1,L,bulkStart,0,2);
   std::string gFName="Intrachain correlation";
   std::string dCName="Intrachain density correlation";
   std::string lDName="Local density";

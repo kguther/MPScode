@@ -4,6 +4,7 @@
 #include "templates/localMpo.h"
 #include "network.h"
 #include "delta.h"
+#include "mpstype.h"
 #include <complex>
 
 //---------------------------------------------------------------------------------------------------//
@@ -16,7 +17,7 @@ double bMatrix(int const a, int const b);
 int writePhasedSecondOrder(localMpo<std::complex<double> > &gamma, double theta);
 int writeHamiltonian(network &sys, double J, double g, double W, std::complex<double> t ,double deltaP=0, int tSite=-1);
 double disorder(double deltaP);
-std::complex<double> tLocalScale(int i);
-std::complex<double> tSingleSite(int i, int targetSite);
+mpsEntryType tLocalScale(int i);
+mpsEntryType tSingleSite(int i, int targetSite);
 
 #endif

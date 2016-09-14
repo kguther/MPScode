@@ -1,12 +1,12 @@
 #include "mps.h"
 #include "arrayprocessing.h"
-#include "mkl_complex_defined.h"
+#include "linalgWrapper.h"
 #include "exceptionClasses.h"
 #include <cmath>
 #include <memory>
 #include <iostream>
 
-void translateBlocks(baseTensor<std::complex<double> > const &source, siteQNOrderMatrix const &sourceTable, baseTensor<std::complex<double> > &target, siteQNOrderMatrix const &targetTable);
+void translateBlocks(baseTensor<mpsEntryType > const &source, siteQNOrderMatrix const &sourceTable, baseTensor<mpsEntryType > &target, siteQNOrderMatrix const &targetTable);
 
 mps::mps():stateArray()
 {}
@@ -167,7 +167,7 @@ int mps::setParameterD(int Dnew){
       siteDims[2]=dimInfo.locDimL(i);
       siteDims[1]=dimInfo.locDimR(i);
       siteDims[0]=dimInfo.locd(i);
-      baseTensor<std::complex<double> > newSiteMatrix(siteDims);
+      baseTensor<mpsEntryType > newSiteMatrix(siteDims);
       translateBlocks(getStateArrayEntry(i),backupIndexTableVar.getLocalIndexTable(i),newSiteMatrix,indexTableVar.getLocalIndexTable(i));
       setStateArrayEntry(i,newSiteMatrix);
     }
@@ -219,7 +219,7 @@ void mps::rightNormalizeState(int i){
 //---------------------------------------------------------------------------------------------------//
 
 void mps::normalizeFinal(int i){
-  lapack_complex_double normalization;
+  mpsEntryType normalization;
   int site, lcD,ld;
   if(i){
     site=0;
@@ -231,11 +231,11 @@ void mps::normalizeFinal(int i){
   }
   ld=locd(site);
   //Normalize last matrices to maintain normalization of state
-  lapack_complex_double *finalArray;
+  mpsEntryType *finalArray;
   subMatrixStart(finalArray,site);
-  normalization=cblas_dznrm2(ld*lcD,finalArray,1);
+  normalization=cblas_norm(ld*lcD,finalArray,1);
   normalization=1.0/normalization;
-  cblas_zscal(ld*lcD,&normalization,finalArray,1);
+  cblas_scal(ld*lcD,&normalization,finalArray,1);
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -250,18 +250,22 @@ void mps::leftNormalizeStateBlockwise(int i){
   int ld, lDR, lDL, lDRR;
   int lBlockSize,rBlockSize;
   int aiCurrent, siCurrent, aimCurrent, aipCurrent;
-  lapack_complex_double *M, *R;
-  lapack_complex_double *Rcontainer, *Qcontainer;
-  lapack_complex_double *inputA;
-  lapack_complex_double zone=1.0, zzero=0.0;
+  mpsEntryType *M, *R;
+  mpsEntryType *Rcontainer, *Qcontainer;
+  mpsEntryType *inputA;
+  mpsEntryType zone=1.0, zzero=0.0;
   lapack_int info;
   lDL=locDimL(i);
   lDR=locDimR(i);
   lDRR=locDimR(i+1);
   ld=locd(i);
-  std::unique_ptr<lapack_complex_double[]> RP(new lapack_complex_double[lDR*lDR]);
-  std::unique_ptr<lapack_complex_double[]> MP, QP, RcP;
+  std::unique_ptr<mpsEntryType[]> RP(new mpsEntryType[lDR*lDR]);
+  std::unique_ptr<mpsEntryType[]> MP, QP, RcP;
   R=RP.get();
+  //not all entries of R are set via decomposition, but all are used
+  for(int m=0;m<lDR*lDR;++m){
+    R[m]=0.0;
+  }
   siteQNOrderMatrix const localIndexTable=indexTableVar.getLocalIndexTable(i);
   for(int iBlock=0;iBlock<localIndexTable.numBlocksLP();++iBlock){
     rBlockSize=localIndexTable.rBlockSizeLP(iBlock);
@@ -269,7 +273,7 @@ void mps::leftNormalizeStateBlockwise(int i){
     //rBlockSize is required to be smaller than or equal to lBlockSize
     if(rBlockSize!=0 && lBlockSize!=0){
       //We do not normalize empty blocks
-      MP.reset(new lapack_complex_double[lBlockSize*rBlockSize]);
+      MP.reset(new mpsEntryType[lBlockSize*rBlockSize]);
       M=MP.get();
       //First, copy the content of the block to some dummy array
       for(int j=0;j<rBlockSize;++j){
@@ -278,17 +282,25 @@ void mps::leftNormalizeStateBlockwise(int i){
 	  M[k+j*lBlockSize]=global_access(i,siCurrent,aiCurrent,aimCurrent);
 	}
       }
-      RcP.reset(new lapack_complex_double[rBlockSize*rBlockSize]);
-      QP.reset(new lapack_complex_double[rBlockSize]);
+      RcP.reset(new mpsEntryType[rBlockSize*rBlockSize]);
+      QP.reset(new mpsEntryType[rBlockSize]);
       Rcontainer=RcP.get();
       Qcontainer=QP.get();
       //Make a QR decomposition of that dummy array
+#ifdef REAL_MPS_ENTRIES
+      info=LAPACKE_dgeqrf(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,M,lBlockSize,Qcontainer);
+#else
       info=LAPACKE_zgeqrf(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,M,lBlockSize,Qcontainer);
+#endif
       if(info){
 	std::cout<<"Error in LAPACKE_zgeqrf: "<<info<<" with block sizes: "<<lBlockSize<<"x"<<rBlockSize<<" at site "<<i<<std::endl;
       }
       auxiliary::lowerdiag(rBlockSize,rBlockSize,M,Rcontainer,lBlockSize);
+#ifdef REAL_MPS_ENTRIES
+      info=LAPACKE_dorgqr(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,rBlockSize,M,lBlockSize,Qcontainer);
+#else
       info=LAPACKE_zungqr(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,rBlockSize,M,lBlockSize,Qcontainer);
+#endif
       if(info){
 	std::cout<<"Error in LAPACKE_zungqr: "<<info<<" with block sizes: "<<lBlockSize<<"x"<<rBlockSize<<" at site "<<i<<std::endl;
       }
@@ -308,13 +320,13 @@ void mps::leftNormalizeStateBlockwise(int i){
     }
   }
   //Finally, multiply the uncompressed matrix R into the next MPS matrix. Block structure does not need to be adressed explicitly, since they both have the required structure.
-  std::unique_ptr<lapack_complex_double[]> inputAP(new lapack_complex_double[lDR*lDRR]);
+  std::unique_ptr<mpsEntryType[]> inputAP(new mpsEntryType[lDR*lDRR]);
   inputA=inputAP.get();
-  lapack_complex_double *localMatrix;
+  mpsEntryType *localMatrix;
   for(int si=0;si<ld;++si){
     subMatrixStart(localMatrix,i+1,si);
     auxiliary::arraycpy(lDRR,lDR,localMatrix,inputA);
-    cblas_zgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,lDR,lDRR,lDR,&zone,R,lDR,inputA,lDR,&zzero,localMatrix,lDR);
+    cblas_gemm(CblasColMajor,CblasNoTrans,CblasNoTrans,lDR,lDRR,lDR,&zone,R,lDR,inputA,lDR,&zzero,localMatrix,lDR);
   }
 }
 
@@ -324,25 +336,29 @@ void mps::rightNormalizeStateBlockwise(int i){
   int ld, lDR, lDL, lDLL;
   int lBlockSize,rBlockSize;
   int aiCurrent, siCurrent, aimCurrent, aimpCurrent;
-  lapack_complex_double *M, *R;
-  lapack_complex_double *Rcontainer, *Qcontainer;
-  lapack_complex_double *inputA;
-  lapack_complex_double zone=1.0, zzero=0.0;
+  mpsEntryType *M, *R;
+  mpsEntryType *Rcontainer, *Qcontainer;
+  mpsEntryType *inputA;
+  mpsEntryType zone=1.0, zzero=0.0;
   lapack_int info;
   lDL=locDimL(i);
   lDR=locDimR(i);
   lDLL=locDimL(i-1);
   ld=locd(i);
-  std::unique_ptr<lapack_complex_double[]> RP(new lapack_complex_double[lDL*lDL]);
-  std::unique_ptr<lapack_complex_double[]> MP, RcP, QP;
+  std::unique_ptr<mpsEntryType[]> RP(new mpsEntryType[lDL*lDL]);
+  std::unique_ptr<mpsEntryType[]> MP, RcP, QP;
   R=RP.get();
+  //not all entries of R are set in the decomposition
+  for(int m=0;m<lDL*lDL;++m){
+    R[m]=0.0;
+  }
   siteQNOrderMatrix const localIndexTable=indexTableVar.getLocalIndexTable(i);
   for(int iBlock=0;iBlock<indexTableVar.numBlocksRP(i);++iBlock){
     lBlockSize=localIndexTable.lBlockSizeRP(iBlock);
     rBlockSize=localIndexTable.rBlockSizeRP(iBlock);
     //lBlockSize is required to be smaller than or equal to rBlockSize
     if(rBlockSize!=0 && lBlockSize!=0){
-      MP.reset(new lapack_complex_double[lBlockSize*rBlockSize]);
+      MP.reset(new mpsEntryType[lBlockSize*rBlockSize]);
       M=MP.get();
       for(int j=0;j<rBlockSize;++j){
 	for(int k=0;k<lBlockSize;++k){
@@ -350,16 +366,24 @@ void mps::rightNormalizeStateBlockwise(int i){
 	  M[k+j*lBlockSize]=global_access(i,siCurrent,aiCurrent,aimCurrent);
 	}
       }
-      RcP.reset(new lapack_complex_double[lBlockSize*lBlockSize]);
-      QP.reset(new lapack_complex_double[rBlockSize]);
+      RcP.reset(new mpsEntryType[lBlockSize*lBlockSize]);
+      QP.reset(new mpsEntryType[rBlockSize]);
       Rcontainer=RcP.get();
       Qcontainer=QP.get();
+#ifdef REAL_MPS_ENTRIES
+      info=LAPACKE_dgerqf(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,M,lBlockSize,Qcontainer);
+#else
       info=LAPACKE_zgerqf(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,M,lBlockSize,Qcontainer);
+#endif
       if(info){
 	std::cout<<"Error in LAPACKE_zgerqf: "<<info<<" with block sizes: "<<lBlockSize<<"x"<<rBlockSize<<" at site "<<i<<std::endl;
       }
       auxiliary::lowerdiag(lBlockSize,lBlockSize,M+(rBlockSize-lBlockSize)*lBlockSize,Rcontainer);
+#ifdef REAL_MPS_ENTRIES
+      info=LAPACKE_dorgrq(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,lBlockSize,M,lBlockSize,Qcontainer);
+#else
       info=LAPACKE_zungrq(LAPACK_COL_MAJOR,lBlockSize,rBlockSize,lBlockSize,M,lBlockSize,Qcontainer);
+#endif
       if(info){
 	std::cout<<"Error in LAPACKE_zungrq: "<<info<<" with block sizes: "<<lBlockSize<<"x"<<rBlockSize<<" at site "<<i<<std::endl;
       }
@@ -376,13 +400,14 @@ void mps::rightNormalizeStateBlockwise(int i){
       }
     }
   }
-  std::unique_ptr<lapack_complex_double[]> inputAP(new lapack_complex_double[lDL*lDLL]);
-  lapack_complex_double *localMatrix;
+  std::unique_ptr<mpsEntryType[]> inputAP(new mpsEntryType[lDL*lDLL]);
+  mpsEntryType *localMatrix;
+  mpsEntryType *test;
   inputA=inputAP.get();
   for(int si=0;si<ld;++si){
     subMatrixStart(localMatrix,i-1,si);
     auxiliary::arraycpy(lDLL*lDL,localMatrix,inputA);
-    cblas_zgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,lDLL,lDL,lDL,&zone,inputA,lDLL,R,lDL,&zzero,localMatrix,lDLL);
+    cblas_gemm(CblasColMajor,CblasNoTrans,CblasNoTrans,lDLL,lDL,lDL,&zone,inputA,lDLL,R,lDL,&zzero,localMatrix,lDLL);
   }
 }
 
@@ -399,11 +424,11 @@ void mps::leftNormalizePrimitive(int i){
   D2=locDimR(i);
   D3=locDimR(i+1);
   ld=locd(i);
-  lapack_complex_double *Rcontainer, *Qcontainer, *localMatrix;
-  const lapack_complex_double zone=1.0;
-  std::unique_ptr<lapack_complex_double[]> Qp(new lapack_complex_double[D2]);
+  mpsEntryType *Rcontainer, *Qcontainer, *localMatrix;
+  const mpsEntryType zone=1.0;
+  std::unique_ptr<mpsEntryType[]> Qp(new mpsEntryType[D2]);
   Qcontainer=Qp.get();//Used for storage of lapack-internal matrices
-  std::unique_ptr<lapack_complex_double[]> Rp(new lapack_complex_double[D2*D2]);//Used for storage of R from RQ decomposition
+  std::unique_ptr<mpsEntryType[]> Rp(new mpsEntryType[D2*D2]);//Used for storage of R from RQ decomposition
   Rcontainer=Rp.get();
   //Enable use of LAPACK_ROW_MAJOR which is necessary here due to the applied storage scheme
   for(int si=0;si<ld;++si){
@@ -412,10 +437,18 @@ void mps::leftNormalizePrimitive(int i){
   }
   //Use thin QR decomposition
   subMatrixStart(localMatrix,i);
+#ifdef REAL_MPS_ENTRIES
+  info=LAPACKE_dgeqrf(LAPACK_ROW_MAJOR,ld*D1,D2,localMatrix,D2,Qcontainer);
+#else
   info=LAPACKE_zgeqrf(LAPACK_ROW_MAJOR,ld*D1,D2,localMatrix,D2,Qcontainer);
+#endif
   auxiliary::upperdiag(D2,D2,localMatrix,Rcontainer);
   //Only first D2 columns are used -> thin QR (below icrit, this is equivalent to a full QR)
+#ifdef REAL_MPS_ENTRIES
+  info=LAPACKE_dorgqr(LAPACK_ROW_MAJOR,ld*D1,D2,D2,localMatrix,D2,Qcontainer);
+#else
   info=LAPACKE_zungqr(LAPACK_ROW_MAJOR,ld*D1,D2,D2,localMatrix,D2,Qcontainer);
+#endif
   if(info){
     std::cout<<"Error in LAPACKE_zungqr: "<<info<<" At site: "<<i<<" With dimensions: "<<D2<<"x"<<D1<<" and local Hilbert space dimension: "<<ld<<std::endl;
   }
@@ -424,7 +457,7 @@ void mps::leftNormalizePrimitive(int i){
     subMatrixStart(localMatrix,i,si);
     auxiliary::transp(D1,D2,localMatrix);
     subMatrixStart(localMatrix,i+1,si);
-    cblas_ztrmm(CblasColMajor,CblasLeft,CblasUpper,CblasNoTrans,CblasNonUnit,D2,D3,&zone,Rcontainer,D2,localMatrix,D2);
+    cblas_trmm(CblasColMajor,CblasLeft,CblasUpper,CblasNoTrans,CblasNonUnit,D2,D3,&zone,Rcontainer,D2,localMatrix,D2);
     //here, R is packed into the matrices of the next site
   }                                             
 }
@@ -439,24 +472,32 @@ void mps::rightNormalizePrimitive(int i){
   D2=locDimL(i);
   D3=locDimL(i-1);
   ld=locd(i);
-  lapack_complex_double *Rcontainer, *Qcontainer, *localMatrix;
-  const lapack_complex_double zone=1.0;
-  std::unique_ptr<lapack_complex_double[]> QP(new lapack_complex_double[ld*D1]);
-  std::unique_ptr<lapack_complex_double[]> RP(new lapack_complex_double[D2*D2]);
+  mpsEntryType *Rcontainer, *Qcontainer, *localMatrix;
+  const mpsEntryType zone=1.0;
+  std::unique_ptr<mpsEntryType[]> QP(new mpsEntryType[ld*D1]);
+  std::unique_ptr<mpsEntryType[]> RP(new mpsEntryType[D2*D2]);
   Qcontainer=QP.get();
   Rcontainer=RP.get();
   //Thats how zgerqf works: the last D2 columns contain the upper trigonal matrix R, to adress them, move D2 from the end
   subMatrixStart(localMatrix,i);
+#ifdef REAL_MPS_ENTRIES
+  info=LAPACKE_dgerqf(LAPACK_COL_MAJOR,D2,ld*D1,localMatrix,D2,Qcontainer);
+#else
   info=LAPACKE_zgerqf(LAPACK_COL_MAJOR,D2,ld*D1,localMatrix,D2,Qcontainer);
+#endif
   //lowerdiag does get an upper trigonal matrix in column major ordering, dont get confused
   auxiliary::lowerdiag(D2,D2,localMatrix+D2*(ld*D1-D2),Rcontainer);
+#ifdef REAL_MPS_ENTRIES
+  info=LAPACKE_dorgrq(LAPACK_COL_MAJOR,D2,ld*D1,D2,localMatrix,D2,Qcontainer);
+#else
   info=LAPACKE_zungrq(LAPACK_COL_MAJOR,D2,ld*D1,D2,localMatrix,D2,Qcontainer);
+#endif
   if(info){
     std::cout<<"ERROR IN LAPACKE_zungrq:"<<info<<" At site: "<<i<<" With dimensions: "<<D2<<"x"<<D1<<" and local Hilbert space dimension: "<<ld<<std::endl;
   }
   for(int si=0;si<ld;++si){
     subMatrixStart(localMatrix,i-1,si);
-    cblas_ztrmm(CblasColMajor,CblasRight,CblasUpper,CblasNoTrans,CblasNonUnit,D3,D2,&zone,Rcontainer,D2,localMatrix,D3);
+    cblas_trmm(CblasColMajor,CblasRight,CblasUpper,CblasNoTrans,CblasNonUnit,D3,D2,&zone,Rcontainer,D2,localMatrix,D3);
   }  
 }
 
@@ -491,7 +532,7 @@ void mps::restoreQN(int i){
     for(int si=0;si<ld;++si){
       for(int ai=0;ai<lDR;++ai){
 	for(int aim=0;aim<lDL;++aim){
-	  if(real((conservedQNs[iQN].QNLabel(i,ai)-conservedQNs[iQN].QNLabel(i-1,aim)-conservedQNs[iQN].QNLabel(si))) && abs(global_access(i,si,ai,aim))>0.000001){
+	  if(real((conservedQNs[iQN].QNLabel(i,ai)-conservedQNs[iQN].QNLabel(i-1,aim)-conservedQNs[iQN].QNLabel(si))) && std::abs(global_access(i,si,ai,aim))>0.000001){
 	    global_access(i,si,ai,aim)=0;
 	  }
 	}
@@ -510,14 +551,18 @@ void mps::getEntanglementSpectrumOC(int i, double &S, std::vector<double> &spect
   ld=locd(i);
   lDL=locDimL(i);
   lDR=locDimR(i);
-  lapack_complex_double *currentM;
+  mpsEntryType *currentM;
   std::unique_ptr<double> diagsP(new double[lDR]);
   double *diags=diagsP.get();
-  std::unique_ptr<lapack_complex_double[]> AnewP(new lapack_complex_double[lDL*lDR*ld]);
-  lapack_complex_double *Anew=AnewP.get();
+  std::unique_ptr<mpsEntryType[]> AnewP(new mpsEntryType[lDL*lDR*ld]);
+  mpsEntryType *Anew=AnewP.get();
   subMatrixStart(currentM,i);
   auxiliary::arraycpy(ld*lDL*lDR,currentM,Anew);
+#ifdef REAL_MPS_ENTRIES
+  LAPACKE_dgesdd(LAPACK_COL_MAJOR,'N',ld*lDL,lDR,Anew,ld*lDL,diags,0,1,0,1);
+#else
   LAPACKE_zgesdd(LAPACK_COL_MAJOR,'N',ld*lDL,lDR,Anew,ld*lDL,diags,0,1,0,1);
+#endif
   spectrum.clear();
   for(int m=0;m<lDR;++m){
     spectrum.push_back(diags[m]);
@@ -577,7 +622,7 @@ void printQNLabels(mps const &test){
 }
 
 //For adaption of D
-void translateBlocks(baseTensor<std::complex<double> > const &source, siteQNOrderMatrix const &sourceTable, baseTensor<std::complex<double> > &target, siteQNOrderMatrix const &targetTable){
+void translateBlocks(baseTensor<mpsEntryType > const &source, siteQNOrderMatrix const &sourceTable, baseTensor<mpsEntryType > &target, siteQNOrderMatrix const &targetTable){
   //works only if sourceTable is contained in targetTable
   int const numBlocks=sourceTable.numBlocksLP();
   int lBlockSize, rBlockSize;

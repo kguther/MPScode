@@ -23,8 +23,8 @@ simulation::simulation(problemParameters &parsIn, simulationParameters &simParsI
   jgScale(jgScaleIn),
   parDirection(std::complex<double>(J,g)),
   csystem(Qsystem(pars,simPars)),
-  particleNumber(mpo<lapack_complex_double>(pars.d.maxd(),2,pars.L)),
-  subChainParity(mpo<lapack_complex_double>(pars.d.maxd(),1,pars.L))
+  particleNumber(mpo<mpsEntryType>(pars.d.maxd(),2,pars.L)),
+  subChainParity(mpo<mpsEntryType>(pars.d.maxd(),1,pars.L))
 {
  // simulation class can only use nStages=1 (by choice of algorithm)
   E0.resize(pars.nEigs);
@@ -76,7 +76,7 @@ simulation::simulation(problemParameters &parsIn, simulationParameters &simParsI
 
 //---------------------------------------------------------------------------------------------------//
 
-void simulation::setMeasurement(mpo<std::complex<double> > &MPOperator, std::string &operatorName){
+void simulation::setMeasurement(mpo<mpsEntryType > &MPOperator, std::string &operatorName){
   //defines a measurement of some global operator MPOperator in MPO representation
   measureTask.push_back(MPOperator);
   operatorNames.push_back(operatorName);
@@ -84,7 +84,7 @@ void simulation::setMeasurement(mpo<std::complex<double> > &MPOperator, std::str
 
 //---------------------------------------------------------------------------------------------------//
 
-void simulation::setLocalMeasurement(localMpo<std::complex<double> > &localMPOperator, std::string &localOperatorName){
+void simulation::setLocalMeasurement(localMpo<mpsEntryType > &localMPOperator, std::string &localOperatorName){
   //defines a measurement for some operator depending on the site. The expectation value is computed for all sites right to the initial site. 
   localMeasureTask.push_back(localMPOperator);
   localOperatorNames.push_back(localOperatorName);
@@ -153,7 +153,7 @@ void simulation::singleRun(){
   double J,g;
   //Containers for measurements
   std::vector<double> expectationValues;
-  std::vector<std::vector<std::complex<double> > > localExpectationValues;
+  std::vector<std::vector<mpsEntryType > > localExpectationValues;
 
   csystem.TensorNetwork.resetState();
   if(jgScale<=1){

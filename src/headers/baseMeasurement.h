@@ -1,10 +1,10 @@
 #ifndef BASE_MEASUREMENT
 #define BASE_MEASUREMENT
 
-#include <complex>
 #include "templates/mpo.h"
 #include "mps.h"
 #include "templates/contractor.h"
+#include "mpstype.h"
 
 //---------------------------------------------------------------------------------------------------//
 // The baseMeasurement class is the parent class for the measurements used in the network class. 
@@ -15,15 +15,15 @@
 class baseMeasurement{
  protected:
   //Result of iteration is stored in target
-  virtual void calcOuterContainerLeft(int const i, std::complex<double> *const source, tmpContainer<std::complex<double> > &outerContainer);
-  virtual void calcOuterContainerRight(int i, std::complex<double> *const source, tmpContainer<std::complex<double> > &outerContainer);
-  virtual void calcCtrIterLeftBase(int const i, std::complex<double> *const source, std::complex<double> *const targetPctr);
-  virtual void calcCtrIterRightBase(int const i, std::complex<double> *const source, std::complex<double> *const target);
+  virtual void calcOuterContainerLeft(int const i, mpsEntryType *const source, tmpContainer<mpsEntryType > &outerContainer);
+  virtual void calcOuterContainerRight(int i, mpsEntryType *const source, tmpContainer<mpsEntryType > &outerContainer);
+  virtual void calcCtrIterLeftBase(int const i, mpsEntryType *const source, mpsEntryType *const targetPctr);
+  virtual void calcCtrIterRightBase(int const i, mpsEntryType *const source, mpsEntryType *const target);
   baseMeasurement();
-  baseMeasurement(mpo<std::complex<double> > *const MPOperator, mps *const MPState);
-  mpo<std::complex<double> > *MPOperator;
+  baseMeasurement(mpo<mpsEntryType > *const MPOperator, mps *const MPState);
+  mpo<mpsEntryType > *MPOperator;
   mps *MPState;
-  void setupMeasurement(mpo<std::complex<double> > *const MPOperator, mps *const MPState);
+  void setupMeasurement(mpo<mpsEntryType > *const MPOperator, mps *const MPState);
   void initializeBase();
   void getLocalDimensions(int i);
   int lDwL, lDwR, lDL, lDR, ld, D, Dw;

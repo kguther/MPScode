@@ -42,10 +42,13 @@ for filename in filelist:
             errors.append((errES+errGS)/2.0)    
             getPos=filename.split('_N_')[0]
             pos=float(getPos.split('L_')[1])
+            print pos
+            print energyES
+            print energyGS
             baseData.append([pos,energyES-energyGS])
 fs=32
 ls=28         
-  
+marksize=14
 
 x0=33
 x1=110
@@ -59,7 +62,7 @@ for i in [0]:
     deltaE=[x[1] for x in sorter]
     fpars, acc=so.curve_fit(f,positions,deltaE,p0)
     fplot,=plt.loglog(range(x0-1,x1+4),f(range(x0-1,x1+4),fpars[0],fpars[1]),color='k')
-    cplot,=plt.plot(positions[::2],deltaE[::2],'o',ms=11.5,color=colors[i])
+    cplot,=plt.plot(positions[::2],deltaE[::2],'o',ms=marksize,color='b')
     #print fpars
 plt.xlabel('L',fontsize=fs)
 plt.ylabel('Energy gap $\Delta$',fontsize=fs)
@@ -72,5 +75,5 @@ plt.xticks(xt,map(str,xt))
 cplot.set_label('numerical data')
 fplot.set_label('$\Delta=$'+str(fpars[0])[:6]+'$\cdot\,L^{-'+str(fpars[1])[:6]+'}$') 
 plt.legend(loc=1,fontsize=fs,numpoints=1)
-plt.savefig('thesis_plots/revised/top_gap_scaling.pdf')
+plt.savefig('../../Talk/top_gap_scaling.eps')
 plt.show()

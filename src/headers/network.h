@@ -1,7 +1,6 @@
 #ifndef NETWORK
 #define NETWORK
 
-#include <complex>
 #include <vector>
 #include "parameters.h"
 #include "templates/mpo.h"
@@ -11,6 +10,7 @@
 #include "projector.h"
 #include "quantumNumber.h"
 #include "dimensionTable.h"
+#include "mpstype.h"
 
 //---------------------------------------------------------------------------------------------------//
 // The network class contains all information required for a run of the simulation, that is, the whole
@@ -29,16 +29,16 @@ class network{
   int solve(std::vector<double> &lambda, std::vector<double> &deltaLambda);
 
   //Gets the expectation value of some operator MPOperator (input as MPO) for the iEigen-th state if obtained. On exit, expValue contains the result. 
-  void measure(mpo<std::complex<double> > *const MPOperator, double &expValue, int iEigen=0);
+  void measure(mpo<mpsEntryType > *const MPOperator, double &expValue, int iEigen=0);
 
   //Does the same thing as measure() but takes a local operator and moves it across the system, measuring at each site
-  void measureLocalOperators(localMpo<std::complex<double> > *const MPOperator, std::vector<std::complex<double> > &expValue, int iEigen=0);
+  void measureLocalOperators(localMpo<mpsEntryType > *const MPOperator, std::vector<mpsEntryType > &expValue, int iEigen=0);
 
   //Besides observables, also the entanglement spectrum and entropy can be obtained from the MPS
   void getEntanglement(std::vector<double> &S, std::vector<std::vector<double> > &spectrum, int iEigen=0);
 
   //MPO needs to be initialized externally
-  void setNetworkH(mpo<std::complex<double> > const &newH){networkH=newH;}
+  void setNetworkH(mpo<mpsEntryType > const &newH){networkH=newH;}
 
 //---------------------------------------------------------------------------------------------------//
 
@@ -58,11 +58,11 @@ class network{
   void quantumNumberVec(std::vector<quantumNumber> *target){target=&conservedQNs;}
   dimensionTable& dimTable() {return networkDimInfo;}
   int setSimParameters(simulationParameters const &newPars);
-  mpo<std::complex<double> > const& getNetworkH() const {return networkH;}
+  mpo<mpsEntryType > const& getNetworkH() const {return networkH;}
   int locd(int const i);
 
   //This is only for consistency checks
-  mpo<std::complex<double> > *check, *checkParity;
+  mpo<mpsEntryType > *check, *checkParity;
 
 //---------------------------------------------------------------------------------------------------//
 
@@ -75,12 +75,12 @@ class network{
   dimensionTable networkDimInfo;
   int lDL, lDR, ld, lDwR, lDwL;
   mps networkState;
-  mpo<std::complex<double> > networkH;
+  mpo<mpsEntryType > networkH;
   std::vector<int> nConverged;
   double shift, alpha;
   std::vector<quantumNumber> conservedQNs;
   iterativeMeasurement pCtr;
-  std::complex<double> expectationValue;
+  mpsEntryType expectationValue;
   //most of these methods are auxiliary functions
   int pctrIndex(int ai, int bi, int aip){return aip+bi*D+ai*D*Dw;}
   int stateIndex(int si, int ai, int aim){return aim+lDL*ai+lDL*lDR*si;}
@@ -99,8 +99,8 @@ class network{
   void leftEnrichmentBlockwise(int i);
   void rightEnrichmentBlockwise(int i);
   void calcHSqrExpectationValue(double &ioHsqr);
-  void getPExpressionLeft(int i, std::complex<double> *pExpr);
-  void getPExpressionRight(int i, std::complex<double> *pExpr);
+  void getPExpressionLeft(int i, mpsEntryType *pExpr);
+  void getPExpressionRight(int i, mpsEntryType *pExpr);
   void getLocalDimensions(int i);
   //For exception handling
   void resetSweep();
@@ -109,7 +109,7 @@ class network{
   int checkQN();
   int checkEqualWeightState();
   void checkContractions(int i);
-  std::complex<double> *backupCtr;
+  mpsEntryType *backupCtr;
 };
 
 #endif

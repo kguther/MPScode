@@ -1,6 +1,6 @@
 #include "delta.h"
 #include "heisenbergChain.h"
-#include <complex>
+#include "mpstype.h"
 #include <cmath>
 
 double upMatrix(int a, int b);
@@ -11,7 +11,7 @@ double bosonMatrix(int a, int b);
 
 //bose-Hubbard with NN-Interaction
 
-void generateBoseHubbard(int d, double V, double U, mpo<std::complex<double> > &H){
+void generateBoseHubbard(int d, double V, double U, mpo<mpsEntryType > &H){
   int lDwL, lDwR;
   int const L=H.length();
   for(int i=0;i<L;++i){
@@ -85,7 +85,7 @@ void generateBoseHubbard(int d, double V, double U, mpo<std::complex<double> > &
   }
 }
 
-void generateHubbardHamiltonian(double t, double U, mpo<std::complex<double> > &H){
+void generateHubbardHamiltonian(double t, double U, mpo<mpsEntryType > &H){
   int lDwL, lDwR;
   int const d=4;
   int const L=H.length();
@@ -168,7 +168,7 @@ void generateHubbardHamiltonian(double t, double U, mpo<std::complex<double> > &
 
 /*
 //Free fermions with pbc
-void generateFFHamiltonian(mpo<std::complex<double> > &H){
+void generateFFHamiltonian(mpo<mpsEntryType > &H){
   int lDwR, lDwL;
   int const Dw=6;
   int const d=4;
@@ -259,7 +259,7 @@ void generateFFHamiltonian(mpo<std::complex<double> > &H){
 }
 */
 
-void generateHeisenbergHamiltonian(mpo<std::complex<double> > &H){
+void generateHeisenbergHamiltonian(mpo<mpsEntryType > &H){
   int lDwR, lDwL;
   int const Dw=5;
   int const d=2;
@@ -390,14 +390,14 @@ int main(int argc, char *argv[]){
   std::complex<int> QNValue[1]={std::complex<int>(nUp,0)};
   std::complex<int> QNList[2]={std::complex<int>(0,1),std::complex<int>(1,1)};
   localHSpaces localHilbertSpaceDims(d);
-  mpo<arcomplex<double> > Heisenberg(d,Dw,L);
+  mpo<mpsEntryType > Heisenberg(d,Dw,L);
   generateHeisenbergHamiltonian(Heisenberg);
   problemParameters pars(localHilbertSpaceDims,L,Dw,1,nQuantumNumbers,QNValue,QNList);
   simulationParameters simPars(D,nSweeps,1,1e-3,1e-7,1e-8,1e-3);
   network sys(pars,simPars);
   sys.setNetworkH(Heisenberg);
-  mpo<std::complex<double> > particleNumber(d,2,L);
-  mpo<std::complex<double> > spin(d,2,L);
+  mpo<mpsEntryType > particleNumber(d,2,L);
+  mpo<mpsEntryType > spin(d,2,L);
   double matEls, spinEls;
   for(int i=0;i<pars.L;++i){
     for(int bi=0;bi<2;++bi){
@@ -445,14 +445,14 @@ int main(int argc, char *argv[]){
     std::complex<int> QNValue[2]={std::complex<int>(N,0),std::complex<int>(up,0)};
     std::complex<int> QNList[8]={std::complex<int>(0,1),std::complex<int>(1,1),std::complex<int>(2,1),std::complex<int>(3,1),std::complex<int>(0,1),std::complex<int>(0,1),std::complex<int>(1,1),std::complex<int>(1,1)};
     localHSpaces localHilbertSpaceDims(d);
-    mpo<arcomplex<double> > Hubbard(d,Dw,L);
+    mpo<mpsEntryType > Hubbard(d,Dw,L);
     generateBoseHubbard(d,t,U,Hubbard);
     problemParameters pars(localHilbertSpaceDims,L,Dw,1,nQuantumNumbers,QNValue,QNList);
     simulationParameters simPars(D,nSweeps,1,1e-3,1e-7,1e-8,1e-3);
     network sys(pars,simPars);
     sys.setNetworkH(Hubbard);
-    mpo<std::complex<double> > particleNumber(d,2,L);
-    mpo<std::complex<double> > spin(d,2,L);
+    mpo<mpsEntryType > particleNumber(d,2,L);
+    mpo<mpsEntryType > spin(d,2,L);
     double matEls, spinEls;
     for(int i=0;i<pars.L;++i){
       for(int bi=0;bi<2;++bi){
@@ -501,7 +501,7 @@ int other(int argc, char *argv[]){
     double const J=0.9;
     double const g=0.9;
     double const W=1;
-    arcomplex<double> const t=0.0;
+    mpsEntryType const t=0.0;
     std::complex<int> QNValue[1]={std::complex<int>(N,1)};
     std::complex<int> QNList[4]={std::complex<int>(0,1),std::complex<int>(1,1),std::complex<int>(1,-1),std::complex<int>(2,-1)};
     localHSpaces localHilbertSpaceDims(d);
@@ -519,5 +519,51 @@ int other(int argc, char *argv[]){
   return 0;
 }
 
-
+int main(int argc, char *argv[]){
+  int const nQuantumNumbers=1;
+  int D=200;
+  int const L=20;
+  int const nUp=20;
+  int const nSweeps=8;
+  int const d=4;
+  int const Dw=8;
+  std::complex<int> QNValue[1]={std::complex<int>(nUp,0)};
+  std::complex<int> QNList[4]={std::complex<int>(0,1),std::complex<int>(1,1),std::complex<int>(0,1),std::complex<int>(1,1)};
+  localHSpaces localHilbertSpaceDims(d);
+  mpo<mpsEntryType > FF(d,Dw,L);
+  generateFFHamiltonian(FF);
+  problemParameters pars(localHilbertSpaceDims,L,Dw,1,nQuantumNumbers,QNValue,QNList);
+  simulationParameters simPars(D,nSweeps,1,1e-3,1e-7,1e-8,1e-3);
+  network sys(pars,simPars);
+  sys.setNetworkH(FF);
+  mpo<mpsEntryType > particleNumber(d,2,L);
+  mpo<mpsEntryType > spin(d,2,L);
+  double matEls, spinEls;
+  for(int i=0;i<pars.L;++i){
+    for(int bi=0;bi<2;++bi){
+      for(int bim=0;bim<2;++bim){
+	for(int si=0;si<pars.d.maxd();++si){
+	  for(int sip=0;sip<pars.d.maxd();++sip){
+	    matEls=delta(si,sip);
+	    spinEls=delta(si,sip);
+	    if(i!=0 && i!=L-1 && bi==1 && bim==0){
+	      matEls=0.0;
+	      spinEls=0.0;
+	    }
+	    if(bi==0 && bim==particleNumber.locDimL(i)-1){
+	      matEls*=(delta(si,1)+delta(si,2)+2*delta(si,3));
+	    }
+	    particleNumber.global_access(i,si,sip,bi,bim)=matEls;
+	    spin.global_access(i,si,sip,bi,bim)=spinEls;
+	  }
+	}
+      }
+    }
+  }
+  sys.check=&particleNumber;
+  sys.checkParity=&spin;
+  std::vector<double> E0,dE;
+  sys.solve(E0,dE);
+  return 0;
+}
 */

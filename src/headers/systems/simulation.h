@@ -1,23 +1,23 @@
 #ifndef SIMULATION_CONTROL
 #define SIMULATION_CONTROL
 
-#include <complex>
 #include <vector>
 #include <string>
 #include "parameters.h"
 #include "problemOperators.h"
 #include "templates/localMpo.h"
 #include "Qsystem.h"
+#include "mpstype.h"
 
 class simulation{
  public:
   simulation(problemParameters &pars, simulationParameters &simPars, double J, double g, double W, int pathPoints, double stepSize, double deltaPIn, std::string const &targetFile, int tSiteIn=-1, int jgScaleIn=1);
-  void setMeasurement(mpo<std::complex<double> > &MPOperator, std::string &opName);
-  void setLocalMeasurement(localMpo<std::complex<double> > &localMPOperator, std::string &opName);
+  void setMeasurement(mpo<mpsEntryType > &MPOperator, std::string &opName);
+  void setLocalMeasurement(localMpo<mpsEntryType > &localMPOperator, std::string &opName);
   void setEntanglementMeasurement();
   void setEntanglementSpectrumMeasurement();
-  std::vector<mpo<std::complex<double> > > measureTask;
-  std::vector<localMpo<std::complex<double> > > localMeasureTask;
+  std::vector<mpo<mpsEntryType > > measureTask;
+  std::vector<localMpo<mpsEntryType > > localMeasureTask;
   std::vector<double> E0, dE;
   void run();
  private:
@@ -35,8 +35,8 @@ class simulation{
   double scaling, W, deltaP, targetDelta;
   std::complex<double> parDirection;
   std::string filePrefix;
-  mpo<std::complex<double> > particleNumber;
-  mpo<std::complex<double> > subChainParity;
+  mpo<mpsEntryType > particleNumber;
+  mpo<mpsEntryType > subChainParity;
   void singleRun();
 };
 

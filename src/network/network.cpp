@@ -3,7 +3,6 @@
 #include <vector>
 #include <iostream>
 #include <iomanip>
-#include <arscomp.h>
 #include <chrono>
 #include "network.h"
 #include "arrayprocessing.h"
@@ -13,6 +12,14 @@
 #include "localMeasurementSeries.h"
 #include "exactGroundState.h"
 #include "exceptionClasses.h"
+#include "linalgWrapper.h"
+
+//Depending on whether complex MPS are used, a different arpack class is employed
+#ifdef REAL_MPS_ENTRIES
+#include "arssym_patched.h"
+#else
+#include <arscomp.h>
+#endif
 
 //BEWARE: ALL MPS AND MPO NETWORK MATRICES ARE STORED WITH A CONTIGOUS COLUMN INDEX (i.e. transposed with respect to C standard, for better compatibility with LAPACK)
 
@@ -45,7 +52,7 @@ network::network(problemParameters const &inputpars, simulationParameters const 
   check(0),
   checkParity(0)
 {
-  networkH=mpo<lapack_complex_double>(pars.d.maxd(),Dw,L);
+  networkH=mpo<mpsEntryType>(pars.d.maxd(),Dw,L);
   nConverged.resize(pars.nEigs);
   for(int iEigen=0;iEigen<nConverged.size();++iEigen){
     nConverged[iEigen]=1;
@@ -191,10 +198,12 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
     int const sec=(pars.nQNs>1)?1:0;
     double alphaBuf=alpha;
     alpha=0.0;
+    //Initial right-normalization, no enrichment needed here (sec=0) if only one U(1)xZ_2 QN is fixed
     for(int i=L-1;i>0;--i){
       normalize(i,0,sec);
     }
     alpha=alphaBuf;
+    //Set the norm of the state to 1
     networkState.normalizeFinal(1);
 #ifdef QNCHECK
     overlap test;
@@ -353,11 +362,11 @@ void network::sweep(double maxIter, double tol, double &lambda){
 
 int network::optimize(int i, int maxIter, double tol, double &iolambda){
   //Invokes ARPACK++ to solve the eigenvalue problem
-  std::complex<double> lambda;
-  std::complex<double> *plambda;
-  std::complex<double> *currentM;
-  std::complex<double> *RTerm, *LTerm;
-  void (optHMatrix::*multMv)(std::complex<double> *v, std::complex<double> *w);
+  mpsEntryType lambda;
+  mpsEntryType *plambda;
+  mpsEntryType *currentM;
+  mpsEntryType *RTerm, *LTerm;
+  void (optHMatrix::*multMv)(mpsEntryType *v, mpsEntryType *w);
   int nconv;
   //Get the projector onto the space orthogonal to any lower lying states
   //Get the current partial contractions and site matrix of the Hamiltonian
@@ -370,7 +379,6 @@ int network::optimize(int i, int maxIter, double tol, double &iolambda){
   plambda=&lambda;
   //Using the current site matrix as a starting point allows for much faster convergence as it has already been optimized in previous sweeps (except for the first sweep, this is where a good starting point has to be guessed)
   networkState.subMatrixStart(currentM,i);
-
   //Check step useful whenever something in the normalization or optimization is adjusted
 #ifdef QNCHECK
   double spinCheck=0;
@@ -392,9 +400,13 @@ int network::optimize(int i, int maxIter, double tol, double &iolambda){
     //If there is some problem with arpack at first/last site, disable QN optimized solution on those sites
     blockHMatrix BMat(RTerm, LTerm,&networkH,networkDimInfo,Dw,i,&(networkState.indexTable().getLocalIndexTable(i)),&excitedStateP,shift,&conservedQNs);
     BMat.prepareInput(currentM);
-    std::complex<double> *compressedVector=BMat.getCompressedVector();
+    mpsEntryType *compressedVector=BMat.getCompressedVector();
     if(BMat.dim()>1){
+#ifdef REAL_MPS_ENTRIES
+      ARSymStdEig<double, blockHMatrix> eigProblemBlocked(BMat.dim(),1,&BMat,&blockHMatrix::MultMvBlocked,"SA",0,tol,maxIter,compressedVector);     
+#else
       ARCompStdEig<double, blockHMatrix> eigProblemBlocked(BMat.dim(),1,&BMat,&blockHMatrix::MultMvBlocked,"SR",0,tol,maxIter,compressedVector);
+#endif
       nconv=eigProblemBlocked.EigenValVectors(compressedVector,plambda);
     std::cout<<"Number of iterations taken: "<<eigProblemBlocked.GetIter()<<std::endl;
     }
@@ -413,11 +425,14 @@ int network::optimize(int i, int maxIter, double tol, double &iolambda){
     //Generate matrix which is to be passed to ARPACK++
     optHMatrix HMat(RTerm,LTerm,&networkH,networkDimInfo,Dw,i,&excitedStateP,shift,&conservedQNs);
     //Note that the types given do and have to match the ones in the projector class if more than one eigenvalue is computed
+#ifdef REAL_MPS_ENTRIES
+    ARSymStdEig<double, optHMatrix> eigProblem(HMat.dim(),1,&HMat,multMv,"SA",0,tol,maxIter,currentM);
+#else
     ARCompStdEig<double, optHMatrix> eigProblem(HMat.dim(),1,&HMat,multMv,"SR",0,tol,maxIter,currentM);
+#endif
     //One should avoid to hit the maximum number of iterations since this can lead into a suboptimal site matrix, increasing the current energy (although usually not by a lot)
     nconv=eigProblem.EigenValVectors(currentM,plambda);
   }
-
   if(nconv!=1){
     std::cout<<"Failed to converge in iterative eigensolver, number of Iterations taken: "<<maxIter<<" With tolerance "<<tol<<std::endl;
     return 1;
@@ -435,6 +450,13 @@ int network::optimize(int i, int maxIter, double tol, double &iolambda){
 //---------------------------------------------------------------------------------------------------//
 
 void network::normalize(int i, int direction, int enrichment){
+  for(int j=0;j<L;++j){
+    mpsEntryType *RTerm, *LTerm;
+    pCtr.Lctr.subContractionStart(LTerm,j);
+    pCtr.Rctr.subContractionStart(RTerm,j);
+    nancheck(D*D*Dw,LTerm);
+    nancheck(D*D*Dw,RTerm);
+  }
   if(direction){
     if(enrichment){
       if(pars.nQNs){
@@ -505,8 +527,8 @@ double network::convergenceCheck(){
 //---------------------------------------------------------------------------------------------------//
 
 void network::calcHSqrExpectationValue(double &ioHsqr){
-  mpo<lapack_complex_double> Hsqr(networkState.siteDim(),Dw*Dw,L);
-  lapack_complex_double simpleContainer;
+  mpo<mpsEntryType> Hsqr(networkState.siteDim(),Dw*Dw,L);
+  mpsEntryType simpleContainer;
   for(int i=0;i<L;++i){
     getLocalDimensions(i);
     for(int si=0;si<ld;++si){
@@ -547,7 +569,7 @@ int network::gotoNextEigen(){
 // Interface function to compute the expectation value of some operator in MPO representation. 
 //---------------------------------------------------------------------------------------------------//
 
-void network::measure(mpo<lapack_complex_double> *const MPOperator, double &lambda, int iEigen){
+void network::measure(mpo<mpsEntryType> *const MPOperator, double &lambda, int iEigen){
   mps *measureState;
   if(excitedStateP.nEigen()>=iEigen){
     if(excitedStateP.nEigen()==iEigen){
@@ -563,7 +585,7 @@ void network::measure(mpo<lapack_complex_double> *const MPOperator, double &lamb
 
 //---------------------------------------------------------------------------------------------------//
 
-void network::measureLocalOperators(localMpo<lapack_complex_double> *const MPOperator, std::vector<lapack_complex_double> &lambda, int iEigen){
+void network::measureLocalOperators(localMpo<mpsEntryType> *const MPOperator, std::vector<mpsEntryType> &lambda, int iEigen){
   mps *measureState;
   //This is for measuring the network state during calculation, which is useful for consistency checks
   if(excitedStateP.nEigen()>=iEigen){
@@ -619,7 +641,7 @@ int network::checkQN(){
       for(int si=0;si<ld;++si){
 	for(int ai=0;ai<lDR;++ai){
 	  for(int aim=0;aim<lDL;++aim){
-	    if(real((conservedQNs[iQN].QNLabel(i,ai)-conservedQNs[iQN].QNLabel(i-1,aim)-conservedQNs[iQN].QNLabel(si))) && abs(networkState.global_access(i,si,ai,aim))>0.000001){
+	    if(real((conservedQNs[iQN].QNLabel(i,ai)-conservedQNs[iQN].QNLabel(i-1,aim)-conservedQNs[iQN].QNLabel(si))) && std::abs(networkState.global_access(i,si,ai,aim))>0.000001){
 	      //if(abs(networkState.global_access(i,si,ai,aim))>0.0001 && (si!=0 || aim!=0)){
 	      std::cout<<"Violation of quantum number constraint at "<<"("<<i<<", "<<si<<", "<<ai<<", "<<aim<<"): "<<networkState.global_access(i,si,ai,aim)<<std::endl;
 	      std::cout<<"QN Labels: "<<conservedQNs[iQN].QNLabel(i,ai)<<", "<<conservedQNs[iQN].QNLabel(i-1,aim)<<", "<<conservedQNs[iQN].QNLabel(si)<<std::endl;
@@ -639,7 +661,7 @@ int network::checkQN(){
 
 void network::checkContractions(int i){
   /*
-  lapack_complex_double *RTerm;
+  mpsEntryType *RTerm;
   int change=0;
   if(i==8){
     getLocalDimensions(i);
@@ -665,18 +687,18 @@ void network::checkContractions(int i){
       delete[] backupCtr;
     }
     else{
-      backupCtr=new lapack_complex_double [lDR*lDR*lDwR];
+      backupCtr=new mpsEntryType [lDR*lDR*lDwR];
       arraycpy(lDR*lDR*lDwR,RTerm,backupCtr);
     }
   }
   */
   getLocalDimensions(i);
-  std::complex<double> *direct;
-  std::complex<double> *plambda=new std::complex<double>;
-  std::complex<double> *target=new std::complex<double>[ld*lDL*lDR];
-  std::complex<double> *currentM=new std::complex<double>[ld*lDL*lDR];
-  std::complex<double> *RTerm, *LTerm, *HTerm;
-  std::complex<double> lambda;
+  mpsEntryType *direct;
+  mpsEntryType *plambda=new mpsEntryType;
+  mpsEntryType *target=new mpsEntryType[ld*lDL*lDR];
+  mpsEntryType *currentM=new mpsEntryType[ld*lDL*lDR];
+  mpsEntryType *RTerm, *LTerm, *HTerm;
+  mpsEntryType lambda;
   pCtr.Lctr.subContractionStart(LTerm,i);
   pCtr.Rctr.subContractionStart(RTerm,i);
   networkH.subMatrixStart(HTerm,i);
@@ -697,13 +719,13 @@ void network::checkContractions(int i){
   //eigProblem.EigenValVectors(currentM,plambda);
   HMat.MultMvQNConserving(currentM,currentM);
   double normb; 
-  normb=cblas_dznrm2(ld*lDL*lDR,target,1);
+  normb=cblas_norm(ld*lDL*lDR,target,1);
   for(int m=0;m<ld*lDL*lDR;++m){
     target[m]-=currentM[m];
   }
-  double test=cblas_dznrm2(ld*lDL*lDR,target,1);
+  double test=cblas_norm(ld*lDL*lDR,target,1);
   std::cout<<"Verification: "<<test<<std::endl;
-  std::cout<<"Eigenvec norm: "<<cblas_dznrm2(ld*lDL*lDR,currentM,1)<<"\t"<<normb<<std::endl;
+  std::cout<<"Eigenvec norm: "<<cblas_norm(ld*lDL*lDR,currentM,1)<<"\t"<<normb<<std::endl;
   if(test>1e-15){
     //std::cout<<"Eigenvalues: "<<*plambda<<"\t"<<lambda<<std::endl;
     exit(1);

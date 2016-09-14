@@ -10,6 +10,6 @@
 int checkQNConstraint(mps &test, int i);
 /*
 int checkQNConstraint(impBase &test, int i);
-int twositeCheck(impBase &test, arcomplex<double> *M);
+int twositeCheck(impBase &test, mpsEntryType *M);
 */
 #endif

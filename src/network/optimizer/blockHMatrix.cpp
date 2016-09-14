@@ -3,7 +3,7 @@
 #include <iostream>
 #include <memory>
 
-blockHMatrix::blockHMatrix(std::complex<double> *R, std::complex<double> *L, mpo<std::complex<double> > const *Hin, dimensionTable &dimInfo, int Dwin, int iIn, siteQNOrderMatrix const *indexTablein, projector *excitedStateP, double shift, std::vector<quantumNumber> *conservedQNsin, int const cached):
+blockHMatrix::blockHMatrix(mpsEntryType *R, mpsEntryType *L, mpo<mpsEntryType > const *Hin, dimensionTable &dimInfo, int Dwin, int iIn, siteQNOrderMatrix const *indexTablein, projector *excitedStateP, double shift, std::vector<quantumNumber> *conservedQNsin, int const cached):
   optHMatrix(R,L,Hin,dimInfo,Dwin,iIn,excitedStateP,shift,conservedQNsin),
   indexTable(indexTablein)
 {
@@ -42,13 +42,13 @@ blockHMatrix::blockHMatrix(std::complex<double> *R, std::complex<double> *L, mpo
 // out in the unblocked matrix (currently).
 //---------------------------------------------------------------------------------------------------//
 
-void blockHMatrix::MultMvBlocked(std::complex<double> *v, std::complex<double> *w){
+void blockHMatrix::MultMvBlocked(mpsEntryType *v, mpsEntryType *w){
   if(explicitMv){
-    std::unique_ptr<std::complex<double>[]> proxyP(new std::complex<double>[dimension]);
-    std::complex<double> *proxy=proxyP.get();
+    std::unique_ptr<mpsEntryType[]> proxyP(new mpsEntryType[dimension]);
+    mpsEntryType *proxy=proxyP.get();
     excitedStateProject(v);
     auxiliary::arraycpy(dimension,v,proxy);
-    std::complex<double> simpleContainer;
+    mpsEntryType simpleContainer;
     for(int m=0;m<dimension;++m){
       simpleContainer=0;
       for(int spIndex=rowPtr[m];spIndex<rowPtr[m+1];++spIndex){
@@ -69,9 +69,9 @@ void blockHMatrix::MultMvBlocked(std::complex<double> *v, std::complex<double> *
 // version of matrix vector multiplication which scales with D^3.
 //---------------------------------------------------------------------------------------------------//
 
-void blockHMatrix::MultMvBlockedLP(std::complex<double> *v, std::complex<double> *w){
+void blockHMatrix::MultMvBlockedLP(mpsEntryType *v, mpsEntryType *w){
   //blockwise matrix-vector product using efficient caching
-  std::complex<double> simpleContainer;
+  mpsEntryType simpleContainer;
   int const numBlocks=indexTable->numBlocksLP();
   int const sparseSize=HMPO->numEls(i);
   int lBlockSize, rBlockSize, siBlockSize, rBlockSizep;
@@ -80,7 +80,7 @@ void blockHMatrix::MultMvBlockedLP(std::complex<double> *v, std::complex<double>
   HMPO->siSubIndexArrayStart(siIndices,i);
   HMPO->bimSubIndexArrayStart(bimIndices,i);
   HMPO->sipSubIndexArrayStart(sipIndices,i);
-  std::complex<double> const *H;
+  mpsEntryType const *H;
   HMPO->sparseSubMatrixStart(H,i);
   int siB, aiB, aimB, sipS;
   excitedStateProject(v);
@@ -158,7 +158,7 @@ void blockHMatrix::MultMvBlockedLP(std::complex<double> *v, std::complex<double>
 void blockHMatrix::buildSparseHBlocked(){
   int siB, aiB, aimB, aimpB, sipB;
   double treshold=1e-12;
-  std::complex<double> currentEntry;
+  mpsEntryType currentEntry;
   int lBlockSize, rBlockSize, lBlockSizep, rBlockSizep;
   sparseMatrix.clear();
   rowPtr.clear();
@@ -200,9 +200,9 @@ void blockHMatrix::buildSparseHBlocked(){
 // calculate the matrix elements.
 //---------------------------------------------------------------------------------------------------//
 
-std::complex<double> blockHMatrix::HEffEntry(int const si, int const aim, int const ai, int const sip, int const aimp, int const aip){
-  std::complex<double> simpleContainer=0.0;
-  std::complex<double> const *H;
+mpsEntryType blockHMatrix::HEffEntry(int const si, int const aim, int const ai, int const sip, int const aimp, int const aip){
+  mpsEntryType simpleContainer=0.0;
+  mpsEntryType const *H;
   HMPO->subMatrixStart(H,i);
   for(int bi=0;bi<lDwR;++bi){
     //Use the canonical form of a local MPO. This only works for nearest-neighbour terms, for longer ranged interactions, a general sparse storage has to be used.
@@ -222,11 +222,11 @@ std::complex<double> blockHMatrix::HEffEntry(int const si, int const aim, int co
 // Function used as an interface to the projector class used in the computation of excited states.
 //---------------------------------------------------------------------------------------------------//
 
-void blockHMatrix::excitedStateProject(std::complex<double> *v){
+void blockHMatrix::excitedStateProject(mpsEntryType *v){
   if(P){
     if(P->nEigen()){
-      std::unique_ptr<std::complex<double> > vEP(new std::complex<double>[d*lDR*lDL]);
-      std::complex<double> *vExpanded=vEP.get();
+      std::unique_ptr<mpsEntryType > vEP(new mpsEntryType[d*lDR*lDL]);
+      mpsEntryType *vExpanded=vEP.get();
       for(int m=0;m<d*lDR*lDL;++m){
 	vExpanded[m]=0;
       }
@@ -242,7 +242,7 @@ void blockHMatrix::excitedStateProject(std::complex<double> *v){
 // scheme as used in this class.
 //---------------------------------------------------------------------------------------------------//
 
-void blockHMatrix::storageExpand(std::complex<double> *v, std::complex<double> *vExpanded){
+void blockHMatrix::storageExpand(mpsEntryType *v, mpsEntryType *vExpanded){
   int rBlockSize, lBlockSize;
   int const numBlocks=indexTable->numBlocksLP();
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
@@ -258,7 +258,7 @@ void blockHMatrix::storageExpand(std::complex<double> *v, std::complex<double> *
 
 //---------------------------------------------------------------------------------------------------//
 
-void blockHMatrix::storageCompress(std::complex<double> *v, std::complex<double> *vCompressed){
+void blockHMatrix::storageCompress(mpsEntryType *v, mpsEntryType *vCompressed){
   int rBlockSize, lBlockSize;
   int const numBlocks=indexTable->numBlocksLP();
   for(int iBlock=0;iBlock<numBlocks;++iBlock){
@@ -274,12 +274,12 @@ void blockHMatrix::storageCompress(std::complex<double> *v, std::complex<double>
 
 //---------------------------------------------------------------------------------------------------//
 
-void blockHMatrix::prepareInput(std::complex<double> *inputVector){
+void blockHMatrix::prepareInput(mpsEntryType *inputVector){
   storageCompress(inputVector,getCompressedVector());
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-void blockHMatrix::readOutput(std::complex<double> *outputVector){
+void blockHMatrix::readOutput(mpsEntryType *outputVector){
   storageExpand(getCompressedVector(),outputVector);
 }

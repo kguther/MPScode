@@ -29,25 +29,25 @@ class projector{
   void loadScalarProducts(mps const &variationalState, int iEigen);
   void updateScalarProducts(int i, int direction);
   int getProjector(int i);
-  void project(lapack_complex_double *vec, int i);
+  void project(mpsEntryType *vec, int i);
   void storeCurrentState(mps const &source);
   void getStoredState(mps *&target, int iEigen);
   int loadNextState(mps &target, int iEigen);
   int loadNextState(mps &target);
   void storeOrthoState(mps const &source, int iEigen);
-  lapack_complex_double fullOverlap(int k);
+  mpsEntryType fullOverlap(int k);
   int nEigen()const {return nCurrentEigen;}
  private:
   mps *orthoStates;
   overlap *scalarProducts;
   int nCurrentEigen;
-  baseTensor<lapack_complex_double> auxiliaryMatrix;
-  void getGramMatrix(lapack_complex_double *gram, int i);
+  baseTensor<mpsEntryType> auxiliaryMatrix;
+  void getGramMatrix(mpsEntryType *gram, int i);
   void getLocalDimensions(int i);
   void pCpy(projector const &source);
   int ld, lDL, lDR;
   int nEigs, nRelevantEigens;
-  //lapack_complex_double *projectionMatrix;
+  //mpsEntryType *projectionMatrix;
   int vecIndex(int si, int ai, int aim){return aim+ai*lDL+si*lDL*lDR;}
 };
 

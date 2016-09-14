@@ -10,7 +10,7 @@ baseMeasurement::baseMeasurement(){
 
 //---------------------------------------------------------------------------------------------------//
 
-baseMeasurement::baseMeasurement(mpo<std::complex<double> > *const MPOperatorIn, mps *const MPStateIn):
+baseMeasurement::baseMeasurement(mpo<mpsEntryType > *const MPOperatorIn, mps *const MPStateIn):
   MPOperator(MPOperatorIn),
   MPState(MPStateIn)
 {
@@ -28,7 +28,7 @@ void baseMeasurement::initializeBase(){
 
 //---------------------------------------------------------------------------------------------------//
 
-void baseMeasurement::setupMeasurement(mpo<std::complex<double> > *const MPOperatorIn, mps *const MPStateIn){
+void baseMeasurement::setupMeasurement(mpo<mpsEntryType > *const MPOperatorIn, mps *const MPStateIn){
   MPOperator=MPOperatorIn;
   MPState=MPStateIn;
   initializeBase();
@@ -52,8 +52,8 @@ void baseMeasurement::getLocalDimensions(int i){
 // which will usually be the next subcontraction of Rctr.
 //---------------------------------------------------------------------------------------------------//
 
-void baseMeasurement::calcCtrIterLeftBase(int const i, std::complex<double>  *const sourcePctr, std::complex<double>  *const targetPctr){
-  std::complex<double> *siteMatrixState;
+void baseMeasurement::calcCtrIterLeftBase(int const i, mpsEntryType  *const sourcePctr, mpsEntryType  *const targetPctr){
+  mpsEntryType *siteMatrixState;
   MPState->subMatrixStart(siteMatrixState,i-1);
   if(MPState->indexTable().nQNs()){
       calcer.calcLeftContraction(i,MPState->indexTable().getLocalIndexTable(i-1),siteMatrixState,MPOperator->getSiteTensor(i-1),sourcePctr,targetPctr);
@@ -65,8 +65,8 @@ void baseMeasurement::calcCtrIterLeftBase(int const i, std::complex<double>  *co
 
 //---------------------------------------------------------------------------------------------------//
 
-void baseMeasurement::calcCtrIterRightBase(int const i, std::complex<double>  *const sourcePctr, std::complex<double>  *const targetPctr){
-  std::complex<double> *siteMatrixState;
+void baseMeasurement::calcCtrIterRightBase(int const i, mpsEntryType  *const sourcePctr, mpsEntryType  *const targetPctr){
+  mpsEntryType *siteMatrixState;
   MPState->subMatrixStart(siteMatrixState,i+1);
   if(MPState->indexTable().nQNs()){
     //Only this is usually relevant
@@ -79,8 +79,8 @@ void baseMeasurement::calcCtrIterRightBase(int const i, std::complex<double>  *c
 
 //---------------------------------------------------------------------------------------------------//
 
-void baseMeasurement::calcOuterContainerLeft(int const i, std::complex<double>  *const source, tmpContainer<std::complex<double> > &outercontainer){
-  std::complex<double> *siteMatrixState;
+void baseMeasurement::calcOuterContainerLeft(int const i, mpsEntryType  *const source, tmpContainer<mpsEntryType > &outercontainer){
+  mpsEntryType *siteMatrixState;
   MPState->subMatrixStart(siteMatrixState,i-1);
   if(MPState->indexTable().nQNs()){
     calcer.calcLeftOuterContainer(i,MPState->indexTable().getLocalIndexTable(i-1),siteMatrixState,MPOperator->getSiteTensor(i-1),source,outercontainer);
@@ -92,8 +92,8 @@ void baseMeasurement::calcOuterContainerLeft(int const i, std::complex<double>  
 
 //---------------------------------------------------------------------------------------------------//
 
-void baseMeasurement::calcOuterContainerRight(int const i, std::complex<double>  *const source, tmpContainer<std::complex<double> > &outercontainer){
-  std::complex<double> *siteMatrixState;
+void baseMeasurement::calcOuterContainerRight(int const i, mpsEntryType  *const source, tmpContainer<mpsEntryType > &outercontainer){
+  mpsEntryType *siteMatrixState;
   MPState->subMatrixStart(siteMatrixState,i+1);
   if(MPState->indexTable().nQNs()){
     calcer.calcRightOuterContainer(i,MPState->indexTable().getLocalIndexTable(i+1),siteMatrixState,MPOperator->getSiteTensor(i+1),source,outercontainer);

@@ -7,7 +7,7 @@ import os
 filename=sys.argv[1]
 filelist=os.listdir(os.getcwd())
 
-fs=18
+fs=32
 
 def revivalScaling(rev,cmin):
     t=0.1
@@ -50,7 +50,7 @@ def colormap(data):
 markerwidth=15
 if filename in filelist:
     gridData=np.loadtxt(filename,skiprows=1)
-    plt.figure(figsize=(18,13))
+    plt.figure(figsize=(22,13))
     plt.tick_params(labelsize=fs)
     for i in range(0,len(gridData)):
         plt.plot(gridData[i][2],gridData[i][3],'o',ms=markerwidth,color=colormap(gridData[i]))
@@ -58,7 +58,7 @@ if filename in filelist:
     #plt.ylim(ymin=-6,ymax=6.3)
     plt.xlabel('J',fontsize=fs)
     plt.ylabel('g',fontsize=fs)
-    plt.savefig('thesis_plots/perturbativePD_raw.pdf',bbox_inches='tight')
+    plt.savefig('../../Talk/perturbativePD_raw.eps',bbox_inches='tight')
     #plt.show()
 
 plt.close()

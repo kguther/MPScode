@@ -1,11 +1,12 @@
 #include "arrayprocessing.h"
 #include "mkl_complex_defined.h"
 #include <iostream>
+#include "mpstype.h"
 
 using namespace std;
 namespace auxiliary{
 
-void matrixprint(int n, int m, arcomplex<double> *array){
+void matrixprint(int n, int m, mpsEntryType *array){
   //The second argument is always the contigous index
   //Prints col major
   for(int j=0;j<m;j++){
@@ -18,7 +19,7 @@ void matrixprint(int n, int m, arcomplex<double> *array){
 }
 
 //---------------------------------------------------------------------------------------------------//
-
+/*
 //outdated and not well written, avoid usage (especially since there are zgesdd and zgesvd)
 void lapackSVD(int MNumCols, int MNumRows, arcomplex<double> *Mnew, arcomplex<double> *Mnewcpy, double *diags){
   int containerDim=(MNumRows>MNumCols)?MNumCols:MNumRows;
@@ -43,5 +44,5 @@ void lapackSVD(int MNumCols, int MNumRows, arcomplex<double> *Mnew, arcomplex<do
   info=LAPACKE_zbdsqr(LAPACK_COL_MAJOR,uplo,containerDim,MNumCols,MNumRows,0,diags,offdiags,Mnewcpy,MNumCols,Mnew,MNumRows,0,1);
   delete[] offdiags;
 }
+*/
 }
-

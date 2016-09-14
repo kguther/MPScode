@@ -9,7 +9,7 @@
 
 int writeHamiltonian(network &sys, double J, double g, double W, std::complex<double> t, double deltaP, int tSite){
   std::srand(std::time(0));
-  mpo<std::complex<double> > bufH=sys.getNetworkH();
+  mpo<mpsEntryType > bufH=sys.getNetworkH();
   int const Dw=bufH.maxDim();
   if(Dw!=12){
     //The minimal bond dimension of our Hamiltonian is 12, so the system better has a Hamiltonian of that bond dimension.
@@ -18,7 +18,15 @@ int writeHamiltonian(network &sys, double J, double g, double W, std::complex<do
   int const L=bufH.length();
   int lDwL, lDwR;
   double prefactor, JD, gD, preD;
-  std::complex<double> tD;
+#ifdef REAL_MPS_ENTRIES
+  mpsEntryType tD=real(t);
+  if(std::abs(imag(t))>1e-12){
+    std::cout<<"Error: Imaginary hamiltonian matrix elements in run using real mps\n";
+    exit(1);
+  }
+#else
+  mpsEntryType tD=t;
+#endif
   for(int i=0;i<L;++i){
     lDwL=bufH.locDimL(i);
     lDwR=bufH.locDimR(i);
@@ -32,10 +40,10 @@ int writeHamiltonian(network &sys, double J, double g, double W, std::complex<do
     //disorder() is a stochastic function, therefore, it has to be called each time anew
     gD=g*(1+disorder(deltaP));
     if(tSite<0){
-      tD=t*tLocalScale(i);
+      tD=tD*tLocalScale(i);
     }
     else{
-      tD=t*tSingleSite(i,tSite);
+      tD=tD*tSingleSite(i,tSite);
     }
     JD=J*(1+disorder(deltaP));
     preD=W*(1+disorder(deltaP));
@@ -226,13 +234,13 @@ double disorder(double deltaP){
 
 //-------------------------------------------------------------------------------------------//
 
-std::complex<double> tLocalScale(int i){
-  return 1+disorder(0.02);
+mpsEntryType tLocalScale(int i){
+  return 1.0+disorder(0.02);
 }
 
-std::complex<double> tSingleSite(int i, int targetSite){
+mpsEntryType tSingleSite(int i, int targetSite){
   if(i==targetSite){
-    return 1;
+    return 1.0;
   }
-  return 0;
+  return 0.0;
 }

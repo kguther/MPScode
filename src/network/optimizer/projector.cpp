@@ -6,6 +6,7 @@
 #include "overlap.h"
 #include "arrayprocessing.h"
 #include "mkl_complex_defined.h"
+#include "linalgWrapper.h"
 
 //---------------------------------------------------------------------------------------------------//
 // The projector class is still experimental, it seems to yield correct results, but I am not sure
@@ -156,7 +157,7 @@ void projector::getLocalDimensions(int i){
 
 //---------------------------------------------------------------------------------------------------//
 
-lapack_complex_double projector::fullOverlap(int k){
+mpsEntryType projector::fullOverlap(int k){
   return scalarProducts[k].fullOverlap();
 }
 
@@ -165,19 +166,19 @@ lapack_complex_double projector::fullOverlap(int k){
 // for the current site before using project to ensure the auxiliary matrix is set.
 //---------------------------------------------------------------------------------------------------//
 
-void projector::project(lapack_complex_double *vec, int i){
+void projector::project(mpsEntryType *vec, int i){
   //vec is required to be of dimension lDL x ld*lDR
   if(nCurrentEigen>0){
-    lapack_complex_double *trContainer;
-    lapack_complex_double *G;
-    lapack_complex_double *vecContainer;
-    lapack_complex_double simpleContainer;
-    lapack_complex_double zone=1.0;
-    lapack_complex_double zzero=0.0;
+    mpsEntryType *trContainer;
+    mpsEntryType *G;
+    mpsEntryType *vecContainer;
+    mpsEntryType simpleContainer;
+    mpsEntryType zone=1.0;
+    mpsEntryType zzero=0.0;
     getLocalDimensions(i);
-    std::unique_ptr<lapack_complex_double[]> vecContainerP(new lapack_complex_double[ld*lDR*lDL]);
+    std::unique_ptr<mpsEntryType[]> vecContainerP(new mpsEntryType[ld*lDR*lDL]);
     vecContainer=vecContainerP.get();
-    std::unique_ptr<lapack_complex_double[]> trContainerP(new lapack_complex_double[ld*lDR*ld*lDR]);
+    std::unique_ptr<mpsEntryType[]> trContainerP(new mpsEntryType[ld*lDR*ld*lDR]);
     trContainer=trContainerP.get();
     //Initialization is required (i.e. it is as fast as any other way)
     for(int mi=0;mi<ld*lDR*lDL;++mi){
@@ -186,12 +187,12 @@ void projector::project(lapack_complex_double *vec, int i){
     for(int mu=0;mu<nRelevantEigens;++mu){
       auxiliaryMatrix.getPtr(G,mu);
       //Compute Tr(G^dagger *vec) which gives the projector onto the space spanned by lower lying states
-      cblas_zgemm(CblasColMajor,CblasConjTrans,CblasNoTrans,ld*lDR,ld*lDR,lDL,&zone,G,lDL,vec,lDL,&zzero,trContainer,ld*lDR);
+      cblas_gemm(CblasColMajor,CblasConjTrans,CblasNoTrans,ld*lDR,ld*lDR,lDL,&zone,G,lDL,vec,lDL,&zzero,trContainer,ld*lDR);
       simpleContainer=0;
       for(int mi=0;mi<ld*lDR;++mi){
 	simpleContainer+=trContainer[mi+ld*lDR*mi];
       }
-      cblas_zaxpy(ld*lDR*lDL,&simpleContainer,G,1,vecContainer,1);
+      cblas_axpy(ld*lDR*lDL,&simpleContainer,G,1,vecContainer,1);
     }
     //Use the projector to the orthogonal complement of the space spanned by lower lying states
     for(int mi=0;mi<ld*lDR*lDL;++mi){
@@ -209,29 +210,34 @@ int projector::getProjector(int i){
   //Only apply getProjector on the site next (in direction of sweep) to the last updated
   //The gram matrix is used in constructing the projector onto the space orthogonal to the lower lying states (if any). This allows for computation of excited states.
   if(nCurrentEigen>0){
-    lapack_complex_double *gram;
+    mpsEntryType *gram;
     lapack_int nGramEigens;
-    lapack_complex_double *gramEigenvecs;
+    mpsEntryType *gramEigenvecs;
     double *gramEigens;
-    lapack_complex_double *workingMatrix;
-    lapack_complex_double const *Fki;
-    lapack_complex_double zFactor;
-    lapack_complex_double zone=1.0;
-    lapack_complex_double zzero=0.0;
+    mpsEntryType *workingMatrix;
+    mpsEntryType const *Fki;
+    mpsEntryType zFactor;
+    mpsEntryType zone=1.0;
+    mpsEntryType zzero=0.0;
     lapack_int info;
-    std::unique_ptr<lapack_complex_double[]> gramP(new lapack_complex_double[nCurrentEigen*nCurrentEigen]);
-    std::unique_ptr<lapack_complex_double[]> gramEigenvecsP(new lapack_complex_double[nCurrentEigen*nCurrentEigen]);
+    std::unique_ptr<mpsEntryType[]> gramP(new mpsEntryType[nCurrentEigen*nCurrentEigen]);
+    std::unique_ptr<mpsEntryType[]> gramEigenvecsP(new mpsEntryType[nCurrentEigen*nCurrentEigen]);
     std::unique_ptr<double> gramEigensP(new double[nCurrentEigen]);
     gram=gramP.get();
     gramEigenvecs=gramEigenvecsP.get();
     gramEigens=gramEigensP.get();
     getGramMatrix(gram,i);
     lapack_int const gramDim=nCurrentEigen;
+    //Get the moore-penrose pseudoinverse - first step: diagonalization
     if(nCurrentEigen>1){
       lapack_int *suppZ;
       std::unique_ptr<lapack_int> suppZP(new lapack_int[2*nCurrentEigen]);
       suppZ=suppZP.get();
+#ifdef REAL_MPS_ENTRIES
+      info=LAPACKE_dsyevr(LAPACK_COL_MAJOR,'V','A','U',gramDim,gram,gramDim,0.0,0.0,0,0,1e-5,&nGramEigens,gramEigens,gramEigenvecs,gramDim,suppZ);
+#else
       info=LAPACKE_zheevr(LAPACK_COL_MAJOR,'V','A','U',gramDim,gram,gramDim,0.0,0.0,0,0,1e-5,&nGramEigens,gramEigens,gramEigenvecs,gramDim,suppZ);
+#endif
     }
     else{
       gramEigenvecs[0]=1;
@@ -243,6 +249,7 @@ int projector::getProjector(int i){
       std::cout<<"Error in LAPACKE_zheevr: "<<info<<" at site "<<i<<std::endl;
       return 1;
     }
+    //extract the relevant eigenvalues (i.e. those greater than some threshold)
     double const minRelevantEigens=LDBL_EPSILON*nCurrentEigen*gramEigens[nGramEigens-1];
     nRelevantEigens=0;
     for(int iEigen=0;iEigen<nGramEigens;++iEigen){
@@ -256,9 +263,9 @@ int projector::getProjector(int i){
     dimensions[0]=nRelevantEigens;
     dimensions[1]=lDL;
     dimensions[2]=lDR*ld;
-    auxiliaryMatrix=baseTensor<lapack_complex_double>(dimensions);
+    auxiliaryMatrix=baseTensor<mpsEntryType>(dimensions);
     //delete[] projectionMatrix;
-    //projectionMatrix=new lapack_complex_double[lDL*lDL];
+    //projectionMatrix=new mpsEntryType[lDL*lDL];
     for(int mu=0;mu<nRelevantEigens;++mu){
       auxiliaryMatrix.getPtr(workingMatrix,mu);
       //Eigenvectors are returned in ascending order
@@ -266,7 +273,7 @@ int projector::getProjector(int i){
 	scalarProducts[k].getF().subMatrixStart(Fki,i);
 	//F^dagger * F is proportional to identity (?), but a normation is required to ensure that the projector squares to itself
 	zFactor=gramEigenvecs[k+(nGramEigens-1-mu)*nCurrentEigen]*1.0/sqrt(gramEigens[nGramEigens-1-mu]);
-	cblas_zaxpy(ld*lDR*lDL,&zFactor,Fki,1,workingMatrix,1);
+	cblas_axpy(ld*lDR*lDL,&zFactor,Fki,1,workingMatrix,1);
       }
     }
   }
@@ -278,19 +285,19 @@ int projector::getProjector(int i){
 //---------------------------------------------------------------------------------------------------//
 
 
-void projector::getGramMatrix(lapack_complex_double *gram, int i){
+void projector::getGramMatrix(mpsEntryType *gram, int i){
   //Input has to be a nCurrentEigen x nCurrentEigen array
   if(nCurrentEigen>0){
     getLocalDimensions(i);
-    lapack_complex_double simpleContainer;
-    lapack_complex_double *matrixContainer, *FkiT;
-    lapack_complex_double const *Fki;
-    lapack_complex_double const *Fkpi;
-    lapack_complex_double zone=1.0;
-    lapack_complex_double zzero=0.0;
-    std::unique_ptr<lapack_complex_double[]> FkiTP(new lapack_complex_double[ld*lDR*lDL]);
+    mpsEntryType simpleContainer;
+    mpsEntryType *matrixContainer, *FkiT;
+    mpsEntryType const *Fki;
+    mpsEntryType const *Fkpi;
+    mpsEntryType zone=1.0;
+    mpsEntryType zzero=0.0;
+    std::unique_ptr<mpsEntryType[]> FkiTP(new mpsEntryType[ld*lDR*lDL]);
     FkiT=FkiTP.get();
-    std::unique_ptr<lapack_complex_double[]> matrixContainerP(new lapack_complex_double[ld*lDR*ld*lDR]);
+    std::unique_ptr<mpsEntryType[]> matrixContainerP(new mpsEntryType[ld*lDR*ld*lDR]);
     matrixContainer=matrixContainerP.get();
     for(int kp=0;kp<nCurrentEigen;++kp){
       scalarProducts[kp].getF().subMatrixStart(Fkpi,i);
@@ -301,7 +308,7 @@ void projector::getGramMatrix(lapack_complex_double *gram, int i){
 	for(int m=0;m<ld*lDR*lDL;++m){
 	  FkiT[m]=conj(FkiT[m]);
 	}
-	cblas_zgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,ld*lDR,ld*lDR,lDL,&zone,FkiT,ld*lDR,Fkpi,lDL,&zzero,matrixContainer,ld*lDR);
+	cblas_gemm(CblasColMajor,CblasNoTrans,CblasNoTrans,ld*lDR,ld*lDR,lDL,&zone,FkiT,ld*lDR,Fkpi,lDL,&zzero,matrixContainer,ld*lDR);
 	simpleContainer=0;
 	for(int mi=0;mi<ld*lDR;++mi){
 	  simpleContainer+=matrixContainer[mi+ld*lDR*mi];
