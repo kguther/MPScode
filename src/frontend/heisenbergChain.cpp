@@ -167,7 +167,7 @@ void generateHubbardHamiltonian(double t, double U, mpo<mpsEntryType > &H){
 }
 
 /*
-//Free fermions with pbc
+//Free fermions with pbc without spin
 void generateFFHamiltonian(mpo<mpsEntryType > &H){
   int lDwR, lDwL;
   int const Dw=6;
