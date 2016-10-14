@@ -181,7 +181,7 @@ void blockHMatrix::buildSparseHBlocked(){
 	    aimpB=indexTable->aimBlockIndexLP(iBlockp,kp);
 	    for(int jp=0;jp<rBlockSizep;++jp){
 	      currentEntry=HEffEntry(siB,aimB,aiB,sipB,aimpB,indexTable->aiBlockIndexLP(iBlockp,jp));
-	      if(abs(currentEntry)>treshold){
+	      if(std::abs(currentEntry)>treshold){
 		sparseMatrix.push_back(currentEntry);
 		colIndices.push_back(vecBlockIndexLP(iBlockp,jp,kp));
 	      }

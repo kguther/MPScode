@@ -6,8 +6,8 @@
 double upMatrix(int a, int b);
 double downMatrix(int a, int b);
 double bosonMatrix(int a, int b);
-//double aMatrix(int const a, int const b);
-//double bMatrix(int const a, int const b);
+double aMatrix(int const a, int const b);
+double bMatrix(int const a, int const b);
 
 //bose-Hubbard with NN-Interaction
 
@@ -166,7 +166,6 @@ void generateHubbardHamiltonian(double t, double U, mpo<mpsEntryType > &H){
   }
 }
 
-/*
 //Free fermions with pbc without spin
 void generateFFHamiltonian(mpo<mpsEntryType > &H){
   int lDwR, lDwL;
@@ -257,7 +256,6 @@ void generateFFHamiltonian(mpo<mpsEntryType > &H){
     }
   }
 }
-*/
 
 void generateHeisenbergHamiltonian(mpo<mpsEntryType > &H){
   int lDwR, lDwL;

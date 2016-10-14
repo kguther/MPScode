@@ -14,7 +14,7 @@ HOLLE_NAME=holleMPScode
 LFLAGS=$(MPI_LINK_FLAGS) -L$(MKL_PATH) -lgfortran
 MPI_COMPILE_FLAGS=$(shell mpic++ --showme:compile)
 MPI_LINK_FLAGS=$(shell mpic++ --showme:link)
-CFLAGS=-Wall -std=c++11 -qopenmp -O3
+CFLAGS=-Wall -std=c++11 -static-libstdc++ -qopenmp -O3
 CFLAGS_DEBUG=-Wall -std=c++11 -qopenmp -g
 APCK_INCLUDE=-I/usr/include/arpack++
 MKL_INCLUDE=-I$(MKL_INCLUDE_PATH)

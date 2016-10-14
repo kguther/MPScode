@@ -58,5 +58,6 @@ for i in range(0,len(gather)):
 plt.xlabel('j')
 plt.ylabel('$E_j$')
 plt.legend(loc=0,fontsize='xx-small',numpoints=1)
-plt.savefig('plots/'+taskname+'_entanglement_spectrum.pdf')
+#plt.savefig('plots/'+taskname+'_entanglement_spectrum.pdf')
+plt.show()
 plt.close()
