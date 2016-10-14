@@ -72,18 +72,30 @@ void generateHubbardHamiltonianPBC(double t, double U, mpo<mpsEntryType > &H){
 		  H(i,si,sip,bi,bim)=U*delta(si,sip)*(delta(si,3)+delta(si,6)+delta(si,9)+delta(si,12)+delta(si,13)+delta(si,14)+2*delta(si,15));
 		  break;
 		case 1:
-		  H(i,si,sip,bi,bim)=t*upMatrix(sip,si)*(delta(sip,0)-delta(sip,2));
+		  H(i,si,sip,bi,bim)=t*upMatrixA(sip,si)*(delta(sip,0)-delta(sip,2));
 		  break;
 		case 2:
-		  H(i,si,sip,bi,bim)=t*downMatrix(sip,si)*(delta(sip,0)-delta(sip,1));
+		  H(i,si,sip,bi,bim)=t*downMatrixA(sip,si)*(delta(sip,0)-delta(sip,1));
 		  break;
 		case 3:
-		  H(i,si,sip,bi,bim)=-t*upMatrix(si,sip)*(delta(sip,3)-delta(sip,1));
+		  H(i,si,sip,bi,bim)=-t*upMatrixA(si,sip)*(delta(sip,3)-delta(sip,1));
 		  break;
 		case 4:
-		  H(i,si,sip,bi,bim)=-t*downMatrix(si,sip)*(delta(sip,3)-delta(sip,2));
+		  H(i,si,sip,bi,bim)=-t*downMatrixA(si,sip)*(delta(sip,3)-delta(sip,2));
 		  break;
 		case 5:
+		  H(i,si,sip,bi,bim)=t*upMatrixB(sip,si)*(delta(sip,0)-delta(sip,2));
+		  break;
+		case 6:
+		  H(i,si,sip,bi,bim)=t*downMatrixB(sip,si)*(delta(sip,0)-delta(sip,1));
+		  break;
+		case 7:
+		  H(i,si,sip,bi,bim)=-t*upMatrixB(si,sip)*(delta(sip,3)-delta(sip,1));
+		  break;
+		case 8:
+		  H(i,si,sip,bi,bim)=-t*downMatrixB(si,sip)*(delta(sip,3)-delta(sip,2));
+		  break;
+		case 9:
 		  H(i,si,sip,bi,bim)=delta(si,sip);
 		  break;
 		default:
