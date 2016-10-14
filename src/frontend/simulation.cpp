@@ -256,7 +256,7 @@ void simulation::singleRun(){
 	for(int i=0;i<pars.L;++i){
 	  for(int iM=0;iM<localMeasureTask.size();++iM){
 	    if(i<localExpectationValues[iM].size()){
-	      ofs<<abs(localExpectationValues[iM][i])<<"\t";
+	      ofs<<std::abs(localExpectationValues[iM][i])<<"\t";
 	    }
 	    else{
 	      ofs<<"\t";

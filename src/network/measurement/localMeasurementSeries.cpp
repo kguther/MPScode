@@ -1,6 +1,6 @@
 #include "localMeasurementSeries.h"
 #include "optHMatrix.h"
-#include "globalMeasurement.h"
+#include <memory>
 
 localMeasurementSeries::localMeasurementSeries(localMpo<mpsEntryType > *const MPOperator, mps *const MPState):
   iterativeMeasurement(MPOperator,MPState),
@@ -24,20 +24,14 @@ void localMeasurementSeries::measureFull(std::vector<mpsEntryType > &lambda){
   for(int i=1;i<=localMPOperator->currentSite();++i){
     calcCtrIterLeft(i);
   }
-  globalMeasurement test;
-  double buffer;
   //Beginning from the initial site, we sweep to the right and compute the expectation value on each site, using the unchanged partial contractions as intermediate results.
   for(int i=localMPOperator->currentSite();i<L-1;++i){
     localMPOperator->stepRight();
-    /*
-    test.setupMeasurement(localMPOperator,MPState);
-    test.measureFull(buffer);
-    lambda.push_back(buffer);
-    */
     for(int m=operatorSize-1;m>=0;--m){
       calcCtrIterLeft(i+1-m);
     }
     getCurrentValue(lambda,localMPOperator->currentSite());
+    
   }
   //Here, the input operator is restored to its original form
   *localMPOperator=backup;
@@ -53,7 +47,8 @@ void localMeasurementSeries::getCurrentValue(std::vector<mpsEntryType > &lambda,
   Lctr.subContractionStart(LTerm,i);
   MPState->subMatrixStart(currentM,i);
   //Only the current site has to be contracted explicitly, the rest is stored in the partial contraction. Explicit contraction is carried out using the optHMatrix class multiplication.
-  mpsEntryType *siteMatrixContainer=new mpsEntryType [ld*lDR*lDL];
+  std::unique_ptr<mpsEntryType[]> siteMatrixContainerP(new mpsEntryType [ld*lDR*lDL]);
+  mpsEntryType *siteMatrixContainer=siteMatrixContainerP.get();
   optHMatrix gather(RTerm,LTerm,MPOperator,MPState->getDimInfo(),MPOperator->maxDim(),i,0,0,0);
   gather.MultMv(currentM,siteMatrixContainer);
   for(int si=0;si<ld;++si){
@@ -64,5 +59,4 @@ void localMeasurementSeries::getCurrentValue(std::vector<mpsEntryType > &lambda,
     }
   }
   lambda.push_back((simpleContainer));
-  delete[] siteMatrixContainer;
 }

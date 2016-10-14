@@ -58,7 +58,7 @@ if filename in filelist:
     #plt.ylim(ymin=-6,ymax=6.3)
     plt.xlabel('J',fontsize=fs)
     plt.ylabel('g',fontsize=fs)
-    plt.savefig('../../Talk/perturbativePD_raw.eps',bbox_inches='tight')
+    plt.savefig('../../draft/plots/perturbativePD_raw.eps',bbox_inches='tight')
     #plt.show()
 
 plt.close()

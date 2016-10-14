@@ -45,7 +45,7 @@ void cblas_axpy(int const n, void const *alpha, void const *x, int const incx, v
 
 void lapacke_svd(char job, int blockDimL, int blockDimR, void *M, double *diags, void *U, void *VT, int i){
   int const containerDim=(blockDimL>blockDimR)?blockDimR:blockDimL;
-#ifdef USE_MKL
+#if defined USE_MKL
 #ifdef REAL_MPS_ENTRIES
   int info=LAPACKE_dgesdd(LAPACK_COL_MAJOR,job,blockDimL,blockDimR,static_cast<double*>(M),blockDimL,diags,static_cast<double*>(U),blockDimL,static_cast<double*>(VT),blockDimR);
 #else
@@ -60,12 +60,11 @@ void lapacke_svd(char job, int blockDimL, int blockDimR, void *M, double *diags,
     info=LAPACKE_zgesvd(LAPACK_COL_MAJOR,job,job,blockDimL,blockDimR,static_cast<std::complex<double>*>(M),blockDimL,diags,static_cast<std::complex<double>*>(U),blockDimL,static_cast<std::complex<double>*>(VT),blockDimR,workBuf);
 #endif
   }
-#endif
   //There seems to be a bug in liblapacke providing a wrong size for the work array, which can lead to a segfault. This bug is not present in the mkl implementation
   //Maybe add a workspace query to get rid of the explicit specification, which is rather bug-prone
-#ifndef USE_MKL
+#else
   int const maxDim=(blockDimR>blockDimL)?blockDimR:blockDimL;
-  int lwork=-1;
+  int lwork=-1; //first do a workspace query to get the optimal value for lwork
   int const lrwork=(5*containerDim*(1+containerDim)>(containerDim*(1+2*(maxDim+containerDim))))?5*containerDim*(1+containerDim):containerDim*(1+2*(maxDim+containerDim));
   std::unique_ptr<int[]> iworkP(new int[8*containerDim]);
   std::unique_ptr<double[]> rworkP(new double[lrwork]);
@@ -73,15 +72,17 @@ void lapacke_svd(char job, int blockDimL, int blockDimR, void *M, double *diags,
   mpsEntryType *work=workP.get();
   double *rwork=rworkP.get();
   int *iwork=iworkP.get();
+  //workspace query
 #ifdef REAL_MPS_ENTRIES
   int info=LAPACKE_dgesdd_work(LAPACK_COL_MAJOR,job,blockDimL,blockDimR,static_cast<double*>(M),blockDimL,diags,static_cast<double*>(U),blockDimL,static_cast<double*>(VT),blockDimR,work,lwork,iwork);
   lwork=static_cast<int>(work[0]);
 #else
   int info=LAPACKE_zgesdd_work(LAPACK_COL_MAJOR,job,blockDimL,blockDimR,static_cast<std::complex<double>*>(M),blockDimL,diags,static_cast<std::complex<double>*>(U),blockDimL,static_cast<std::complex<double>*>(VT),blockDimR,work,lwork,rwork,iwork);
-  lwork=(containerDim*(containerDim+2)+maxDim);
+  lwork=static_cast<int>(work[0].real());
 #endif
   workP.reset(new mpsEntryType[lwork]);
   work=workP.get();
+  //actual svd
 #ifdef REAL_MPS_ENTRIES
   info=LAPACKE_dgesdd_work(LAPACK_COL_MAJOR,job,blockDimL,blockDimR,static_cast<double*>(M),blockDimL,diags,static_cast<double*>(U),blockDimL,static_cast<double*>(VT),blockDimR,work,lwork,iwork);
 #else
@@ -90,6 +91,17 @@ void lapacke_svd(char job, int blockDimL, int blockDimR, void *M, double *diags,
   if(info)
     std::cout<<"SVD FAILURE/n";
   if(info>0){
+    //workspace query for gesvd
+    lwork=-1;
+#ifdef REAL_MPS_ENTRIES
+    info=LAPACKE_dgesvd_work(LAPACK_COL_MAJOR,job,job,blockDimL,blockDimR,static_cast<double*>(M),blockDimL,diags,static_cast<double*>(U),blockDimL,static_cast<double*>(VT),blockDimR,work,lwork);
+    lwork=static_cast<int>(work[0]);
+#else
+    info=LAPACKE_zgesvd_work(LAPACK_COL_MAJOR,job,job,blockDimL,blockDimR,static_cast<std::complex<double>*>(M),blockDimL,diags,static_cast<std::complex<double>*>(U),blockDimL,static_cast<std::complex<double>*>(VT),blockDimR,work,lwork,rwork);
+    lwork=static_cast<int>(work[0].real());
+#endif
+    workP.reset(new mpsEntryType[lwork]);
+    work=workP.get();
     //In case of failure of the divide and conquer algorithm, use the zgesvd routine
     //Failure with info<0 is due to wrong input and cannot be remedied by using another algorithm
 #ifdef REAL_MPS_ENTRIES

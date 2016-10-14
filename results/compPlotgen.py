@@ -168,7 +168,7 @@ for yt in ax1.get_yticklabels():
     yt.set_color(colors[0])
 for yt in ax2.get_yticklabels():
     yt.set_color(colors[1])
-plt.savefig('../../Talk/'+title+'pairCorrelations'+'.eps',bbox_inches='tight')
+plt.savefig('../../draft/plots'+title+'pairCorrelations'+'.eps',bbox_inches='tight')
 plt.show()
 plt.close()
             

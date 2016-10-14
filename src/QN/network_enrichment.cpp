@@ -320,7 +320,7 @@ void network::leftEnrichmentBlockwise(int i){
 	  Mnew[k+j*lBlockSize]=localMatrix[stateIndex(siCurrent,aiCurrent,aimCurrent)];
 	}
 	//The expansion term only has a charge associated with (si,aim) but not with ai
-	//Each block own a copy of pExpression
+	//Each block owns a copy of pExpression
 	for(int ai=0;ai<lDR;++ai){
 	  for(int bi=0;bi<lDwR;++bi){
 	    Mnew[rBlockSize*lBlockSize+k+lBlockSize*(ai+lDR*bi)]=alpha*pExpression[aimCurrent+lDL*siCurrent+bi*lDL*ld*lDR+ai*lDL*ld];
@@ -339,7 +339,7 @@ void network::leftEnrichmentBlockwise(int i){
       //We only need the first containerDim rows of VT, but all cols of U 
       //-> U and VT have to be computed full in the rare case that there are more left singular vectors than right singular vectors (this CAN occur!) 
       //else, the first blockDimL right singular vectors are enough
-      char jobz=(blockDimL>blockDimR)?'A':'S';
+      char const jobz=(blockDimL>blockDimR)?'A':'S';
       lapacke_svd(jobz,blockDimL,blockDimR,Mnew,diags,U,VT,i);
       //Insert the block matrices into the global ones at the respective position
 
@@ -570,7 +570,7 @@ void network::rightEnrichmentBlockwise(int i){
       //Same simplification as in leftEnrichment
       char jobz=(blockDimR>blockDimL)?'A':'S';
       lapacke_svd(jobz,blockDimL,blockDimR,Mnew,diags,U,VT,i);
-
+      
       //Insert VT into globalVT (storage scheme for VT: (sip,aip,si,ai)
       for(int j=0;j<blockDimR;++j){
 	aiCurrent=localIndexTableFull.aiBlockIndexRP(iBlock,j);
