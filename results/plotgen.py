@@ -171,7 +171,7 @@ for filename in filelist:
                 plt.title('J='+pars[3]+' g='+pars[4]+' W= '+pars[5]+' E='+pars[6]+' $(\\Delta E)^2$='+pars[7].strip())
                 if savePlot:
                     plt.savefig('plots/'+filename[0:len(filename)-4]+'_'+tname.replace(' ','_')+'.pdf')
-                if datanames[i]=='Local density':
+                if datanames[i]=='Intrachain correlation':
                     plt.show()
                 plt.close()
                 firstfile=False

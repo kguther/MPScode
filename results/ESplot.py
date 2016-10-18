@@ -56,7 +56,7 @@ for i in range(0,len(gather)):
     legendstring='L='+labels[i][0]+' N='+labels[i][1]+' $\\alpha$='+labels[i][2]+' J='+labels[i][3]+' g='+labels[i][4]+ 'W='+labels[i][5]
     esplot.set_label(legendstring)
 plt.xlabel('j')
-plt.ylabel('$E_j$')
+plt.ylabel('$\chi_j$')
 plt.legend(loc=0,fontsize='xx-small',numpoints=1)
 #plt.savefig('plots/'+taskname+'_entanglement_spectrum.pdf')
 plt.show()

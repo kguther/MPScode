@@ -52,7 +52,7 @@ void baseMeasurement::getLocalDimensions(int i){
 // which will usually be the next subcontraction of Rctr.
 //---------------------------------------------------------------------------------------------------//
 
-void baseMeasurement::calcCtrIterLeftBase(int const i, mpsEntryType  *const sourcePctr, mpsEntryType  *const targetPctr){
+void baseMeasurement::calcCtrIterLeftBase(int const i, mpsEntryType *const sourcePctr, mpsEntryType  *const targetPctr){
   mpsEntryType *siteMatrixState;
   MPState->subMatrixStart(siteMatrixState,i-1);
   if(MPState->indexTable().nQNs()){

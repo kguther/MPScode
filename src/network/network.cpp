@@ -191,6 +191,7 @@ int network::solve(std::vector<double> &lambda, std::vector<double> &deltaLambda
   }
   //Necessary if multiple instances of solve() are called
   excitedStateP.loadNextState(networkState,0);
+ 
   for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
     pCtr.initialize(&networkH,&networkState);
     std::cout<<"Starting normalization\n";

@@ -117,7 +117,7 @@ def plotDeg(y,n):
                 cplot.set_label(pltlabels[i])
     plt.xlabel('$|i-j|$',fontsize=fs)
     plt.ylabel(labellist[tasknum(targetName)],fontsize=fs)
-    plt.legend(loc=8,numpoints=1,fontsize=ls)
+    plt.legend(loc=9,numpoints=1,fontsize=ls)
     tnames=targetName.replace('.','_')
     plt.savefig('../../draft/plots/'+title+tnames.replace(' ','_')+'.eps',bbox_inches='tight')
     plt.show()
@@ -190,7 +190,7 @@ for filename in filelist:
                 readData(filename,data)
             y.append(data)
             #pltlabels.append('J='+pars[3][0:4]+' g='+pars[4][0:4])
-            pltlabels.append('$\\alpha=$'+parity+'  E='+pars[6][:7])
+            pltlabels.append('$\\alpha=$'+parity+'  E='+pars[6][:9])
             #pltlabels.append('E='+pars[6][:7])
             #pltlabels.append('N='+pars[1])
             #ptitle='J='+pars[3]+'\t g='+pars[4]

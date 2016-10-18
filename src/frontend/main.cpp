@@ -70,7 +70,6 @@ int other(int argc, char *argv[]){
   return 0;
 }
 
-
 int main(int argc, char *argv[]){
   //Here, the parameters are distributed via MPI to the processes. Each process then individually solves the system for a specific set of parameters - great paralellization.
   //There are currently two settings: scaling and correlation. The former computes the behaivour of the gap with increasing system size and the latter computes correlations etc across the parameter space for fixed system size

@@ -1,6 +1,5 @@
 #include "globalMeasurement.h"
 #include <memory>
-#include <iostream>
 #include "mkl_complex_defined.h"
 
 globalMeasurement::globalMeasurement():

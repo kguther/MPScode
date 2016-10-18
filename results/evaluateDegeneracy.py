@@ -53,7 +53,7 @@ marksize=14
 x0=33
 x1=110
 p0=sy.array([0.01,1])
-colors=[(174/255.0,28.0/255.0,97.0/255.0),(21.0/255.0,84.0/255.0,193.0/255.0)]
+colors=[(52.0/255.0,137.0/255.0,197.0/255.0), (137.0/255.0,199.0/255.0,58.0/255.0)]
 plt.figure(figsize=(18,10))
 plt.tick_params(labelsize=ls)
 for i in [0]:
@@ -75,5 +75,5 @@ plt.xticks(xt,map(str,xt))
 cplot.set_label('numerical data')
 fplot.set_label('$\Delta=$'+str(fpars[0])[:6]+'$\cdot\,L^{-'+str(fpars[1])[:6]+'}$') 
 plt.legend(loc=1,fontsize=fs,numpoints=1)
-plt.savefig('../../Talk/top_gap_scaling.eps')
+plt.savefig('../../draft/plots/top_gap_scaling.eps')
 plt.show()

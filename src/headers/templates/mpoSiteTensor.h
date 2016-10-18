@@ -2,6 +2,8 @@
 #define MPO_SITE_TENSOR
 
 #include <vector>
+#include <cmath>
+
 
 template<typename T>
 class mpoSiteTensor{
@@ -45,7 +47,7 @@ void mpoSiteTensor<T>::setUpSparse(){
     for(int sip=0;sip<d;++sip){
       for(int bi=0;bi<lDwR;++bi){
 	for(int bim=0;bim<lDwL;++bim){
-	  if(abs(globalAccess(si,sip,bi,bim))>threshold){
+	  if(std::abs(globalAccess(si,sip,bi,bim))>threshold){
 	    sparseOperator[nNzero]=globalAccess(si,sip,bi,bim);
 	    biIndices[nNzero]=bi;
 	    bimIndices[nNzero]=bim;

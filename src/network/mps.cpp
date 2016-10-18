@@ -552,7 +552,8 @@ void mps::getEntanglementSpectrumOC(int i, double &S, std::vector<double> &spect
   lDL=locDimL(i);
   lDR=locDimR(i);
   mpsEntryType *currentM;
-  std::unique_ptr<double> diagsP(new double[lDR]);
+  int const specSize=((ld*lDR)>lDL)?lDL:(ld*lDR);
+  std::unique_ptr<double> diagsP(new double[specSize]);
   double *diags=diagsP.get();
   std::unique_ptr<mpsEntryType[]> AnewP(new mpsEntryType[lDL*lDR*ld]);
   mpsEntryType *Anew=AnewP.get();
@@ -564,7 +565,7 @@ void mps::getEntanglementSpectrumOC(int i, double &S, std::vector<double> &spect
   LAPACKE_zgesdd(LAPACK_COL_MAJOR,'N',lDL,ld*lDR,Anew,lDL,diags,0,1,0,1);
 #endif
   spectrum.clear();
-  for(int m=0;m<lDR;++m){
+  for(int m=0;m<specSize;++m){
     spectrum.push_back(diags[m]);
   }
   S=0;
