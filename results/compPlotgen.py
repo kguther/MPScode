@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import sys
-labellist=['$\\left|\\langle a^\dagger_i a_j^{} \\rangle \\right|$','$\\left|\\langle a^\dagger_i b^{}_i b_j^{\dagger} a_j \\rangle \\right|$','$\\left|\\langle n^{a}_i n_0^{a} \\rangle \\right|$','$\\left|\\langle n^{a}_i n_0^{b} \\rangle \\right|$','$\\left|\\langle n^{a}_i \\rangle \\right|$','$\\left|\\langle a^\dagger_i b^\dagger_i a_j^{} b_j^{} \\rangle \\right|$','$\\left|\\langle \\right|\\rangle$','S','$\\left|\\langle n^{a}_i n^{b}_i \\rangle\\right|$','$\\left|\\langle n^{b}_i\\rangle\\right|$','$\\langle a_i^{\dagger} a_{i+1}^{\dagger} a_j a_{j+1} \\rangle$','other']
+labellist=['$\\left|\\langle a^\dagger_i a_j^{} \\rangle \\right|$','$\\left|\\langle a^\dagger_i b^{}_i b_1^{\dagger} a_1 \\rangle \\right|$','$\\left|\\langle n^{a}_i n_0^{a} \\rangle \\right|$','$\\left|\\langle n^{a}_i n_0^{b} \\rangle \\right|$','$\\left|\\langle n^{a}_i \\rangle \\right|$','$\\left|\\langle a^\dagger_i b^\dagger_i a_1^{} b_1^{} \\rangle \\right|$','$\\left|\\langle \\right|\\rangle$','S','$\\left|\\langle n^{a}_i n^{b}_i \\rangle\\right|$','$\\left|\\langle n^{b}_i\\rangle\\right|$','$\\langle a_i^{\dagger} a_{i+1}^{\dagger} a_j a_{j+1} \\rangle$','other']
 
 def tasknum(n):
     if n=="Intrachain correlation" or n=="Bulk correlation function":
@@ -69,37 +69,41 @@ def readData(filename,data):
 
 def plotArray(y,n):
     markers=['o','s','>','v','s','^','*']
-    dfs=11.5
+    dfs=12
     plt.figure(figsize=(12,10))
     plt.tick_params(labelsize=ls)
-    targetName=['Interchain hopping correlation', 'Interchain pairwise correlation']
+    #targetName=['Intrachain correlation']
+    #targetName=['Interchain hopping correlation', 'Interchain pairwise correlation']
+    targetName=['Local density']
     k=0
     for i in range(0,len(y)):
         for j in range(0,n[i]-1): 
             if datanames[i][j] in targetName:
                 x=range(0,len(y[i][j]))
                 if tasknum(datanames[i][j])in [1,5]:
-                    cplot,=plt.loglog(x,y[i][j],markers[k],color=colors[k],ms=dfs)
+                    cplot,=plt.semilogy(x,y[i][j],markers[k],color=colors[k],ms=dfs)
                 else:
                     if tasknum(datanames[i][j]) in [0,6,10]:
                         cplot,=plt.semilogy(x,y[i][j],markers[k],ms=dfs,color=colors[k])
                     else:
                         cplot,=plt.plot(x,y[i][j],markers[k],ms=dfs,color=colors[k])
-                cplot.set_label(labellist[tasknum(datanames[i][j])])
+                #cplot.set_label(labellist[tasknum(datanames[i][j])])
+                cplot.set_label(pltlabels[i])
                 k+=1
-                plt.xlabel('$|i-j|$',fontsize=fs)
+                #plt.xlabel('$|i-j|$',fontsize=fs)
+                plt.xlabel('Site $i$',fontsize=fs)
     if(len(targetName)==1):
-        plt.ylabel(labellist[tasknum(targetName)],fontsize=fs)
-    if(len(targetName)!=1):
-        plt.legend(loc=9,numpoints=1,fontsize=ls)
+        plt.ylabel(labellist[tasknum(targetName[0])],fontsize=fs)
+    if(len(targetName)!=1 or len(y)!=1):
+        plt.legend(loc=3,numpoints=1,fontsize=ls)
     tnames=targetName[0].replace('.','_')
-    plt.savefig('../../draft/plots/'+title+tnames.replace(' ','_')+'.eps',bbox_inches='tight')
+    plt.savefig('../../draft/plots/'+title+tnames.replace(' ','_')+'.pdf',bbox_inches='tight')
     plt.show()
     plt.close()
 
 def plotDeg(y,n):
     marker='o'
-    cols=['w',colors[1]]
+    cols=['w',colors[0]]
     marksize=[18,12]
     dfs=11.5
     rim=[3,0]
@@ -115,11 +119,13 @@ def plotDeg(y,n):
                 x=range(0,len(y[i][j]))
                 cplot,=plt.semilogy(x,y[i][j],marker,color=cols[i],ms=marksize[i],mew=rim[i])
                 cplot.set_label(pltlabels[i])
-    plt.xlabel('$|i-j|$',fontsize=fs)
+    plt.xlabel('Site $i$',fontsize=fs)
+    #plt.xlabel('$|i-j|$', fontsize=fs)
     plt.ylabel(labellist[tasknum(targetName)],fontsize=fs)
     plt.legend(loc=9,numpoints=1,fontsize=ls)
+    plt.xlim(xmax=83)
     tnames=targetName.replace('.','_')
-    plt.savefig('../../draft/plots/'+title+tnames.replace(' ','_')+'.eps',bbox_inches='tight')
+    plt.savefig('../../draft/plots/'+title+tnames.replace(' ','_')+'.pdf',bbox_inches='tight')
     plt.show()
     plt.close()
 
@@ -167,7 +173,7 @@ def plotMulti(y,n):
         yt.set_color(colors[0])
     for yt in ax2.get_yticklabels():
         yt.set_color(colors[1])
-    plt.savefig('../../draft/plots'+title+'multiPlot'+'.eps',bbox_inches='tight')
+    plt.savefig('../../draft/plots'+title+'multiPlot'+'.pdf',bbox_inches='tight')
     plt.show()
 plt.close()
 
@@ -191,7 +197,7 @@ for filename in filelist:
             y.append(data)
             #pltlabels.append('J='+pars[3][0:4]+' g='+pars[4][0:4])
             pltlabels.append('$\\alpha=$'+parity+'  E='+pars[6][:9])
-            #pltlabels.append('E='+pars[6][:7])
+            #pltlabels.append('E='+pars[6][:9])
             #pltlabels.append('N='+pars[1])
             #ptitle='J='+pars[3]+'\t g='+pars[4]
 

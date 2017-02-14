@@ -176,118 +176,131 @@ void simulation::singleRun(){
     std::cout<<"Invalid bond dimension for the construction of H. Aborting run.\n";
     throw critical_error();
   }
-  //Actual DMRG
-  csystem.getGroundState();
-  E0=csystem.E0;
-  dE=csystem.dE;
-  expectationValues.resize(measureTask.size());
-  localExpectationValues.resize(localMeasureTask.size());
-  //Measure previously set operators and write results into the result file
-  std::ofstream ofs;
-  std::string finalName, fileName;
-  std::ostringstream compositeName;
-  compositeName<<filePrefix<<"_W_"<<W<<"_J_"<<J<<"_g_"<<g;
-  if(abs(targetDelta)>1e-10){
-    compositeName<<"_delta_"<<deltaP;
+
+  int numParities=2;
+  int parities[2]={pars.QNconserved[0].imag(),-pars.QNconserved[0].imag()};
+  //If disorder is enabled, we want to check both parity sectors with the same set of disorder
+  if(std::abs(targetDelta)>1e-10){
+    numParities=2;
   }
+  
+  for(int pc=0;pc<numParities;++pc){
+    //If both parities are to be considered, set it now
+    pars.QNconserved[0].imag(parities[pc]);
+    csystem.TensorNetwork.setQuantumNumber(pars.QNconserved,pars.QNLocalList);
+    //Actual DMRG
+    csystem.getGroundState();
+    E0=csystem.E0;
+    dE=csystem.dE;
+    expectationValues.resize(measureTask.size());
+    localExpectationValues.resize(localMeasureTask.size());
+    //Measure previously set operators and write results into the result file
+    std::ofstream ofs;
+    std::string finalName, fileName;
+    std::ostringstream compositeName;
+    compositeName<<filePrefix<<"_p_"<<pars.QNconserved[0].imag()<<"_W_"<<W<<"_J_"<<J<<"_g_"<<g;
+    if(std::abs(targetDelta)>1e-10){
+      compositeName<<"_delta_"<<deltaP;
+    }
     
-  finalName=compositeName.str();
-  for(int m=0;m<finalName.length();++m){
-    if(finalName[m]=='.'){
-      finalName.erase(m,1);
+    finalName=compositeName.str();
+    for(int m=0;m<finalName.length();++m){
+      if(finalName[m]=='.'){
+	finalName.erase(m,1);
+      }
     }
-  }
-  for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
-    if(iEigen>0){
-      compositeName.str("");
-      compositeName<<(iEigen+1);
-      fileName=finalName+"_state_"+compositeName.str()+".txt";
-    }
-    else{
-      fileName=finalName+".txt";
-    }
-    std::cout<<finalName<<std::endl;
+    for(int iEigen=0;iEigen<pars.nEigs;++iEigen){
+      if(iEigen>0){
+	compositeName.str("");
+	compositeName<<(iEigen+1);
+	fileName=finalName+"_state_"+compositeName.str()+".txt";
+      }
+      else{
+	fileName=finalName+".txt";
+      }
+      std::cout<<finalName<<std::endl;
       
-    ofs.open(fileName.c_str());
-    ofs<<"Values for state number "<<iEigen<<" with energy "<<E0[iEigen]<<" and energy variance "<<dE[iEigen]<<std::endl;
-    //The problem parameters are written into the first lines
-    ofs<<"L\tN\tsubchain parity\tJ\tg\tW\tE\tvariance of energy\tt\n";
-    ofs<<std::setprecision(15);
-    ofs<<pars.L<<"\t"<<real(pars.QNconserved[0])<<"\t"<<imag(pars.QNconserved[0])<<"\t"<<J<<"\t"<<g<<"\t"<<W<<"\t"<<E0[iEigen]<<"\t"<<dE[iEigen]<<"\t"<<pars.t<<std::endl;
-    ofs<<std::setprecision(5);
-    //First, global measurements are performed (this is used rarely)
-    if(localMeasureTask.size()>0 || measureTask.size()>0 || measureEE){
-      std::cout<<"Measuring correlation functions\n";
-      for(int iM=0;iM<measureTask.size();++iM){
-	csystem.measure(&measureTask[iM],expectationValues[iM],iEigen);
-	ofs<<operatorNames[iM]<<"\t";
-      }
-      //Then, all results are written into the result file
-      if(measureTask.size())
-	ofs<<std::endl;
-      for(int iM=0;iM<measureTask.size();++iM){
-	ofs<<expectationValues[iM]<<"\t";
-      }
-      if(measureTask.size())
-	ofs<<std::endl;
-      //Now, the same is done for the local measurements (this is what is usually interesting)
-      for(int iM=0;iM<localMeasureTask.size();++iM){
-	csystem.measureLocalOperators(&localMeasureTask[iM],localExpectationValues[iM],iEigen);
-	ofs<<localOperatorNames[iM]<<"\t";
-      }
-      if(measureEE){
-	ofs<<"Entanglement Entropy"<<"\t";
-      }
-      //Knowing the initial site is useful to distinguish bulk and edge functions
-      ofs<<std::endl;
-      for(int iM=0;iM<localMeasureTask.size();++iM){
-	ofs<<localMeasureTask[iM].currentSite()<<"\t";
-      }
-      if(measureEE){
-	ofs<<0<<std::endl;
-      }
-      ofs<<std::endl;
-      std::vector<double> S;
-      std::vector<std::vector<double> > spec;
-      if(measureEE){
-	csystem.TensorNetwork.getEntanglement(S,spec,iEigen);
-      }
-      if(localExpectationValues.size()>0 || measureEE){
-	for(int i=0;i<pars.L;++i){
-	  for(int iM=0;iM<localMeasureTask.size();++iM){
-	    if(i<localExpectationValues[iM].size()){
-	      ofs<<std::abs(localExpectationValues[iM][i])<<"\t";
-	    }
-	    else{
-	      ofs<<"\t";
-	    }
-	  }
-	  if(measureEE && i<S.size()){
-	    ofs<<S[i]<<"\t";
-	  }
+      ofs.open(fileName.c_str());
+      ofs<<"Values for state number "<<iEigen<<" with energy "<<E0[iEigen]<<" and energy variance "<<dE[iEigen]<<std::endl;
+      //The problem parameters are written into the first lines
+      ofs<<"L\tN\tsubchain parity\tJ\tg\tW\tE\tvariance of energy\tt\n";
+      ofs<<std::setprecision(15);
+      ofs<<pars.L<<"\t"<<real(pars.QNconserved[0])<<"\t"<<imag(pars.QNconserved[0])<<"\t"<<J<<"\t"<<g<<"\t"<<W<<"\t"<<E0[iEigen]<<"\t"<<dE[iEigen]<<"\t"<<pars.t<<std::endl;
+      ofs<<std::setprecision(5);
+      //First, global measurements are performed (this is used rarely)
+      if(localMeasureTask.size()>0 || measureTask.size()>0 || measureEE){
+	std::cout<<"Measuring correlation functions\n";
+	for(int iM=0;iM<measureTask.size();++iM){
+	  csystem.measure(&measureTask[iM],expectationValues[iM],iEigen);
+	  ofs<<operatorNames[iM]<<"\t";
+	}
+	//Then, all results are written into the result file
+	if(measureTask.size())
 	  ofs<<std::endl;
+	for(int iM=0;iM<measureTask.size();++iM){
+	  ofs<<expectationValues[iM]<<"\t";
 	}
-      }
-      if(measureES){
-	if(iEigen>0){
-	  compositeName.str("");
-	  compositeName<<(iEigen+1);
-	  fileName=finalName+"_state_"+compositeName.str()+"_ES.txt";
+	if(measureTask.size())
+	  ofs<<std::endl;
+	//Now, the same is done for the local measurements (this is what is usually interesting)
+	for(int iM=0;iM<localMeasureTask.size();++iM){
+	  csystem.measureLocalOperators(&localMeasureTask[iM],localExpectationValues[iM],iEigen);
+	  ofs<<localOperatorNames[iM]<<"\t";
 	}
-	else{
-	  fileName=finalName+"_ES.txt";
+	if(measureEE){
+	  ofs<<"Entanglement Entropy"<<"\t";
+	}
+	//Knowing the initial site is useful to distinguish bulk and edge functions
+	ofs<<std::endl;
+	for(int iM=0;iM<localMeasureTask.size();++iM){
+	  ofs<<localMeasureTask[iM].currentSite()<<"\t";
+	}
+	if(measureEE){
+	  ofs<<0<<std::endl;
+	}
+	ofs<<std::endl;
+	std::vector<double> S;
+	std::vector<std::vector<double> > spec;
+	if(measureEE){
+	  csystem.TensorNetwork.getEntanglement(S,spec,iEigen);
+	}
+	if(localExpectationValues.size()>0 || measureEE){
+	  for(int i=0;i<pars.L;++i){
+	    for(int iM=0;iM<localMeasureTask.size();++iM){
+	      if(i<localExpectationValues[iM].size()){
+		ofs<<std::abs(localExpectationValues[iM][i])<<"\t";
+	      }
+	      else{
+		ofs<<"\t";
+	      }
+	    }
+	    if(measureEE && i<S.size()){
+	      ofs<<S[i]<<"\t";
+	    }
+	    ofs<<std::endl;
+	  }
+	}
+	if(measureES){
+	  if(iEigen>0){
+	    compositeName.str("");
+	    compositeName<<(iEigen+1);
+	    fileName=finalName+"_state_"+compositeName.str()+"_ES.txt";
+	  }
+	  else{
+	    fileName=finalName+"_ES.txt";
+	  }
+	  ofs.close();
+	  ofs.open(fileName.c_str());
+	  for(int i=0;i<spec.size();++i){
+	    for(int m=0;m<spec[i].size();++m){
+	      ofs<<spec[i][m]<<"\t";
+	    }
+	    ofs<<std::endl;
+	  }
 	}
 	ofs.close();
-	ofs.open(fileName.c_str());
-	for(int i=0;i<spec.size();++i){
-	  for(int m=0;m<spec[i].size();++m){
-	    ofs<<spec[i][m]<<"\t";
-	  }
-	  ofs<<std::endl;
-	}
       }
-      ofs.close();
     }
+    csystem.TensorNetwork.resetConvergence();
   }
-  csystem.TensorNetwork.resetConvergence();
 }

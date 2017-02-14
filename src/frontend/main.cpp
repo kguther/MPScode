@@ -176,14 +176,11 @@ int main(int argc, char *argv[]){
   L=L0+dL*myrank;
   //And evaluates its computation
   if(necPars.simType==1){
-    for(int pty=-1;pty<0;pty+=2){
-      for(int varL=35;varL<110;varL+=3){
-	necPars.L=varL;
-	necPars.N=necPars.rho*necPars.L*2;
-	//necPars.par=pty;
-	getFileName(necPars,fNBuf,commsize,myrank,finalName);
-	sysSolve(necPars,finalName,energies);
-      }
+    for(int varL=35;varL<110;varL+=3){
+      necPars.L=varL;
+      necPars.N=necPars.rho*necPars.L*2;
+      getFileName(necPars,fNBuf,commsize,myrank,finalName);
+      sysSolve(necPars,finalName,energies);
     }
     /*
     double *energies=new double[4*commsize];
@@ -462,9 +459,9 @@ void sysSetMeasurements(simulation &sim, int d, int L, int meas){
       sim.setLocalMeasurement(bulkSuperconductingOrder,bscName);
       sim.setLocalMeasurement(bulkSuperConductingCorrelation,pscName);
       sim.setLocalMeasurement(bulkICSuperConductingCorrelation,picscName);
-      sim.setEntanglementSpectrumMeasurement();
     }
   }
+  sim.setEntanglementSpectrumMeasurement();
   sim.run();
 }
 
@@ -509,7 +506,7 @@ void getFileName(info const &necPars, char *fNBuf, int commsize, int myrank, std
   }
   if(necPars.simType==1 || necPars.simType==3){
     //compositeName<<"_run_"<<myrank<<"_rho_"<<necPars.rho<<"_par_"<<necPars.par<<"_odd_"<<necPars.odd<<"_J_"<<necPars.Jsc<<"_g_"<<necPars.gsc<<".txt";
-    compositeName<<"_run_"<<myrank<<"_L_"<<necPars.L<<"_N_"<<necPars.N<<"_p_"<<necPars.par;
+    compositeName<<"_run_"<<myrank<<"_L_"<<necPars.L<<"_N_"<<necPars.N;
   }
   else{
     if(necPars.simType==2 && commsize>1){

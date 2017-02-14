@@ -54,7 +54,7 @@ x0=33
 x1=110
 p0=sy.array([0.01,1])
 colors=[(52.0/255.0,137.0/255.0,197.0/255.0), (137.0/255.0,199.0/255.0,58.0/255.0)]
-plt.figure(figsize=(18,10))
+plt.figure(figsize=(12,10))
 plt.tick_params(labelsize=ls)
 for i in [0]:
     sorter=sorted(baseData,key=getkey)
@@ -62,9 +62,9 @@ for i in [0]:
     deltaE=[x[1] for x in sorter]
     fpars, acc=so.curve_fit(f,positions,deltaE,p0)
     fplot,=plt.loglog(range(x0-1,x1+4),f(range(x0-1,x1+4),fpars[0],fpars[1]),color='k')
-    cplot,=plt.plot(positions[::2],deltaE[::2],'o',ms=marksize,color='b')
+    cplot,=plt.plot(positions[::2],deltaE[::2],'o',ms=marksize,color=colors[0])
     #print fpars
-plt.xlabel('L',fontsize=fs)
+plt.xlabel('$L$',fontsize=fs)
 plt.ylabel('Energy gap $\Delta$',fontsize=fs)
 plt.xlim(xmin=x0,xmax=x1)
 plt.ylim(ymin=0.015,ymax=0.055)
@@ -75,5 +75,5 @@ plt.xticks(xt,map(str,xt))
 cplot.set_label('numerical data')
 fplot.set_label('$\Delta=$'+str(fpars[0])[:6]+'$\cdot\,L^{-'+str(fpars[1])[:6]+'}$') 
 plt.legend(loc=1,fontsize=fs,numpoints=1)
-plt.savefig('../../draft/plots/top_gap_scaling.eps')
+plt.savefig('../../draft/plots/top_gap_scaling.pdf')
 plt.show()

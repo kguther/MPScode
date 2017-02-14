@@ -9,6 +9,7 @@ taskname=sys.argv[1]
 J=sys.argv[2]
 g=sys.argv[3]
 W=sys.argv[4]
+delta=sys.argv[5]
 
 fsize=32
 lsize=28
@@ -32,7 +33,8 @@ def getAverage(L):
     for filename in filelist:
         if filename[0:len(taskname)]==taskname and filename[(len(filename)-6):(len(filename)-4)]!='ES':
             refName=filename.partition('_L_')
-            if refName[2][:len(str(L))]==str(L):
+            disName=refName[2].partition('_delta_')
+            if refName[2][:len(str(L))]==str(L) and disName[2][:len(str(delta))]==delta:
                 files.append(filename)
                 with open(filename) as readEnergy:
                     readEnergy.readline()
@@ -43,7 +45,7 @@ def getAverage(L):
                     else:
                         valid.append(False)
                     energies.append(float(eList[6]))
-                    errBuff.append(float(eList[7]))
+                    errBuff.append(np.sqrt(float(eList[7])))
     for i in range(0,len(files)):
         refName=files[i]
         partedRefName=refName.partition('_p_')
@@ -51,6 +53,7 @@ def getAverage(L):
             compName=files[j]
             partedCompName=compName.partition('_p_')
             if partedRefName[0]==partedCompName[0] and partedRefName[2][1:]==partedCompName[2][2:] and valid[i]:
+                print str(energies[i])+str(energies[j])
                 deltaE.append(np.sqrt((energies[i]-energies[j])**2))
                 err.append((errBuff[i]+errBuff[j])/2)
 
@@ -58,7 +61,8 @@ def getAverage(L):
     errAveragedBuf=[]
     for val in deltaE:
         errAveragedBuf.append((val-averaged)**2)
-    errAveraged=np.sqrt(sum(errAveragedBuf))/max(len(errAveragedBuf),1)
+    #errAveraged=np.sqrt(sum(errAveragedBuf))/max(len(errAveragedBuf),1)
+    errAveraged=sum(err)/max(len(deltaE),1)
     print averaged
     print errAveraged
     result.append(averaged)
@@ -84,5 +88,5 @@ plt.ylabel('Mean energy splitting',fontsize=fsize)
 #plt.title('Energy gap, J=g=0.9, W=1.1')
 #plt.xlim([34,109])
 #plt.ylim([0.003,0.018])
-plt.savefig('thesis_plots/disorder_gap_scaling_11.pdf')
+plt.savefig('../../Thesis/plots/dmrg/disorder_gap_scaling_11.pdf')
 plt.show()

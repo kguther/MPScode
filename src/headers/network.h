@@ -53,6 +53,8 @@ class network{
 
   //Also, resetting the state can (!) be a good idea if subsequent runs are executed
   void resetState();
+  //Similarly, resetting the quantum number might sometimes be necesary
+  void setQuantumNumber(std::vector<std::complex<int> > const &targetQNs, std::vector<std::vector<std::complex<int> > > const &localQNs);
 
   //More obscure stuff for special applications
   void quantumNumberVec(std::vector<quantumNumber> *target){target=&conservedQNs;}

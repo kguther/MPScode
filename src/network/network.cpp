@@ -54,13 +54,7 @@ network::network(problemParameters const &inputpars, simulationParameters const 
 {
   networkH=mpo<mpsEntryType>(pars.d.maxd(),Dw,L);
   nConverged.resize(pars.nEigs);
-  for(int iEigen=0;iEigen<nConverged.size();++iEigen){
-    nConverged[iEigen]=1;
-  }
-  for(int iQN=0;iQN<pars.nQNs;++iQN){
-    conservedQNs.push_back(quantumNumber(networkDimInfo,pars.QNconserved[iQN],pars.QNLocalList[iQN]));
-  }
-  resetState();
+  setQuantumNumber(pars.QNconserved,pars.QNLocalList);
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -120,6 +114,19 @@ void network::resetState(){
     }  
   }
   excitedStateP.storeOrthoState(networkState,0);
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+void network::setQuantumNumber(std::vector<std::complex<int> > const &targetQNs, std::vector<std::vector<std::complex<int> > > const &localQNs){
+  for(int iEigen=0;iEigen<nConverged.size();++iEigen){
+    nConverged[iEigen]=1;
+  }
+  conservedQNs.clear();
+  for(int iQN=0;iQN<pars.nQNs;++iQN){
+    conservedQNs.push_back(quantumNumber(networkDimInfo,targetQNs[iQN],localQNs[iQN]));
+  }
+  resetState();
 }
 
 //---------------------------------------------------------------------------------------------------//
