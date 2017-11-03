@@ -201,5 +201,5 @@ for filename in filelist:
             #pltlabels.append('N='+pars[1])
             #ptitle='J='+pars[3]+'\t g='+pars[4]
 
-#plotArray(y,n)
-plotDeg(y,n)
+plotArray(y,n)
+#plotDeg(y,n)

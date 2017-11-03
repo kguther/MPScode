@@ -63,7 +63,7 @@ mpsEntryType exactGroundState::exactGroundStateEntry(int i, int si, int ai, int 
     return 1.0;
   }
   if(imag(QNsVec[0].QNLabel(i-1,aim))==-1){
-    return -1.0;
+    return std::complex<double>(0,-1.0);
   }
-  return 1.0;
+  return std::complex<double>(0,1.0);
 }

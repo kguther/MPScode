@@ -45,7 +45,7 @@ void cblas_axpy(int const n, void const *alpha, void const *x, int const incx, v
 
 void lapacke_svd(char job, int blockDimL, int blockDimR, void *M, double *diags, void *U, void *VT, int i){
   int const containerDim=(blockDimL>blockDimR)?blockDimR:blockDimL;
-#if defined USE_MKL
+#if defined USE_MKL_W
 #ifdef REAL_MPS_ENTRIES
   int info=LAPACKE_dgesdd(LAPACK_COL_MAJOR,job,blockDimL,blockDimR,static_cast<double*>(M),blockDimL,diags,static_cast<double*>(U),blockDimL,static_cast<double*>(VT),blockDimR);
 #else

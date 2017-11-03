@@ -559,11 +559,7 @@ void mps::getEntanglementSpectrumOC(int i, double &S, std::vector<double> &spect
   mpsEntryType *Anew=AnewP.get();
   subMatrixStart(currentM,i);
   auxiliary::arraycpy(ld*lDL*lDR,currentM,Anew);
-#ifdef REAL_MPS_ENTRIES
-  LAPACKE_dgesdd(LAPACK_COL_MAJOR,'N',lDL,ld*lDR,Anew,lDL,diags,0,1,0,1);
-#else
-  LAPACKE_zgesdd(LAPACK_COL_MAJOR,'N',lDL,ld*lDR,Anew,lDL,diags,0,1,0,1);
-#endif
+  lapacke_svd('N',lDL,ld*lDR,Anew,diags,0,0,i);
   spectrum.clear();
   for(int m=0;m<specSize;++m){
     spectrum.push_back(diags[m]);

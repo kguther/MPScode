@@ -177,7 +177,7 @@ void simulation::singleRun(){
     throw critical_error();
   }
 
-  int numParities=2;
+  int numParities=1;
   int parities[2]={pars.QNconserved[0].imag(),-pars.QNconserved[0].imag()};
   //If disorder is enabled, we want to check both parity sectors with the same set of disorder
   if(std::abs(targetDelta)>1e-10){
@@ -198,7 +198,8 @@ void simulation::singleRun(){
     std::ofstream ofs;
     std::string finalName, fileName;
     std::ostringstream compositeName;
-    compositeName<<filePrefix<<"_p_"<<pars.QNconserved[0].imag()<<"_W_"<<W<<"_J_"<<J<<"_g_"<<g;
+    std::cout<<pars.QNconserved[0]<<std::endl;
+    compositeName<<filePrefix<<"_W_"<<W<<"_J_"<<J<<"_g_"<<g;
     if(std::abs(targetDelta)>1e-10){
       compositeName<<"_delta_"<<deltaP;
     }
@@ -261,9 +262,11 @@ void simulation::singleRun(){
 	ofs<<std::endl;
 	std::vector<double> S;
 	std::vector<std::vector<double> > spec;
+	std::cout<<"Computing entanglement"<<std::endl;
 	if(measureEE){
 	  csystem.TensorNetwork.getEntanglement(S,spec,iEigen);
 	}
+	std::cout<<"Got entanglement entropy"<<std::endl;
 	if(localExpectationValues.size()>0 || measureEE){
 	  for(int i=0;i<pars.L;++i){
 	    for(int iM=0;iM<localMeasureTask.size();++iM){
