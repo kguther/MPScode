@@ -9,7 +9,6 @@
 #include <fstream>
 #include <string>
 #include <iomanip>
-#include <mpi.h>
 #include <vector>
 #include <memory>
 #include <chrono>
@@ -22,11 +21,70 @@ void sysSetMeasurements(simulation &sim, int d, int L, int meas);
 void importParameters(std::string const &fN, std::vector<int> &alpha, std::vector<double> &J, std::vector<double> &g);
 void getFileName(info const &necPars, char *fNBuf, int commsize, int myrank, std::string &finalName);
 
-int another(int argc, char *argv[]){
+int main(int argc, char *argv[]){
+  std::ofstream ofs;
+  ofs.open("results/benchmarks_hubbard.txt");
+  int const L=6;
+  int const N=10;
+  int const D=300;
+  int const nQuantumNumbers=2;
+  int const up=6;
+  int const nSweeps=12;
+  int const d=4;
+  int const Dw=6;
+  double const U=4;
+  double const t=-1;
+  std::complex<int> QNValue[2]={std::complex<int>(N,0),std::complex<int>(up,0)};
+  std::complex<int> QNList[8]={std::complex<int>(0,1),std::complex<int>(1,1),std::complex<int>(1,1),std::complex<int>(2,1),std::complex<int>(0,1),std::complex<int>(0,1),std::complex<int>(1,1),std::complex<int>(1,1)};
+  localHSpaces localHilbertSpaceDims(d);
+  mpo<mpsEntryType > Hubbard(d,Dw,L);
+  generateHubbardHamiltonian(t,U,Hubbard);
+  problemParameters pars(localHilbertSpaceDims,L,Dw,1,nQuantumNumbers,QNValue,QNList);
+  simulationParameters simPars(D,nSweeps,1,1e-3,1e-7,1e-8,1e-3);
+  network sys(pars,simPars);
+  sys.setNetworkH(Hubbard);
+  mpo<mpsEntryType > particleNumber(d,2,L);
+  mpo<mpsEntryType > spin(d,2,L);
+  double matEls, spinEls;
+  for(int i=0;i<pars.L;++i){
+    for(int bi=0;bi<2;++bi){
+      for(int bim=0;bim<2;++bim){
+	for(int si=0;si<pars.d.maxd();++si){
+	  for(int sip=0;sip<pars.d.maxd();++sip){
+	    matEls=delta(si,sip);
+	    spinEls=delta(si,sip);
+	    if(i!=0 && i!=L-1 && bi==1 && bim==0){
+	      matEls=0.0;
+	      spinEls=0.0;
+	    }
+	    if(bi==0 && bim==particleNumber.locDimL(i)-1){
+	      matEls*=(delta(si,1)+delta(si,2)+2*delta(si,3));
+	      spinEls*=(delta(si,2)+delta(si,3));
+	    }
+	    particleNumber.global_access(i,si,sip,bi,bim)=matEls;
+	    spin.global_access(i,si,sip,bi,bim)=spinEls;
+	  }
+	}
+      }
+    }
+  }
+  sys.check=&particleNumber;
+  sys.checkParity=&spin;
+  std::vector<double> E0,dE;
+  std::chrono::steady_clock::time_point t1=std::chrono::steady_clock::now();
+  sys.solve(E0,dE);
+  std::chrono::duration<double> deltaT=std::chrono::duration_cast<std::chrono::duration<double> >(std::chrono::steady_clock::now()-t1);
+  ofs<<D<<"\t"<<deltaT.count()<<"\t"<<E0[0]<<std::endl;
+  ofs.close();
+  return 0;
+}
+
+/*
+int main(int argc, char *argv[]){
   int const nQuantumNumbers=1;
   int D=200;
-  int const L=50;
-  int const nUp=25;
+  int const L=60;
+  int const nUp=L/2;
   int const nSweeps=14;
   int const d=2;
   int const Dw=5;
@@ -71,8 +129,8 @@ int another(int argc, char *argv[]){
   sys.solve(E0,dE);
   return 0;
 }
-
-
+*/
+/*
 int other(int argc, char *argv[]){
   int const nQuantumNumbers=1;
   int D=200;
@@ -120,7 +178,8 @@ int other(int argc, char *argv[]){
   sys.solve(E0,dE);
   return 0;
 }
-
+*/
+/*
 int main(int argc, char *argv[]){
   //Here, the parameters are distributed via MPI to the processes. Each process then individually solves the system for a specific set of parameters - great paralellization.
   //There are currently two settings: scaling and correlation. The former computes the behaivour of the gap with increasing system size and the latter computes correlations etc across the parameter space for fixed system size
@@ -233,58 +292,10 @@ int main(int argc, char *argv[]){
       getFileName(necPars,fNBuf,commsize,myrank,finalName);
       sysSolve(necPars,finalName,energies);
     }
-    /*
-    double *energies=new double[4*commsize];
-    double results[4];
-    //getScaling(L,necPars,results,finalName);
-    //rcvcount is the number of objects recieved PER PROCESS, not in total
-    MPI_Gather(results,4,MPI_DOUBLE,energies,4,MPI_DOUBLE,0,MPI_COMM_WORLD);
-    //For scaling, all results are written in the same file. This is done by the poor man's solution: only the main process writes.
-    if(myrank==0){
-      std::ofstream ofs;
-      ofs.open(finalName.c_str());
-      ofs<<"Parameters: J="<<necPars.Jsc<<" g="<<necPars.gsc<<std::endl;
-      ofs<<"Filling: "<<necPars.rho<<" subchain parity="<<necPars.par<<std::endl;
-      ofs<<"System size\tGS energy\t excited state energy\t GS accuracy\t excited state accuracy\n";
-      for(int rk=0;rk<commsize;++rk){
-	ofs<<L0+rk*dL<<"\t"<<energies[4*rk]<<"\t"<<energies[4*rk+1]<<"\t"<<energies[4*rk+2]<<"\t"<<energies[4*rk+3]<<std::endl;
-      }
-      ofs.close();
-    }
-    delete[] energies;
-    */
   }
  
   if(necPars.simType==3){
-    necPars.nEigens=2;
-    /*
-    switch(myrank){
-    case 0:
-      //necPars.tImag=0;
-      necPars.tPos=0;
-      break;
-    case 1:
-      //necPars.tReal=0;
-      necPars.tPos=necPars.L/2;
-      break;
-    case 2:
-      //necPars.tImag=0;
-      necPars.tPos=-1;
-      break;
-    case 3:
-      necPars.tReal=0;
-      necPars.tPos=0;
-      break;
-    case 4:
-      necPars.tReal=0;
-      necPars.tPos=-necPars.L/2;
-      break;
-    default:
-      necPars.tReal=0;
-      necPars.tPos=-1;
-    }
-    */
-    
+    necPars.nEigens=2;    
     necPars.tReal=0;
     necPars.tPos=myrank;
     
@@ -532,20 +543,6 @@ void getFileName(info const &necPars, char *fNBuf, int commsize, int myrank, std
   }
   if(necPars.simType==3){
     type="_position_scan";
-    /*
-    switch(myrank){
-    case 0:
-    case 1:
-      type="_0";
-      break;
-    case 2:
-    case 3:
-      type="_mid";
-      break;
-    default:
-      type="_global";
-    }
-    */
   }
   if(necPars.simType==4){
     type="_gather";
@@ -593,3 +590,4 @@ void importParameters(std::string const &fN, std::vector<int> &alpha, std::vecto
   ifs.close();
 }
 
+*/

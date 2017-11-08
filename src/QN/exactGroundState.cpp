@@ -60,10 +60,10 @@ void exactGroundState::generateExactState(mps &target){
 
 mpsEntryType exactGroundState::exactGroundStateEntry(int i, int si, int ai, int aim){
   if(si==0 || si==2){
-    return 1.0;
+    return mpsEntryType(1.0);
   }
   if(imag(QNsVec[0].QNLabel(i-1,aim))==-1){
-    return std::complex<double>(0,-1.0);
+    return mpsEntryType(-1.0);
   }
-  return std::complex<double>(0,1.0);
+  return mpsEntryType(1.0);
 }

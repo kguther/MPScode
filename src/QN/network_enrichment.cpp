@@ -670,6 +670,7 @@ void network::rightEnrichmentBlockwise(int i){
   std::vector<std::complex<int> > newLabels(lDL);
   for(int iQN=0;iQN<pars.nQNs;++iQN){
     for(int aim=0;aim<lDL;++aim){
+      if(comparer[aim].QN.size()==0) throw empty_table(i);
       newLabels[aim]=(comparer[aim].QN)[iQN];
     }
     try{

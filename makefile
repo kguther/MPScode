@@ -7,7 +7,7 @@ INCL_SRC_PATH=-I src/headers -I src/headers/systems
 LPKFLAGS=-llapacke -llapack -lblas -liomp5 -lpthread
 MKLFLAGS=-lmkl_gf_lp64 -lmkl_core -lmkl_intel_thread -liomp5 -lpthread -lm
 LBFLAGS=$(MKLFLAGS)
-DMKL=-DUSE_MKL -DREAL_MPS_ENTRIES
+DMKL=-DUSE_MKL #-DREAL_MPS_ENTRIES
 NAME=scMPScode
 DLPCK=-DREAL_MPS_ENTRIES
 DLPCK=-DHAVE_LAPACK_CONFIG_H -DLAPACK_COMPLEX_CPP
@@ -42,8 +42,8 @@ holle: $(OBJECTS_HOLLE)
 dep: $(SOURCE)
 	$(CC) $(APCK_INCLUDE) $(MKL_INCLUDE) $(MPI_COMPILE_FLAGS) $(INCL_SRC_PATH) $(DMKL) -MM -std=c++11 $(SOURCE) > $(DEPENDENCIES)
 
-library: $(OBJECTS_LIB_HOLLE)
-	ar rcs src/lib/libvmps.a $(OBJECTS_LIB_HOLLE)
+library: $(OBJECTS_LIB)
+	ar rcs src/lib/libvmps.a $(OBJECTS_LIB)
 
 $(OBJECTS): %.o: %.cpp 
 	$(CC) -c $(CFLAGS) $(APCK_INCLUDE) $(MPI_COMPILE_FLAGS) $(DMKL) $(INCL_SRC_PATH) $(MKL_INCLUDE) $< -o $@
