@@ -11,4 +11,5 @@ The program internally uses arpack++ [2] to iteratively solve the eigenvalue pro
 matrix optimization step.
 
 [1] C.Hubig et al. Phys. Rev. B 91, 155115
+
 [2] https://www.ime.unicamp.br/~chico/arpack++/
